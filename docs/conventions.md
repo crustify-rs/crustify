@@ -13,6 +13,19 @@ Every unsafe block carries a specific, falsifiable `// SAFETY:` comment. Native
 Rust APIs are safe unless their caller obligation cannot be expressed in the
 type system.
 
+## Naming
+
+The safe surface uses ordinary Rust naming: `snake_case` for functions, methods
+and modules, `UpperCamelCase` for types and traits, `SCREAMING_SNAKE_CASE` for
+constants and statics. Drop a C name's library or owning-type prefix wherever
+the crate, module or receiver already supplies it, and prefer the idiomatic
+Rust term over a transliterated C one. The filled anchor records the C name, so
+renaming costs no traceability.
+
+Names that cross the language boundary are fixed and exempt: `ffi::<name>` raw
+bindings, `mod ffi_export` exports, `crustify_<NAME>` macro shims and the
+`CRUSTIFY_<FILE>` build switch keep their C-derived spelling.
+
 ## Crates and modules
 
 `crustify/crates.json` is the source of truth for an entity's Rust home. Each
@@ -38,10 +51,10 @@ they do not dereference to `Foo`. Layout access starts from
 
 ## Functions and FFI names
 
-The raw binding for a C function lives under `ffi::<name>`. Its safe wrapper
-uses the bare function name in the owning module. When one C function has
-several valid ownership contracts, give each safe variant a distinct,
-descriptive name.
+The raw binding for a C function lives under `ffi::<name>`. Its safe wrapper is
+a free function homed in the owning module and named per the naming rules
+above. When one C function has several valid ownership contracts, give each
+safe variant a distinct, descriptive name.
 
 A callable macro shim is named `crustify_<NAME>`. Constant macros remain
 generated constants in the `-sys` crate.
