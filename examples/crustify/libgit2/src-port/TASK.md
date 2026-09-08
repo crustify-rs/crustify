@@ -21,17 +21,19 @@
 
 5. **Do you want agentic review after translated work lands? If so, which
    backend and model should perform each review?**
-   - Answer: yes, after each raw-lifetime and subsystem sub-campaign, using Claude, `claude-opus-5`
+   - Answer: yes, after each wave, using claude backend, openrouter
+      provider, `claude-opus-5` model
 
 6. **Should the campaign run the optional agentic UB audit pass? If so, which
    backend and model should run it?**
-   - Answer: only with explicit approval, at campaign end, using Claude, `claude-opus-5`
+   - Answer: yes, after each sub-campaign, using claude backend, openrouter
+      provider, `claude-opus-5` model
 
 7. **Should I run fully autonomously end to end?**
    - Answer: no
 
 8. **Which billing mode should agentic stages use?**
-   - Answer: API for Codex translation; subscription for Claude review and UB audit
+   - Answer: API for Codex translation; API for Claude review and UB audit
 
 # Optional questions
 
@@ -41,11 +43,12 @@ Unanswered optional questions use their defaults.
 
 9. **Should the campaign use the default batching and parallelism settings, or
    customize them?**
-   - Answer: default batching; parallelism is orchestrator's choice
+   - Answer: max two structs per agent, min 20 fields, max 25 symbols, max 500 LoC;
+   parallelism is orchestrator's choice
 
 10. **What batch caps should review agents use? We recommend 3x the translation
     caps so each reviewer sees more related units.**
-    - Answer: recommended 3x
+    - Answer: same as translators
 
 ## Autonomy (if question 7 is answered `no`)
 
@@ -58,21 +61,16 @@ Unanswered optional questions use their defaults.
 14. **Should I wait for your approval before starting review passes?**
     - Answer: no
 15. **Should I wait for your approval before starting UB audit passes?**
-    - Answer: yes
+    - Answer: no
 
 # Benchmark recording questions
 
 16. **Where and in what format should results be recorded?**
-    - Answer: `<repo-checkout>/crustify/results.md`, standard template
+    - Answer: `<repo-checkout>/crustify/results.md`, exact structure
 
 # Campaign notes
 
-- The implementation root is `src/`; derive the corresponding public API
-  headers during setup.
 - Work in `/target` in place. Do not clone, reset, replace, or discard its
   existing branches or partial `crustify/` translation.
-- Refresh the machine-local paths in `crustify/cli-config.json` from the
-  provisioned `CRUSTIFY_DEP_*` and `CRUSTIFY_BIN_*` environment variables if
-  the existing file refers to paths outside the container.
 - The campaign is in flight but was interrupted. Assess the current state and
   resume from completed artifacts rather than restarting it.

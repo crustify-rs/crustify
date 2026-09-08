@@ -43,7 +43,8 @@ Unanswered optional questions use their defaults.
 
 9. **Should the campaign use the default batching and parallelism settings, or
    customize them?**
-   - Answer: max two structs per agent, min 20 fields, max 25 symbols, max 500 LoC
+   - Answer: max two structs per agent, min 20 fields, max 25 symbols, max 500 LoC;
+   parallelism is orchestrator's choice
 
 10. **What batch caps should review agents use? We recommend 3x the translation
     caps so each reviewer sees more related units.**
