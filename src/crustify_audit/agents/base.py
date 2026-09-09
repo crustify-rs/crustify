@@ -129,6 +129,27 @@ INSTRUMENT_SPECS = {
             "reported. Cannot share a binary with ASan or TSan; build it separately."
         ),
     ),
+    "equivalence": InstrumentSpec(
+        label="C/Rust differential equivalence",
+        bug_classes=(
+            "return values, error codes, or error variants the wrapper maps, swallows, or invents",
+            "out-parameters, buffers, and string contents that differ from the C call on equal inputs",
+            "state that diverges only after a multi-call sequence, where each call agrees in isolation",
+            "boundary inputs handled differently: empty, zero-length, NULL-equivalent, maximum, non-UTF-8",
+            "option and default initialization that does not match the C initializer the wrapper stands in for",
+            "callback contracts: invocation count, order, arguments, or a return value the wrapper fails to honor",
+            "silent truncation or lossy conversion across integer widths, lengths, and string encodings",
+        ),
+        reach=(
+            "Executed paths on which the C reference is callable side by side with the "
+            "wrapper on equivalent, independently owned inputs. Its verdict comes from "
+            "comparing two executions, not from instrumentation, so it needs no sanitizer "
+            "build and demonstrates nothing about undefined behavior. It cannot judge "
+            "surface that has no C counterpart, and agreement on the paths you ran is not "
+            "absence of drift. Drift the crate intends is not a defect: record it as a "
+            "lead, per the evidence rules."
+        ),
+    ),
     "tsan": InstrumentSpec(
         label="ThreadSanitizer (TSan)",
         bug_classes=(

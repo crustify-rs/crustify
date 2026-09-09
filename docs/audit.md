@@ -53,7 +53,7 @@ so later runs extend the record instead of repeating completed investigations.
 crustify-audit REPO unsafe [--json] [--name NAME ...]
 crustify-audit REPO ub [--objective audit|audit+patch|patch|revisit]
                        [--workset PATH ...]
-                       [--instruments miri|asan/ubsan|bsan|msan|tsan ...]
+                       [--instruments miri|asan/ubsan|bsan|msan|tsan|equivalence ...]
                        [--model PROVIDER/MODEL]
                        [--billing subscription|api]
                        [--timeout MINUTES]
@@ -68,8 +68,11 @@ crustify-audit REPO ub [--objective audit|audit+patch|patch|revisit]
   advisory. Under `--objective revisit` it carries lead notes under
   `crustify/audit/leads/` instead of source files.
 - `ub --instruments` constrains the hunt and advisory evidence; omit it to
-  select all five. Before spending, the command prints the exact selected
-  instruments, their bug classes, and their reach limitations.
+  select every one. Before spending, the command prints the exact selected
+  instruments, their bug classes, and their reach limitations. `equivalence`
+  is the odd one out: it decides by comparing against the C reference rather
+  than by instrumentation, so it needs no sanitizer build and its advisories
+  carry a failing assertion instead of a crash.
 - `ub --timeout` is a wall-clock budget, not a kill deadline. The current agent
   finishes even when that overshoots the budget; `0` runs one agent.
 - `audit` never edits target source. `audit+patch` and `patch` develop repairs
@@ -89,6 +92,7 @@ semantics.
 | `asan/ubsan` | native bounds errors, use-after-free/return/scope and invalid frees, pointer/alignment UB, integer/division/shift UB, and invalid C/C++ runtime values |
 | `bsan` | Tree Borrows aliasing across Rust and foreign code, including conflicting foreign-pointer writes and pointers invalidated by reborrows |
 | `msan` | use of uninitialized memory: branches and addresses computed from it, uninitialized bytes crossing the FFI boundary, and struct tails or buffers a foreign initializer left partly unwritten |
+| `equivalence` | functional drift from the bound C API: mapped or swallowed errors, differing out-parameters and buffers, state that diverges only across a multi-call sequence, boundary-input handling, option defaults, callback contracts, and lossy conversions. Its verdict is a failing assertion against the C reference, not an instrument, so it needs no sanitizer build and says nothing about UB |
 | `tsan` | data races between Rust and foreign threads, unsynchronized access through `&T` where `Send`/`Sync` is hand-written, and use of an object being destroyed on another thread |
 
 These are execution-based scopes, not promises of exhaustive detection. Miri
