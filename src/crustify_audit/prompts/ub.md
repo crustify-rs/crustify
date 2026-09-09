@@ -1,6 +1,7 @@
 Audit the Rust crate in `{workspace}` for undefined behavior reachable from
-safe code. The repository root is the subject; locate the
-Rust within it yourself.
+safe code, and -- when `equivalence` is among your instruments -- for
+functional drift between the safe wrapper and the C library it binds. The
+repository root is the subject; locate the Rust within it yourself.
 
 ## Objective
 
@@ -21,10 +22,10 @@ Rust within it yourself.
 
 {instruments}
 
-For an auditing objective, confine the hunt to bugs that one of these
-instruments can demonstrate. A confirmed reproducer must trigger at least one
-of them. The bug-class lists are the hunt scope: do not spend the run on other
-classes merely because they are also undefined behavior.
+For an auditing objective, confine the hunt to defects that one of these
+instruments can demonstrate. A confirmed finding must be demonstrated by at
+least one of them. The bug-class lists are the hunt scope: do not spend the run
+on other classes merely because they are also defects.
 
 If the target ships its own sanitizers because the selected ones structurally
 cannot run against it -- the Linux kernel's KASAN, KMSAN, KCSAN and kernel
@@ -44,22 +45,46 @@ Read existing leads and advisories first. Do not duplicate completed work.
 
 ## Evidence
 
-A finding is confirmed only when safe code can trigger undefined behavior in
-the real audited crate. Write a minimal reproducer that depends on that crate,
-calls its public API without using `unsafe`, and triggers at least one selected
-instrument above.
+A finding is confirmed only when safe code demonstrates the defect against the
+real audited crate. Write a minimal reproducer that depends on that crate and
+calls its public API without using `unsafe`.
+
+For a sanitizer or Miri instrument, the reproducer must trigger that instrument.
+
+For `equivalence`, the reproducer is instead an assertion-based test that calls
+the safe wrapper and the C entry point it binds on equivalent, independently
+owned inputs and asserts on the observable result: return value, error,
+out-parameters, buffers, callback trace, and state after the sequence. The
+assertion must FAIL against the crate as it stands, and the test must not
+require a sanitizer build to fail. Single calls are the floor: prefer a
+multi-call sequence that builds state on both sides and asserts at each step,
+since a wrapper that agrees call by call often diverges once state accumulates.
+Obtain the C side through the crate's own `-sys` bindings or a direct link; do
+not reimplement the C behavior from your reading of it, and do not assert
+against a value you predicted rather than executed.
+
+Drift is only a defect when it is unintended. Before filing a drift advisory,
+check the crate for evidence that the divergence is deliberate: a doc comment,
+a `CHANGELOG` entry, a named test asserting the new behavior, or a commit
+message explaining it. Where the crate documents the divergence, or corrects a
+C defect on purpose, record it as a LEAD naming the evidence you found and the
+behavior on both sides -- never as an advisory. Where you cannot tell, the
+finding is a lead: say what evidence would settle it.
 
 Store a confirmed reproducer in `advisories/<name>/` with everything needed to
 run it from a clean checkout. The advisory must identify the safe path to the
-bug and include the exact command and relevant instrument output. If you cannot
-produce this evidence, record the result as a lead, not an advisory.
+defect and include the exact command and the relevant instrument output or
+assertion failure. If you cannot produce this evidence, record the result as a
+lead, not an advisory.
 
 ## Revisit
 
 Only when your objective is `revisit`. Your workset names lead files, not source
 files. A lead is a question an earlier run could not settle, and your job is to
-settle it. For each lead that you manage to reproduce with a sanitizer crash,
-promote it to and advisory and delete the lead.
+settle it. For each lead you manage to demonstrate -- a sanitizer crash, or a
+failing equivalence assertion -- promote it to an advisory and delete the lead.
+A lead recording deliberate drift stays a lead: settling it means confirming
+the divergence is still intended, not promoting it.
 
 ## Repair
 
