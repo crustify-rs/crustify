@@ -317,38 +317,142 @@ links the owning Rust static library and defines the per-file switch for the C
 translation unit. Inspect the actual build pipeline rather than assuming its
 link mechanics.
 
-## Tests and completion
+## Tests
 
-Write unit tests beside the emitted code. Exercise owned and borrowed forms,
-mutable and shared access, scalar and array variants, lifecycle strategies,
-generic instances and callback variants relevant to the worklist. Run both C
-and Rust sides with the configured sanitizers when the test crosses the FFI
-boundary, and fix double-free, use-after-free, invalid-free, leak and bounds
-failures. Group translator-emitted in-file unit tests in
-`#[cfg(test)] mod unit_tests`; reserve `mod io_equiv` for equivalence tests.
+Every test the translator emits falls in exactly one of three modules beside the
+emitted code. What separates them is who decides the verdict: an instrument, a
+C reference execution, or an assertion in the test itself. Assign by that
+criterion and not by subject matter — the same construct yields tests in more
+than one module, and each belongs where its verdict comes from.
 
-For callable wrappers, add `#[cfg(test)] mod io_equiv` beside each emitted Rust
-translation unit. Exercise the raw C function and safe Rust wrapper on
-equivalent, independently owned inputs. Compare observable behaviour: return
-values, out-parameters, buffers, callbacks, error states, state transitions and
+| module | verdict decided by | asserts |
+|---|---|---|
+| `soundness` | a sanitizer or Miri | no safe use of the API reaches undefined behaviour |
+| `equivalence` | executing the C reference | the wrapper behaves as C does |
+| `unit` | an assertion in the test | a named value, state or error is what it should be |
+
+A test of the borrowed form that checks the returned value is a unit test; a
+test that drives the same borrowed form past its owner's lifetime is a soundness
+test. A test that a bad argument yields `Error::InvalidSpec` is an equivalence
+test when C returns a mappable code for it, and a unit test only when the
+wrapper rejects the input before C ever sees it.
+
+### Soundness tests
+
+Group these in `#[cfg(test)] #[forbid(unsafe_code)] mod soundness`. Each test
+drives the safe wrapper API only: a soundness test that writes `unsafe` proves
+nothing about the safe surface, and `forbid` makes that a compiler-checked
+property rather than a convention.
+
+`forbid` covers `unsafe` blocks, `unsafe fn`, `unsafe impl` and `unsafe trait`,
+so a test cannot call an internal unsafe helper without the lint firing. What it
+does not cover is visibility. A `#[cfg(test)]` module reaches every private and
+`pub(crate)` item in its ancestors, and many of those are declared safe while
+depending on an invariant the public API enforces — a `pub(crate)` constructor
+taking an already-validated pointer, or a struct literal built straight from
+private fields. A test calls those with no `unsafe` token anywhere.
+
+That matters in both directions. A failure reached through a private item may
+correspond to no program a downstream user could write, and a pass covers more
+surface than any user can reach, so neither outcome is evidence about the safe
+public API. Reach only for `pub` items, exactly as a downstream user would. The
+lint does not enforce this, so it is the translator's obligation: a soundness
+test that touches a private or `pub(crate)` item is not evidence and must be
+rewritten against the public surface or dropped.
+
+Write soundness tests only for the instruments the campaign manifest prepared.
+Work them as separate obligations rather than stopping at whichever fires
+first.
+
+- `asan/ubsan` — native bounds errors, use-after-free, use-after-return and
+  use-after-scope, invalid frees, pointer and alignment UB, and integer,
+  division and shift UB. Drive handles past the lifetime of their owner,
+  reenter through callbacks, and pass lengths and offsets the C side trusts.
+- `bsan` — Tree Borrows aliasing across the FFI boundary: conflicting
+  foreign-pointer writes, and pointers the C side retains across a reborrow.
+  Hand C a pointer derived from a `&mut`, then use the Rust reference again.
+- `tsan` — data races reachable from safe code. Exercise every `Send` and
+  `Sync` impl the wrapper asserts, and every callback the C side may invoke on
+  a thread the caller did not create.
+- `miri` — Rust-side bounds and lifetime errors, uninitialized or invalid
+  values, alignment and intrinsic violations. Miri cannot execute into the
+  foreign library, so target constructs that resolve on the Rust side:
+  transmutes, `repr` assumptions, and slice and reference construction from
+  raw parts.
+- `msan` — uninitialized reads. Meaningful only where the campaign builds the C
+  side and the standard library under instrumentation; against a vendored
+  library it reports uninstrumented memory as uninitialized. Skip it unless the
+  campaign manifest enables it.
+
+Attack the constructs the worklist actually emitted: every owned and borrowed
+form, shared and mutable access, each lifecycle strategy, every generic instance
+and every callback variant. For each, construct the use that would be unsound if
+the wrapper's ownership reasoning were wrong — outlive the owner, alias the
+reborrow, reenter through the callback, drop the parent first — and let the
+instrument return the verdict.
+
+Prefer static evidence where the type system can carry the obligation. An API
+whose borrowed form must not outlive its owner should fail to *compile*, not
+fail under a sanitizer, and a `compile_fail` doctest or `trybuild` case records
+that as a checked property rather than an untested intention. Note each such
+case in the batch report; it is stronger evidence than any run, because it holds
+on all inputs rather than the ones executed.
+
+### Equivalence tests
+
+Group these in `#[cfg(test)] mod equivalence`, beside each emitted Rust translation
+unit. Exercise the raw C function and the safe Rust wrapper on equivalent,
+independently owned inputs, and compare observable behaviour: return values,
+out-parameters, buffers, callbacks, error states, state transitions and
 lifecycle effects.
+
+Single calls are the floor, not the target. Emit multi-call sequences that build
+internal state on both sides and assert equivalence at every intermediate step,
+not only at the end: construct, mutate, query, mutate again, query again,
+release. A wrapper whose ownership or lifecycle handling is wrong often agrees
+with C on the first call and diverges on the third, and single-call tests cannot
+reach that.
 
 Equivalence means preserving the intended contract, not bug-for-bug
 compatibility. When the C reference behavior is demonstrably defective, do not
-copy the defect into Rust merely to make the comparison pass. Add a regression
-test for the corrected behavior, document the evidence and deliberate
-divergence, and retain direct C/Rust comparisons for unaffected behavior.
+copy the defect into Rust merely to make the comparison pass. Document the
+evidence and the deliberate divergence, retain direct C/Rust comparisons for
+unaffected behavior, and put the regression test for the corrected behavior in
+`mod unit_tests`, since it asserts non-equivalence by construction.
 
 For a port objective, obtain the reference result from a feature-off C build in
 which the original implementation is still present and the reference symbol
 cannot resolve to the Rust re-export.
 
+### Unit tests
+
+Group these in `#[cfg(test)] mod unit_tests`. This is the smallest of the three
+modules, and deliberately so: a wrapped API's behaviour is C's behaviour, so
+most of what looks like a unit test is an equivalence test with the reference
+call omitted. Write a unit test only where no C reference and no instrument can
+render the verdict:
+
+- Rust surface with no C counterpart: `Iterator`, `Debug`, `Clone`, conversions
+  between Rust types, and builder ergonomics.
+- Input the wrapper rejects before it reaches C — the right error variant, and
+  no panic. Where C sees the input and returns a mappable code, the error
+  mapping is an equivalence test instead.
+- Deliberate divergence from defective C behaviour, per the rule above.
+- Resource release: construct, drop, and assert the handle freed and not
+  leaked.
+
+If a proposed unit test could be written with a C reference call beside it, it
+belongs in `mod equivalence`. If its verdict would come from a sanitizer rather
+than its own assertion, it belongs in `mod soundness`.
+
 Target meaningful paths belonging to the workset, without expanding into
 unrelated subsystems merely to raise a global percentage. Report the number of
-unit and equivalence `#[test]` functions the batch adds, plus any unreachable,
-environment-dependent or intentionally nondeterministic remainder. The
-orchestrator measures C and Rust line coverage for the merged wave or
+soundness, equivalence and unit `#[test]` functions the batch adds, plus any
+unreachable, environment-dependent or intentionally nondeterministic remainder.
+The orchestrator measures C and Rust line coverage for the merged wave or
 sub-campaign; translators do not regenerate global coverage reports.
+
+## Completion
 
 Replace every scheduler TODO with the filled anchor required by the
 conventions. If a lifecycle strategy lives outside the operation's authored
@@ -363,7 +467,8 @@ cargo clippy --workspace
 cargo test --workspace
 ```
 
-Every FFI or equivalence test uses the matching reusable sanitized C library,
+Every FFI, soundness or equivalence test uses the matching reusable sanitized
+C library,
 or a private sanitized replacement, even when its sources did not change. If C
 sources changed, additionally run the configured full C build and baseline
 tests with the Rust feature off. For a port objective, also run them with the
