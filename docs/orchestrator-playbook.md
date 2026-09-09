@@ -398,8 +398,25 @@ out-of-tree C builds for the exact C revision, `build.json` version, compiler,
 and instrumentation configuration:
 
 - a plain build for the normal functional baseline;
-- an ASan + UBSan build for every FFI and lifecycle test; and
+- an ASan + UBSan build for every FFI and lifecycle test;
+- a TSan build for the soundness module's race obligations. It cannot share the
+  ASan build: the two runtimes are mutually exclusive, so the soundness workload
+  is executed once per instrument rather than once in total;
+- a BSan build where the BorrowSanitizer toolchain is available, for Tree
+  Borrows aliasing across the Rust/foreign boundary; and
 - a coverage build used only for campaign measurements.
+
+Miri needs no C build — it cannot execute into the foreign library at all, so
+its soundness obligations are limited to constructs that resolve on the Rust
+side. Do not prepare an MSan build against a vendored C library: it requires the
+standard library and every line of C to be instrumented, and reports
+uninstrumented memory as uninitialized, so it yields false positives or nothing.
+Enable it only where the campaign manifest builds the whole stack instrumented.
+
+Record which instrument builds exist in the campaign manifest and pass the set
+to translators. A translator writes soundness tests only for instruments the
+campaign actually prepared; it does not skip a prepared instrument because
+another one already produced a finding.
 
 Record that provenance with the artifacts and pass agents the sanitized
 library path plus one standard test runner that loads the sanitizer runtimes
@@ -416,8 +433,10 @@ the build never relaxes the sanitizer requirement for lifecycle tests.
 Do not make translators regenerate global coverage reports. They run the
 targeted sanitized tests needed to validate their worklist and report the tests
 they added. After landing, the orchestrator runs the full sanitized regression
-gate and measures the unit- and equivalence-workload coverage once on the
-merged wave or sub-campaign for campaign accounting.
+gate and measures the soundness-, equivalence- and unit-workload coverage
+separately, once on the merged wave or sub-campaign for campaign accounting.
+Each workload bounds a different obligation, so the three coverage figures are
+reported apart and never summed.
 
 ### Preflight and monitor agentic stages
 
