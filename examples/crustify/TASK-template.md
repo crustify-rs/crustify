@@ -46,35 +46,31 @@ Unanswered optional questions use their defaults.
 9. **Should the campaign use the default batching and parallelism settings, or
    customize them?**
    - Answer: `<defaults | max-types: N, max-syms: N, max-loc: N,
-     parallel-max: N | orchestrator's choice>`
+     parallelism: N | orchestrator's choice>`
 
-10. **What batch caps should review agents use? We recommend 3x the translation
-   caps so each reviewer sees more related units.**
-   - Answer: `<recommended 3x | same as translation | max-types: N,
+10. **What batch caps should review agents use? We recommend the same caps as
+   translation by default.**
+   - Answer: `<same as translation | max-types: N,
      max-syms: N, max-loc: N>`
-
-11. **What target unit budget should ordinary sub-campaigns use? The default is
-    100 scheduled types and symbols; you can ask for more or fewer.**
-    - Answer: `<default 100 | target-units: N | orchestrator's choice>`
 
 ## Autonomy (if question 7 is answered `no`)
 
 Answer these approval-gate questions only if question 7 is answered `no`.
 
-12. **Should I wait for your approval before starting the setup phase?**
+11. **Should I wait for your approval before starting the setup phase?**
     - Answer: `<yes | no>`
-13. **Should I wait for your approval before starting the translation phase?**
+12. **Should I wait for your approval before starting the translation phase?**
     - Answer: `<yes | no>`
-14. **Should I wait for your approval between sub-campaigns?**
+13. **Should I wait for your approval between sub-campaigns?**
     - Answer: `<yes | no | not applicable>`
-15. **Should I wait for your approval before starting review passes?**
+14. **Should I wait for your approval before starting review passes?**
     - Answer: `<yes | no | not applicable>`
-16. **Should I wait for your approval before starting UB audit passes?**
+15. **Should I wait for your approval before starting UB audit passes?**
     - Answer: `<yes | no | not applicable>`
 
 # Benchmark recording questions
 
-17. **Where and in what format should results be recorded?**
+16. **Where and in what format should results be recorded?**
     - Answer: `<results path>, <standard | custom template>`
 
 # Guidance
@@ -82,15 +78,12 @@ Answer these approval-gate questions only if question 7 is answered `no`.
 - Answer only questions whose values are not already fixed by the task.
 - Every agentic stage names its model. Deterministic `crustify-audit unsafe`
   checks do not need one.
-- Port campaigns plan bottom-up from the subsystem graph, combining compatible
-  adjacent subsystems toward the approved unit budget. Raw `void` and raw
-  `string` lifetime discovery are separate initial sub-campaigns, each with its
-  own narrow `wavefront-config.json`.
+- Ordinary sub-campaigns mirror subsystems. Raw `void` and raw `string`
+  lifetime discovery are separate initial sub-campaigns, each with its own
+  narrow `wavefront-config.json`.
 - Wrap campaigns always schedule from the public API graph with
-  `--api-headers-only`. Ordinary sub-campaigns use a soft `100`-unit minimum by
-  default, combining compatible bottom-up subsystems where useful; isolated
-  remainders may be smaller and large subsystems may exceed it.
-- When review is allowed, the orchestrator prefers reviewing after each
-  completed sub-campaign. When the UB pass is approved, it prefers running it
+  `--api-headers-only`.
+- When review is allowed, the orchestrator gates every translated wave on an
+  adversarial review pass. When the UB pass is approved, it prefers running it
   once at campaign end.
 - Waves and batches are internal scheduler artifacts, not user-facing questions.

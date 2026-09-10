@@ -129,9 +129,9 @@ class CrustifyAgent:
       - ``tier = "repo_root"`` — `<repo_root>/.crustify/<output>`. Used
         by agents whose artifact is project-wide and target-independent.
 
-    Agent logs always go to the campaign tier
-    (`crustify/campaigns/<target>/logs/<session>/`), regardless of ``tier``,
-    because they're scoped to the invocation, not the repository.
+    Batch agents write to the explicit harness output directory. Other agents
+    use the campaign tier as a fallback because logs are scoped to an
+    invocation, not to a generated artifact.
     """
 
     name: str         # subclasses set this
@@ -154,7 +154,15 @@ class CrustifyAgent:
     # need disambiguation.
     stage_suffix: str | None = None
 
-    def __init__(self, target: Path, *, repo_root: Path | None = None) -> None:
+    def __init__(
+        self,
+        target: Path,
+        *,
+        repo_root: Path | None = None,
+        git_base: str = "",
+        log_dir: Path | None = None,
+        log_stem: str | None = None,
+    ) -> None:
         self.target = target.resolve()
         # An isolated-wave agent passes its WORKTREE as `repo_root` (only when a
         # worktree is actually in play) so every `crustify <repo_root> …` the
@@ -164,6 +172,9 @@ class CrustifyAgent:
         # the pinned-main behaviour for the in-place / non-isolated path.
         self.layout = Layout(repo_root) if repo_root is not None else Layout.discover(self.target)
         self.repo_root = self.layout.repo_root
+        self.git_base = git_base
+        self.log_dir = log_dir
+        self.log_stem = log_stem
         # Repo-relative target id (e.g. "ssl/statem", or "." for the repo
         # root) — the value the prompt passes as crustify's second positional.
         self.target_rel = self.layout.rel_target(self.target)
@@ -212,7 +223,7 @@ class CrustifyAgent:
             )
 
     def _log_stem(self) -> str:
-        """Filename stem for this agent's logs, unique within a session.
+        """Filename stem for this agent's logs, unique within its directory.
 
         ``stage_suffix`` disambiguates concurrent agents of the same stage so
         they never clobber each other's files.
@@ -231,14 +242,13 @@ class CrustifyAgent:
     def _make_log(self) -> AgentLog:
         """Open this agent's output sinks (see :mod:`crustify.agentlog`).
 
-        Logs are always written under the campaign tier so every wave in the
-        orchestrator campaign shares one session namespace.
+        A batch harness injects its explicit output directory and generated
+        batch id. The fallback remains for non-batch callers.
         """
-        from crustify import config as crustify_config
-
         return open_agent_log(
-            self.campaign_store.root / "logs" / crustify_config.SESSION_ID,
-            self._log_stem(),
+            self.log_dir or self.campaign_store.root / "logs",
+            self.log_stem or self._log_stem(),
+            stage=self.stage,
         )
 
     def _is_done(self) -> bool:
@@ -277,15 +287,13 @@ class CrustifyAgent:
     def _arguments(self) -> dict:
         # `target` is the repo-RELATIVE id and `repo_root` the full path —
         # together the two positionals every `crustify <repo_root> <target> …`
-        # invocation in a prompt needs. `git_base` is the wave's base worktree,
-        # the branch an isolated agent lands its own commit on (empty outside a
-        # wave). Supplied to EVERY agent: `str.format` ignores a key the template
-        # does not reference, and a template referencing a key nobody supplies
-        # dies with KeyError before the agent issues a request.
+        # invocation in a prompt needs. `git_base` is the unchecked-out wave
+        # integration branch supplied by the orchestrator. Supplied to every
+        # agent: `str.format` ignores a key the template does not reference, and
+        # a template referencing a key nobody supplies dies before the request.
         # Subclasses extend (super()._arguments()).
-        from crustify import config as _cfg
         return {"target": self.target_rel, "repo_root": str(self.repo_root),
-                "git_base": _cfg.SESSION_BASE}
+                "git_base": self.git_base}
 
     def _repo_config(self) -> dict:
         """Repo-wide config: dependency paths, binaries and prompt capabilities.

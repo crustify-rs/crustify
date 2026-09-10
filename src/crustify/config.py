@@ -1,25 +1,4 @@
-"""Tunable knobs for the crustify pipeline.
-"""
-
-import secrets as _secrets
-import time as _time
-
-# ---------------------------------------------------------------------------
-# Session identity — generated once per CLI invocation
-# ---------------------------------------------------------------------------
-
-SESSION_ID: str = f"{_time.strftime('%Y-%m-%d_%H-%M-%S')}_{_secrets.token_hex(2)}"
-"""Timestamp label shared by all agents in a single ``crustify`` run.
-
-Used to group per-session log files under
-``campaigns/<target>/logs/<SESSION_ID>/`` -- see :mod:`crustify.agentlog` for
-what each agent writes there.
-
-The timestamp keeps sessions chronologically sortable; the trailing 4-hex
-random token disambiguates crustify processes launched within the same second
-(e.g. parallel model-comparison runs on separate branches), so their per-session log
-dirs never collide and clobber each other's ``<stage>.log``.
-"""
+"""Tunable knobs for the crustify pipeline."""
 
 
 # ---------------------------------------------------------------------------
@@ -57,16 +36,3 @@ stage prompt assumes rather than restates."""
 
 LOG_TO_CONSOLE: bool = True
 """When ``False``, suppress live console output from agents."""
-
-LOG_TO_FILE: bool = True
-"""When ``False``, disable per-agent log files under
-``campaigns/<target>/logs/<SESSION_ID>/``."""
-
-
-SESSION_BASE: str = ""
-"""The wave's integration BRANCH (``crustify/session/<verb>-<SESSION_ID>``), set
-by the scheduler for the duration of a worktree-isolated wave (see
-:mod:`crustify.worktree`). Exposed to every prompt as ``{git_base}``: an agent
-lands on it with ``git push <git-common-dir> HEAD:refs/heads/{git_base}`` and
-rebases onto it on rejection, so it needs the ref name -- not a path -- and only
-the scheduler knows it. Empty outside a wave."""

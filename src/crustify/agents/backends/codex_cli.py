@@ -6,7 +6,7 @@ lands in ``<stage>.log`` unaltered, with accounting recovered afterwards
 from the session rollout the CLI persists independently of stdout format.
 
 Codex never reports cost - not in text mode, not under ``--json``, and its
-JSON stream does not even name the model - so ``<stage>.usage.json`` is
+JSON stream does not even name the model - so the per-run ``.usage.json`` is
 built from the rollout's ``token_count`` events and priced by
 ``crustify-log-cost`` against the billing service's rates.
 

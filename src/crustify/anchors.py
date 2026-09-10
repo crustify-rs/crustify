@@ -1,8 +1,8 @@
-"""Scheduler-local translation anchors.
+"""Batch-local translation anchors.
 
 The read-only ``crates`` command never writes Rust source. The translate
-scheduler still lays each batch's TODO anchors after forking its worktree so an
-agent sees only the placeholders it owns.
+harness lays one batch's TODO anchors after forking its worktree so an agent
+sees only the placeholders it owns.
 """
 
 from __future__ import annotations
@@ -33,55 +33,56 @@ def _has_field_anchor(text: str, tag: str, field: str) -> bool:
         text) is not None
 
 
-def place_anchors(
+def place_batch_anchors(
     layout,
-    target: Path,
-    names: list[str],
+    items: list[dict],
     *,
-    fields: dict[str, list[str]] | None = None,
     emit: bool = True,
 ) -> tuple[int, list[str]]:
-    """Insert this batch's missing TODO anchors in its existing Rust homes."""
+    """Insert a thin batch's anchors, using ``defined_in`` to select homes."""
     from crustify import crates
 
-    fields = fields or {}
     doc = crates.load(layout)
-    homes: dict[Path, list[str]] = {}
+    homes: dict[Path, list[dict]] = {}
     unanchored: list[str] = []
-
-    for name in names:
-        entries, missing = crates.entries_for_names(doc, [name])
-        if missing:
+    for item in items:
+        name = item["name"]
+        hits = crates.lookup_all(doc, name, file=item.get("defined_in"))
+        if not hits:
             unanchored.append(name)
             continue
-        for entry in entries:
-            path = crates.full_rs(layout, entry["crate_path"], entry["rs"])
-            homes.setdefault(path, []).append(name)
+        for hit in hits:
+            path = crates.full_rs(layout, hit["crate_path"], hit["rs"])
+            homes.setdefault(path, []).append(item)
 
     inserted = 0
-    for rs_path, items in homes.items():
+    for rs_path, selected in homes.items():
         if not rs_path.exists():
-            unanchored += items
+            unanchored += [item["name"] for item in selected]
             continue
-        text = rs_path.read_text()
+        contents = rs_path.read_text()
         additions: list[str] = []
-        for name in items:
-            wanted = ([(name, None)]
-                      + [(f"{name}.{field}", field)
-                         for field in fields.get(name, ())])
-            for item, field in wanted:
-                anchored = (_has_field_anchor(text, name, field) if field
-                            else _anchor_re(item).search(text))
-                if anchored or _todo_anchor(item) in additions:
+        for selected_item in selected:
+            name = selected_item["name"]
+            wanted = [(name, None)] + [
+                (f"{name}.{field}", field)
+                for field in selected_item.get("field_anchors", ())
+            ]
+            for anchor, field in wanted:
+                present = (
+                    _has_field_anchor(contents, name, field)
+                    if field else _anchor_re(anchor).search(contents)
+                )
+                if present or _todo_anchor(anchor) in additions:
                     continue
                 if not emit:
-                    unanchored.append(item)
+                    unanchored.append(anchor)
                     continue
-                additions += [_todo_anchor(item), ""]
+                additions += [_todo_anchor(anchor), ""]
         if additions:
-            separator = ("" if text.endswith("\n\n") else
-                         "\n" if text.endswith("\n") else "\n\n")
-            rs_path.write_text(text + separator + "\n".join(additions) + "\n")
+            separator = ("" if contents.endswith("\n\n") else
+                         "\n" if contents.endswith("\n") else "\n\n")
+            rs_path.write_text(contents + separator + "\n".join(additions) + "\n")
             inserted += sum(1 for line in additions if line)
 
     return inserted, unanchored

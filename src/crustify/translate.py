@@ -1,106 +1,227 @@
-"""Translation-agent execution seams over a precomputed wave."""
+"""Execute one orchestrator-projected translation batch."""
 from __future__ import annotations
 
+import json
+import re
+import secrets
+import time
+from dataclasses import dataclass
 from pathlib import Path
+from typing import NoReturn
 
 
-def _check_ffi_crates(layout, linked: set[str]) -> None:
-    """Require the orchestrator-authored ``-sys`` shell for each link unit."""
-    missing = sorted(
-        lib for lib in linked
-        if lib and not (layout.rust / f"{lib}-sys" / "Cargo.toml").exists()
-    )
+_OBJECTIVES = frozenset({"wrap", "port", "review"})
+_KINDS = frozenset({"type", "symbol", "callback", "raw-lifetime"})
+_ITEM_FIELDS = frozenset({"name", "defined_in", "kind", "field_anchors"})
+_FIELD_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+_LIFETIME_TIERS = frozenset({"void", "string"})
+
+
+@dataclass(frozen=True)
+class Batch:
+    """Validated thin-batch input."""
+
+    objective: str
+    route: str
+    items: list[dict]
+
+
+def _fail(message: str) -> NoReturn:
+    raise SystemExit(f"translate: {message}")
+
+
+def _route(kind: str) -> str:
+    if kind == "type":
+        return "type"
+    if kind in ("symbol", "callback"):
+        return "symbol"
+    return "raw-lifetime"
+
+
+def load_batch(path: Path) -> Batch:
+    """Load and strictly validate the thin batch schema."""
+    try:
+        raw = json.loads(path.read_text())
+    except OSError as exc:
+        _fail(f"cannot read batch {path}: {exc}")
+    except json.JSONDecodeError as exc:
+        _fail(f"invalid JSON in {path}: {exc}")
+
+    if not isinstance(raw, dict):
+        _fail("batch must be a JSON object")
+    unknown = sorted(set(raw) - {"objective", "items"})
+    missing = sorted({"objective", "items"} - set(raw))
+    if unknown:
+        _fail("unknown batch field(s): " + ", ".join(unknown))
     if missing:
-        raise SystemExit(
-            f"translate: orchestrator-authored -sys crate missing for "
-            f"{missing!r}. Author and build it before scheduling these units.")
+        _fail("missing batch field(s): " + ", ".join(missing))
+
+    objective = raw["objective"]
+    if not isinstance(objective, str) or objective not in _OBJECTIVES:
+        _fail("objective must be one of: port, review, wrap")
+    items = raw["items"]
+    if not isinstance(items, list) or not items:
+        _fail("items must be a non-empty array")
+
+    routes: set[str] = set()
+    identities: set[tuple[str, str | None]] = set()
+    validated: list[dict] = []
+    for index, item in enumerate(items):
+        label = f"items[{index}]"
+        if not isinstance(item, dict):
+            _fail(f"{label} must be an object")
+        item_unknown = sorted(set(item) - _ITEM_FIELDS)
+        item_missing = sorted(_ITEM_FIELDS - set(item))
+        if item_unknown:
+            _fail(f"{label} has unknown field(s): " + ", ".join(item_unknown))
+        if item_missing:
+            _fail(f"{label} is missing field(s): " + ", ".join(item_missing))
+
+        name = item["name"]
+        defined_in = item["defined_in"]
+        kind = item["kind"]
+        anchors = item["field_anchors"]
+        if not isinstance(name, str) or not name:
+            _fail(f"{label}.name must be a non-empty string")
+        if not isinstance(kind, str) or kind not in _KINDS:
+            _fail(
+                f"{label}.kind must be one of: callback, raw-lifetime, symbol, type")
+        if not isinstance(anchors, list):
+            _fail(f"{label}.field_anchors must be an array")
+        if any(not isinstance(anchor, str) or not _FIELD_NAME.fullmatch(anchor)
+               for anchor in anchors):
+            _fail(f"{label}.field_anchors must contain C field identifiers")
+        if len(set(anchors)) != len(anchors):
+            _fail(f"{label}.field_anchors contains duplicates")
+        if kind != "type" and anchors:
+            _fail(f"{label}.field_anchors must be empty for kind {kind!r}")
+
+        if kind == "raw-lifetime":
+            if defined_in is not None:
+                _fail(f"{label}.defined_in must be null for raw-lifetime")
+        elif not isinstance(defined_in, str) or not defined_in:
+            _fail(f"{label}.defined_in must be a non-empty string")
+
+        identity = (name, defined_in)
+        if identity in identities:
+            _fail(f"duplicate item: {kind} {name!r} defined in {defined_in!r}")
+        identities.add(identity)
+        routes.add(_route(kind))
+        validated.append({
+            "name": name,
+            "defined_in": defined_in,
+            "kind": kind,
+            "field_anchors": list(anchors),
+        })
+
+    if len(routes) != 1:
+        _fail("items resolve to mixed agent routes: " + ", ".join(sorted(routes)))
+    route = routes.pop()
+    if route == "raw-lifetime":
+        if len(validated) != 1 or validated[0]["name"] not in _LIFETIME_TIERS:
+            _fail("raw-lifetime batches must contain exactly one void or string item")
+
+    return Batch(objective=objective, route=route, items=validated)
 
 
-def batch_objective(_batch, objective: str, _scope_of=None) -> str:
-    """The executor-supplied objective is handed through unchanged."""
-    return objective
+def _batch_id() -> str:
+    """Return a chronologically sortable, collision-resistant invocation id."""
+    return f"{time.strftime('%Y-%m-%d_%H-%M-%S')}_{secrets.token_hex(4)}"
 
 
-def _translate_emit(target: Path, layout, *, max_syms: int,
-                    objective: str = "wrap", scope_of=None,
-                    prompt_capabilities: tuple[str, ...] | None = None):
-    """Build the agent invocation for one wave batch."""
-    from crustify.agents.translate import TranslateAgent
-    if prompt_capabilities is None:
-        prompt_capabilities = TranslateAgent.configured_capabilities(layout)
-
-    def emit(batch) -> None:
-        obj = batch_objective(batch, objective, scope_of)
-        type_units = [unit for unit in batch.units if unit.kind == "type"]
-        if type_units:
-            TranslateAgent(
-                target, batch_kind="type",
-                tags=[unit.node.id for unit in type_units],
-                kinds=[unit.node.subkind for unit in type_units],
-                entry_files=[unit.node.defined_in for unit in type_units],
-                objective=obj, prompt_capabilities=prompt_capabilities,
-                repo_root=layout.repo_root,
-            ).run()
-            return
-        syms = [{"name": member.id, "defined_in": member.defined_in}
-                for member in batch.members]
-        TranslateAgent(
-            target, batch_kind="syms", syms=syms, objective=obj,
-            prompt_capabilities=prompt_capabilities, repo_root=layout.repo_root,
-        ).run()
-    return emit
+def _task_objective(batch: Batch) -> str:
+    """Raw-lifetime discovery always wraps, except during explicit review."""
+    if batch.route == "raw-lifetime" and batch.objective != "review":
+        return "wrap"
+    return batch.objective
 
 
-LIFETIME_TIERS = ("void", "string")
-
-
-def lifetime_objective(objective: str) -> str:
-    """Lifetime markers wrap discovered primitives, or preserve review."""
-    return "review" if objective == "review" else "wrap"
-
-
-def translate_lifetime_for(target: Path, spec: str, *, objective: str = "wrap",
-                           dry_run: bool = False) -> None:
-    """Execute the single raw-lifetime item represented by a wave."""
-    if spec not in LIFETIME_TIERS:
-        raise SystemExit(
-            f"translate raw-lifetime: expected {' or '.join(LIFETIME_TIERS)}, "
-            f"got {spec!r}")
-    import crustify._schedule as schedule
-    from crustify.agents.translate import TranslateAgent
+def execute(
+    target: Path,
+    batch_path: Path,
+    *,
+    base_branch: str,
+    output: Path,
+    dry_run: bool = False,
+) -> None:
+    """Prepare one isolated worktree and run exactly one translator."""
+    from crustify import worktree
     from crustify.layout import Layout
 
-    effective_objective = lifetime_objective(objective)
+    batch = load_batch(batch_path)
+    output = output.resolve()
+    if not output.is_dir():
+        _fail(f"--output must name an existing directory: {output}")
+
+    main_layout = Layout.discover(target)
+    repo = main_layout.repo_root
+    try:
+        base_commit = worktree.validate_base_branch(repo, base_branch)
+    except RuntimeError as exc:
+        _fail(str(exc))
+
+    effective = _task_objective(batch)
     if dry_run:
-        policy = ("explicit --objective review" if effective_objective == "review"
-                  else "raw-lifetime route normalizes to wrap")
-        print(f"[translate dry-run] --lifetime-for {spec}: one agent, "
-              f"objective {effective_objective} ({policy}), no composed "
-              f"worklist (the agent discovers the primitives).")
+        normalized = (
+            f"; task objective normalized to {effective}"
+            if effective != batch.objective else ""
+        )
+        print(
+            f"[translate dry-run] one {batch.route} agent; "
+            f"{len(batch.items)} item(s); campaign objective "
+            f"{batch.objective}{normalized}; base {base_branch} at {base_commit}; "
+            "no branch or worktree created."
+        )
         return
 
-    layout = Layout.discover(target)
-    capabilities = TranslateAgent.configured_capabilities(layout)
+    batch_id = _batch_id()
+    try:
+        tree = worktree.add_batch_worktree(repo, base_branch, batch_id)
+        worktree.link_shared(tree.path, repo)
+    except RuntimeError as exc:
+        _fail(str(exc))
 
-    def factory(target_, layout_):
-        def emit(_batch) -> None:
-            TranslateAgent(
-                target_, batch_kind="syms", lifetime_for=spec,
-                objective=effective_objective,
-                campaign_objective=objective,
-                prompt_capabilities=capabilities,
-                repo_root=layout_.repo_root,
-            ).run()
-        return emit
+    target_rel = main_layout.rel_target(target)
+    work_target = tree.path if target_rel == "." else tree.path / target_rel
+    work_layout = Layout(tree.path)
 
-    batch = schedule.Batch(file=f"lifetime-for-{spec}")
-    stage = schedule.Stage(
-        verb=effective_objective, in_scope=lambda _node: True,
-        emit_fn=lambda _batch: None, max_syms=1, emit_factory=factory,
-        target=target, layout=layout,
-    )
-    failures = schedule._isolated_step([batch], stage, 1)
-    if failures:
-        raise SystemExit(
-            f"translate raw-lifetime {spec}: agent failed: {failures[0][1]}")
-    print("[crustify translate] done.")
+    if batch.route != "raw-lifetime":
+        from crustify.anchors import place_batch_anchors
+
+        _inserted, unanchored = place_batch_anchors(
+            work_layout, batch.items, emit=effective != "review")
+        if unanchored:
+            action = (
+                "have no existing anchor to review"
+                if effective == "review"
+                else "could not be anchored"
+            )
+            print(
+                f"[crustify translate] {len(unanchored)} item(s) {action}: "
+                + ", ".join(sorted(unanchored)[:8])
+                + (" ..." if len(unanchored) > 8 else "")
+            )
+
+    log_path = output / f"{batch_id}.log"
+    print(f"[crustify translate] batch id: {batch_id}")
+    print(f"[crustify translate] base: {base_branch} at {tree.base_commit}")
+    print(f"[crustify translate] branch: {tree.branch}")
+    print(f"[crustify translate] worktree: {tree.path}")
+    print(f"[crustify translate] log: {log_path}")
+
+    from crustify.agents.translate import TranslateAgent
+
+    capabilities = TranslateAgent.configured_capabilities(work_layout)
+    TranslateAgent(
+        work_target,
+        route=batch.route,
+        items=batch.items,
+        objective=effective,
+        campaign_objective=batch.objective,
+        prompt_capabilities=capabilities,
+        repo_root=tree.path,
+        git_base=base_branch.removeprefix("refs/heads/"),
+        log_dir=output,
+        log_stem=batch_id,
+    ).run()
+    print(f"[crustify translate] batch {batch_id} completed.")
