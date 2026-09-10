@@ -10,7 +10,8 @@ validate API. It never materializes Rust source or Cargo files. Schema authority
 Shape (eliding ``_comment`` keys)::
 
     crates.<crate> = {
-      kind, in_tree, crate_path, sys_crate?, depends_on: [crate, ...],
+      kind, in_tree, link_units: [str, ...], crate_path, sys_crate?,
+      depends_on: [crate, ...],
       modules.<module> = {
         rust_path,
         rs.<path> = {                 # single source of truth; the module's

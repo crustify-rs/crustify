@@ -48,11 +48,12 @@ worklist; the orchestrator supplied its objective and authored Rust homes.
    worklist route and task objective in the translator playbook.
    Fill only the scheduled anchors and the lower-layer raw references that the
    new safe surface makes replaceable.
-7. Follow the translator playbook's unit- and equivalence-test protocol. Target
-   meaningful paths in the workset and report separate counts of the unit and
-   equivalence tests you add. Do not regenerate global coverage reports; the
-   orchestrator measures coverage after landing. Ensure every FFI test uses the
-   matching reusable sanitized C library or a private sanitized replacement.
+7. Follow the translator playbook's UB-, equivalence-, and unit-test protocol.
+   Target meaningful paths in the workset and report separate counts for
+   `ub_tests`, `equiv_tests`, and `units_tests`. Do not regenerate global
+   coverage reports; the orchestrator measures coverage after landing. Ensure
+   every FFI test uses the matching reusable sanitized C library or a private
+   sanitized replacement.
    Run the configured Rust gates and, when C sources changed, the full C build
    and sanitizer baseline; for a port objective, also run the baseline with the
    Rust feature enabled. Run every enabled deterministic safety-review

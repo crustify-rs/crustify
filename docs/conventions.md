@@ -93,8 +93,3 @@ The TODO does not survive beside the filled anchor. A surviving TODO is open
 work. Duplicate a filled anchor only when several wrappers intentionally
 represent the same item. Existing filled anchors are completed work unless the
 current objective deliberately promotes that item.
-
-## Ergonomics and Idiomaticity
-
-Prefer ergonomic and idiomatic constructs to the best of your knowledge. If our playbook
-blocks or contradicts any idiomatic practice, or lowers ergonomics, then flag it.

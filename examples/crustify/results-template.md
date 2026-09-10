@@ -90,7 +90,7 @@ crate's SAFE APIs.
 - `ub $` / `ub wall` — the UB pass's cost and elapsed time; `—` where the
   optional pass did not run
 - `Soundness tests` / `Equiv tests` / `Unit tests` — counts of `#[test]`
-  functions under `mod soundness` / `mod equivalence` / `mod unit_tests`. Each
+  functions under `mod ub_tests` / `mod equiv_tests` / `mod units_tests`. Each
   coverage pair comes from running only that workload, against the
   coverage-instrumented target C sources and authored Rust sources; state any
   excluded files or generated code in Notes. The three workloads bound different
