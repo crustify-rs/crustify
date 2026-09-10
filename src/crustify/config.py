@@ -10,7 +10,7 @@ MODEL_OVERRIDE: str | None = None
 this model instead of its hard-coded per-agent default. None => each
 agent's own default.
 
-Named ``<provider>/<model>`` — see :mod:`crustify.models`."""
+Named ``<provider>/<model>`` — see :mod:`crustify.core.models`."""
 
 BILLING: str = "subscription"
 """How the provider CLI authenticates (set by the CLI ``--billing`` flag):

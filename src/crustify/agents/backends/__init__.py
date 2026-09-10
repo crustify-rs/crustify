@@ -1,8 +1,7 @@
 """Pluggable agent backends for a crustify pipeline stage.
 
-A ``Backend`` abstracts the single call site in
-:meth:`crustify.agents.base.CrustifyAgent.run` that actually drives an LLM
-agent to fill a prompt.
+A ``Backend`` abstracts the provider-CLI call used by both translation and
+agentic audit modes to drive an LLM agent.
 
 Each backend shells out to a provider CLI, one subprocess per agent, and
 streams its stdout into the agent's :class:`~crustify.agentlog.AgentLog`.
@@ -19,7 +18,10 @@ from __future__ import annotations
 
 from typing import Protocol, runtime_checkable
 
-from crustify.agentlog import AgentLog
+from pathlib import Path
+
+from crustify.core.agentlog import AgentLog
+from crustify.core.models import Route
 
 
 @runtime_checkable
@@ -28,31 +30,34 @@ class Backend(Protocol):
         self,
         *,
         name: str,
-        model: str,
-        prompt_template: str,
-        arguments: dict,
+        route: Route,
+        prompt: str,
         system_preamble: str,
         work_dir: str,
         log: AgentLog,
+        billing: str = "subscription",
+        effort: str | None = None,
+        override_base_prompt: bool = False,
+        provider_home: Path | None = None,
     ) -> None:
         """Drive one agent to completion.
 
-        The prompt is ``prompt_template.format(**arguments)`` and arrives as the
-        agent's first user message; ``model`` is the resolved model name
-        (``config.MODEL_OVERRIDE`` or the agent default); the agent's shell tool
-        runs in ``work_dir``. The return value is intentionally unused --
-        success is judged by on-disk artifacts.
+        ``route`` fixes the CLI backend, provider and model before execution;
+        ``prompt`` arrives as the first user message. ``billing`` and
+        ``provider_home`` select authentication without either backend importing
+        a mode-specific config or layout module. The return value is
+        intentionally unused -- success is judged by on-disk artifacts.
 
         ``system_preamble`` goes to the CLI's system-instruction slot instead,
-        beneath the backend's own ``_BASE_PROMPT``. The two CLIs offer different
-        slots -- claude appends, codex can only replace -- so each backend
-        places the same string its own way; the content never diverges.
+        The two CLIs offer different system slots -- Claude can append while
+        Codex can only replace -- so each backend places the same role-owned
+        string its own way; the content never diverges.
         """
         ...
 
 
 def get_backend(name: str) -> Backend:
-    """Resolve a backend by name (see :mod:`crustify.models`)."""
+    """Resolve a backend by name (see :mod:`crustify.core.models`)."""
     if name == "claude_cli":
         from crustify.agents.backends.claude_cli import ClaudeCliBackend
         return ClaudeCliBackend()

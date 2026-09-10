@@ -94,3 +94,9 @@ class Layout:
     @property
     def logs(self) -> Path:
         return self.root / "logs"
+
+    def providers(self, cli: str) -> Path:
+        """Mode-local provider state used for API-authenticated runs."""
+        path = self.root / ".providers" / cli
+        path.mkdir(parents=True, exist_ok=True)
+        return path

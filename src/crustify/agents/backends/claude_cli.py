@@ -38,7 +38,8 @@ import threading
 import uuid
 from pathlib import Path
 
-from crustify.agentlog import AgentLog
+from crustify.core.agentlog import AgentLog
+from crustify.core.models import Route
 
 # Tool-result payloads can be a whole file; keep the log readable.
 _RESULT_CLIP = 2000
@@ -104,23 +105,6 @@ def _render(evt: dict) -> list[str]:
                    f"duration: {evt.get('duration_ms')}ms]")
     return out
 
-# Role framing, prepended to the agent's `system_preamble` and sent on every
-# run. crustify's stage prompt arrives as the user message either way; this
-# governs only what sits underneath it, and `OVERRIDE_BASE_PROMPT` decides
-# whether the CLI's own prompt is appended to or replaced outright.
-#
-# Kept thin because it is role framing, not instructions - those live in
-# conventions.md. Length here is not the cost it once looked like: this text is
-# byte-identical across a wave, so it is a cacheable prefix billed at ~0.1x on
-# every run after the first that writes it.
-_BASE_PROMPT = (
-    "You are a code-translation agent in the crustify C-to-Rust pipeline. "
-    "You have exactly one tool: Bash. Read files, search, and inspect the "
-    "tree through it. Follow the task prompt exactly and stop when its "
-    "stated completion condition is met."
-)
-
-
 from crustify.core.usage import _read_usage, _transcript_path  # noqa: F401
 
 
@@ -129,17 +113,16 @@ class ClaudeCliBackend:
         self,
         *,
         name: str,
-        model: str,
-        prompt_template: str,
-        arguments: dict,
+        route: Route,
+        prompt: str,
         system_preamble: str,
         work_dir: str,
         log: AgentLog,
+        billing: str = "subscription",
+        effort: str | None = None,
+        override_base_prompt: bool = False,
+        provider_home: Path | None = None,
     ) -> None:
-        from crustify import config as cfg
-        from crustify.layout import Layout
-        from crustify.models import resolve
-
         exe = shutil.which("claude")
         if exe is None:
             raise SystemExit(
@@ -147,9 +130,7 @@ class ClaudeCliBackend:
             )
 
         wd = Path(work_dir).resolve()
-        route = resolve(model)
         session_id = str(uuid.uuid4())
-        prompt = prompt_template.format(**arguments)
 
         cmd = [
             exe, "-p", prompt,
@@ -171,17 +152,14 @@ class ClaudeCliBackend:
             "--permission-mode", "bypassPermissions",
             "--add-dir", str(wd),
         ]
-        # The system text is unconditional now: it carries the conventions doc
-        # and the skill index, which every agent needs and which must sit where
-        # context compaction cannot reach. `OVERRIDE_BASE_PROMPT` no longer
-        # decides *whether* we write here, only whether the CLI's own prompt
-        # survives underneath — append by default, replace when asked.
-        system = f"{_BASE_PROMPT}\n\n{system_preamble}".rstrip()
-        cmd += (["--system-prompt", system] if cfg.OVERRIDE_BASE_PROMPT
-                else ["--append-system-prompt", system])
+        # Role-owned system text is unconditional. The option decides only
+        # whether Claude's own base prompt survives underneath it.
+        cmd += (["--system-prompt", system_preamble]
+                if override_base_prompt
+                else ["--append-system-prompt", system_preamble])
         env = dict(os.environ)
         if route.provider == "openrouter":
-            if cfg.BILLING != "api":
+            if billing != "api":
                 raise SystemExit(
                     "claude_cli backend: OpenRouter supports only API billing."
                 )
@@ -200,7 +178,7 @@ class ClaudeCliBackend:
             env["ANTHROPIC_BASE_URL"] = "https://openrouter.ai/api"
             env["ANTHROPIC_AUTH_TOKEN"] = key
             env["ANTHROPIC_API_KEY"] = ""
-        elif cfg.BILLING == "api":
+        elif billing == "api":
             # `--bare` is the only switch that makes the CLI authenticate by
             # API key: exporting ANTHROPIC_API_KEY alone does not - it keeps
             # sending the stored OAuth token (verified on the wire). It also
@@ -214,9 +192,9 @@ class ClaudeCliBackend:
                     "and exits 0 having done nothing."
                 )
 
-        env["ANTHROPIC_CONFIG_DIR"] = str(
-            Layout(Path(arguments.get("repo_root", wd))).providers("claude")
-        )
+        if provider_home is not None:
+            provider_home.mkdir(parents=True, exist_ok=True)
+            env["ANTHROPIC_CONFIG_DIR"] = str(provider_home.resolve())
 
         proc = subprocess.Popen(
             cmd, cwd=str(wd), env=env,

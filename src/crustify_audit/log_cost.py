@@ -33,7 +33,7 @@ from crustify.core.pricing import (  # noqa: F401 - re-exported
     LITELLM_PRICES,
     OPENROUTER_MODELS,
     load_prices,
-    price_request,
+    price_usage,
 )
 
 
@@ -47,21 +47,8 @@ def price_agent(path: str | Path, prices: dict,
     own wins over the argument, because the file is evidence and the argument
     is an assumption.
     """
-    try:
-        with open(path, errors="replace") as fh:
-            d = json.load(fh)
-    except (OSError, ValueError):
-        return None, 0, ""
-    if not isinstance(d, dict):
-        return None, 0, ""
-    reqs = list(d.get("requests") or [])
-    tokens = sum(sum(r.values()) for r in reqs)
-    model = d.get("model") or model
-    provider = d.get("provider") or provider
-    rate_set = (prices.get(provider) or {}).get(model)
-    if rate_set is None:
-        return None, tokens, model
-    return sum(price_request(rate_set, r) for r in reqs), tokens, model
+    return (price_usage(path, prices, provider=provider, model=model)
+            or (None, 0, ""))
 
 
 def price_logs(logs_dir: str | Path, prices: dict,

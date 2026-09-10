@@ -168,7 +168,9 @@ complete task.
 `api` uses `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, or `OPENROUTER_API_KEY` for
 the selected provider. OpenRouter requires `api`; `subscription` uses Claude or
 Codex credentials saved under `/work`, which is also the persistent Cargo/build
-cache. The deterministic scan needs no agent and no authentication, so it is
+cache. An `openrouter/anthropic/<model>` route uses Claude Code with
+`OPENROUTER_API_KEY`; other OpenRouter model IDs use Codex. The deterministic
+scan needs no agent and no authentication, so it is
 just another command: `docker run ... crustify crustify-audit /target unsafe`.
 
 `CRUSTIFY_BARE=1` still makes the mounted `TASK.md` the entire prompt, for

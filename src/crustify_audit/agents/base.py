@@ -254,11 +254,15 @@ class AuditAgent:
         `timeout_s` of `None` runs ONE agent. A budget of nothing is not a
         licence to loop forever.
         """
-        from crustify_audit.agents.backends import get_backend
-        from crustify_audit.models import resolve as resolve_model
+        from crustify.agents.backends import get_backend
+        from crustify.core.models import resolve as resolve_model
 
-        route = resolve_model(self.model)
+        try:
+            route = resolve_model(self.model)
+        except ValueError as exc:
+            raise SystemExit(str(exc)) from exc
         backend = get_backend(route.backend)
+        cli = "claude" if route.backend == "claude_cli" else "codex"
         started = time.monotonic()
         deadline = started + self.timeout_s if self.timeout_s else None
         spawned, short = 0, 0
@@ -275,10 +279,8 @@ class AuditAgent:
                     log.line("[prompt] " + _l)
                 backend.run(
                     name=self.name,
-                    model=route.model,
-                    provider=route.provider,
-                    prompt_template=self._prompt(),
-                    arguments=self._arguments(),
+                    route=route,
+                    prompt=self._prompt().format(**self._arguments()),
                     system_preamble=self.system_preamble(),
                     # The workspace, because it is the only directory that is
                 # certain to exist: the agent creates the artifact tree itself,
@@ -288,6 +290,7 @@ class AuditAgent:
                     log=log,
                     billing=self.billing,
                     effort=self.effort,
+                    provider_home=self.layout.providers(cli),
                 )
             spawned += 1
             took, now = time.monotonic() - t0, time.monotonic()
@@ -401,6 +404,9 @@ class AuditAgent:
         the agent is hunting.
         """
         return (
+            "You are running non-interactively. Work autonomously to "
+            "completion; there is nobody to ask. Prefer reading and reasoning "
+            "over guessing.\n\n"
             "You audit Rust code that wraps C, looking for undefined behaviour "
             "reachable from safe code.\n\n"
             "A finding you cannot demonstrate is a hypothesis. Say which you "

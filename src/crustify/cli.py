@@ -33,9 +33,10 @@ def main() -> None:
         metavar="NAME",
         help="Override every agent's model. Named <provider>/<model>, "
              "e.g. anthropic/claude-opus-4-8, openai/gpt-5.6, "
-             "openrouter/z-ai/glm-4.6. The provider selects both the "
-             "billing rates and the CLI that drives it. Default: each "
-             "agent's hard-coded model.",
+             "openrouter/anthropic/claude-opus-5. The provider selects "
+             "billing; an OpenRouter anthropic/* model uses Claude Code, "
+             "while other OpenRouter models use Codex. Default: each agent's "
+             "hard-coded model.",
     )
     parser.add_argument(
         "--billing",

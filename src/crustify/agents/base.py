@@ -28,6 +28,12 @@ _MD_FIELD_RE = _re.compile(
 # Keeping the anchor in the header makes that composition explicit in source.
 _GENERIC_SKILL_ANCHOR = "<!-- SKILL -->"
 
+_TRANSLATOR_ROLE = (
+    "You are a code-translation agent in the Crustify C-to-Rust pipeline. "
+    "Work through the shell. Follow the task prompt exactly and stop when "
+    "its stated completion condition is met."
+)
+
 
 @dataclass(frozen=True)
 class SkillSpec:
@@ -198,12 +204,18 @@ class CrustifyAgent:
         rendered_prompt = prompt.format(**arguments)
         from crustify import config as _cfg
         from crustify.agents.backends import get_backend
-        from crustify.models import resolve as _resolve_model
+        from crustify.core.models import resolve as _resolve_model
 
         # The model selects the backend: a Claude model can only be driven
         # by the claude CLI, an OpenAI one only by codex.
         model = _cfg.MODEL_OVERRIDE or self.model
-        backend = _resolve_model(model).backend
+        try:
+            route = _resolve_model(model)
+        except ValueError as exc:
+            raise SystemExit(str(exc)) from exc
+        backend = get_backend(route.backend)
+        cli = "claude" if route.backend == "claude_cli" else "codex"
+        provider_home = self.layout.providers(cli)
 
         with self._make_log() as log:
             caps = ", ".join(self.prompt_capabilities()) or "none"
@@ -212,14 +224,17 @@ class CrustifyAgent:
             ).hexdigest()
             log.line(f"[crustify] prompt capabilities: {caps}")
             log.line(f"[crustify] prompt hash: {prompt_hash}")
-            get_backend(backend).run(
+            backend.run(
                 name=self.name,
-                model=model,
-                prompt_template=prompt,
-                arguments=arguments,
-                system_preamble=system_preamble,
+                route=route,
+                prompt=rendered_prompt,
+                system_preamble=(
+                    f"{_TRANSLATOR_ROLE}\n\n{system_preamble}".rstrip()),
                 work_dir=str(getattr(self, "_work_dir", None) or self.target),
                 log=log,
+                billing=_cfg.BILLING,
+                override_base_prompt=_cfg.OVERRIDE_BASE_PROMPT,
+                provider_home=provider_home,
             )
 
     def _log_stem(self) -> str:
