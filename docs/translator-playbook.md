@@ -266,13 +266,14 @@ Classify tests by who decides the verdict:
 |---|---|---|
 | `ub_tests` | sanitizer, Miri, or compiler | safe public API does not reach UB |
 | `equiv_tests` | direct C reference execution | Rust matches C-observable behaviour |
-| `units_tests` | Rust assertion | Rust-only behaviour or deliberate divergence |
+| `unit_tests` | Rust assertion, or internal/unsafe access | wrapper behaviour or implementation plumbing |
 
 Report separate counts for all three modules.
 
-### Soundness tests
+### UB tests
 
-Use:
+Prefer a Cargo integration test so crate privacy enforces the public-API
+boundary. Whether inline or external, use:
 
 ```rust
 #[cfg(test)]
@@ -282,8 +283,10 @@ mod ub_tests {
 }
 ```
 
-Call public safe APIs only. A test using private or `pub(crate)` constructors is
-not downstream safety evidence even when it contains no `unsafe` token.
+Call public safe wrapper APIs only. Do not use direct FFI, raw fixtures, unsafe
+`from_raw`/`from_ptr` or other adoption APIs, or private or `pub(crate)` access.
+Such a test is not downstream safety evidence even when its body contains no
+`unsafe` token.
 
 Cover every instrument prepared by the campaign as a separate obligation:
 
@@ -299,7 +302,9 @@ Cover every instrument prepared by the campaign as a separate obligation:
 Exercise every owner and borrowed form, shared and mutable access path,
 lifecycle strategy, generic instance, and callback variant emitted by the
 batch. Attempt to outlive the owner, alias a reborrow, reenter a callback, and
-drop a parent first.
+drop a parent first. Leak, double-free, and other lifecycle checks belong in
+`ub_tests` when the tested lifecycle is reached solely through the safe public
+API and the instrument supplies the verdict.
 
 Use compile-fail doctests or `trybuild` when the type system should reject the
 program. Report these separately; compile-time evidence is stronger than one
@@ -325,20 +330,28 @@ symbol cannot resolve to the Rust export.
 
 Do not copy a confirmed C defect into Rust. Document the divergence, retain
 equivalence tests for unaffected behaviour, and place the corrected-behaviour
-regression in `units_tests`.
+regression in `unit_tests`.
 
 ### Unit tests
 
-Use `#[cfg(test)] mod units_tests` only when neither C nor an instrument supplies
-the verdict:
+Use `#[cfg(test)] mod unit_tests` when Rust assertions supply the verdict or the
+test exercises unsafe or internal facilities, including:
 
 - Rust-only `Iterator`, `Debug`, `Clone`, conversions, and builders;
 - input rejected by Rust before FFI, including the error and no panic;
 - deliberate correction of defective C behaviour; and
-- resource release, including no leak or double free.
+- raw C fixtures and direct FFI;
+- unsafe adoption through `from_raw`, `from_ptr`, or similar constructors;
+- private or `pub(crate)` constructors and internal destructor/drop plumbing;
+- unsafe public APIs whose caller must discharge a safety contract; and
+- resource release exercised through any of those raw, unsafe, or internal
+  paths.
 
 If a C call can supply the expected result, use an equivalence test. If a
-sanitizer supplies the verdict, use a soundness test.
+sanitizer supplies the verdict for behavior reached solely through the safe
+public API, use a UB test. Running an unsafe or internal unit test under
+a sanitizer provides auxiliary coverage; it does not reclassify that test as
+an `ub_test`.
 
 Test meaningful paths in the scheduled workset. Do not expand into unrelated
 subsystems to increase global coverage.
