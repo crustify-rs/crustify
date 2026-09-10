@@ -31,6 +31,12 @@ If the target ships its own sanitizers because the selected ones structurally
 cannot run against it -- the Linux kernel's KASAN, KMSAN, KCSAN and kernel
 UBSAN -- use those, and record them under the canonical name they implement.
 
+Before sanitizer work, look in
+`{workspace}/crustify/audit/builds/<instrument>/` for the prepared build, using
+`asan-ubsan` for `asan/ubsan`. When a matching build exists, reuse it and build only the
+reproducer harness. If it is missing or incompatible, document that before
+rebuilding and do not report a clean result.
+
 ## Audit record
 
 Use `{workspace}/crustify/audit/`:
@@ -59,9 +65,6 @@ assertion must FAIL against the crate as it stands, and the test must not
 require a sanitizer build to fail. Single calls are the floor: prefer a
 multi-call sequence that builds state on both sides and asserts at each step,
 since a wrapper that agrees call by call often diverges once state accumulates.
-Obtain the C side through the crate's own `-sys` bindings or a direct link; do
-not reimplement the C behavior from your reading of it, and do not assert
-against a value you predicted rather than executed.
 
 Drift is only a defect when it is unintended. Before filing a drift advisory,
 check the crate for evidence that the divergence is deliberate: a doc comment,

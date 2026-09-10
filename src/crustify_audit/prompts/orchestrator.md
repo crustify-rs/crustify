@@ -24,6 +24,14 @@ verify them by invocation before planning.
 If BSan (BorrowSanitizer) is not available, compile and install it from source according
 to the guidelines in the official repo: https://github.com/borrowSanitizer/bsan
 
+Before launching auditors, prepare and smoke-test one reusable instrumented
+build of the Rust crate and its C/C++ dependencies under
+`crustify/audit/builds/<instrument>/` for each selected sanitizer. Use
+`asan-ubsan` for the combined ASan/UBSan build; MSan and TSan each require their
+own build rather than sharing that binary. Miri and `equivalence` need no build.
+Refresh the builds when the objective included `patch` and auditors modified the
+Rust or C/C++ sources.
+
 ## Plan
 
 Verify the target revision. For `audit` and `audit+patch`, run the deterministic
