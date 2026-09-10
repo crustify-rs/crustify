@@ -38,3 +38,68 @@ clause in `conventions.md` relaxed to defer the shape to the playbook.
 
 Also open: whether existing waves get retrofitted, or the crate carries two
 generations of shape side by side.
+
+## Enforce FFI lending windows with ARM MTE
+
+`FooRef<'a>` and `FooMut<'a>` assert that foreign code will not retain the
+pointer past `'a`. Nothing checks that today: it is an assumption the translator
+records in the ownership store and no instrument validates. ARM's Memory Tagging
+Extension (v8.5) could enforce it in hardware, tagging each lending window and
+faulting when C touches the object outside it.
+
+The appeal over BorrowSanitizer is reach. BSan's scope is "executed Rust and
+LLVM-supported foreign code" — it needs IR for the C. MTE checks in the core, so
+prebuilt shared objects, hand-written assembly and anything else that issues a
+load is covered with no instrumentation of the foreign side.
+
+### What it cannot do
+
+MTE compares a pointer's tag against the granule's tag and faults on mismatch.
+The check is **symmetric across loads and stores**, so it expresses *identity*,
+not *permission*. Tree Borrows is a permission discipline, so the canonical BSan
+finding — C writes through a pointer while a Rust `&T` is live — is invisible:
+matching tags, passing write. Instrumenting the C's stores to fix that would
+require exactly the IR access MTE was chosen to avoid.
+
+Three further limits: 4 bits of tag cannot hold a tree, so nested reborrows
+(`f(&mut *x)`, pervasive and legal) are indistinguishable from conflicting ones;
+the 16-byte granule cannot separate two fields of a C-allocated struct, and
+padding is unavailable because the layout is the ABI contract; and retagging per
+borrow — rather than per allocation as HWASan does — gives borrows observable
+memory side effects on a very hot path, on every unwind path included.
+
+So MTE is a candidate to replace ASan for FFI-crossing memory-safety classes,
+not BSan for aliasing classes.
+
+### The part worth building
+
+Retention: foreign code using a pointer after its lending window closed. No
+current instrument covers it well — the memory is still live, so ASan sees
+nothing — and it is exactly what the borrowed-handle lifetimes claim.
+
+Use a **fresh random tag per lending window**, not a fixed Rust/C tag pair. Two
+tag values is the degenerate case: a stale foreign pointer then matches every
+subsequent open window, so the most likely moment of misuse is never caught.
+With a fresh tag per window, a pointer stashed during window `i` aliases window
+`i+1` with p = 1/16.
+
+Object granularity, not field granularity — which suits opaque handle types
+like `git_commit`, where the whole object is lent anyway.
+
+### Why it is worth a paper paragraph
+
+The miss rate is **computable**: a violation occurring `n` times is detected
+with probability at least `1 - 16^-n`. That makes MTE the only dynamic
+instrument here with a quantified soundness gap. "The sanitizers ran clean at
+37.2% branch coverage" carries no false-negative bound at all; this does.
+
+It remains a falsifier — sound for positives, unsound for absence — so it cannot
+support a verification claim, only a sharper falsification one.
+
+### Blockers
+
+No MTE on the current machine: `/proc/cpuinfo` lists `bti paca pacg` but no
+`mte`. Needs v8.5 silicon or a model. Use synchronous tag-check mode for
+testing; async batches faults and loses the faulting site. HWASan is the
+software fallback at 1/256 rather than 1/16, but it needs the C instrumented,
+which forfeits the reach advantage.
