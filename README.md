@@ -100,7 +100,7 @@ Campaign reports follow the
 template.
 
 For a reproducible container environment or a pre-filled campaign manifest, see
-[`examples/`](examples/crustify/README.md).
+[`examples/`](examples/README.md).
 
 ## Campaign lifecycle
 
