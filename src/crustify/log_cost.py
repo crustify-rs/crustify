@@ -63,7 +63,7 @@ from crustify.core.pricing import (  # noqa: F401 - re-exported
     LITELLM_PRICES,
     OPENROUTER_MODELS,
     load_prices,
-    price_request,
+    price_usage,
 )
 
 
@@ -80,24 +80,7 @@ def parse_usage(path, prices):
     ``cost_usd`` is None when the service or model is unknown to the price
     tables — distinct from 0.0, which means free.
     """
-    try:
-        with open(path, errors="replace") as fh:
-            d = json.load(fh)
-    except (OSError, ValueError):
-        return None
-    if not isinstance(d, dict):
-        return None
-
-    reqs = d.get("requests") or []
-    tokens = sum(r.get("input_tokens", 0) + r.get("output_tokens", 0)
-                 + r.get("cache_read_tokens", 0)
-                 + r.get("cache_write_tokens", 0)
-                 + r.get("cache_write_1h_tokens", 0) for r in reqs)
-    model = d.get("model", "")
-    rate_set = (prices.get(d.get("provider") or "") or {}).get(model)
-    if rate_set is None:
-        return None, tokens, model
-    return sum(price_request(rate_set, r) for r in reqs), tokens, model
+    return price_usage(path, prices)
 
 
 def kind(stage):

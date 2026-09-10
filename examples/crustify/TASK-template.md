@@ -15,27 +15,24 @@ ask only for campaign decisions that remain unresolved.
 
 3. **What should this campaign target: a named subset of subsystems, or a named
    subset of functions and types, or the whole target repo? You can define them
-   now or we can brainstorm them during the live session. You can also answer
-   orchestrator's choice.**
+   now or we can brainstorm them during the live session. You can also let the
+   orchestrator decide.**
    - Answer: `<named subsystems | named functions/types | whole target |
      orchestrator's choice>`
 
-4. **Which agentic backend and model should do the translation work?**
-   - Answer: `<backend, model | orchestrator's choice>`
+4. **Which agentic backend, model, and billing should do the translation work?**
+   - Answer: `<backend, model, API | subscription billing>`
 
 5. **Do you want agentic review after translated work lands? If so, which
-   backend and model should perform each review?**
-   - Answer: `<no | backend, model ...>`
+   backend, model, and API should perform each review?**
+   - Answer: `<no | backend, model, API | subscription billing ...>`
 
 6. **Should the campaign run the optional agentic UB audit pass? If so, which
-   backend and model should run it?**
-   - Answer: `<no | backend, model>`
+   backend, model, and billing should run it?**
+   - Answer: `<no | backend, model, API | subscription billing>`
 
 7. **Should I run fully autonomously end to end?**
    - Answer: `<yes | no>`
-
-8. **Which billing mode should agentic stages use?**
-   - Answer: `<api | subscription>`
 
 # Optional questions
 
@@ -43,12 +40,12 @@ Unanswered optional questions use their defaults.
 
 ## Campaign execution
 
-9. **Should the campaign use the default batching and parallelism settings, or
+8. **Should the campaign use the default batching and parallelism settings, or
    customize them?**
    - Answer: `<defaults | max-types: N, max-syms: N, max-loc: N,
      parallelism: N | orchestrator's choice>`
 
-10. **What batch caps should review agents use? We recommend the same caps as
+9. **What batch caps should review agents use? We recommend the same caps as
    translation by default.**
    - Answer: `<same as translation | max-types: N,
      max-syms: N, max-loc: N>`
@@ -57,33 +54,23 @@ Unanswered optional questions use their defaults.
 
 Answer these approval-gate questions only if question 7 is answered `no`.
 
-11. **Should I wait for your approval before starting the setup phase?**
+10. **Should I wait for your approval before starting the setup phase?**
     - Answer: `<yes | no>`
-12. **Should I wait for your approval before starting the translation phase?**
+11. **Should I wait for your approval before starting the translation phase?**
     - Answer: `<yes | no>`
-13. **Should I wait for your approval between sub-campaigns?**
+12. **Should I wait for your approval between sub-campaigns?**
     - Answer: `<yes | no | not applicable>`
-14. **Should I wait for your approval before starting review passes?**
+13. **Should I wait for your approval before starting review passes?**
     - Answer: `<yes | no | not applicable>`
-15. **Should I wait for your approval before starting UB audit passes?**
+14. **Should I wait for your approval before starting UB audit passes?**
     - Answer: `<yes | no | not applicable>`
 
 # Benchmark recording questions
 
-16. **Where and in what format should results be recorded?**
+15. **Where and in what format should results be recorded?**
     - Answer: `<results path>, <standard | custom template>`
 
-# Guidance
+# Additional instructions
 
-- Answer only questions whose values are not already fixed by the task.
-- Every agentic stage names its model. Deterministic `crustify-audit unsafe`
-  checks do not need one.
-- Ordinary sub-campaigns mirror subsystems. Raw `void` and raw `string`
-  lifetime discovery are separate initial sub-campaigns, each with its own
-  narrow `wavefront-config.json`.
-- Wrap campaigns always schedule from the public API graph with
-  `--api-headers-only`.
-- When review is allowed, the orchestrator gates every translated wave on an
-  adversarial review pass. When the UB pass is approved, it prefers running it
-  once at campaign end.
-- Waves and batches are internal scheduler artifacts, not user-facing questions.
+Unless otherwise stated, preserve the format of the results doc exactly.
+

@@ -27,18 +27,8 @@ import subprocess
 import threading
 from pathlib import Path
 
-from crustify.agentlog import AgentLog
-
-# Role framing, prepended to the agent's `system_preamble`. Always replaces
-# codex's own ~20k-character base instructions: `model_instructions_file` is
-# the only system slot codex offers and it has no append mode, so writing the
-# preamble at all means displacing them. `OVERRIDE_BASE_PROMPT` additionally
-# strips the context codex injects around those instructions.
-_BASE_PROMPT = (
-    "You are a code-translation agent in the crustify C-to-Rust pipeline. "
-    "Work through the shell. Follow the task prompt exactly and stop when "
-    "its stated completion condition is met.\n"
-)
+from crustify.core.agentlog import AgentLog
+from crustify.core.models import Route
 
 _SESSION_RE = re.compile(r"session id:\s*([0-9a-fA-F-]{36})")
 
@@ -145,17 +135,16 @@ class CodexCliBackend:
         self,
         *,
         name: str,
-        model: str,
-        prompt_template: str,
-        arguments: dict,
+        route: Route,
+        prompt: str,
         system_preamble: str,
         work_dir: str,
         log: AgentLog,
+        billing: str = "subscription",
+        effort: str | None = None,
+        override_base_prompt: bool = False,
+        provider_home: Path | None = None,
     ) -> None:
-        from crustify import config as cfg
-        from crustify.layout import Layout
-        from crustify.models import resolve
-
         exe = shutil.which("codex")
         if exe is None:
             raise SystemExit(
@@ -163,8 +152,6 @@ class CodexCliBackend:
             )
 
         wd = Path(work_dir).resolve()
-        route = resolve(model)
-        prompt = prompt_template.format(**arguments)
 
         # Sandbox: FULL ACCESS, hard-coded.
         #
@@ -189,17 +176,20 @@ class CodexCliBackend:
                "-m", route.model,
                "--ignore-user-config",
                *_TOOL_OFF]
-        effort = _REASONING_EFFORT.get(route.model)
-        if effort:
-            cmd += ["-c", f'model_reasoning_effort="{effort}"']
+        selected_effort = effort or _REASONING_EFFORT.get(route.model)
+        if selected_effort:
+            cmd += ["-c", f'model_reasoning_effort="{selected_effort}"']
         if route.provider == "openrouter":
+            if billing != "api":
+                raise SystemExit(
+                    "codex_cli backend: OpenRouter supports only API billing.")
             cmd += _OPENROUTER
             if not os.environ.get("OPENROUTER_API_KEY"):
                 raise SystemExit(
                     "codex_cli backend: routing via OpenRouter needs "
                     "OPENROUTER_API_KEY in the environment."
                 )
-        elif cfg.BILLING == "api":
+        elif billing == "api":
             cmd += _OPENAI_APIKEY
 
         env = dict(os.environ)
@@ -208,7 +198,7 @@ class CodexCliBackend:
         # comes from an env key (OpenRouter, or --billing api); otherwise
         # leave the operator's CODEX_HOME in place and rely on
         # --ignore-user-config for config hermeticity.
-        env_key_auth = route.provider == "openrouter" or cfg.BILLING == "api"
+        env_key_auth = route.provider == "openrouter" or billing == "api"
         if env_key_auth:
             # RESOLVED, not the raw path. An isolated agent's `repo_root` is its
             # worktree, where `crustify/.providers` is a symlink into the main
@@ -219,12 +209,15 @@ class CodexCliBackend:
             # run is reported unaccounted even though codex wrote the rollout
             # safely into the shared tree. Resolving pins both CODEX_HOME and
             # the later lookup to the real directory, which outlives the wave.
-            codex_home = Layout(
-                Path(arguments.get("repo_root", wd))).providers("codex").resolve()
+            if provider_home is None:
+                raise SystemExit(
+                    "codex_cli backend: API billing requires a provider home.")
+            provider_home.mkdir(parents=True, exist_ok=True)
+            codex_home = provider_home.resolve()
             env["CODEX_HOME"] = str(codex_home)
         else:
             codex_home = Path(env.get("CODEX_HOME") or (Path.home() / ".codex"))
-        if cfg.BILLING == "api" and route.provider == "openai" \
+        if billing == "api" and route.provider == "openai" \
                 and not env.get("OPENAI_API_KEY"):
             raise SystemExit(
                 "codex_cli backend: --billing api needs OPENAI_API_KEY in the "
@@ -241,13 +234,12 @@ class CodexCliBackend:
         # wave's worktrees, so a fixed name would have N concurrent agents
         # writing one path; hashing means identical preambles collide on
         # identical bytes (harmless) and differing ones never collide at all.
-        system = f"{_BASE_PROMPT}\n\n{system_preamble}".rstrip()
-        digest = hashlib.sha256(system.encode()).hexdigest()[:12]
+        digest = hashlib.sha256(system_preamble.encode()).hexdigest()[:12]
         prompt_file = codex_home / f"crustify-base-prompt-{digest}.md"
         prompt_file.parent.mkdir(parents=True, exist_ok=True)
-        prompt_file.write_text(system)
+        prompt_file.write_text(system_preamble)
         cmd += ["-c", f'model_instructions_file="{prompt_file}"']
-        if cfg.OVERRIDE_BASE_PROMPT:
+        if override_base_prompt:
             # Strips codex's OWN injected context on top of the replaced
             # instructions — the rest of what "override the base prompt" means.
             cmd += ["-c", "include_environment_context=false",

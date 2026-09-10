@@ -21,7 +21,7 @@ from typing import NamedTuple
 
 
 class Route(NamedTuple):
-    backend: str    # registered name in crustify_audit.agents.backends
+    backend: str    # registered name in crustify.agents.backends
     model: str      # id handed to the provider CLI, verbatim
     provider: str   # billing service
 

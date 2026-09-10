@@ -127,8 +127,10 @@ def build_parser() -> argparse.ArgumentParser:
                         "share a binary with asan/ubsan. Omitted, all are "
                         "selected.")
     h.add_argument("--model", default=None, metavar="PROVIDER/MODEL",
-                   help="e.g. anthropic/claude-opus-5, openai/gpt-5.6. The "
-                        "provider prefix selects the backend and is mandatory.")
+                   help="e.g. anthropic/claude-opus-5, openai/gpt-5.6, or "
+                        "openrouter/anthropic/claude-opus-5. The provider "
+                        "selects billing; OpenRouter anthropic/* models use "
+                        "Claude Code and its other models use Codex.")
     h.add_argument("--billing", choices=("subscription", "api"),
                    default="subscription",
                    help="How the provider CLI authenticates. `subscription` "

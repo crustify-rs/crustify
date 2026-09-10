@@ -150,3 +150,38 @@ def price_request(rate_set: dict, req: dict) -> float:
             + req.get("cache_write_tokens", 0) * r.get("cache_write", inp)
             + req.get("cache_write_1h_tokens", 0)
               * r.get("cache_write_1h", r.get("cache_write", inp)))
+
+
+def price_usage(path, prices: dict, *, provider: str = "",
+                model: str = "") -> tuple[float | None, int, str] | None:
+    """Price one Crustify usage record, or return ``None`` if malformed.
+
+    File evidence overrides fallback provider/model values. Unknown rates
+    produce an unpriced result rather than a guessed zero.
+    """
+    try:
+        with open(path, errors="replace") as fh:
+            record = json.load(fh)
+    except (OSError, ValueError):
+        return None
+    if not isinstance(record, dict):
+        return None
+
+    requests = record.get("requests") or []
+    buckets = (
+        "input_tokens", "output_tokens", "cache_read_tokens",
+        "cache_write_tokens", "cache_write_1h_tokens",
+    )
+    tokens = sum(
+        sum(request.get(bucket, 0) for bucket in buckets)
+        for request in requests
+        if isinstance(request, dict)
+    )
+    model = record.get("model") or model
+    provider = record.get("provider") or provider
+    rate_set = (prices.get(provider) or {}).get(model)
+    if rate_set is None:
+        return None, tokens, model
+    return (sum(price_request(rate_set, request) for request in requests
+                if isinstance(request, dict)),
+            tokens, model)
