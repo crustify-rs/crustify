@@ -10,17 +10,26 @@ outside this manifest.
 
 ## crates.\<name\>
 
-One entry per link unit, keyed by crate name. Crate names ARE the link-unit
-identifiers — they match `subsystems.json`'s `link_units[*].name` and identify
-the wrapper and FFI crates that own its entities.
+Keys are Rust crate names, not C link-unit identifiers. The default
+decomposition is:
+
+- one wrapper crate and one `-sys` crate for all link units in the selected
+  in-tree target; and
+- one wrapper crate and one `-sys` crate for each imported library.
+
+Use Rust modules for target link units and subsystems so internal dependencies
+remain `pub(crate)`. Create separate target crates only for independently
+consumable public libraries or incompatible build boundaries, not merely
+because the C build emits multiple link units.
 
 | field | meaning |
 |---|---|
 | `kind` | `library` (→ staticlib/cdylib) or `executable` (→ bin) |
 | `in_tree` | is the library's SOURCE in this repo? Provenance only — gates nothing. |
+| `link_units` | ordered list of `subsystems.json` link-unit names grouped into this crate |
 | `crate_path` | repo-relative path of the wrapper crate |
 | `sys_crate` | repo-relative path of the FFI companion. Present for every library with bound entities |
-| `depends_on` | inter-crate edges aggregated from `subsystems.json` subsystem dependencies. A DAG — a cycle between two crates is an error |
+| `depends_on` | edges aggregated from subsystem dependencies that cross crate boundaries. A DAG — a cycle between two crates is an error |
 | `modules` | `{}` in a freshly seeded shell |
 
 ## crates.\<name\>.modules.\<name\>
@@ -42,9 +51,10 @@ record   rust_path: src/record    src/record/record.rs
                                   src/record/methods/tls_common.rs
 ```
 
-Boundary headers = the union of the modules' `headers`, zoned by path to Rust
-visibility: `*_local.h` → `pub(crate)`; `include/internal/*` → `pub` to sibling
-crates; `include/openssl/*` → published API.
+Boundary headers are the union of the modules' `headers`. Target-local and
+internal headers map to `pub(crate)` unless a separate public-library crate
+requires an explicit cross-crate contract. Published API headers map to the
+wrapper crate's public surface.
 
 ## crates.\<name\>.modules.\<name\>.rs.\<path\>
 
@@ -98,8 +108,8 @@ flattens an anonymous member into its named parent under a qualified field name
 INPUT   entity = (name, kind, defined_in, declared_in)
 OUTPUT  exactly one .rs
 
-1. CRATE  = the link unit owning it                 (`link_units[*].name`)
-2. MODULE = its subsystem                           (`subsystems[*].name`)
+1. CRATE  = the crate whose `link_units` contains the owning link unit
+2. MODULE = its subsystem; qualify with link-unit name on a name collision
 3. RS     = defined_in ? <stem(defined_in)>.rs      # .c and .h treated alike
                        : <stem(best-fit declared_in)>.rs
 4. KEY    = (name, defined_in) | (name, declared_in) when defined_in is null
@@ -110,8 +120,8 @@ A header does not decide its own crate. Resolve in order:
 1. **stem-partner** — the header shares a stem with a TU
    (`include/internal/quic_ackm.h` ↔ `ssl/quic/quic_ackm.c`). Take that TU's
    crate and module, and co-home both in one `.rs`.
-2. **section** — no partner: target-section → the crate that owns it,
-   import-section → the crate that defines the entities it declares.
+2. **section** — no partner: target-section → the target crate; import-section
+   → the imported-library crate that defines the entities it declares.
 
 An orphan header (no stem-partner, e.g. `include/openssl/types.h`) takes a
 module named for its own stem, so it stays one `.rs` rather than being folded
@@ -120,6 +130,7 @@ into an unrelated subsystem.
 Invariants:
 
 - entities sharing a `defined_in` co-home
+- every named link unit belongs to exactly one crate
 - one `.rs` ↔ one `tu` (or none)
 - `(kind, name, tu)` is unique across the whole file — two `.rs` claiming it is
   a duplicate Rust definition. The `tu` component is what keeps same-named

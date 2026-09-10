@@ -2,6 +2,13 @@
 
 Deferred decisions and follow-up work on the crustify contracts and playbooks.
 
+## Add an idiomaticity and ergonomics guide
+
+Create `docs/idiomaticity.md` for Rust API-shaping hints and good practices.
+Keep mandatory mechanical rules in `conventions.md`. Make the guide available
+through an optional prompt skill so experiments can ablate it without changing
+the playbooks.
+
 ## Emit type-implementing symbols as inherent methods
 
 A symbol whose first parameter is the type it operates on is currently emitted

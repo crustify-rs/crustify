@@ -1,57 +1,68 @@
 # Translator playbook
 
-How to translate one orchestrator-projected worklist. Wavefront chooses the
-items, dependency order and batch boundaries; the orchestrator supplies the
-objective and Rust homes. The translator supplies the semantic judgement and
-code, then lands one verified commit. Follow
-`conventions.md` for exact names, layout and anchors.
+Translate one orchestrator-projected worklist, validate it, commit once, and
+land it on the supplied wave integration branch. Follow `conventions.md` for
+names, modules, anchors, exports, and safety comments. Read every enabled skill
+whose description matches the work.
 
-Optional prompt capabilities are listed in the agent's system prompt. Use the
-ones present when their descriptions match the work. When no enabled capability
-supplies an operation, inspect the source and use ordinary Rust and Cargo tools directly.
+## Routes and objectives
 
-## Routes
+Each worklist has one homogeneous route:
 
-The worklist declares one homogeneous route:
-
-| route | items | translation responsibility |
+| route | items | output |
 |---|---|---|
-| `type` | structs, unions, enums and type-generating macros | representation, lifecycle and field accessors |
-| `symbol` | functions, globals and callback typedefs | safe call surface or native implementation |
-| `raw-lifetime` | `void` or `string` lifetime tier | discover lifecycle primitives and emit reusable strategies |
+| `type` | structs, unions, enums, type-generating macros | representation, lifecycle, field accessors |
+| `symbol` | functions, globals, callback typedefs | safe wrapper or native implementation |
+| `raw-lifetime` | one `void` or `string` marker | reusable release and clone strategies |
 
-Validate the declared route against the records you inspect. A type-generating
-macro takes the `type` route even though its analysis node is a symbol. A
-callback typedef takes the `symbol` route. Report a genuinely mixed or
-misrouted worklist instead of translating it under the wrong contract.
+Verify the route before editing. Type-generating macros use `type`; callback
+typedefs use `symbol`. Stop and report a mixed or misrouted batch. Do not add
+items to the scheduled worklist.
+
+The worklist objective is authoritative:
+
+- `wrap`: preserve the C ABI and implementation; add a safe Rust API.
+- `port`: implement the selected behaviour in safe Rust; preserve required C
+  interoperability and observable behaviour.
+- `review`: verify existing findings and code, add regression evidence, fix
+  defects, and land the fixes.
+
+A targeted dependency outside a partial port's selected migration set may use
+`wrap`. Inventory ownership does not override the batch objective.
 
 ## Common procedure
 
-### Inspect the worklist
+### 1. Inspect every item
 
-Read every item's semantic record and dependency closure using the enabled
-analysis capability, when present, or by inspecting the C declarations,
-definitions, callers and field touchers directly. Establish pointer ownership,
-mutability, nullability, cardinality, type erasure and lifetime coupling.
-For a pointer field, argument or return, inspect its complete codebase-wide
-usage footprint. Follow relevant call paths far enough to identify every path
-that stores, transfers, clones or frees it. Documentation and names are useful
-evidence, but never override observed behaviour.
+Read the item's semantic record, C declarations and definitions, dependency
+closure, callers, field touchers, and existing Rust consumers. For every
+pointer field, argument, and return, inspect all code paths that store,
+transfer, clone, retain, or free it.
 
-Encode ownership, borrowing, mutability, nullability, cardinality, type erasure
-and keepalive relationships in the resulting Rust types and operations. Do not
-erase a known distinction merely to reproduce a C signature.
+Establish and encode:
 
-When an enabled capability maintains agent-owned semantic findings, submit
-missing ownership and lifecycle judgements through it and fix rejected or
-inconsistent records before code generation. Never edit a derived analysis
-artifact directly.
+- ownership and transfer direction;
+- shared or mutable access;
+- nullability;
+- scalar, array, or other cardinality;
+- type erasure and known element types;
+- borrow and keepalive relationships; and
+- construction, clone, and destruction paths.
 
-The recorded Wavefront schedule guarantees that dependencies are in the worklist or already
-translated, except explicitly cut SCC edges. Therefore, you should be able
-to use safe Rust code for all your worklist's dependencies.
+Observed behaviour overrides names and comments. Preserve known distinctions
+in Rust instead of copying an ambiguous C signature.
 
-### Locate authored homes and bindings
+Use the enabled analysis capability when present. Submit missing agent-owned
+findings through its update interface and resolve rejected or inconsistent
+records. Never edit derived analysis files. Without that capability, derive
+the same facts from source.
+
+Use the campaign-wide Wavefront configuration supplied in the task for
+queries. Do not substitute a narrow scheduling configuration from a wave
+directory. The schedule should contain each dependency or place it in an
+earlier wave, except explicit SCC cuts.
+
+### 2. Locate homes and bindings
 
 Run:
 
@@ -59,401 +70,293 @@ Run:
 crustify <repo_root> <target> crates locate --name <worklist names...>
 ```
 
-Use `--file <defined_in>` to disambiguate colliding names. The orchestrator has
-already homed the items, created their `.rs` files and connected the modules.
-Report a missing home. For a `raw-lifetime` marker, discover the concrete primitives
-first, then home them by editing `crates.json`.
+Use `--file <defined_in>` for a colliding name. The orchestrator has already
+created and connected ordinary item modules. Report a missing home. A
+raw-lifetime batch discovers its concrete primitives first, then homes them in
+`crates.json`.
 
-Homes are shared across batches. Use existing filled anchors as context; the
-conventions define when one may be revisited.
+Use filled anchors as context. Revisit one only when the objective permits it.
 
-Find the compiling `<lib>-sys` crate paired with the owning wrapper crate.
-When the implementation needs a missing binding, extend its agent-owned
-bindgen allowlist only for the worklist and required FFI items, then regenerate
-bindings. Adjust bindgen inputs or shims only for a genuine missing binding or
-bindgen limitation. Run the affected `-sys` crate's checks and tests, and
-report allowlist/input changes so parallel landings can union them.
+When a binding is missing:
 
-Generated headers and build objects may not exist in an isolated worktree.
-Before configuring or rebuilding C, look for the reusable build paths and
-runner supplied by the orchestrator. Reuse the sanitized build when its
-recorded C revision, `build.json` version, compiler and instrumentation match
-the worktree. Treat the build and its libraries as immutable, and use
-agent-unique sanitizer logs and output files.
+1. extend only the affected `-sys` crate's agent-owned allowlist;
+2. add only required FFI items;
+3. add a minimal shim only for a real bindgen limitation;
+4. regenerate bindings;
+5. check and test the affected `-sys` crate; and
+6. report every allowlist, input, and shim change.
 
-If no matching pre-build exists, configure a private sanitized build. Also
-build privately when the batch changes compiled C or a compiled shim; report
-that invalidation so the orchestrator can refresh the shared builds after the
-change lands. A bindgen allowlist or input-header change alone does not
-invalidate a pre-built C library.
+Before rebuilding C, check for the orchestrator's reusable build and runner.
+Reuse it only when the C revision, `build.json` version, compiler, and
+instrumentation match. Treat it as immutable and use agent-unique logs and
+outputs.
 
-### Resolve macros
+Create a private sanitized build when no matching build exists or the batch
+changes compiled C or a compiled shim. Report the invalidation. A bindgen
+allowlist or input-header change alone does not invalidate the C library.
 
-Do not reproduce a C macro as an independent Rust API. Resolve each use to the
-semantic entity it denotes:
+### 3. Resolve macros
 
-- For a symbol alias, inspect the expansion, add any missing underlying symbol
-  to the worklist's bindgen allowlist and call its safe wrapper.
-- For a function-like macro, use an existing `crustify_<NAME>` shim when
-  present. Otherwise add the minimal shim to the bindgen input, allowlist it,
-  regenerate bindings and wrap it like an ordinary FFI function.
-- For a constant macro, use its generated binding.
+Do not publish a C macro as an independent Rust API.
 
-Type-generating macros remain type-route items and follow the representation
-procedure below.
+- Symbol alias: bind and call the underlying symbol's safe wrapper.
+- Function-like macro: use an existing `crustify_<NAME>` shim or add the
+  smallest required shim, then bind and wrap it.
+- Constant macro: use the generated binding.
+- Type-generating macro: follow the type route.
 
-### Apply the objective
+### 4. Keep the boundary safe
 
-Anything C can still observe preserves its ABI and any layout C observes.
-Imported entities remain C-owned and receive safe wrappers; only
-campaign-owned entities progress toward native Rust ownership.
+Preserve any ABI or layout still observed by C. Imported entities remain
+C-owned. Ported storage becomes Rust-owned only after no C path accesses,
+allocates, or frees it.
 
-In a port campaign limited to a user-selected subset, a targeted entity outside
-that migration set may intentionally receive `wrap`. Treat the worklist
-objective as authoritative: the inventory section says who owns the source,
-not whether this particular campaign ports it. Such a wrapper is the explicit
-boundary around the selected native subset, and its C implementation remains
-in place.
+Rust consumers use safe APIs. Restrict raw operations to:
 
-`review` examines existing semantic findings and Rust code as an adversarial LLM reviewer
-/ tester / verifier. Verify every ownership, lifetime, safety, and equivalence claim against the source,
-and bring evidence to demonstrate failures in the form of tests according to our instructions below.
-Then fix the Rust where the claim or implementation is wrong.
+- wrapped-layout projection;
+- FFI calls;
+- C-ABI gateways; and
+- operations whose caller obligation cannot be represented in Rust types.
 
-`wrap` preserves the C ABI and emits a safe Rust surface over it. Raw pointers
-belong only at the documented FFI seam or at an explicitly documented
-higher-layer dependency whose wrapper does not yet exist. The C implementation
-continues to own its storage and behaviour.
-
-`port` emits safe native Rust while preserving behaviour and I/O equivalence.
-Keep an interoperability wrapper instead for a primitive that C and Rust must
-share during migration, such as a C allocator or destructor still used across
-the boundary. Code and storage become fully Rust-owned only when they no longer
-cross that boundary.
-
-A `raw-lifetime` route uses `wrap` while discovering the requested untyped
-lifecycle tier codebase-wide. The route selects discovery; the task objective
-selects wrapping, and the campaign objective retains the surrounding scope. In
-a wrap campaign, retain only primitives published on the API; in a port
-campaign, include the targeted primitives needed by the selected migration.
-Submit findings through the enabled semantic capability, then emit the
-strategies described below. Under `review`, verify the existing findings and
-strategies instead of rediscovering them as new work.
-
-### Keep the boundary safe
-
-Rust consumers use safe APIs. Translation progress is not a reason to expose a
-raw pointer or unsafe operation publicly. Confine raw operations to
-wrapped-layout accessors, FFI calls, C-ABI gateways and intrinsically unsafe
-operations whose caller obligation cannot be expressed in the type system.
-
-An SCC cut or unavailable higher-layer wrapper may create a temporary raw seam.
-Keep it explicit, do not widen the public contract, and replace it when the
-safe dependency becomes available. Every unsafe block follows the safety
-comment convention.
+Keep SCC cuts and unavailable higher-layer dependencies as narrow documented
+raw seams. Replace them when a safe dependency becomes available. Every unsafe
+block requires the safety comment specified by `conventions.md`.
 
 ## Type route
 
-### Choose the wrapped surface
+### Choose the surface
 
-In a port campaign, expose fields touched by targeted symbols and find every
-lifecycle primitive regardless of section. In a wrap campaign, expose fields
-and lifecycle primitives published by the public API.
-
-Confirm that a wrap objective still requires C layout compatibility. Pull or
-derive the type's releasers, field disposers, cloners, constructors, casts and
-pointer-field semantics before choosing a representation.
+For `wrap`, include fields and lifecycle primitives published by the public
+API. For `port`, include fields touched by targeted symbols and every lifecycle
+primitive. Identify releasers, field disposers, cloners, constructors, casts,
+and pointer-field semantics before selecting a representation.
 
 ### Emit the representation
 
-Represent the C layout with a safe wrapper abstraction supplied by an enabled
-capability when possible. Otherwise hand-write the layout newtype and borrowed
-handles under the same rule: never form a Rust reference to the wrapped C
-object itself. Keep raw layout access inside small justified unsafe seams.
+Use the enabled ffibox capability when it expresses the proven contract.
+Otherwise hand-write an equivalent layout newtype and borrowed handles.
 
-Use the canonical type and method names from the conventions. Borrowed handles
-carry lifetimes while containing pointers; a reference to a handle covers
-Rust-owned handle storage, never the C object.
+Never form a Rust reference to the wrapped C object. Borrowed handles contain
+pointers and carry lifetimes; references to handles cover Rust-owned handle
+storage only. Keep raw layout access in small justified unsafe blocks.
 
-For a synthetic type generator, inspect the cast topology:
+For a synthetic type generator:
 
-- Use a generic parameterized wrapper when the item is the convergence point
-  of a homogeneous family whose siblings erase to and from it.
-- Alias a concrete monomorphized instance to the generator with its element
-  wrapper when one generator dominates the instance.
-- Add a concrete implementation only for behaviour that genuinely differs
-  from the generic surface.
+- use a generic wrapper for a homogeneous family converging on the generator;
+- alias a dominant concrete instance to the generator with its element
+  wrapper; and
+- specialize only behaviour that differs from the generic surface.
 
 ### Encode lifecycle
 
-Implement the ownership and lifecycle contract proved by the type's findings.
-Use stateless strategies when all drop/clone state is recoverable from the
-object; use stateful ownership only when runtime state is genuinely external.
-Prefer layout-compatible strategies and static monomorphization.
+Implement every ownership variant supported by the findings. Prefer stateless,
+layout-compatible, statically selected drop and clone strategies when state is
+recoverable from the object. Carry runtime state only when destruction or
+cloning needs external data.
 
-Emit each valid ownership variant for a type with several releasers. If the C
-world no longer allocates or frees the storage, the wrapper may use the native
-Rust allocator and its lifecycle primitives may be ported to native Rust.
-Until then, keep targeted C lifecycle primitives available at the
-interoperability seam.
-Promoting construction-phase storage into a fully formed owner is an unsafe
-operation: isolate it and prove that every invariant required by the owner now
-holds.
+Keep C lifecycle primitives while C can allocate or free the storage. If Rust
+fully owns allocation and destruction, use native Rust lifecycle operations.
+
+Promoting construction-phase storage into an owner is unsafe. Isolate the
+operation and prove every required invariant before promotion.
 
 ### Emit field accessors
 
-For each selected field, derive getters and setters from its ownership,
-mutability, nullability, cardinality and lifetime record. Every pointer result
-must be tied to the owner or state that keeps it alive.
+Derive each accessor from ownership, mutability, nullability, cardinality, and
+lifetime findings. Tie every pointer-derived result to the state that keeps it
+alive.
 
-Project fields with `addr_of!` / `addr_of_mut!` or `&raw const` / `&raw mut`.
-Never use `&(*p).field` or `&mut (*p).field`. Reads originate from
-the shared handle's pointer; writes originate from the mutable handle's
-pointer. Raw-place projection avoids loading uninitialized storage or asserting
-Rust aliasing over memory C may mutate.
+Project fields with `addr_of!`, `addr_of_mut!`, `&raw const`, or `&raw mut`.
+Never use `&(*p).field` or `&mut (*p).field`. Read through the shared handle's
+pointer and write through the mutable handle's pointer.
 
-For an owned-reference field, provide a setter that replaces and drops the old
-owner, an owning getter that leaves the field valid, and a shared getter that
-returns the dependent type's borrowed handle. For a by-value wrapped field,
-return that type's shared or mutable handle over the projected place. Emit
-additional variants when the field has several valid ownership or cardinality
-contracts.
-A setter that stores a borrowed reference must be unsafe when Rust cannot
-express that the referent outlives the stored pointer; state that obligation in
-its caller contract.
+Accessor requirements:
 
-- When ownership versus borrowing is statically knowable, use distinct owned
-  and borrowed wrapper forms with a shared trait for unambiguous accessors.
-- When it depends on a runtime flag, expose separately checked owned and
-  borrowed operations gated by that state.
-- Represent union/discriminator pairs as tagged Rust enums where the mapping
-  can be validated.
-- Represent scalar-versus-array variants as separate statically typed forms.
-- Parameterize type-erased fields when their concrete element type can be
-  carried at compile time; otherwise bind them to the discovered untyped
-  lifetime strategy.
-- Add `Send` or `Sync` only with a specific safety proof, such as a guard or
-  immutable-after-initialization invariant.
+- Owned-reference field: replacement setter that drops the old owner, owning
+  getter that leaves the field valid, and shared borrowed getter.
+- By-value wrapped field: shared or mutable handle over the projected place.
+- Stored borrow without an expressible lifetime: unsafe setter with the
+  referent-lifetime obligation in its caller contract.
+- Statically known owned and borrowed cases: distinct wrapper forms with a
+  shared trait where useful.
+- Runtime ownership flag: separately checked owned and borrowed operations.
+- Union and discriminator: tagged Rust enum when the mapping is valid.
+- Scalar and array variants: separate typed forms.
+- Type-erased field: generic element type when known; otherwise the discovered
+  untyped lifetime strategy.
+- `Send` or `Sync`: add only with a specific synchronization or immutability
+  proof.
 
-Use safe wrappers for already-translated dependent types and callbacks. For
-strings, arrays and type-erased owners, identify their release strategy rather
-than guessing from spelling.
+Use safe wrappers for translated dependent types and callbacks. Find real
+release strategies for strings, arrays, and erased owners. Replace lower-layer
+temporary raw references made obsolete by this wrapper. Keep a documented raw
+gap only for an unavailable higher-layer dependency.
 
-Find lower-layer wrappers that temporarily mentioned this type as a raw
-pointer because it did not yet exist. Update those sites to the new wrapper
-without widening their public contract. A higher-layer dependency may remain
-raw temporarily with a documented gap.
-
-If an inline function-pointer helper has no ownership-compatible wrapper,
+If an inline function-pointer helper lacks an ownership-compatible wrapper,
 emit one with the type.
 
 ### Port layout and storage
 
-Port the layout only after every remaining C-side field toucher is gone and no
-public C consumer receives the concrete body. A public forward declaration
-alone does not prevent opacification. Port field accessors and any lifecycle
-primitives whose C implementation is no longer needed.
+Port layout only after every C-side field toucher is gone and no public C
+consumer receives the concrete body. A public forward declaration alone does
+not block opacification.
 
-Port storage only after no remaining C path allocates or deallocates it. If C
-still owns either side of that lifecycle, retain compatible storage and report
-the blocker instead of moving it to Rust.
+Port storage only after no C path allocates or frees it. If C still owns either
+operation, retain compatible storage and report the blocker.
 
 ## Symbol route
 
 ### Functions and globals
 
-Under each anchor, emit a `pub fn`, or `pub unsafe fn` only when no safe
-contract can express the operation. Take and return typed ownership wrappers
-at every boundary. Reconstruct raw pointers only at the FFI call and place the
-call in a small unsafe block with the required safety comment.
+Emit `pub fn`; use `pub unsafe fn` only when no safe type-level contract can
+express the caller obligation. Use typed ownership wrappers for arguments and
+returns. Reconstruct raw pointers at the FFI call only, in a small documented
+unsafe block.
 
-Use a standard-library operation directly when it is equivalent and no C/Rust
-interoperability contract requires a wrapper. For pointer arguments and
-returns, encode moved, borrowed, mutable, nullable, scalar, array and
-type-erased variants separately whenever one signature cannot state all valid
-contracts.
+Separate moved, borrowed, mutable, nullable, scalar, array, and type-erased
+variants when one signature cannot express all valid contracts.
 
-Prefer thin stateless ownership for self-contained values. Carry state only
-when destruction or cloning requires runtime information not recoverable from
-the pointer. Use safe wrappers for translated dependencies; leave a documented
-raw pointer only for an unavailable higher-layer wrapper.
+Use a standard-library operation directly when it is equivalent and no
+C-interoperability requirement remains. Prefer stateless ownership. Carry
+runtime state only when destruction or cloning requires it.
 
-Find lower-layer wrappers that referred to the new symbol's types or callback
-surface raw and update them when the new safe contract makes that possible.
+Use safe translated dependencies. Keep a documented raw pointer only for an
+unavailable higher-layer wrapper. Update lower-layer raw surfaces when the new
+safe contract replaces them.
 
 ### Callbacks
 
-A callback record is a C function-pointer typedef. Inspect its signature and
-callsites, and emit a callable handle whose arguments and result use safe
-wrappers. When callsites disagree on pointer ownership, emit one distinctly
-named wrapper per recorded ownership distribution while sharing the underlying
-C function-pointer type.
+Inspect the typedef and all call sites. Emit a callable handle with safe
+argument and result wrappers. When call sites use different ownership
+distributions, emit a distinctly named safe wrapper for each distribution over
+the shared C function-pointer type.
 
 Wrap an inline function pointer when no ownership-compatible callable wrapper
-already exists.
+exists.
 
 ### Raw lifetime strategies
 
-For every discovered `void` or `string` releaser, disposer or cloner, emit the
-strategy type needed by owned pointers. Home it with the primitive's
-translation unit. Do not also expose the primitive as an ordinary safe
-function: consumers reach it through the lifecycle strategy.
+For every discovered `void` or string releaser, disposer, or cloner, emit the
+strategy required by owned pointers. Home it with the primitive's translation
+unit. Do not also expose the primitive as an ordinary safe function.
+
+For `review`, verify existing findings and strategies instead of adding a new
+discovery pass.
 
 ### Port symbols
 
 Translate the implementation to safe idiomatic Rust and preserve observable
-behaviour. Re-export it to C under the established feature-gated ABI wiring
-while C consumers remain. When a batch removes every C consumer of a formerly
-TU-local re-export, remove it. Use the gateway, export and feature names from
-the conventions. The raw gateway reconstructs safe wrappers and delegates to
-its sibling native implementation.
+behaviour. Re-export it to C through the feature-gated ABI wiring in
+`conventions.md` while C consumers remain.
 
-Fence only the replaced C bodies with the path-derived
-per-file guard, grouping adjacent bodies when useful rather than guarding the
-whole file. In the C `#else` branch, declare each Rust export and redirect
-TU-local names to their collision-safe exports.
-
-Wire the file flag through the configured build so enabling it builds and
-links the owning Rust static library and defines the per-file switch for the C
-translation unit. Inspect the actual build pipeline rather than assuming its
-link mechanics.
+- The raw gateway reconstructs safe wrappers and calls the native function.
+- Remove a TU-local export after its last C consumer is removed.
+- Guard only replaced C bodies with the path-derived per-file guard.
+- Group adjacent guarded bodies when useful; do not guard the whole file.
+- In the C fallback branch, declare Rust exports and redirect TU-local names to
+  collision-safe exports.
+- Wire the file flag and Rust static library through the actual build system;
+  do not assume link mechanics.
 
 ## Tests
 
-Every test the translator emits falls in exactly one of three modules beside the
-emitted code. What separates them is who decides the verdict: an instrument, a
-C reference execution, or an assertion in the test itself. Assign by that
-criterion and not by subject matter — the same construct yields tests in more
-than one module, and each belongs where its verdict comes from.
+Classify tests by who decides the verdict:
 
-| module | verdict decided by | asserts |
+| module | verdict source | requirement |
 |---|---|---|
-| `soundness` | a sanitizer or Miri | no safe use of the API reaches undefined behaviour |
-| `equivalence` | executing the C reference | the wrapper behaves as C does |
-| `unit` | an assertion in the test | a named value, state or error is what it should be |
+| `ub_tests` | sanitizer, Miri, or compiler | safe public API does not reach UB |
+| `equiv_tests` | direct C reference execution | Rust matches C-observable behaviour |
+| `units_tests` | Rust assertion | Rust-only behaviour or deliberate divergence |
 
-A test of the borrowed form that checks the returned value is a unit test; a
-test that drives the same borrowed form past its owner's lifetime is a soundness
-test. A test that a bad argument yields `Error::InvalidSpec` is an equivalence
-test when C returns a mappable code for it, and a unit test only when the
-wrapper rejects the input before C ever sees it.
+Report separate counts for all three modules.
 
 ### Soundness tests
 
-Group these in `#[cfg(test)] #[forbid(unsafe_code)] mod soundness`. Each test
-drives the safe wrapper API only: a soundness test that writes `unsafe` proves
-nothing about the safe surface, and `forbid` makes that a compiler-checked
-property rather than a convention.
+Use:
 
-`forbid` covers `unsafe` blocks, `unsafe fn`, `unsafe impl` and `unsafe trait`,
-so a test cannot call an internal unsafe helper without the lint firing. What it
-does not cover is visibility. A `#[cfg(test)]` module reaches every private and
-`pub(crate)` item in its ancestors, and many of those are declared safe while
-depending on an invariant the public API enforces — a `pub(crate)` constructor
-taking an already-validated pointer, or a struct literal built straight from
-private fields. A test calls those with no `unsafe` token anywhere.
+```rust
+#[cfg(test)]
+#[forbid(unsafe_code)]
+mod ub_tests {
+    // tests
+}
+```
 
-That matters in both directions. A failure reached through a private item may
-correspond to no program a downstream user could write, and a pass covers more
-surface than any user can reach, so neither outcome is evidence about the safe
-public API. Reach only for `pub` items, exactly as a downstream user would. The
-lint does not enforce this, so it is the translator's obligation: a soundness
-test that touches a private or `pub(crate)` item is not evidence and must be
-rewritten against the public surface or dropped.
+Call public safe APIs only. A test using private or `pub(crate)` constructors is
+not downstream safety evidence even when it contains no `unsafe` token.
 
-Write soundness tests only for the instruments the campaign manifest prepared.
-Work them as separate obligations rather than stopping at whichever fires
-first.
+Cover every instrument prepared by the campaign as a separate obligation:
 
-- `asan/ubsan` — native bounds errors, use-after-free, use-after-return and
-  use-after-scope, invalid frees, pointer and alignment UB, and integer,
-  division and shift UB. Drive handles past the lifetime of their owner,
-  reenter through callbacks, and pass lengths and offsets the C side trusts.
-- `bsan` — Tree Borrows aliasing across the FFI boundary: conflicting
-  foreign-pointer writes, and pointers the C side retains across a reborrow.
-  Hand C a pointer derived from a `&mut`, then use the Rust reference again.
-- `tsan` — data races reachable from safe code. Exercise every `Send` and
-  `Sync` impl the wrapper asserts, and every callback the C side may invoke on
-  a thread the caller did not create.
-- `miri` — Rust-side bounds and lifetime errors, uninitialized or invalid
-  values, alignment and intrinsic violations. Miri cannot execute into the
-  foreign library, so target constructs that resolve on the Rust side:
-  transmutes, `repr` assumptions, and slice and reference construction from
-  raw parts.
+- ASan/UBSan: bounds errors, use-after-free, use-after-return, invalid free,
+  pointer/alignment UB, and integer/division/shift UB.
+- BSan: conflicting foreign writes and retained foreign pointers across Rust
+  reborrows.
+- TSan: races reachable through safe APIs, including every asserted `Send` or
+  `Sync` implementation and threaded callback.
+- Miri: Rust-side lifetime, bounds, initialization, validity, alignment,
+  intrinsic, and `repr` assumptions. Miri cannot call the foreign library.
 
-Attack the constructs the worklist actually emitted: every owned and borrowed
-form, shared and mutable access, each lifecycle strategy, every generic instance
-and every callback variant. For each, construct the use that would be unsound if
-the wrapper's ownership reasoning were wrong — outlive the owner, alias the
-reborrow, reenter through the callback, drop the parent first — and let the
-instrument return the verdict.
+Exercise every owner and borrowed form, shared and mutable access path,
+lifecycle strategy, generic instance, and callback variant emitted by the
+batch. Attempt to outlive the owner, alias a reborrow, reenter a callback, and
+drop a parent first.
 
-Prefer static evidence where the type system can carry the obligation. An API
-whose borrowed form must not outlive its owner should fail to *compile*, not
-fail under a sanitizer, and a `compile_fail` doctest or `trybuild` case records
-that as a checked property rather than an untested intention. Note each such
-case in the batch report; it is stronger evidence than any run, because it holds
-on all inputs rather than the ones executed.
+Use compile-fail doctests or `trybuild` when the type system should reject the
+program. Report these separately; compile-time evidence is stronger than one
+dynamic execution.
 
 ### Equivalence tests
 
-Group these in `#[cfg(test)] mod equivalence`, beside each emitted Rust translation
-unit. Exercise the raw C function and the safe Rust wrapper on equivalent,
-independently owned inputs, and compare observable behaviour: return values,
-out-parameters, buffers, callbacks, error states, state transitions and
-lifecycle effects.
+Place equivalence tests beside the translated unit in
+`#[cfg(test)] mod equiv_tests`. Run the raw C implementation and safe Rust API
+on equivalent, independently owned inputs. Compare:
 
-Single calls are the floor, not the target. Emit multi-call sequences that build
-internal state on both sides and assert equivalence at every intermediate step,
-not only at the end: construct, mutate, query, mutate again, query again,
-release. A wrapper whose ownership or lifecycle handling is wrong often agrees
-with C on the first call and diverges on the third, and single-call tests cannot
-reach that.
+- return values and errors;
+- out-parameters and buffers;
+- callbacks;
+- state transitions; and
+- lifecycle effects.
 
-Equivalence means preserving the intended contract, not bug-for-bug
-compatibility. When the C reference behavior is demonstrably defective, do not
-copy the defect into Rust merely to make the comparison pass. Document the
-evidence and the deliberate divergence, retain direct C/Rust comparisons for
-unaffected behavior, and put the regression test for the corrected behavior in
-`mod unit_tests`, since it asserts non-equivalence by construction.
+Use multi-call sequences and compare after each step: construct, mutate, query,
+mutate again, query again, release. Single calls are only a baseline.
 
-For a port objective, obtain the reference result from a feature-off C build in
-which the original implementation is still present and the reference symbol
-cannot resolve to the Rust re-export.
+For `port`, the reference build must have the Rust feature disabled so the C
+symbol cannot resolve to the Rust export.
+
+Do not copy a confirmed C defect into Rust. Document the divergence, retain
+equivalence tests for unaffected behaviour, and place the corrected-behaviour
+regression in `units_tests`.
 
 ### Unit tests
 
-Group these in `#[cfg(test)] mod unit_tests`. This is the smallest of the three
-modules, and deliberately so: a wrapped API's behaviour is C's behaviour, so
-most of what looks like a unit test is an equivalence test with the reference
-call omitted. Write a unit test only where no C reference and no instrument can
-render the verdict:
+Use `#[cfg(test)] mod units_tests` only when neither C nor an instrument supplies
+the verdict:
 
-- Rust surface with no C counterpart: `Iterator`, `Debug`, `Clone`, conversions
-  between Rust types, and builder ergonomics.
-- Input the wrapper rejects before it reaches C — the right error variant, and
-  no panic. Where C sees the input and returns a mappable code, the error
-  mapping is an equivalence test instead.
-- Deliberate divergence from defective C behaviour, per the rule above.
-- Resource release: construct, drop, and assert the handle freed and not
-  leaked.
+- Rust-only `Iterator`, `Debug`, `Clone`, conversions, and builders;
+- input rejected by Rust before FFI, including the error and no panic;
+- deliberate correction of defective C behaviour; and
+- resource release, including no leak or double free.
 
-If a proposed unit test could be written with a C reference call beside it, it
-belongs in `mod equivalence`. If its verdict would come from a sanitizer rather
-than its own assertion, it belongs in `mod soundness`.
+If a C call can supply the expected result, use an equivalence test. If a
+sanitizer supplies the verdict, use a soundness test.
 
-Target meaningful paths belonging to the workset, without expanding into
-unrelated subsystems merely to raise a global percentage. Report the number of
-soundness, equivalence and unit `#[test]` functions the batch adds, plus any
-unreachable, environment-dependent or intentionally nondeterministic remainder.
-Aim to achieve high testing coverage on your workset's paths both in C and Rust.
+Test meaningful paths in the scheduled workset. Do not expand into unrelated
+subsystems to increase global coverage.
+
+### Coverage
+
+Run the worklist's tests with the campaign's coverage-instrumented build and
+inspect coverage for the C and Rust execution paths belonging to the worklist.
+Add focused tests for reachable uncovered paths. Do not generate or optimize a
+repository-wide coverage report. Report paths that remain uncovered because
+they are unreachable, environment-dependent, or intentionally nondeterministic.
 
 ## Completion
 
-Replace every batch TODO with the filled anchor required by the
-conventions. If a lifecycle strategy lives outside the operation's authored
-home, replace the TODO with a thin cross-file reference and place the promoted
-anchor at the real definition.
+Replace every scheduled TODO with the canonical anchor from `conventions.md`.
+If a lifecycle strategy belongs in another authored home, leave a thin
+cross-file reference at the scheduled TODO and put the promoted anchor at the
+definition.
 
 Run:
 
@@ -463,19 +366,26 @@ cargo clippy --workspace
 cargo test --workspace
 ```
 
-Every FFI, soundness or equivalence test uses the matching reusable sanitized
-C library,
-or a private sanitized replacement, even when its sources did not change. If C
-sources changed, additionally run the configured full C build and baseline
-tests with the Rust feature off. For a port objective, also run them with the
-feature on. A wrap-only wave need not rerun the full C baseline when its C side
-is unchanged.
+Every FFI, UB, and equivalence test must use the matching reusable
+sanitized C library or a private sanitized replacement.
 
-Run every enabled deterministic safety-review capability according to its role
-guidance. Fix an unsafe wrapper bypass or unsound reference; retain a necessary
-FFI seam with its safety justification.
+If C changed, run the configured C build and baseline with the Rust feature
+off. For `port`, repeat with the feature on. A wrap-only batch with no C change
+does not need the full C baseline.
 
-Commit one changeset in the worktree. Push it to the orchestrator's unchecked-out
-wave integration branch through `git rev-parse --git-common-dir`; on a
-non-fast-forward rejection, rebase onto that branch, revalidate and retry. Purge the worktree only
-after the local landing succeeds. Never push an agent branch to a remote.
+Run every enabled deterministic safety-review capability. Investigate every
+site. Fix unsafe wrapper bypasses and unsound references; retain required FFI
+seams with safety comments.
+
+Check that the diff contains no unrelated work. Commit one changeset. Land it
+on the supplied unchecked-out wave branch through the local Git common
+directory using an atomic fast-forward.
+
+On a non-fast-forward rejection:
+
+1. rebase only the agent branch onto the current wave branch;
+2. rerun validation; and
+3. retry the atomic fast-forward.
+
+Never reset, force-update, move the wave branch backward, or push to a remote.
+Remove the worktree only after landing succeeds.

@@ -1,10 +1,11 @@
 {
-  "_comment": "Cumulative crate/module placement oracle for the Rust tree. Crate and module identities derive from subsystems.json. Field meaning and the placement algorithm: docs/schemas/crates.md. The orchestrator authors it lazily; `crustify-cli crates locate|validate` only reads it.",
+  "_comment": "Cumulative crate/module placement oracle for the Rust tree. One target crate may group several in-tree link units; imported libraries use separate crates. Field meaning and the placement algorithm: docs/schemas/crates.md. The orchestrator authors it lazily; `crustify-cli crates locate|validate` only reads it.",
 
   "crates": {
     "libssl": {
       "kind": "library",
       "in_tree": true,
+      "link_units": ["libssl"],
       "crate_path": "crustify/rust/libssl",
       "sys_crate": "crustify/rust/libssl-sys",
       "depends_on": ["libcrypto", "libc"],
@@ -49,6 +50,7 @@
     "libcrypto": {
       "kind": "library",
       "in_tree": true,
+      "link_units": ["libcrypto"],
       "crate_path": "crustify/rust/libcrypto",
       "sys_crate": "crustify/rust/libcrypto-sys",
       "depends_on": ["libc"],
@@ -76,6 +78,7 @@
     "fips": {
       "kind": "library",
       "in_tree": true,
+      "link_units": ["fips"],
       "crate_path": "crustify/rust/fips",
       "sys_crate": "crustify/rust/fips-sys",
       "depends_on": ["libc"],
@@ -85,6 +88,7 @@
     "legacy": {
       "kind": "library",
       "in_tree": true,
+      "link_units": ["legacy"],
       "crate_path": "crustify/rust/legacy",
       "sys_crate": "crustify/rust/legacy-sys",
       "depends_on": ["libcrypto", "libc"],
@@ -94,6 +98,7 @@
     "openssl": {
       "kind": "executable",
       "in_tree": true,
+      "link_units": ["openssl"],
       "crate_path": "crustify/rust/openssl",
       "depends_on": ["libssl", "libcrypto", "libc"],
       "modules": {}
@@ -102,6 +107,7 @@
     "libc": {
       "kind": "library",
       "in_tree": false,
+      "link_units": ["libc"],
       "crate_path": "crustify/rust/libc",
       "sys_crate": "crustify/rust/libc-sys",
       "depends_on": [],
