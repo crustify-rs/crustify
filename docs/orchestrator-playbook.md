@@ -408,21 +408,7 @@ and instrumentation configuration:
 
 Miri needs no C build — it cannot execute into the foreign library at all, so
 its soundness obligations are limited to constructs that resolve on the Rust
-side. Do not prepare an MSan build against a vendored C library: it requires the
-standard library and every line of C to be instrumented, and reports
-uninstrumented memory as uninitialized, so it yields false positives or nothing.
-Enable it only where the campaign manifest builds the whole stack instrumented.
-
-Record which instrument builds exist in the campaign manifest and pass the set
-to translators. A translator writes soundness tests only for instruments the
-campaign actually prepared; it does not skip a prepared instrument because
-another one already produced a finding.
-
-Record that provenance with the artifacts and pass agents the sanitized
-library path plus one standard test runner that loads the sanitizer runtimes
-correctly. Parallel tests must use agent-unique sanitizer logs and coverage
-profile filenames. Agents may share immutable libraries, but never a writable
-build tree or output file.
+side.
 
 A wrap agent whose changes are limited to Rust, bindgen allowlists, or bindgen
 input headers reuses the prepared sanitized build. An agent that changes
@@ -430,9 +416,7 @@ compiled C or a compiled shim must make and test a private replacement build;
 the orchestrator refreshes the shared builds after that change lands. Reusing
 the build never relaxes the sanitizer requirement for lifecycle tests.
 
-Do not make translators regenerate global coverage reports. They run the
-targeted sanitized tests needed to validate their worklist and report the tests
-they added. After landing, the orchestrator runs the full sanitized regression
+After landing, the orchestrator runs the full sanitized regression
 gate and measures the soundness-, equivalence- and unit-workload coverage
 separately, once on the merged wave or sub-campaign for campaign accounting.
 Each workload bounds a different obligation, so the three coverage figures are

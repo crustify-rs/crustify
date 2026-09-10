@@ -114,10 +114,10 @@ not whether this particular campaign ports it. Such a wrapper is the explicit
 boundary around the selected native subset, and its C implementation remains
 in place.
 
-`review` examines existing semantic findings and Rust code as an LLM judge.
-Verify every ownership, lifetime and safety claim against the source; submit
-corrected findings when that capability is enabled, and fix the Rust where the
-claim or implementation is wrong.
+`review` examines existing semantic findings and Rust code as an adversarial LLM reviewer
+/ tester / verifier. Verify every ownership, lifetime, safety, and equivalence claim against the source,
+and bring evidence to demonstrate failures in the form of tests according to our instructions below.
+Then fix the Rust where the claim or implementation is wrong.
 
 `wrap` preserves the C ABI and emits a safe Rust surface over it. Raw pointers
 belong only at the documented FFI seam or at an explicitly documented
@@ -379,10 +379,6 @@ first.
   foreign library, so target constructs that resolve on the Rust side:
   transmutes, `repr` assumptions, and slice and reference construction from
   raw parts.
-- `msan` — uninitialized reads. Meaningful only where the campaign builds the C
-  side and the standard library under instrumentation; against a vendored
-  library it reports uninstrumented memory as uninitialized. Skip it unless the
-  campaign manifest enables it.
 
 Attack the constructs the worklist actually emitted: every owned and borrowed
 form, shared and mutable access, each lifecycle strategy, every generic instance
@@ -449,8 +445,7 @@ Target meaningful paths belonging to the workset, without expanding into
 unrelated subsystems merely to raise a global percentage. Report the number of
 soundness, equivalence and unit `#[test]` functions the batch adds, plus any
 unreachable, environment-dependent or intentionally nondeterministic remainder.
-The orchestrator measures C and Rust line coverage for the merged wave or
-sub-campaign; translators do not regenerate global coverage reports.
+Aim to achieve high testing coverage on your workset's paths both in C and Rust.
 
 ## Completion
 
