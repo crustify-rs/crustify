@@ -23,7 +23,8 @@ safety gates.
 Crustify uses a **two-agent architecture**:
 
 - The **orchestrator** configures campaigns, scaffolds repositories, schedules
-  sub-campaigns, manages worktrees, lands changes, and runs regression gates.
+  sub-campaigns, creates wave branches, invokes batch harnesses, verifies
+  landings, and runs regression gates.
 - The **translator** agent ports or wraps scheduled types and symbols, writes
   tests, validates its work, and commits the result. Translator instances can
   also be dispatched in review mode. Several translator instances can run
@@ -110,18 +111,16 @@ For a reproducible container environment or a pre-filled campaign manifest, see
    configure the campaign-wide oracle target, decompose its targeted and
    imported translation units into `subsystems.json`, and scaffold compiling
    Rust crates.
-3. **Plan:** the orchestrator groups compatible bottom-up subsystems toward the
-   approved sub-campaign unit budget, plus separate raw `void` and raw `string`
-   lifetime sub-campaigns. Each gets a narrow `wavefront-config.json`;
-   Wavefront computes its exact closure before emitting the schedule. Wrap
-   campaigns select the public API graph with `--api-headers-only`.
-   Sub-campaigns and their waves run bottom-up so every consumer sees
-   already-safe producers. Waves remain internal scheduling artifacts.
-4. **Translate:** isolated translator agents port, wrap, or review one batch at
-   a time and verify both Rust and original project tests.
-5. **Land and audit:** the orchestrator reconciles parallel work, runs
-   regression and safety gates, performs approved reviews, and promotes the
-   completed sub-campaign.
+3. **Plan:** each ordinary sub-campaign mirrors one subsystem, plus separate raw
+   `void` and raw `string` lifetime sub-campaigns. Each gets a narrow
+   `wavefront-config.json`; Wavefront computes its exact imported-producer
+   closure, waves and batches. Wrap campaigns select the public API graph with
+   `--api-headers-only`.
+4. **Translate and review:** the orchestrator invokes one isolated translator
+   per recorded batch. After all translation batches in a wave land, an
+   adversarial review wave runs before any consumer wave starts.
+5. **Promote and audit:** the orchestrator reconciles parallel landings, runs
+   regression and deterministic safety gates, then promotes the reviewed wave.
 
 The authoritative procedures are the [`orchestrator
 playbook`](docs/orchestrator-playbook.md) and [`translator
@@ -132,7 +131,7 @@ playbook`](docs/translator-playbook.md).
 This repository installs four commands:
 
 ```text
-crustify                      validate crate placement and execute sub-campaign schedules
+crustify                      validate crate placement and execute one thin batch
 crustify-audit                audit Rust safety; optional undefined-behavior pass
 crustify-log-cost             summarize agent usage and cost logs
 crustify-orchestrator-prompt  render the campaign orchestrator prompt

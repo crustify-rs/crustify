@@ -39,8 +39,10 @@ class AgentLog:
     including when the agent raises.
     """
 
-    def __init__(self, log_dir: Path | None, stem: str, *, console: bool) -> None:
+    def __init__(self, log_dir: Path | None, stem: str, *, console: bool,
+                 metadata: dict | None = None) -> None:
         self.console = console
+        self.metadata = dict(metadata or {})
         self.path: Path | None = None
         self.usage_path: Path | None = None
         self._fh: IO[str] | None = None
@@ -50,7 +52,7 @@ class AgentLog:
         # per-backend would leave half the fleet unmeasured -- which is exactly
         # what happened: every codex agent has an empty wall column. Bracketing
         # the subprocess here is one implementation for every backend, and it
-        # measures what the scheduler actually pays (crustify's own setup and
+        # measures what the harness actually pays (crustify's own setup and
         # drain included) rather than what the provider chose to count.
         # `monotonic` for the span so a clock step cannot produce a negative
         # duration; wall clock only for the human-facing stamps.
@@ -58,15 +60,13 @@ class AgentLog:
         self._started = time.time()
 
         if log_dir is not None:
-            # RESOLVED, and that is load-bearing. An isolated agent's log dir is
-            # `Layout(<worktree>).logs(target)`, which only reaches the real
-            # directory through the `crustify/campaigns` symlink `link_shared`
-            # plants in the worktree. The agent PURGES its worktree as the last
-            # step of landing, taking that symlink with it — and `usage()`
-            # writes by PATH, after the agent returns. Unresolved, that write
+            # RESOLVED, and that is load-bearing. An isolated agent's explicit
+            # output directory may be reached through a symlink planted in the
+            # worktree. The agent PURGES its worktree as the last step of
+            # landing, taking that symlink with it — and `usage()` may write by
+            # PATH after the agent returns. Unresolved, that write
             # raised ENOENT on a run that had just succeeded: the exception
-            # surfaced as `agent failed`, the wave recorded a failure, and the
-            # verb exited non-zero with the work correctly landed. Resolving
+            # surfaced as `agent failed` with the work correctly landed. Resolving
             # once here pins both files to the shared tree, which outlives the
             # worktree. (`.log` survived the purge either way — its handle is
             # opened below and an open fd keeps its inode after the directory
@@ -131,12 +131,11 @@ class AgentLog:
 
         The two stamps are absolute on purpose: a duration alone gives chain
         and serial totals but not OVERLAP, so it cannot say how many agents
-        were live at once, where a dependency-layer barrier fell, or how much
-        of a wave's elapsed time no agent was charged for. With intervals all
-        three are arithmetic over the records.
+        were live at once or where a wave barrier fell. With intervals both
+        are arithmetic over the records.
         """
         if self.usage_path is not None:
-            record = {**record,
+            record = {**record, **self.metadata,
                       "started_at": _iso(self._started),
                       "ended_at": _iso(time.time()),
                       "duration_ms": round((time.monotonic() - self._t0) * 1000)}

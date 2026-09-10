@@ -1,23 +1,8 @@
 from __future__ import annotations
 
-import argparse
 import sys
 from pathlib import Path
-
-
-def _parallel_max_type(s: str) -> int:
-    """argparse type for `--parallel-max`: positive integer."""
-    try:
-        n = int(s)
-    except (TypeError, ValueError):
-        raise argparse.ArgumentTypeError(
-            f"--parallel-max: expected integer, got {s!r}"
-        )
-    if n < 1:
-        raise argparse.ArgumentTypeError(
-            "--parallel-max: must be ≥ 1"
-        )
-    return n
+import argparse
 
 
 def main() -> None:
@@ -41,13 +26,6 @@ def main() -> None:
         action="store_true",
         default=False,
         help="Suppress live console output from agents.",
-    )
-    parser.add_argument(
-        "--no-file-log",
-        action="store_true",
-        default=False,
-        help="Disable per-agent log files under "
-             "campaigns/<target>/logs/<session>/.",
     )
     parser.add_argument(
         "--model",
@@ -76,16 +54,6 @@ def main() -> None:
              "instructions stay underneath crustify's stage prompt. Replacing "
              "them is cheaper per invocation but measurably worse output.",
     )
-    parser.add_argument(
-        "--parallel-max",
-        type=_parallel_max_type,
-        default=8,
-        metavar="N",
-        help="Maximum concurrent agents. 1 runs every batch serially; N>1 "
-             "runs up to N batches within a wave, with a full barrier between "
-             "waves. Default: 8.",
-    )
-
     sub = parser.add_subparsers(dest="command", required=True)
 
 
@@ -141,24 +109,27 @@ def main() -> None:
 
     # -- translate ---------------------------------------------------------
     _translate_blurb = (
-        "Execute an objective-neutral schedule in sequential wave order. "
-        "The oracle has already selected and batched every item; this command "
-        "routes batches to translator agents, inserts scheduler-local TODOs, "
-        "and enforces the wave barriers. --parallel-max 1 is serial. --dry-run "
-        "prints the recorded plan.")
+        "Execute one orchestrator-projected translation batch. The harness "
+        "forks one isolated worktree from the unchecked-out base branch, "
+        "inserts that batch's TODO anchors and starts one translator. The "
+        "translator lands atomically on the base branch and prunes its own "
+        "successful worktree.")
     wrap_p = sub.add_parser(
         "translate", help=_translate_blurb, description=_translate_blurb,
     )
     wrap_p.add_argument(
-        "wave", type=Path,
-        help="Path to an objective-neutral sub-campaign schedule produced by "
-             "wavefront schedule.")
+        "batch", type=Path,
+        help="Thin batch JSON containing objective and scheduled items.")
     wrap_p.add_argument(
-        "--objective", choices=("wrap", "port", "review"), default="wrap",
-        help="Objective handed unchanged to every agent in this wave.")
+        "--base-branch", required=True, metavar="BRANCH",
+        help="Unchecked-out wave integration branch to fork from and land on.")
+    wrap_p.add_argument(
+        "--output", required=True, type=Path, metavar="DIR",
+        help="Existing directory for harness-generated batch log and usage files.")
     wrap_p.add_argument(
         "--dry-run", action="store_true",
-        help="Render the schedule's waves and batches without spawning agents.")
+        help="Validate and summarize the batch without creating a worktree or "
+             "spawning an agent.")
 
     args = parser.parse_args()
 
@@ -186,8 +157,6 @@ def main() -> None:
 
     if args.no_console:
         crustify_config.LOG_TO_CONSOLE = False
-    if args.no_file_log:
-        crustify_config.LOG_TO_FILE = False
     if getattr(args, "model", None):
         crustify_config.MODEL_OVERRIDE = args.model
     if getattr(args, "billing", None):
@@ -218,7 +187,7 @@ def _handle_crates(args: argparse.Namespace, target: Path) -> None:
 
 
 def _handle_translate(args: argparse.Namespace, target: Path) -> None:
-    """Execute a precomputed wave; no semantic scheduling occurs here."""
-    from crustify.wave import execute
-    execute(target, args.wave, objective=args.objective,
-            parallel_max=args.parallel_max, dry_run=args.dry_run)
+    """Execute one orchestrator-projected batch."""
+    from crustify.translate import execute
+    execute(target, args.batch, base_branch=args.base_branch,
+            output=args.output, dry_run=args.dry_run)

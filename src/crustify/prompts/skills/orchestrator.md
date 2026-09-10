@@ -9,7 +9,7 @@
   tables, emitting `subsystems.json`, crate placement and crate shells.
   Translation: planning bottom-up subsystem sub-campaigns with per-sub-campaign
   narrow `wavefront-config.json` files, running raw lifetime discovery as two initial
-  sub-campaigns, landing waves, reviewing allowed sub-campaigns, scanning them
+  sub-campaigns, landing and adversarially reviewing every wave, scanning them
   with `crustify-audit`, then promoting and guarding the result. Read
   Setup before any wave; every later stage reads what it produces. Read the
   referenced procedure in full before acting.

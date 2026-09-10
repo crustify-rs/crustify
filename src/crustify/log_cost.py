@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """Cost + wall-clock analysis of crustify agent logs.
 
-Reads the per-agent ``<stage>.usage.json`` files written by
+Reads the per-agent ``<batch-id>.usage.json`` files written by
 :mod:`crustify.agentlog`: a crustify-shaped record of one agent run,
 holding its per-request token counts. Each agent is its own process, so
 its file covers exactly one invocation and the numbers never interleave,
-even with concurrent agents. (The sibling ``<stage>.log`` is the provider
+even with concurrent agents. (The sibling ``<batch-id>.log`` is the provider
 CLI's own human output; nothing here parses it.)
 
 Every provider is priced the same way, from per-request counts the backend
@@ -36,10 +36,12 @@ Both tables are fetched once and cached to ``--price-cache``.
 
 Two views:
   * per agent KIND  (port / wrap / merge / setup) — kind from
-    the log filename prefix; wall-clock = the record's ``duration_ms``,
+    the usage record's stage (or historical log filename prefix); wall-clock =
+    the record's ``duration_ms``,
     counted under ``no-wall`` when the record predates that stamp.
-  * per WAVE        — session dirs mapped to the wave whose commit
-    immediately follows the dir's merge mtime; cost split by agent kind.
+  * per WAVE        — the campaign's ``<sub-campaign>/wave-<index>/logs``
+    directories; cost split by agent kind. Historical session directories are
+    still mapped to their following wave commit.
 
 Usage:  crustify-log-cost <repo_root> [--target ssl/statem] [--offline]
 """
@@ -98,8 +100,8 @@ def parse_usage(path, prices):
     return sum(price_request(rate_set, r) for r in reqs), tokens, model
 
 
-def kind(fn):
-    for p, k in (# `translate` tags each agent <objective>-<unit>_<key>, so the
+def kind(stage):
+    for p, k in (# `translate` records <objective>-<unit>_<key>, so the
                  # bucket is the pair — which is the point: it prices wrap-type
                  # against port-type directly, the calibration question a first
                  # port wave exists to answer. Longest prefixes first.
@@ -107,6 +109,8 @@ def kind(fn):
                  ("port-type", "port-type"), ("port-symbol", "port-symbol"),
                  ("review-type", "review-type"),
                  ("review-symbol", "review-symbol"),
+                 ("wrap-raw-lifetime", "wrap-raw-lifetime"),
+                 ("review-raw-lifetime", "review-raw-lifetime"),
                  # Historical pre-`translate` log prefixes remain bucketed so
                  # existing campaign measurements stay readable.
                  ("port_", "port"), ("wrap_", "wrap"), ("merge", "merge"),
@@ -116,9 +120,19 @@ def kind(fn):
                  ("type_analyzer", "setup"),
                  ("symbol_analyzer", "setup"), ("buffer", "setup"),
                  ("bindgen", "setup")):
-        if fn.startswith(p):
+        if stage.startswith(p):
             return k
     return "other"
+
+
+def usage_stage(path: str) -> str:
+    """Return the recorded stage, falling back to a historical filename."""
+    try:
+        with open(path, errors="replace") as fh:
+            stage = json.load(fh).get("stage")
+    except (OSError, ValueError, AttributeError):
+        stage = None
+    return stage if isinstance(stage, str) and stage else os.path.basename(path)
 
 
 def stat(path, fmt):  # %W birth, %Y mtime
@@ -169,9 +183,10 @@ def main():
 
     prices = load_prices(args.price_cache, offline=args.offline)
 
-    tdir = args.target if args.target else "**"
     campaigns = Layout(Path(args.repo_root)).campaigns
-    log_glob = os.path.join(str(campaigns), tdir, "logs", "**", "*.usage.json")
+    scope = campaigns / args.target if args.target else campaigns
+    log_glob = os.path.join(
+        str(scope), "**", "logs", "**", "*.usage.json")
 
     kc = defaultdict(float); kr = defaultdict(int)
     kw = defaultdict(float); kn = defaultdict(int)  # kn = rows with no priceable cost
@@ -186,7 +201,7 @@ def main():
         if parsed is None:
             continue
         cost, tokens, _model = parsed
-        k = kind(os.path.basename(p))
+        k = kind(usage_stage(p))
         kr[k] += 1
         if cost is None:
             kn[k] += 1
@@ -224,7 +239,30 @@ def main():
     print(f"{'Σ':<15}{tr:>5}{sum(kn.values()):>10}{sum(kx.values()):>9}"
           f"{tc:>10.2f}{'':>8}{hm(tw):>9}")
 
-    # ---- per-wave (map session dirs between consecutive wave commits) ----
+    # ---- per-wave ---------------------------------------------------------
+    # New campaigns encode the wave directly in the path. Preserve the old
+    # mtime-to-commit mapping below only for legacy target/logs/session dirs.
+    bywave = defaultdict(lambda: defaultdict(float))
+    legacy_dirs: set[str] = set()
+    for p in logs:
+        path = Path(p)
+        log_dir = path.parent
+        wave_dir = log_dir.parent
+        if log_dir.name == "logs" and re.fullmatch(r"wave-\d+", wave_dir.name):
+            try:
+                wave = wave_dir.relative_to(campaigns).as_posix()
+            except ValueError:
+                wave = str(wave_dir)
+            parsed = parse_usage(p, prices)
+            family = kind(usage_stage(p)).split("-")[0]
+            if parsed and parsed[0] is not None and family in (
+                    "port", "wrap", "merge", "review"):
+                bywave[wave][family] += parsed[0]
+        else:
+            legacy_dirs.add(str(log_dir))
+
+    # Legacy session directories were target-wide and carried no wave name.
+    # Map them to the first following historical layer commit as before.
     out = subprocess.run(["git", "-C", args.repo_root, "log", "--all",
                           "--format=%ct %s"], capture_output=True, text=True).stdout
     waves = {}
@@ -232,13 +270,9 @@ def main():
         m = re.search(r"crustify: L(\d+) ", line)
         if m:
             waves.setdefault(int(m.group(1)), int(line.split()[0]))
-    if not waves:
-        return 0
     ct = sorted((waves[layer], layer) for layer in waves)
 
-    bywave = defaultdict(lambda: defaultdict(float))
-    seen_dirs = {os.path.dirname(p) for p in logs}
-    for d in sorted(seen_dirs):
+    for d in sorted(legacy_dirs):
         if not any(glob.glob(f"{d}/{pat}.usage.json")
                    for pat in ("port_*", "wrap_*", "port-*", "wrap-*", "review-*")):
             continue
@@ -248,23 +282,24 @@ def main():
         if not cand:
             continue
         layer = min(cand, key=lambda x: waves[x])
+        wave = f"L{layer}"
         for p in glob.glob(f"{d}/*.usage.json"):
             # Fold `wrap-type` / `review-symbol` / ... onto their family, so a
             # wave's cost is not split across per-subject buckets here.
-            k = kind(os.path.basename(p)).split("-")[0]
+            k = kind(usage_stage(p)).split("-")[0]
             if k not in ("port", "wrap", "merge", "review"):
                 continue
             parsed = parse_usage(p, prices)
             if parsed and parsed[0] is not None:
-                bywave[layer][k] += parsed[0]
+                bywave[wave][k] += parsed[0]
 
     print("\n=== PER WAVE (port/wrap/merge/review $) ===")
     grand = 0.0
-    for layer in sorted(bywave):
-        b = bywave[layer]
+    for wave in sorted(bywave):
+        b = bywave[wave]
         t = b["wrap"] + b["port"] + b["merge"] + b["review"]
         grand += t
-        print(f"  L{layer:<3} wrap={b['wrap']:6.1f} port={b['port']:6.1f} "
+        print(f"  {wave:<40} wrap={b['wrap']:6.1f} port={b['port']:6.1f} "
               f"merge={b['merge']:5.1f} review={b['review']:6.1f}  total={t:6.1f}")
     print(f"  WAVE Σ = ${grand:.2f}  | + setup ${kc['setup']:.2f} = "
           f"${grand + kc['setup']:.2f}")

@@ -16,8 +16,7 @@ Copy this template into the campaign checkout, then fill it as work lands.
 - **`--max-syms`** — `<n>`
 - **`--max-loc`** — `<n>`
 - **`--min-fields`** — `<n>`
-- **`--parallel-max`** — `<n>`
-- **sub-campaign target units** — `<n>` (soft minimum)
+- **orchestrator parallelism** — `<n>` concurrent batch processes
 - **branch** — `<branch>`, tip `<sha>`
 - **deps** — crustify `<sha>` (`<branch>`), ffibox `<sha>` (`<branch>`)
 - **build version** — `<build.json version>`
@@ -25,7 +24,7 @@ Copy this template into the campaign checkout, then fill it as work lands.
 
 ## Review pass
 
-`--objective review`, LLM-as-a-Judge over the landed waves.
+Thin batches with `"objective": "review"`, LLM-as-a-Judge over each landed wave.
 
 - **agent backend** — `<codex | claude>`
 - **model** — `<provider>/<model>`
@@ -34,9 +33,9 @@ Copy this template into the campaign checkout, then fill it as work lands.
 - **`--max-syms`** — `<n>`
 - **`--max-loc`** — `<n>`
 - **`--min-fields`** — `<n>`
-- **`--parallel-max`** — `<n>`
+- **orchestrator parallelism** — `<n>` concurrent batch processes
 - **branch** — `<branch>`, tip `<sha>`
-- **agents** — `<n>`, over `<n>` session(s)
+- **agents** — `<n>`, over `<n>` wave(s)
 
 `rv`-prefixed columns below carry the review pass; the unprefixed ones remain
 the campaign's.
@@ -120,7 +119,7 @@ Implementation `<provider>/<model>` via `<backend>`; review
 `<provider>/<model>` via `<backend>`. Each row names the model that produced
 it.
 
-| sub-campaign | objective | nr types | nr symbols | +LoC | +sound tests (+C/+Rust pp) | +equiv tests (+C/+Rust pp) | +unit tests (+C/+Rust pp) | session wall | total | $/type | $/sym | ub wall | ub $ |
+| sub-campaign | objective | nr types | nr symbols | +LoC | +sound tests (+C/+Rust pp) | +equiv tests (+C/+Rust pp) | +unit tests (+C/+Rust pp) | wave wall | total | $/type | $/sym | ub wall | ub $ |
 |---|---|---:|---:|---:|---:|---:|---:|---|---:|---:|---:|---|---:|
 | `<waves>-<name>` | raw lifetime | `0` | `<n>` | `+<n>/-<n>` | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) | `<n>m<n>s` | `$<n>` (`<model>`) | — | `$<n>` | — | — |
 | `<waves>-<name>` | wrap | `<n>` | `<n>` | `+<n>/-<n>` | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) | `<n>h<n>m<n>s` | `$<n>` (`<model>`) | `$<n>` | `$<n>` | `<n>m<n>s` | `$<n>` (`<model>`) |
@@ -306,9 +305,8 @@ entity appears once, under the last objective it ran, so a type wrapped and
 later ported counts as ported and never in both. Name the entities that took
 both paths. Callbacks count with symbols.
 
-Some of it is structural and belongs here every time: that a review pass is a
-sub-campaign of its own because the oracle re-batches the units it judges, so
-its rows never line up with the wave underneath; which units a review schedule
-dropped and why; which sub-campaigns the Overview lists but no table details,
-and the cost that leaves unaccounted; and any column a campaign could not fill,
-said once rather than left as a field of em-dashes.
+Some of it is structural and belongs here every time: whether a review wave
+reused the translation batches or the oracle re-batched it under distinct caps;
+which units a review schedule dropped and why; which sub-campaigns the Overview
+lists but no table details, and the cost that leaves unaccounted; and any column
+a campaign could not fill, said once rather than left as a field of em-dashes.

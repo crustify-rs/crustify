@@ -1,8 +1,9 @@
 # Translator playbook
 
-How to translate one scheduler-owned worklist. The scheduler chooses the
-items, dependency order, objective and Rust homes. The translator supplies the
-semantic judgement and code, then lands one verified commit. Follow
+How to translate one orchestrator-projected worklist. Wavefront chooses the
+items, dependency order and batch boundaries; the orchestrator supplies the
+objective and Rust homes. The translator supplies the semantic judgement and
+code, then lands one verified commit. Follow
 `conventions.md` for exact names, layout and anchors.
 
 Optional prompt capabilities are listed in the agent's system prompt. Use the
@@ -46,7 +47,7 @@ missing ownership and lifecycle judgements through it and fix rejected or
 inconsistent records before code generation. Never edit a derived analysis
 artifact directly.
 
-The scheduler guarantees that dependencies are in the worklist or already
+The recorded Wavefront schedule guarantees that dependencies are in the worklist or already
 translated, except explicitly cut SCC edges. Therefore, you should be able
 to use safe Rust code for all your worklist's dependencies.
 
@@ -449,7 +450,7 @@ Aim to achieve high testing coverage on your workset's paths both in C and Rust.
 
 ## Completion
 
-Replace every scheduler TODO with the filled anchor required by the
+Replace every batch TODO with the filled anchor required by the
 conventions. If a lifecycle strategy lives outside the operation's authored
 home, replace the TODO with a thin cross-file reference and place the promoted
 anchor at the real definition.
@@ -474,7 +475,7 @@ Run every enabled deterministic safety-review capability according to its role
 guidance. Fix an unsafe wrapper bypass or unsound reference; retain a necessary
 FFI seam with its safety justification.
 
-Commit one changeset in the worktree. Push it to the scheduler's local session
-branch through `git rev-parse --git-common-dir`; on a non-fast-forward rejection,
-rebase onto the session branch, revalidate and retry. Purge the worktree only
+Commit one changeset in the worktree. Push it to the orchestrator's unchecked-out
+wave integration branch through `git rev-parse --git-common-dir`; on a
+non-fast-forward rejection, rebase onto that branch, revalidate and retry. Purge the worktree only
 after the local landing succeeds. Never push an agent branch to a remote.
