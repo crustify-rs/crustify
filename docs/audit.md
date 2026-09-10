@@ -116,7 +116,7 @@ The container starts an orchestrator that resolves the run plan and launches
 auditors against the checkout mounted at `/target`.
 
 ```sh
-docker build -t crustify-audit -f examples/crustify_audit/Dockerfile .
+docker build -t crustify -f examples/Dockerfile .
 
 docker run --rm -it --name audit-target \
   -e ANTHROPIC_API_KEY \
@@ -124,12 +124,16 @@ docker run --rm -it --name audit-target \
   -e CRUSTIFY_MODEL=claude-opus-5 \
   -v /path/to/target-repo:/target \
   -v /host/campaign/TASK.md:/campaign/TASK.md:ro \
+  -e CRUSTIFY_COMMAND=audit \
   -v audit-target-work:/work \
-  crustify-audit
+  crustify
 ```
 
-The harness is installed in the image. During harness development, mount this
-checkout at `/opt/crustify-audit` to run its live sources instead.
+One image serves the auditor and the translator; they differ in one thing only,
+which orchestrator prompt they load, and `CRUSTIFY_COMMAND` selects it. It has
+no default. The harness is installed in the image.
+During harness development, mount this checkout at `/opt/crustify` to run its
+live sources instead.
 
 For Codex against OpenAI, use `CRUSTIFY_BACKEND=codex`, pass the model ID
 exactly as Codex expects it, and provide `OPENAI_API_KEY`. To drive an
@@ -159,13 +163,16 @@ complete task.
 | `CRUSTIFY_HEADLESS` | `0`, `1` | `0` |
 | `CRUSTIFY_TIMEOUT` | minutes per auditor; `0` runs one | `60` |
 | `CRUSTIFY_EFFORT` | Codex orchestrator and auditor reasoning effort | `high` |
-| `CRUSTIFY_VERB` | `orchestrate`, `unsafe` | `orchestrate` |
+| `CRUSTIFY_COMMAND` | `translate`, `audit` | none; required |
 
 `api` uses `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, or `OPENROUTER_API_KEY` for
 the selected provider. OpenRouter requires `api`; `subscription` uses Claude or
 Codex credentials saved under `/work`, which is also the persistent Cargo/build
-cache. Set `CRUSTIFY_VERB=unsafe` to run only the deterministic scan, without
-an agent or authentication.
+cache. The deterministic scan needs no agent and no authentication, so it is
+just another command: `docker run ... crustify crustify-audit /target unsafe`.
+
+`CRUSTIFY_BARE=1` still makes the mounted `TASK.md` the entire prompt, for
+either command.
 
 ## Reference
 
