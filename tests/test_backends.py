@@ -5,8 +5,19 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
+from crustify.agents.backends.codex_cli import _atomic_write_text
 from crustify.core.agentlog import AgentLog
 from crustify.core.models import resolve
+
+
+class AtomicPromptFileTests(unittest.TestCase):
+    def test_write_publishes_complete_text_and_removes_temporary(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp)
+            prompt = directory / "prompt.md"
+            _atomic_write_text(prompt, "complete prompt")
+            self.assertEqual(prompt.read_text(), "complete prompt")
+            self.assertEqual(list(directory.iterdir()), [prompt])
 
 
 class ProviderRoutingTests(unittest.TestCase):
