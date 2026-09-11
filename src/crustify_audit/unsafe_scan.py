@@ -137,9 +137,10 @@ def undocumented_unsafe(root: Path) -> dict:
 
 def compose(layout: Layout, names: list[str] | None = None) -> dict:
     """Scan the workspace and return the metrics document."""
-    doc: dict = {"crate_path": str(layout.repo)}
+    workspace = layout.workspace
+    doc: dict = {"crate_path": str(workspace)}
     try:
-        doc["counts"], entries = driver.measure(layout.repo, names=names)
+        doc["counts"], entries = driver.measure(workspace, names=names)
         doc["counts_unavailable"] = None
     except driver.DriverUnavailable as e:
         # No counts rather than substitute ones: see driver.py.
@@ -154,7 +155,7 @@ def compose(layout: Layout, names: list[str] | None = None) -> dict:
                 + " ".join(names))
         doc["seed"] = "--name " + " ".join(names)
         doc["entries"] = entries
-    doc["undocumented_unsafe"] = undocumented_unsafe(layout.repo)
+    doc["undocumented_unsafe"] = undocumented_unsafe(workspace)
     doc["derived"] = _derive(doc)
     return doc
 
