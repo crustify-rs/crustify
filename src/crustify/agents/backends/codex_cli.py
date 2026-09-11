@@ -24,6 +24,7 @@ import os
 import re
 import shutil
 import subprocess
+import tempfile
 import threading
 from pathlib import Path
 
@@ -31,6 +32,22 @@ from crustify.core.agentlog import AgentLog
 from crustify.core.models import Route
 
 _SESSION_RE = re.compile(r"session id:\s*([0-9a-fA-F-]{36})")
+
+
+def _atomic_write_text(path: Path, text: str) -> None:
+    """Publish shared prompt text without exposing a truncated intermediate."""
+    fd, temporary = tempfile.mkstemp(
+        dir=path.parent, prefix=f".{path.name}.", suffix=".tmp"
+    )
+    temporary_path = Path(temporary)
+    try:
+        with os.fdopen(fd, "w") as output:
+            output.write(text)
+            output.flush()
+            os.fsync(output.fileno())
+        os.replace(temporary_path, path)
+    finally:
+        temporary_path.unlink(missing_ok=True)
 
 # Tools codex offers that crustify has no use for. It has no allowlist -
 # unlike claude's `--tools`, these must be named off individually, so a
@@ -233,11 +250,14 @@ class CodexCliBackend:
         # The filename is content-addressed. `codex_home` is shared across a
         # wave's worktrees, so a fixed name would have N concurrent agents
         # writing one path; hashing means identical preambles collide on
-        # identical bytes (harmless) and differing ones never collide at all.
+        # identical bytes and differing ones never collide at all. Publication
+        # must still be atomic: Path.write_text truncates an existing file
+        # before writing, so a concurrent Codex process can otherwise observe
+        # an empty model-instructions file.
         digest = hashlib.sha256(system_preamble.encode()).hexdigest()[:12]
         prompt_file = codex_home / f"crustify-base-prompt-{digest}.md"
         prompt_file.parent.mkdir(parents=True, exist_ok=True)
-        prompt_file.write_text(system_preamble)
+        _atomic_write_text(prompt_file, system_preamble)
         cmd += ["-c", f'model_instructions_file="{prompt_file}"']
         if override_base_prompt:
             # Strips codex's OWN injected context on top of the replaced
