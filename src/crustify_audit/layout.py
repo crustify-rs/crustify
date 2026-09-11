@@ -35,17 +35,32 @@ class Layout:
     that links the audited crate, which for an FFI wrapper means building the C
     library, whose sources are in the repo — beside the Rust, not inside it.
 
-    The repo root IS the subject; nothing here resolves a crate within it.
-    Guessing one only ever encoded this tool's own conventions, and a subject
-    that keeps its Rust somewhere else — several crates, a workspace under a
-    subdirectory, a tree built by something other than cargo — was rejected
-    before an agent could look at it. Finding the Rust is the agent's job, and
-    it can read the tree. Artifacts still hang off the repo root.
+    The repo root IS the subject for agentic audit. The deterministic command
+    additionally resolves the one documented campaign convention,
+    ``crustify/rust/``, when the repo root itself is not a Cargo workspace.
+    Artifacts still hang off the repo root.
     """
 
     def __init__(self, repo: Path) -> None:
         self.repo = Path(repo).resolve()
         self.root = self.repo / ARTIFACT_DIR
+
+    @property
+    def workspace(self) -> Path:
+        """Cargo workspace used by the deterministic scanner.
+
+        Ordinary Rust repositories are scanned at their root. Crustify
+        campaigns keep the generated workspace at ``crustify/rust`` while the
+        command still receives the repository root so audit artifacts land
+        beside campaign state. Unknown layouts stay rooted at the supplied
+        repository and fail with Cargo's useful metadata error.
+        """
+        if (self.repo / "Cargo.toml").is_file():
+            return self.repo
+        campaign = self.repo / "crustify" / "rust"
+        if (campaign / "Cargo.toml").is_file():
+            return campaign
+        return self.repo
 
     # ---- `unsafe`: the deterministic half
     @property

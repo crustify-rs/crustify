@@ -1,9 +1,42 @@
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
+from unittest import mock
 
 from crustify_audit.agents.base import AuditAgent
 from crustify_audit.layout import Layout
+from crustify_audit import unsafe_scan
+
+
+class DeterministicWorkspaceTests(unittest.TestCase):
+    def test_campaign_repo_resolves_crustify_rust_but_keeps_artifacts_at_root(self) -> None:
+        with TemporaryDirectory() as temporary:
+            repo = Path(temporary)
+            workspace = repo / "crustify" / "rust"
+            workspace.mkdir(parents=True)
+            (workspace / "Cargo.toml").write_text("[workspace]\n")
+            layout = Layout(repo)
+
+            self.assertEqual(layout.workspace, workspace)
+            self.assertEqual(layout.scan, repo / "crustify/audit/unsafe.json")
+
+            with mock.patch(
+                    "crustify_audit.unsafe_scan.driver.measure",
+                    return_value=({"code_lines": 1}, [])) as measure:
+                document = unsafe_scan.compose(layout)
+
+            measure.assert_called_once_with(workspace, names=None)
+            self.assertEqual(document["crate_path"], str(workspace))
+
+    def test_root_cargo_workspace_wins_over_campaign_fallback(self) -> None:
+        with TemporaryDirectory() as temporary:
+            repo = Path(temporary)
+            (repo / "Cargo.toml").write_text("[workspace]\n")
+            campaign = repo / "crustify" / "rust"
+            campaign.mkdir(parents=True)
+            (campaign / "Cargo.toml").write_text("[workspace]\n")
+
+            self.assertEqual(Layout(repo).workspace, repo)
 
 
 class AuditWorksetTests(unittest.TestCase):
