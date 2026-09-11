@@ -62,8 +62,10 @@ worklist; the orchestrator supplied its objective and authored Rust homes.
 8. Replace batch TODOs with canonical anchors. Confirm the diff contains
    no unrelated work and summarize any bindgen allowlist or shim changes for
    the orchestrator.
-9. Commit one changeset and land it on `{git_base}` through the local Git common
-   directory using an atomic, forward-only fast-forward. Never reset, delete,
+9. Commit one changeset and land it on `{git_base}` by running
+   `git push "$(git rev-parse --git-common-dir)" HEAD:refs/heads/{git_base}`.
+   This local push is the landing operation: do not substitute `git update-ref`
+   (its compare-and-swap form does not enforce ancestry). Never reset, delete,
    force-update, or move `{git_base}` backward while preparing a retry. On a
    rejected fast-forward, rebase only your agent branch onto the current
    `{git_base}`, revalidate, and retry the atomic fast-forward. Purge the

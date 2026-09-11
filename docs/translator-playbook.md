@@ -392,7 +392,15 @@ seams with safety comments.
 
 Check that the diff contains no unrelated work. Commit one changeset. Land it
 on the supplied unchecked-out wave branch through the local Git common
-directory using an atomic fast-forward.
+directory with:
+
+```bash
+git push "$(git rev-parse --git-common-dir)" HEAD:refs/heads/<wave-branch>
+```
+
+The local push is the landing operation. Do not substitute `git update-ref`:
+its compare-and-swap form makes the ref update atomic but does not enforce that
+the new commit descends from the expected old commit.
 
 On a non-fast-forward rejection:
 
