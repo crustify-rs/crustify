@@ -278,7 +278,7 @@ class GitHarnessTests(unittest.TestCase):
                 self.repo, self.batch, base_branch="wave-0", output=self.output)
         self.assertEqual(len(list((self.repo / "crustify/.worktrees").iterdir())), 1)
 
-    def test_atomic_landing_recipe_rebases_loser_and_allows_pruning(self) -> None:
+    def test_concurrent_sibling_landings_reject_loser_then_rebase(self) -> None:
         first = worktree.add_batch_worktree(self.repo, "wave-0", "first")
         second = worktree.add_batch_worktree(self.repo, "wave-0", "second")
         for tree, filename in ((first, "first.txt"), (second, "second.txt")):
@@ -288,18 +288,32 @@ class GitHarnessTests(unittest.TestCase):
                 ["git", "-C", str(tree.path), "commit", "-qm", filename], check=True)
 
         common = self.git("rev-parse", "--git-common-dir").stdout.strip()
+        commands = [
+            ["git", "-C", str(tree.path), "push", "-q", common,
+             "HEAD:refs/heads/wave-0"]
+            for tree in (first, second)
+        ]
+        attempts = [
+            subprocess.Popen(command, stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE, text=True)
+            for command in commands
+        ]
+        results = [attempt.communicate() + (attempt.returncode,)
+                   for attempt in attempts]
+        self.assertEqual(sorted(result[2] for result in results).count(0), 1)
+        winner_index = next(i for i, result in enumerate(results) if result[2] == 0)
+        loser_index = 1 - winner_index
+        winner = (first, second)[winner_index]
+        loser = (first, second)[loser_index]
+        self.assertEqual(
+            self.git("rev-parse", "wave-0").stdout.strip(),
+            self.git("-C", str(winner.path), "rev-parse", "HEAD").stdout.strip(),
+        )
         subprocess.run(
-            ["git", "-C", str(first.path), "push", "-q", common,
-             "HEAD:refs/heads/wave-0"], check=True)
-        rejected = subprocess.run(
-            ["git", "-C", str(second.path), "push", "-q", common,
-             "HEAD:refs/heads/wave-0"], capture_output=True, text=True)
-        self.assertNotEqual(rejected.returncode, 0)
-        subprocess.run(
-            ["git", "-C", str(second.path), "rebase", "wave-0"], check=True,
+            ["git", "-C", str(loser.path), "rebase", "wave-0"], check=True,
             capture_output=True, text=True)
         subprocess.run(
-            ["git", "-C", str(second.path), "push", "-q", common,
+            ["git", "-C", str(loser.path), "push", "-q", common,
              "HEAD:refs/heads/wave-0"], check=True)
 
         self.git("worktree", "remove", "--force", str(first.path))
