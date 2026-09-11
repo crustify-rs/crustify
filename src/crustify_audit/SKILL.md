@@ -2,7 +2,7 @@
 
 - Skill name: crustify-audit
 - Bin path: crustify-audit
-- Doc path: docs/audit.md
+- Doc path: ../../docs/audit.md
 - Description: Review the safety of Rust repositories, especially crates that
   wrap native libraries. The deterministic `unsafe` command reports compiled
   unsafe and raw-pointer surfaces and supports source-site queries seeded by
