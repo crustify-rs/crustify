@@ -110,6 +110,12 @@ _REASONING_EFFORT = {
     "gpt-5.6-sol": "high",
     "gpt-5.6-terra": "high",
     "gpt-5.6-luna": "high",
+    # OpenRouter's canonical OpenAI routes retain the vendor prefix after the
+    # outer provider component is resolved.
+    "openai/gpt-5.6": "high",
+    "openai/gpt-5.6-sol": "high",
+    "openai/gpt-5.6-terra": "high",
+    "openai/gpt-5.6-luna": "high",
     # OpenRouter route. Not in codex's catalog either, so its fallback is
     # `none` — the worst case the comment above describes. `high` verified
     # accepted end to end against the OpenRouter responses API.

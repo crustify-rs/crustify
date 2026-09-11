@@ -78,6 +78,42 @@ class ProviderRoutingTests(unittest.TestCase):
         self.assertEqual(env["ANTHROPIC_API_KEY"], "")
         self.assertNotIn("--bare", command)
 
+    def test_openrouter_openai_model_gets_high_reasoning_effort(self) -> None:
+        from crustify.agents.backends.codex_cli import CodexCliBackend
+
+        captured: dict = {}
+
+        class Process:
+            stdout: tuple = ()
+            stderr: tuple = ()
+
+            @staticmethod
+            def wait() -> int:
+                return 0
+
+        def popen(command, **kwargs):
+            captured["command"] = command
+            return Process()
+
+        with tempfile.TemporaryDirectory() as tmp:
+            provider_home = Path(tmp) / "codex"
+            with (mock.patch.dict(
+                    "os.environ", {"OPENROUTER_API_KEY": "test-key"}, clear=True),
+                  mock.patch("shutil.which", return_value="/bin/codex"),
+                  mock.patch("subprocess.Popen", side_effect=popen)):
+                CodexCliBackend().run(
+                    name="test",
+                    route=resolve("openrouter/openai/gpt-5.6-sol"),
+                    prompt="task",
+                    system_preamble="role",
+                    work_dir=tmp,
+                    log=AgentLog(None, "test", console=False),
+                    billing="api",
+                    provider_home=provider_home,
+                )
+
+        self.assertIn('model_reasoning_effort="high"', captured["command"])
+
     def test_auditor_resolves_the_shared_backend_registry(self) -> None:
         from crustify_audit.agents.base import AuditAgent
         from crustify_audit.layout import Layout
