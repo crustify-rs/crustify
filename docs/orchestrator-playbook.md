@@ -10,19 +10,12 @@ artifact's example under `specs/` and its schema before creating it. Use live
 
 ## Required campaign decisions
 
-Record these before changing the campaign repository:
-
-- source repository and revision;
-- `wrap` or `port` objective;
-- target subsystems, functions, types, or whole repository;
-- translation backend and model;
-- review backend and model, or no agentic review;
-- optional UB-audit backend and model;
-- API or subscription billing;
-- batch caps and parallelism;
-- review batch caps;
-- autonomous execution or explicit approval gates; and
-- results file and format.
+Every campaign decision is asked and defaulted in
+`examples/crustify/TASK-template.md`. Resolve them all before changing the
+campaign repository: take what the mounted `TASK.md` answers, ask the user for
+the rest, and let an unanswered optional decision fall to its documented
+default. Do not restate the questions here or in the prompt — one wording,
+one file.
 
 If the user delegates scope, prefer code with manual memory management or
 untrusted-input parsing. If execution is not autonomous, record separate gates
