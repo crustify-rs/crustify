@@ -260,12 +260,22 @@ RUN arch="$(dpkg --print-architecture)"; \
         echo "CodeQL is unavailable natively on $arch; a campaign here needs T1/T2 tables extracted elsewhere"; \
     fi
 
+# Both installers fetch whatever the vendor currently ships, so this layer IS
+# the version pin. Docker caches it by instruction text, which never changes,
+# so a rebuild silently keeps the CLIs the first build happened to get. Bump
+# CLI_REFRESH to refetch: `--build-arg CLI_REFRESH=$(date +%s)`. The versions
+# are echoed into the build log because otherwise the only record of which CLI
+# ran a campaign is the banner in each agent's transcript.
+ARG CLI_REFRESH=0
 RUN if [ "${INSTALL_CLAUDE}" = "1" ]; then \
         curl -fsSL https://claude.ai/install.sh | bash; \
     fi \
     && if [ "${INSTALL_CODEX}" = "1" ]; then \
         curl -fsSL https://chatgpt.com/codex/install.sh | sh; \
-    fi
+    fi \
+    && echo "CLI_REFRESH=${CLI_REFRESH}" \
+    && { [ "${INSTALL_CLAUDE}" = "1" ] && claude --version || true; } \
+    && { [ "${INSTALL_CODEX}" = "1" ] && codex --version || true; }
 
 # Bake in a runnable harness -- the WHOLE repository, not just `src`. One
 # distribution ships both packages (`crustify-audit` is a console script of
