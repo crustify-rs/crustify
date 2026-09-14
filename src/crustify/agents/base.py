@@ -28,13 +28,6 @@ _MD_FIELD_RE = _re.compile(
 # Keeping the anchor in the header makes that composition explicit in source.
 _GENERIC_SKILL_ANCHOR = "<!-- SKILL -->"
 
-_TRANSLATOR_ROLE = (
-    "You are a code-translation agent in the Crustify C-to-Rust pipeline. "
-    "Work through the shell. Follow the task prompt exactly and stop when "
-    "its stated completion condition is met."
-)
-
-
 @dataclass(frozen=True)
 class SkillSpec:
     """A generic skill plus optional role-specific prompt guidance."""
@@ -228,8 +221,7 @@ class CrustifyAgent:
                 name=self.name,
                 route=route,
                 prompt=rendered_prompt,
-                system_preamble=(
-                    f"{_TRANSLATOR_ROLE}\n\n{system_preamble}".rstrip()),
+                system_preamble=system_preamble,
                 work_dir=str(getattr(self, "_work_dir", None) or self.target),
                 log=log,
                 billing=_cfg.BILLING,
