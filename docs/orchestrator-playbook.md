@@ -157,7 +157,8 @@ database changes.
 ### 5. Prepare reusable C builds
 
 Create immutable out-of-tree builds for the exact C revision, `build.json`
-version, compiler, and instrumentation:
+version, compiler, and instrumentation, so that translator agents can reuse
+them:
 
 - plain build for the functional baseline;
 - ASan + UBSan build for FFI and lifecycle tests;
@@ -172,7 +173,7 @@ reuse a matching build. A change to compiled C or a compiled shim requires a
 private build; refresh shared builds after that change lands.
 
 After each reviewed wave, run the sanitized regression gate. Measure
-soundness, equivalence, and unit coverage separately; do not sum them.
+UB, equivalence, and unit coverage separately; do not sum them.
 
 ### 6. Configure campaign-wide source analysis
 
