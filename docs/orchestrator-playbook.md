@@ -504,6 +504,14 @@ cost and token counts, not provider-reported dollar totals. Record agent wall
 times from usage files. Record wave wall time from first batch launch through
 final review and regression completion. Fill the user's evaluation table.
 
+Fill it per batch too, for translation and review alike. Key each row by the
+`wave` and `batch` index of its entry in the sub-campaign's `waves.json`; a
+review batch uses its own review plan's indices. Take `$` and `wall` from that
+batch's `usage.json`, never apportioned from a total. Take `+LoC` and the three
+test deltas from its landing commit against its parent. The `(+C/+Rust pp)`
+pair needs a coverage run per workload per commit: measure it when affordable,
+otherwise leave every per-batch pair blank and say so once in Notes.
+
 ## Self-repair
 
 When a campaign exposes a defect in Crustify, Wavefront, `crustify-audit`, or
