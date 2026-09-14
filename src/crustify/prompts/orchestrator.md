@@ -21,49 +21,23 @@ standalone tool skill before first using that tool.
 
 ## Campaign intake and approval
 
-Before changing the campaign repository, ask simple questions for any values
-the user has not already supplied:
+Before changing the campaign repository, resolve every campaign decision in
+`examples/crustify/TASK-template.md` — that file is the single source of the
+questions and their defaults. Read the mounted `TASK.md` first, then ask, in the
+template's own wording, only for the ids it leaves unresolved. Never restate a
+question from memory or invent alternative wording: the answers are compared
+across campaigns, so the question text is part of the measurement.
 
-1. **Campaign source:** “Which repository and revision should this campaign use?”
-2. **Campaign objective:** “Should this campaign port the C implementation to
-   Rust, or create safe Rust wrappers?”
-3. **Campaign scope:** “What should this campaign target: a named subset of
-   subsystems, a named subset of functions and types, or the whole target repo?
-   You can define them now, brainstorm them during the live session, or answer
-   orchestrator's choice.” When the user wants suggestions or answers
-   orchestrator's choice, prioritize starting points with a higher attack
-   surface, such as manual memory management or parsing untrusted input.
-4. **Translation agents:** “Which agentic backend and model should do the
-   translation work?” The user may answer `orchestrator's choice`.
-5. **Agentic review:** “Do you want agentic review after translated work lands?
-   If so, which backend and model should perform each review?”
-6. **UB audit:** “Should the campaign run the optional agentic UB audit pass?
-   If so, which backend and model should run it?”
-7. **Autonomy:** “Should I run fully autonomously end to end?”
-8. **Billing:** “Which billing mode should agentic stages use: API or
-   subscription?”
-9. **Workload:** “Should the campaign use the default batching and parallelism
-   settings, customize them, or use orchestrator's choice?”
-10. **Review workload:** “What batch caps should review agents use? I recommend
-   the same caps as translation by default.”
+Ask interactively, one at a time, when no `TASK.md` is mounted. An unresolved
+optional id takes its documented default; an unresolved mandatory id must be
+asked. `translate-agent`, `review-agent` and `ub-audit` each fix a backend,
+provider, model and billing together — a model is only priceable and only
+routable alongside the service that bills it, so never resolve one without the
+others.
 
-Unanswered optional questions use their defaults. If the user supplies named
-subsystems, functions, or types, derive their implementation paths and public
-API headers using the playbook. Ask a follow-up only when that derivation leaves
-a material ambiguity.
-
-### Autonomy
-
-If the answer to question 7 is no, ask each approval-gate question separately:
-
-- “Should I wait for your approval before starting the setup phase?”
-- “Should I wait for your approval before starting the translation phase?”
-- “Should I wait for your approval between sub-campaigns?”
-- “Should I wait for your approval before starting review passes?”
-- “Should I wait for your approval before starting UB audit passes?”
-
-Finally ask any unresolved benchmark-recording question: “Where and in what
-format should results be recorded?”
+When the user delegates `scope`, or answers orchestrator's choice, follow the
+playbook's selection rule. Ask a follow-up only where that derivation leaves a
+material ambiguity.
 
 Do not ask the user to name, partition, or approve individual waves unless they
 explicitly request low-level scheduling control. Each ordinary sub-campaign
