@@ -25,7 +25,7 @@ The worklist objective is authoritative:
 - `port`: implement the selected behaviour in safe Rust; preserve required C
   interoperability and observable behaviour.
 - `review`: verify existing findings and code, add regression evidence, fix
-  defects, and land the fixes.
+  defects, land the fixes, and file an advisory for every defect fixed.
 
 A targeted dependency outside a partial port's selected migration set may use
 `wrap`. Inventory ownership does not override the batch objective.
@@ -310,6 +310,26 @@ Use compile-fail doctests or `trybuild` when the type system should reject the
 program. Report these separately; compile-time evidence is stronger than one
 dynamic execution.
 
+#### Defect advisory
+
+A `review` batch that fixes a UB defect files an advisory under
+`crustify/audit/advisories/`. The regression test proves the fix holds; the
+advisory proves the defect was real. One does not substitute for the other.
+
+Its reproducer must build and run against the AFFECTED revision — the commit as
+it stood before the fix — so write it against the pre-fix public API, never an
+API the fix introduces. Pin that revision by SHA. State the post-fix outcome,
+which is one of two things and both are valid proof: the reproducer still
+builds and now passes, or it no longer compiles because the fix removed the
+safe path that reached the defect; say which, and name the error for the
+compile-fail case.
+
+Keep it a standalone `#![forbid(unsafe_code)]` crate depending on the wrapper
+crate, reaching the defect through the safe API alone, and quote the
+instrument's diagnostic verbatim. If the defect cannot be reached without
+`unsafe` in the caller it is not a defect in the safe surface — record it as a
+lead instead.
+
 ### Equivalence tests
 
 Place equivalence tests beside the translated unit in
@@ -331,6 +351,29 @@ symbol cannot resolve to the Rust export.
 Do not copy a confirmed C defect into Rust. Document the divergence, retain
 equivalence tests for unaffected behaviour, and place the corrected-behaviour
 regression in `unit_tests`.
+
+#### Defect advisory
+
+A `review` batch that fixes an equivalence defect files an advisory under
+`crustify/audit/advisories/`, and it carries the same weight as a UB one.
+Functional drift from the bound C API is a defect in the wrapper, not a lesser
+finding.
+
+Its reproducer must build and run against the AFFECTED revision — the commit as
+it stood before the fix — so write it against the pre-fix public API, never an
+API the fix introduces. Pin that revision by SHA. State the post-fix outcome,
+which is one of two things and both are valid proof: the reproducer still
+builds and now passes, or it no longer compiles because the fix removed the
+safe path that reached the defect; say which, and name the error for the
+compile-fail case.
+
+Keep it a standalone crate depending on the wrapper crate. Its verdict is the
+failing comparison, not an instrument, so it needs no sanitizer build; record
+the differing C and Rust values. It needs `unsafe` to invoke the C reference —
+confine it to that call and reach the Rust side through the safe API alone.
+Compare after each step of a multi-call sequence and report the first step that
+diverges. Never copy a confirmed C defect into Rust to make the reproducer
+agree; that case is the documented-divergence rule above.
 
 ### Unit tests
 
