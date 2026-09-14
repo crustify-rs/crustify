@@ -59,14 +59,22 @@ worklist; the orchestrator supplied its objective and authored Rust homes.
    Rust feature enabled. Run every enabled deterministic safety-review
    capability according to its role guidance. Fix failures and unsafe wrapper
    bypasses.
-8. Replace batch TODOs with canonical anchors. Confirm the diff contains
+8. Under a `review` objective, file an advisory under
+   `crustify/audit/advisories/` for every defect you fix, following the
+   defect-advisory requirement in the translator playbook's UB-test and
+   equivalence-test protocols. UB and equivalence defects carry equal weight.
+   Every reproducer must build and run against the affected revision using only
+   the pre-fix public API, never an API your fix introduced. Record the pinned
+   SHA, what the verdict source produced there, and whether the fix makes the
+   reproducer pass or stop compiling. Report the advisories you filed, by class.
+9. Replace batch TODOs with canonical anchors. Confirm the diff contains
    no unrelated work and summarize any bindgen allowlist or shim changes for
    the orchestrator.
-9. Commit one changeset and land it on `{git_base}` by running
-   `git push "$(git rev-parse --git-common-dir)" HEAD:refs/heads/{git_base}`.
-   This local push is the landing operation: do not substitute `git update-ref`
-   (its compare-and-swap form does not enforce ancestry). Never reset, delete,
-   force-update, or move `{git_base}` backward while preparing a retry. On a
-   rejected fast-forward, rebase only your agent branch onto the current
-   `{git_base}`, revalidate, and retry the atomic fast-forward. Purge the
-   worktree only after landing succeeds. Never push to a remote.
+10. Commit one changeset and land it on `{git_base}` by running
+    `git push "$(git rev-parse --git-common-dir)" HEAD:refs/heads/{git_base}`.
+    This local push is the landing operation: do not substitute `git update-ref`
+    (its compare-and-swap form does not enforce ancestry). Never reset, delete,
+    force-update, or move `{git_base}` backward while preparing a retry. On a
+    rejected fast-forward, rebase only your agent branch onto the current
+    `{git_base}`, revalidate, and retry the atomic fast-forward. Purge the
+    worktree only after landing succeeds. Never push to a remote.

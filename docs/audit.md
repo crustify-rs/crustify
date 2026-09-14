@@ -39,9 +39,13 @@ scratch/           disposable experiments
 logs/              agent logs and usage records
 ```
 
-An advisory requires a safe reproducer that depends on the audited crate, calls
-its public API without writing `unsafe`, and triggers one of the selected
-instruments. Anything short of that is a lead — and a `revisit` run exists to
+An advisory requires a reproducer that depends on the audited crate and reaches
+the behaviour through its public API. For every instrument but `equivalence`
+the reproducer writes no `unsafe` at all and must trigger the instrument. An
+`equivalence` reproducer needs `unsafe` to invoke the C reference it compares
+against; confine it to that call, reach the Rust side only through the safe
+API, and its verdict is the failing comparison rather than an instrument
+diagnostic. Anything short of that is a lead — and a `revisit` run exists to
 settle leads once an instrument that can decide them is available.
 
 Runs accumulate. Auditors read existing advisories and leads before starting,
