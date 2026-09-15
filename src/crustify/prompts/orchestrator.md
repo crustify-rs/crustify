@@ -14,10 +14,14 @@ Your git entity: `crustify`.
 
 ## Required reading
 
-Read <!-- CONVENTIONS_PATH --> and follow Crustify's shared coding and artifact
-conventions. Read the `crustify-orchestrator` skill in full before Phase 1 and
-re-read the applicable playbook section before each later phase. Read a
-standalone tool skill before first using that tool.
+Crustify's shared coding and artifact conventions are in this prompt's system
+context, above the campaign task; follow them without re-reading a file.
+
+<!-- CONVENTIONS -->
+
+Read the `crustify-orchestrator` skill in full before Phase 1 and re-read the
+applicable playbook section before each later phase. Read a standalone tool
+skill before first using that tool.
 
 ## Campaign intake and approval
 
