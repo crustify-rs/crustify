@@ -223,7 +223,7 @@ class CodexCliBackend:
         # --ignore-user-config for config hermeticity.
         env_key_auth = route.provider == "openrouter" or billing == "api"
         if env_key_auth:
-            # RESOLVED, not the raw path. An isolated agent's `repo_root` is its
+            # RESOLVED, not the raw path. An isolated agent's `workdir` is its
             # worktree, where `crustify/.providers` is a symlink into the main
             # checkout (worktree.link_shared) — so the raw path is only valid
             # while the worktree exists. The agent PURGES its worktree as the

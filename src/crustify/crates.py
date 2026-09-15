@@ -264,7 +264,7 @@ def _safe_rs(rs: str) -> str:
 def full_rs(layout, crate_path: str, rs: str) -> Path:
     """Return the physical Rust path for a ``crates.json`` home."""
     path = Path(crate_path)
-    crate_dir = path if path.is_absolute() else layout.repo_root / path
+    crate_dir = path if path.is_absolute() else layout.workdir / path
     return crate_dir / _safe_rs(rs)
 
 

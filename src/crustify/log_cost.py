@@ -43,7 +43,7 @@ Two views:
     directories; cost split by agent kind. Historical session directories are
     still mapped to their following wave commit.
 
-Usage:  crustify-log-cost <repo_root> [--target ssl/statem] [--offline]
+Usage:  crustify-log-cost <workdir> [--target ssl/statem] [--offline]
 """
 import argparse
 import glob
@@ -156,7 +156,7 @@ def hm(s):
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("repo_root")
+    ap.add_argument("workdir")
     ap.add_argument("--target", default=None,
                     help="Repo-relative target (default: every target found).")
     ap.add_argument("--offline", action="store_true",
@@ -166,7 +166,7 @@ def main():
 
     prices = load_prices(args.price_cache, offline=args.offline)
 
-    campaigns = Layout(Path(args.repo_root)).campaigns
+    campaigns = Layout(Path(args.workdir)).campaigns
     scope = campaigns / args.target if args.target else campaigns
     log_glob = os.path.join(
         str(scope), "**", "logs", "**", "*.usage.json")
@@ -246,7 +246,7 @@ def main():
 
     # Legacy session directories were target-wide and carried no wave name.
     # Map them to the first following historical layer commit as before.
-    out = subprocess.run(["git", "-C", args.repo_root, "log", "--all",
+    out = subprocess.run(["git", "-C", args.workdir, "log", "--all",
                           "--format=%ct %s"], capture_output=True, text=True).stdout
     waves = {}
     for line in out.splitlines():

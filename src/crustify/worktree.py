@@ -107,8 +107,8 @@ def link_shared(wt: Path, repo: Path) -> None:
     commit carries, not as a write racing into the shared main copy.
 
     ``.providers`` must be here for a subtle reason: the agent backends resolve
-    the provider CLI's config home as ``Layout(repo_root).providers(cli)``, and an
-    isolated agent's ``repo_root`` IS its worktree — while ``Layout.providers``
+    the provider CLI's config home as ``Layout(workdir).providers(cli)``, and an
+    isolated agent's ``workdir`` IS its worktree — while ``Layout.providers``
     **mkdirs** the path. Unlinked, every worktree therefore gets a freshly created
     EMPTY provider config instead of crustify's shared one, and the CLI runs
     against it with no error: a silent loss of provider settings, which is the

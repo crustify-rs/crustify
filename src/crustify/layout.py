@@ -9,16 +9,16 @@ CRUSTIFY = "crustify"
 _REPO_ROOT: Path | None = None  # pinned once by the CLI; never marker-walked
 
 
-def set_repo_root(repo_root: Path) -> None:
+def set_workdir(workdir: Path) -> None:
     """Pin the repo root explicitly — the CLI's first positional. Once set,
     :meth:`Layout.discover` returns it directly: crustify never walks the
     filesystem looking for a ``crustify/`` marker."""
     global _REPO_ROOT
-    _REPO_ROOT = Path(repo_root).resolve()
+    _REPO_ROOT = Path(workdir).resolve()
 
 
-def find_repo_root(start: Path) -> Path:
-    """The pinned repo root (:func:`set_repo_root`). With nothing pinned —
+def find_workdir(start: Path) -> Path:
+    """The pinned repo root (:func:`set_workdir`). With nothing pinned —
     e.g. a direct library/test caller — ``start`` itself is taken as the repo
     root. **Never** walks ancestors; the repo root is an explicit input."""
     if _REPO_ROOT is not None:
@@ -29,13 +29,13 @@ def find_repo_root(start: Path) -> Path:
 class Layout:
     """Resolves every crustify artifact path from one ``crustify/`` root."""
 
-    def __init__(self, repo_root: Path) -> None:
-        self.repo_root = Path(repo_root).resolve()
-        self.root = self.repo_root / CRUSTIFY
+    def __init__(self, workdir: Path) -> None:
+        self.workdir = Path(workdir).resolve()
+        self.root = self.workdir / CRUSTIFY
 
     @classmethod
     def discover(cls, start: Path) -> "Layout":
-        return cls(find_repo_root(start))
+        return cls(find_workdir(start))
 
     # ----------------------------------------------------- repo-tier (shared)
     @property
@@ -81,9 +81,9 @@ class Layout:
     # ------------------------------------------------- target identity
     def rel_target(self, target: Path) -> str:
         t = Path(target).resolve()
-        if t == self.repo_root:
+        if t == self.workdir:
             return "."
-        return t.relative_to(self.repo_root).as_posix()
+        return t.relative_to(self.workdir).as_posix()
 
     @property
     def campaigns(self) -> Path:
