@@ -397,32 +397,13 @@ class AuditAgent:
                 "at the same time and share your `advisories/` and `leads/`.")
 
     def system_preamble(self) -> str:
-        """The role and the one hard rule.
+        """The role and the one hard rule, read from `prompts/role.md`.
 
-        Short on purpose. Everything procedural lives in the prompt, which is
-        editable without touching code; this is only what must hold whatever
-        the agent is hunting.
+        Short on purpose: everything procedural lives in the stage prompt, and
+        this is only what must hold whatever the agent is hunting. It is a
+        document rather than a string in here because the harness composes
+        prompts, it does not author them -- a slice of what an agent was told
+        living in Python is a slice nobody edits with the rest.
         """
-        return (
-            "You are running non-interactively. Work autonomously to "
-            "completion; there is nobody to ask. Prefer reading and reasoning "
-            "over guessing.\n\n"
-            "You audit Rust code that wraps C, looking for undefined behaviour "
-            "reachable from safe code.\n\n"
-            "A finding you cannot demonstrate is a hypothesis. Say which you "
-            "are reporting.\n\n"
-            "HARD RULE. Inside the audited checkout you may write ONLY under "
-            "its `crustify/audit/` directory -- your leads, advisories, and "
-            "scratch work belong there. Other agents are reading that same "
-            "checkout while you work.\n\n"
-            + ("Your objective is `audit`: you do not modify target source, "
-               "tests, or build files at all."
-               if self.objective == "audit" else
-               "Your objective is `revisit`: you re-investigate leads someone "
-               "else opened and you do not modify target source, tests, or "
-               "build files at all."
-               if self.objective == "revisit" else
-               "Your objective is `" + self.objective + "`: target source, "
-               "tests, and build files are edited ONLY inside a git worktree "
-               "you create, never in the checkout itself.")
-        )
+        return (_PKG_ROOT / "prompts" / "role.md").read_text().format(
+            objective=self.objective).rstrip()
