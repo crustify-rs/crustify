@@ -38,19 +38,12 @@ from pathlib import Path
 from crustify_audit.layout import Layout
 
 
-def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(
-        prog="crustify-audit",
-        description="Find soundness bugs and safety trade-offs in Rust that wraps C. "
-                    "`unsafe` is deterministic; `ub` drives one LLM agent over "
-                    "its output.")
-    p.add_argument("workspace", metavar="REPO",
-                   help="Path to the REPOSITORY to audit. The root is the "
-                        "subject; the agent locates the Rust within it. The "
-                        "repo, not the crate, because auditing an FFI wrapper "
-                        "means building the C library beside it.")
-    sub = p.add_subparsers(dest="command", required=True)
-
+#: Shared by the `crustify-audit` entry point and by `crustify ... audit`, so
+#: the two surfaces cannot drift: one set of stages, one set of flags, one set
+#: of help texts. The distribution has already paid once for maintaining the
+#: same job in two places.
+def add_stages(sub: "argparse._SubParsersAction") -> None:
+    """Register the `unsafe` and `ub` stages on an existing subparsers object."""
     m = sub.add_parser(
         "unsafe",
         help="DETERMINISTIC unsafe metrics. No LLM.",
@@ -160,7 +153,26 @@ def build_parser() -> argparse.ArgumentParser:
                         "subscription auth — `--max-budget-usd` meters API-call "
                         "spend, of which there is none, and the CLI has no turn "
                         "limit.")
+
+
+def build_parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(
+        prog="crustify-audit",
+        description="Find soundness bugs and safety trade-offs in Rust that wraps C. "
+                    "`unsafe` is deterministic; `ub` drives one LLM agent over "
+                    "its output.")
+    p.add_argument("workspace", metavar="REPO",
+                   help="Path to the REPOSITORY to audit. The root is the "
+                        "subject; the agent locates the Rust within it. The "
+                        "repo, not the crate, because auditing an FFI wrapper "
+                        "means building the C library beside it.")
+    add_stages(p.add_subparsers(dest="command", required=True))
     return p
+
+
+def dispatch(layout, args, command: str) -> int:
+    """Run one audit stage. Shared by both entry points."""
+    return {"unsafe": _cmd_unsafe, "ub": _cmd_ub}[command](layout, args)
 
 
 def _cmd_unsafe(layout: Layout, args) -> int:
@@ -220,9 +232,7 @@ def main() -> None:
     if not ws.is_dir():
         print(f"error: workspace does not exist: {ws}", file=sys.stderr)
         raise SystemExit(2)
-    layout = Layout(ws)
-    fn = {"unsafe": _cmd_unsafe, "ub": _cmd_ub}
-    raise SystemExit(fn[args.command](layout, args))
+    raise SystemExit(dispatch(Layout(ws), args, args.command))
 
 
 if __name__ == "__main__":

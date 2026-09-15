@@ -56,7 +56,7 @@ The deterministic scan needs no agent and no authentication, so it bypasses the
 orchestrator entirely and is just another command:
 
 ```sh
-docker run --rm -v /path/to/target-repo:/target crustify crustify-audit /target unsafe
+docker run --rm -v /path/to/target-repo:/target crustify crustify /target audit unsafe
 ```
 
 `/target` must be an existing Git checkout mounted read-write. The orchestrator

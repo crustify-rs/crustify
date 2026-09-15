@@ -15,8 +15,8 @@ Requires Python 3.13 or newer:
 ```sh
 pip install -e .
 
-crustify-audit /path/to/repo unsafe
-crustify-audit /path/to/repo ub --model anthropic/claude-opus-5
+crustify /path/to/repo audit unsafe
+crustify /path/to/repo audit ub --model anthropic/claude-opus-5
 ```
 
 Pass the repository root. The audited Cargo workspace is the root when it has a
@@ -54,8 +54,8 @@ so later runs extend the record instead of repeating completed investigations.
 ## CLI
 
 ```text
-crustify-audit REPO unsafe [--json] [--name NAME ...]
-crustify-audit REPO ub [--objective audit|audit+patch|patch|revisit]
+crustify WORKDIR audit unsafe [--json] [--name NAME ...]
+crustify WORKDIR audit ub [--objective audit|audit+patch|patch|revisit]
                        [--workset PATH ...]
                        [--instruments miri|asan/ubsan|bsan|msan|tsan|equivalence ...]
                        [--model PROVIDER/MODEL]
@@ -85,7 +85,7 @@ crustify-audit REPO ub [--objective audit|audit+patch|patch|revisit]
   to an advisory if it now reproduces. Use it after adding an instrument that
   can settle a hypothesis the earlier run had to leave standing.
 
-Run `crustify-audit --help` or a subcommand's `--help` for complete flag
+Run `crustify WORKDIR audit --help` or a subcommand's `--help` for complete flag
 semantics.
 
 ### Instrument scopes
@@ -175,7 +175,7 @@ Codex credentials saved under `/work`, which is also the persistent Cargo/build
 cache. An `openrouter/anthropic/<model>` route uses Claude Code with
 `OPENROUTER_API_KEY`; other OpenRouter model IDs use Codex. The deterministic
 scan needs no agent and no authentication, so it is
-just another command: `docker run ... crustify crustify-audit /target unsafe`.
+just another command: `docker run ... crustify crustify /target audit unsafe`.
 
 `CRUSTIFY_BARE=1` still makes the mounted `TASK.md` the entire prompt, for
 either command.

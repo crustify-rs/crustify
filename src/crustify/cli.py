@@ -117,6 +117,17 @@ def main() -> None:
         "inserts that batch's TODO anchors and starts one translator. The "
         "translator lands atomically on the base branch and prunes its own "
         "successful worktree.")
+    # -- audit (the safety passes, formerly a second entry point) --------
+    _audit_blurb = (
+        "Find soundness bugs and safety trade-offs in Rust that wraps C. "
+        "`unsafe` is deterministic and needs no model, no key and no network; "
+        "`ub` drives an agent over its output and costs money.")
+    audit_p = sub.add_parser(
+        "audit", help=_audit_blurb, description=_audit_blurb,
+    )
+    from crustify_audit.cli import add_stages as _add_audit_stages
+    _add_audit_stages(audit_p.add_subparsers(dest="audit_command", required=True))
+
     # -- orchestrate (spawn the campaign supervisor) ---------------------
     _orch_blurb = (
         "Start a campaign orchestrator. It reads the campaign task, plans the "
@@ -194,6 +205,9 @@ def main() -> None:
     elif args.command == "orchestrate":
         _handle_orchestrate(args, target)
 
+    elif args.command == "audit":
+        _handle_audit(args)
+
 
 
 # -- analyze dispatch -----------------------------------------------------
@@ -208,6 +222,15 @@ def _handle_crates(args: argparse.Namespace, target: Path) -> None:
                       name=args.name)
     elif args.crates_command == "validate":
         crates.validate_command(target)
+
+
+def _handle_audit(args: argparse.Namespace) -> None:
+    """Run one audit stage against this checkout."""
+    from crustify_audit.cli import dispatch
+    from crustify_audit.layout import Layout as AuditLayout
+
+    raise SystemExit(dispatch(AuditLayout(Path(args.workdir)), args,
+                              args.audit_command))
 
 
 def _handle_orchestrate(args: argparse.Namespace, target: Path) -> None:
