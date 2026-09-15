@@ -389,13 +389,14 @@ class CrustifyAgent:
                 header = _PKG_ROOT / "prompts" / spec.role_header
                 if not header.is_file():
                     raise SystemExit(
-                        f"prompt capability {spec.capability!r}: role header "
-                        f"does not exist: {header}")
+                        f"prompt capability {spec.capability or spec.path!r}: "
+                        f"role header does not exist: {header}")
                 template = header.read_text()
                 if template.count(_GENERIC_SKILL_ANCHOR) != 1:
                     raise SystemExit(
-                        f"prompt capability {spec.capability!r}: role header "
-                        f"must contain one {_GENERIC_SKILL_ANCHOR} anchor: {header}")
+                        f"prompt capability {spec.capability or spec.path!r}: "
+                        f"role header must contain one "
+                        f"{_GENERIC_SKILL_ANCHOR} anchor: {header}")
                 guidance = template.replace(_GENERIC_SKILL_ANCHOR, "").strip()
                 if guidance:
                     block += "\n  Additional role guidance:\n" + "\n".join(

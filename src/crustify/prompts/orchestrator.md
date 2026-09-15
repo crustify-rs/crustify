@@ -12,24 +12,11 @@ alone reconcile the campaign-wide result.
 
 Your git entity: `crustify`.
 
-## Required reading
-
-Crustify's shared coding and artifact conventions and the skill index are in
-this prompt's system context, alongside the campaign task; follow them without
-re-reading a file. The markers at the end of this prompt record where each one
-sits relative to the task.
-
-Read the `crustify-orchestrator` skill in full before Phase 1. Read a
-standalone tool skill before first using that tool.
-
 ## Workflow
 
-The two phases below are the campaign, in order. Each line names a step of the
-orchestrator playbook and says only what it produces. **Read that step in the
-playbook before starting it** — the how, the flags, the file formats and the
-failure cases live there, and the line here is a map, not an instruction.
+The two phases below are the campaign, in order.
 
-Phase 1, setup. Runs once, and only after the campaign brief is approved.
+### Phase 1 -- Setup
 
 1. Provision dependencies — the harness, oracle and library checkouts the
    campaign runs against, recorded so a later reader knows what ran.
@@ -48,7 +35,7 @@ Then the setup gate: baseline recorded, tables populated, scope matched,
 `crates validate` clean, every `-sys` crate building and testing, layer 0
 resolving. Do not start a wave until it passes.
 
-Phase 2, translation. Repeats per sub-campaign, and within one, per wave.
+### Phase 2 -- Translation
 
 1. Plan sub-campaigns — what each covers, in what order.
 2. Assign execution objectives — `wrap`, `port` or `raw lifetime` per worklist.
@@ -97,5 +84,10 @@ for approval. Do not begin Phase 1 or mutate the campaign repository before
 approval.
 
 <!-- CONVENTIONS -->
+
+## Skills
+
+Read the available headers in the following skill index and leverage them to
+conduct your workflow.
 
 <!-- SKILLS -->
