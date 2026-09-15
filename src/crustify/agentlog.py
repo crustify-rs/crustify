@@ -19,7 +19,7 @@ format and splits the parsed stream two ways:
   ``<stem>.usage.json``  this run's accounting in CRUSTIFY's shape, built by
                          the backend from the CLI's session transcript - not a
                          provider object passed through. The one file anything
-                         parses; ``crustify-log-cost`` reads it.
+                         parses; ``crustify ... cost`` reads it.
 
 The raw stream itself is never stored. Tool-result events embed whole file
 bodies and command output, so a port wave's raw streams would outweigh

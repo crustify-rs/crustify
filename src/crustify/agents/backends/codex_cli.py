@@ -8,7 +8,7 @@ from the session rollout the CLI persists independently of stdout format.
 Codex never reports cost - not in text mode, not under ``--json``, and its
 JSON stream does not even name the model - so the per-run ``.usage.json`` is
 built from the rollout's ``token_count`` events and priced by
-``crustify-log-cost`` against the billing service's rates.
+``crustify ... cost`` against the billing service's rates.
 
 Two codex-specific traps, both handled below: its ``input_tokens`` is
 *inclusive* of cached reads (Anthropic's is not), and its tool surface is

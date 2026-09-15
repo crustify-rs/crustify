@@ -119,19 +119,16 @@ def main() -> None:
         "successful worktree.")
     # -- cost (accounting over the usage records) ------------------------
     _cost_blurb = (
-        "Account for every agent that ran under this checkout, from the "
-        "per-agent usage.json records the backends write. The unit is a "
-        "campaign, not a file: the per-kind and per-wave views exist to "
-        "compare a wave against its review.")
+        "Price the per-agent usage.json records named on the command line. "
+        "It reads the files it is given and assumes nothing about where they "
+        "live: a caller that knows which batch it is asking about says so, "
+        "and one that wants a wave passes the wave's records.")
     cost_p = sub.add_parser(
         "cost", help=_cost_blurb, description=_cost_blurb,
     )
     cost_p.add_argument(
-        "--campaign", default=None, metavar="ID",
-        help="Sub-campaign id under crustify/campaigns/, e.g. libavutil/core. "
-             "Not the oracle target positional: that names a path in the "
-             "checkout, this names a campaign directory. Default: every "
-             "campaign found.")
+        "usage", nargs="+", type=Path, metavar="USAGE_JSON",
+        help="One or more per-agent .usage.json records.")
     from crustify.log_cost import add_flags as _add_cost_flags
     _add_cost_flags(cost_p)
 
@@ -254,7 +251,7 @@ def _handle_cost(args: argparse.Namespace) -> None:
     """Report agent cost and wall time for this checkout."""
     from crustify.log_cost import report
 
-    raise SystemExit(report(args.workdir, args.campaign, offline=args.offline,
+    raise SystemExit(report(args.usage, offline=args.offline,
                             price_cache=args.price_cache))
 
 
