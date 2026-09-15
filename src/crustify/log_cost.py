@@ -153,21 +153,26 @@ def hm(s):
 
 # ------------------------------------------------------------------- views
 
-def main():
-    ap = argparse.ArgumentParser(description=__doc__,
-                                 formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("workdir")
-    ap.add_argument("--target", default=None,
-                    help="Repo-relative target (default: every target found).")
-    ap.add_argument("--offline", action="store_true",
-                    help="Never fetch OpenRouter prices; use the cache only.")
-    ap.add_argument("--price-cache", default=DEFAULT_PRICE_CACHE)
-    args = ap.parse_args()
+def add_flags(parser: argparse.ArgumentParser) -> None:
+    """The flags this report takes, wherever it is reached from."""
+    parser.add_argument("--offline", action="store_true",
+                        help="Never fetch OpenRouter prices; use the cache only.")
+    parser.add_argument("--price-cache", default=DEFAULT_PRICE_CACHE)
 
-    prices = load_prices(args.price_cache, offline=args.offline)
 
-    campaigns = Layout(Path(args.workdir)).campaigns
-    scope = campaigns / args.target if args.target else campaigns
+def report(workdir, target=None, *, offline: bool = False,
+           price_cache: str = DEFAULT_PRICE_CACHE) -> int:
+    """Account for every agent under one workdir, optionally one target.
+
+    The unit is a campaign, not a file: the per-kind and per-wave views exist
+    to compare a wrap wave against its review, which a single ``usage.json``
+    cannot answer. Individual records are what this globs, never what it is
+    handed.
+    """
+    prices = load_prices(price_cache, offline=offline)
+
+    campaigns = Layout(Path(workdir)).campaigns
+    scope = campaigns / target if target else campaigns
     log_glob = os.path.join(
         str(scope), "**", "logs", "**", "*.usage.json")
 
@@ -246,7 +251,7 @@ def main():
 
     # Legacy session directories were target-wide and carried no wave name.
     # Map them to the first following historical layer commit as before.
-    out = subprocess.run(["git", "-C", args.workdir, "log", "--all",
+    out = subprocess.run(["git", "-C", str(workdir), "log", "--all",
                           "--format=%ct %s"], capture_output=True, text=True).stdout
     waves = {}
     for line in out.splitlines():
@@ -287,6 +292,19 @@ def main():
     print(f"  WAVE Σ = ${grand:.2f}  | + setup ${kc['setup']:.2f} = "
           f"${grand + kc['setup']:.2f}")
     return 0
+
+
+def main():
+    ap = argparse.ArgumentParser(
+        description=__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("workdir")
+    ap.add_argument("--target", default=None,
+                    help="Repo-relative target (default: every target found).")
+    add_flags(ap)
+    args = ap.parse_args()
+    return report(args.workdir, args.target,
+                  offline=args.offline, price_cache=args.price_cache)
 
 
 if __name__ == "__main__":

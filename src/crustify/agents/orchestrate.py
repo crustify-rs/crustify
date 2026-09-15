@@ -78,7 +78,8 @@ class OrchestrateAgent(CrustifyAgent):
         return "\n\n---\n\n".join((
             super().system_preamble(),
             "## Campaign task\n\n"
-            "The decisions below are the campaign's input. Unanswered optional\n"
-            "decisions take the documented defaults; an unanswered mandatory\n"
-            "decision is an error, not a guess.\n\n" + task,
+            "The decisions below are the campaign's input. An unanswered\n"
+            "optional decision takes its documented default. Ask the user\n"
+            "about one that is unanswered or genuinely ambiguous; never guess\n"
+            "it, and never re-ask one the task already answers.\n\n" + task,
         ))

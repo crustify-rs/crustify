@@ -117,6 +117,24 @@ def main() -> None:
         "inserts that batch's TODO anchors and starts one translator. The "
         "translator lands atomically on the base branch and prunes its own "
         "successful worktree.")
+    # -- cost (accounting over the usage records) ------------------------
+    _cost_blurb = (
+        "Account for every agent that ran under this checkout, from the "
+        "per-agent usage.json records the backends write. The unit is a "
+        "campaign, not a file: the per-kind and per-wave views exist to "
+        "compare a wave against its review.")
+    cost_p = sub.add_parser(
+        "cost", help=_cost_blurb, description=_cost_blurb,
+    )
+    cost_p.add_argument(
+        "--campaign", default=None, metavar="ID",
+        help="Sub-campaign id under crustify/campaigns/, e.g. libavutil/core. "
+             "Not the oracle target positional: that names a path in the "
+             "checkout, this names a campaign directory. Default: every "
+             "campaign found.")
+    from crustify.log_cost import add_flags as _add_cost_flags
+    _add_cost_flags(cost_p)
+
     # -- audit (the safety passes, formerly a second entry point) --------
     _audit_blurb = (
         "Find soundness bugs and safety trade-offs in Rust that wraps C. "
@@ -213,6 +231,9 @@ def main() -> None:
     elif args.command == "audit":
         _handle_audit(args)
 
+    elif args.command == "cost":
+        _handle_cost(args)
+
 
 
 # -- analyze dispatch -----------------------------------------------------
@@ -227,6 +248,14 @@ def _handle_crates(args: argparse.Namespace, target: Path) -> None:
                       name=args.name)
     elif args.crates_command == "validate":
         crates.validate_command(target)
+
+
+def _handle_cost(args: argparse.Namespace) -> None:
+    """Report agent cost and wall time for this checkout."""
+    from crustify.log_cost import report
+
+    raise SystemExit(report(args.workdir, args.campaign, offline=args.offline,
+                            price_cache=args.price_cache))
 
 
 def _handle_audit(args: argparse.Namespace) -> None:
