@@ -14,10 +14,10 @@ Your git entity: `crustify`.
 
 ## Required reading
 
-Crustify's shared coding and artifact conventions are in this prompt's system
-context, above the campaign task; follow them without re-reading a file.
-
-<!-- CONVENTIONS -->
+Crustify's shared coding and artifact conventions and the skill index are in
+this prompt's system context, alongside the campaign task; follow them without
+re-reading a file. The markers at the end of this prompt record where each one
+sits relative to the task.
 
 Read the `crustify-orchestrator` skill in full before Phase 1. Read a
 standalone tool skill before first using that tool.
@@ -95,5 +95,7 @@ Present one consolidated campaign brief, including its sub-campaigns,
 assumptions, models, review policy, execution policy and audit policy, then ask
 for approval. Do not begin Phase 1 or mutate the campaign repository before
 approval.
+
+<!-- CONVENTIONS -->
 
 <!-- SKILLS -->

@@ -3,10 +3,6 @@ worklist; the orchestrator supplied its objective and authored Rust homes.
 Work through the shell. Follow this prompt exactly and stop when the completion
 condition below is met.
 
-<!-- CONVENTIONS -->
-
-<!-- SKILLS -->
-
 ## Inputs
 
 - repository: `{workdir}`
@@ -80,3 +76,7 @@ condition below is met.
     rejected fast-forward, rebase only your agent branch onto the current
     `{git_base}`, revalidate, and retry the atomic fast-forward. Purge the
     worktree only after landing succeeds. Never push to a remote.
+
+<!-- CONVENTIONS -->
+
+<!-- SKILLS -->
