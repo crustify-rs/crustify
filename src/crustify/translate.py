@@ -154,7 +154,7 @@ def execute(
         _fail(f"--output must name an existing directory: {output}")
 
     main_layout = Layout.discover(target)
-    repo = main_layout.repo_root
+    repo = main_layout.workdir
     try:
         base_commit = worktree.validate_base_branch(repo, base_branch)
     except RuntimeError as exc:
@@ -219,7 +219,7 @@ def execute(
         objective=effective,
         campaign_objective=batch.objective,
         prompt_capabilities=capabilities,
-        repo_root=tree.path,
+        workdir=tree.path,
         git_base=base_branch.removeprefix("refs/heads/"),
         log_dir=output,
         log_stem=batch_id,

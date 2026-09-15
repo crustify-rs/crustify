@@ -11,9 +11,11 @@ def main() -> None:
         description="Multi-agent C-to-Rust translation pipeline.",
     )
     parser.add_argument(
-        "repo_root",
-        help="Full path to the repository root (its artifacts live under "
-             "<repo_root>/crustify/). Explicit — crustify never walks the "
+        "workdir",
+        help="Full path to the checkout this run works in; its artifacts live "
+             "under <workdir>/crustify/. An isolated agent's workdir is its "
+             "own worktree, which is why this is not called a repository "
+             "root. Required and explicit — crustify never walks the "
              "filesystem to find it.",
     )
     parser.add_argument(
@@ -134,20 +136,20 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    # repo_root is explicit (no marker-walking); target is repo-relative.
-    from crustify.layout import set_repo_root
-    repo_root = Path(args.repo_root).resolve()
-    set_repo_root(repo_root)
+    # workdir is explicit (no marker-walking); target is repo-relative.
+    from crustify.layout import set_workdir
+    workdir = Path(args.workdir).resolve()
+    set_workdir(workdir)
     target_rel = (args.target or "").strip("/")
-    target = repo_root if target_rel in ("", ".") else (repo_root / target_rel)
+    target = workdir if target_rel in ("", ".") else (workdir / target_rel)
     target = target.resolve()
     args._target_path = str(target)
 
-    if not repo_root.exists():
-        print(f"error: repo_root does not exist: {repo_root}", file=sys.stderr)
+    if not workdir.exists():
+        print(f"error: workdir does not exist: {workdir}", file=sys.stderr)
         sys.exit(1)
-    if not (repo_root / "crustify").is_dir():
-        print(f"error: no crustify/ under repo_root: {repo_root}", file=sys.stderr)
+    if not (workdir / "crustify").is_dir():
+        print(f"error: no crustify/ under workdir: {workdir}", file=sys.stderr)
         sys.exit(1)
     if not target.exists():
         print(f"error: target does not exist: {target}", file=sys.stderr)

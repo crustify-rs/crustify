@@ -43,13 +43,13 @@ class TranslateAgent(CrustifyAgent):
         objective: str,
         campaign_objective: str,
         prompt_capabilities: tuple[str, ...] | None = None,
-        repo_root: Path,
+        workdir: Path,
         git_base: str,
         log_dir: Path,
         log_stem: str,
     ) -> None:
         super().__init__(
-            target, repo_root=repo_root, git_base=git_base,
+            target, workdir=workdir, git_base=git_base,
             log_dir=log_dir, log_stem=log_stem,
         )
         self._route = route
@@ -118,7 +118,7 @@ class TranslateAgent(CrustifyAgent):
 
     def _arguments(self) -> dict:
         common = {
-            # Base first: `target`, `repo_root`, and `git_base` (the wave's
+            # Base first: `target`, `workdir`, and `git_base` (the wave's
             # integration branch). Building this dict from scratch silently dropped
             # every key the base adds — a template naming one dies with KeyError
             # before the agent issues a request.

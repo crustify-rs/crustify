@@ -9,7 +9,7 @@ condition below is met.
 
 ## Inputs
 
-- repository: `{repo_root}`
+- repository: `{workdir}`
 - target: `{target}`
 - Cargo workspace: `{workspace_root}`
 - build manifest: `{build_json}`
@@ -30,11 +30,11 @@ condition below is met.
    dependency closure and existing Rust consumers. Complete or correct
    agent-owned findings through an enabled capability when one provides that
    operation. For Wavefront queries, pass
-   `--config {wavefront_config}` after `{repo_root}`; this campaign-wide config
+   `--config {wavefront_config}` after `{workdir}`; this campaign-wide config
    gives translators the repo-wide dependency view. Do not substitute a narrow
    scheduling config from the wave directory.
 4. Locate every authored Rust home with
-   `crustify {repo_root} {target} crates locate`. For a raw-lifetime route,
+   `crustify {workdir} {target} crates locate`. For a raw-lifetime route,
    locate the concrete primitives after discovering them and home them yourself
    in `crates.json`. Otherwise, you should never really have to edit the spec;
    report a missing home.
