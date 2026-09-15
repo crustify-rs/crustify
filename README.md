@@ -128,7 +128,7 @@ playbook`](docs/translator-playbook.md).
 
 ## CLI
 
-This repository installs two commands:
+This repository installs one command:
 
 ```text
 crustify           one entry point for every stage:
@@ -136,7 +136,7 @@ crustify           one entry point for every stage:
                      translate    execute one thin batch
                      audit        unsafe metrics; optional undefined-behavior pass
                      crates       validate crate placement
-crustify-log-cost  summarize agent usage and cost logs
+                     cost         price per-agent usage.json records
 ```
 
 The oracle interface is owned by its own repository. Use `<command> --help` for

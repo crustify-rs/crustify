@@ -43,7 +43,7 @@ Two views:
     directories; cost split by agent kind. Historical session directories are
     still mapped to their following wave commit.
 
-Usage:  crustify-log-cost <workdir> [--target ssl/statem] [--offline]
+Usage:  crustify <workdir> <target> cost USAGE_JSON... [--offline]
 """
 import argparse
 import glob
@@ -160,151 +160,62 @@ def add_flags(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--price-cache", default=DEFAULT_PRICE_CACHE)
 
 
-def report(workdir, target=None, *, offline: bool = False,
+def report(paths, *, offline: bool = False,
            price_cache: str = DEFAULT_PRICE_CACHE) -> int:
-    """Account for every agent under one workdir, optionally one target.
+    """Price the usage records named on the command line, and nothing else.
 
-    The unit is a campaign, not a file: the per-kind and per-wave views exist
-    to compare a wrap wave against its review, which a single ``usage.json``
-    cannot answer. Individual records are what this globs, never what it is
-    handed.
+    It takes files, not a directory to search. Discovering records by walking
+    a layout is what this tool used to do, and it silently accounted for
+    nothing the day the artifact tiers moved: the glob still matched, just
+    never anything. A caller that knows which batch it is asking about can say
+    so, and a caller that wants a wave sums the rows itself -- which is also
+    the shape the batch tables want, one row per landing.
     """
     prices = load_prices(price_cache, offline=offline)
 
-    campaigns = Layout(Path(workdir)).campaigns
-    scope = campaigns / target if target else campaigns
-    log_glob = os.path.join(
-        str(scope), "**", "logs", "**", "*.usage.json")
-
-    kc = defaultdict(float); kr = defaultdict(int)
-    kw = defaultdict(float); kn = defaultdict(int)  # kn = rows with no priceable cost
-    kx = defaultdict(int)                           # kx = rows with no recorded wall
-    logs = sorted(glob.glob(log_glob, recursive=True))
-    if not logs:
-        print(f"no agent logs under {log_glob}", file=sys.stderr)
+    rows, missing = [], 0
+    for path in paths:
+        parsed = parse_usage(str(path), prices)
+        if parsed is None:
+            print(f"unreadable usage record: {path}", file=sys.stderr)
+            missing += 1
+            continue
+        cost, tokens, model = parsed
+        rows.append((str(path), kind(usage_stage(str(path))), model, cost,
+                     tokens, wall_seconds(str(path))))
+    if not rows:
         return 1
 
-    for p in logs:
-        parsed = parse_usage(p, prices)
-        if parsed is None:
-            continue
-        cost, tokens, _model = parsed
-        k = kind(usage_stage(p))
-        kr[k] += 1
-        if cost is None:
-            kn[k] += 1
-        else:
-            kc[k] += cost
-        w = wall_seconds(p)
-        if w is None:
-            kx[k] += 1
-        else:
-            kw[k] += w
-
-    print("=== PER AGENT KIND ===")
-    print(f"{'kind':<15}{'runs':>5}{'no-price':>10}{'no-wall':>9}"
-          f"{'$ total':>10}{'$/run':>8}{'Σwall':>9}")
-    tc = tr = tw = 0
-    # Print every bucket `kind()` produced, not a fixed list of them. The
-    # historical names come first for a stable reading order, then anything
-    # else in sorted order, then `other` last. A list here goes stale the
-    # moment a new agent kind is classified -- which is how every
-    # `translate`-era bucket (`wrap-type`, `review-symbol`, ...) came to be
-    # counted into `kr` and then silently dropped from both its row and the
-    # Sigma, under-reporting a campaign by whatever those agents cost.
-    _FIRST = ["port", "wrap", "merge", "setup"]
-    order = [k for k in _FIRST if kr.get(k)]
-    order += sorted(k for k in kr if k not in _FIRST and k != "other")
-    if kr.get("other"):
-        order.append("other")
-    for k in order:
-        if not kr.get(k):
-            continue
-        per = kc[k] / kr[k] if kr[k] else 0.0
-        print(f"{k:<15}{kr[k]:>5}{kn[k]:>10}{kx[k]:>9}"
-              f"{kc[k]:>10.2f}{per:>8.2f}{hm(kw[k]):>9}")
-        tc += kc[k]; tr += kr[k]; tw += kw[k]
-    print(f"{'Σ':<15}{tr:>5}{sum(kn.values()):>10}{sum(kx.values()):>9}"
-          f"{tc:>10.2f}{'':>8}{hm(tw):>9}")
-
-    # ---- per-wave ---------------------------------------------------------
-    # New campaigns encode the wave directly in the path. Preserve the old
-    # mtime-to-commit mapping below only for legacy target/logs/session dirs.
-    bywave = defaultdict(lambda: defaultdict(float))
-    legacy_dirs: set[str] = set()
-    for p in logs:
-        path = Path(p)
-        log_dir = path.parent
-        wave_dir = log_dir.parent
-        if log_dir.name == "logs" and re.fullmatch(r"wave-\d+", wave_dir.name):
-            try:
-                wave = wave_dir.relative_to(campaigns).as_posix()
-            except ValueError:
-                wave = str(wave_dir)
-            parsed = parse_usage(p, prices)
-            family = kind(usage_stage(p)).split("-")[0]
-            if parsed and parsed[0] is not None and family in (
-                    "port", "wrap", "merge", "review"):
-                bywave[wave][family] += parsed[0]
-        else:
-            legacy_dirs.add(str(log_dir))
-
-    # Legacy session directories were target-wide and carried no wave name.
-    # Map them to the first following historical layer commit as before.
-    out = subprocess.run(["git", "-C", str(workdir), "log", "--all",
-                          "--format=%ct %s"], capture_output=True, text=True).stdout
-    waves = {}
-    for line in out.splitlines():
-        m = re.search(r"crustify: L(\d+) ", line)
-        if m:
-            waves.setdefault(int(m.group(1)), int(line.split()[0]))
-    ct = sorted((waves[layer], layer) for layer in waves)
-
-    for d in sorted(legacy_dirs):
-        if not any(glob.glob(f"{d}/{pat}.usage.json")
-                   for pat in ("port_*", "wrap_*", "port-*", "wrap-*", "review-*")):
-            continue
-        mg = glob.glob(f"{d}/merge*.usage.json")
-        mt = stat(mg[0] if mg else d, "%Y")
-        cand = [layer for t, layer in ct if t >= mt - 60]
-        if not cand:
-            continue
-        layer = min(cand, key=lambda x: waves[x])
-        wave = f"L{layer}"
-        for p in glob.glob(f"{d}/*.usage.json"):
-            # Fold `wrap-type` / `review-symbol` / ... onto their family, so a
-            # wave's cost is not split across per-subject buckets here.
-            k = kind(usage_stage(p)).split("-")[0]
-            if k not in ("port", "wrap", "merge", "review"):
-                continue
-            parsed = parse_usage(p, prices)
-            if parsed and parsed[0] is not None:
-                bywave[wave][k] += parsed[0]
-
-    print("\n=== PER WAVE (port/wrap/merge/review $) ===")
-    grand = 0.0
-    for wave in sorted(bywave):
-        b = bywave[wave]
-        t = b["wrap"] + b["port"] + b["merge"] + b["review"]
-        grand += t
-        print(f"  {wave:<40} wrap={b['wrap']:6.1f} port={b['port']:6.1f} "
-              f"merge={b['merge']:5.1f} review={b['review']:6.1f}  total={t:6.1f}")
-    print(f"  WAVE Σ = ${grand:.2f}  | + setup ${kc['setup']:.2f} = "
-          f"${grand + kc['setup']:.2f}")
-    return 0
+    one = len(rows) == 1
+    print(f"{'stage':<18}{'model':<30}{'$':>9}{'tokens':>12}{'wall':>9}")
+    for path, k, model, cost, tokens, wall in rows:
+        print(f"{k:<18}{(model or '?'):<30}"
+              f"{('—' if cost is None else f'{cost:9.2f}'):>9}"
+              f"{tokens:>12,}{(hm(wall) if wall else '—'):>9}")
+        if one:
+            print(f"  {path}")
+    if not one:
+        total = sum(c for _, _, _, c, _, _ in rows if c is not None)
+        twall = sum(w for _, _, _, _, _, w in rows if w)
+        ttok = sum(n for _, _, _, _, n, _ in rows)
+        unpriced = sum(1 for _, _, _, c, _, _ in rows if c is None)
+        print(f"{'Σ ' + str(len(rows)) + ' records':<48}"
+              f"{total:9.2f}{ttok:>12,}{hm(twall):>9}")
+        if unpriced:
+            print(f"  {unpriced} record(s) had no priceable model",
+                  file=sys.stderr)
+    return 1 if missing else 0
 
 
 def main():
     ap = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("workdir")
-    ap.add_argument("--target", default=None,
-                    help="Repo-relative target (default: every target found).")
+    ap.add_argument("usage", nargs="+", help="Per-agent .usage.json records.")
     add_flags(ap)
     args = ap.parse_args()
-    return report(args.workdir, args.target,
-                  offline=args.offline, price_cache=args.price_cache)
+    return report(args.usage, offline=args.offline,
+                  price_cache=args.price_cache)
 
 
 if __name__ == "__main__":

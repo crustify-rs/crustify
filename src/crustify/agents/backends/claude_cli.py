@@ -11,7 +11,7 @@ is the trade the module previously declined; observability during the run
 turned out to be worth more than not owning one.
 
 Accounting still comes from the session transcript the CLI persists
-independently of stdout format, priced by ``crustify-log-cost``.
+independently of stdout format, priced by ``crustify ... cost``.
 
 Why not ``--output-format json``, which reports ``total_cost_usd``
 directly: it is the same buffering problem (one JSON blob at exit), and

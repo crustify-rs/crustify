@@ -492,7 +492,7 @@ leave the branch unmerged and report the failed gate.
 
 ### 8. Accounting
 
-Run `crustify-log-cost` over `<batch-id>.usage.json` files. Use its computed
+Run `crustify ... cost` over the `<batch-id>.usage.json` files. Use its computed
 cost and token counts, not provider-reported dollar totals. Record agent wall
 times from usage files. Record wave wall time from first batch launch through
 final review and regression completion. Fill the user's evaluation table.
