@@ -20,18 +20,26 @@ ask only for campaign decisions that remain unresolved.
    - Answer: `<named subsystems | named functions/types | whole target |
      orchestrator's choice>`
 
-4. **Which agentic backend, model, provider, and billing should do the
-   translation work?** (`id: translate-agent`)
-   - Answer: `<backend, provider/model, api | subscription billing>`
+4. **Which model and billing should do the translation work?**
+   (`id: translate-agent`)
+   - Answer: `<provider/model, api | subscription>`, e.g.
+     `openrouter/anthropic/claude-opus-5, api`. The provider is the first
+     segment and selects both the billing rate table and the backend CLI.
+     Supported providers:
+     - `anthropic/<model>` — Anthropic direct, driven by Claude Code;
+     - `openai/<model>` — OpenAI direct, driven by Codex;
+     - `openrouter/<vendor>/<model>` — OpenRouter, which resells every vendor
+       behind one key, so the vendor segment picks the CLI: `anthropic/*` is
+       driven by Claude Code and everything else by Codex. OpenRouter
+       supports `api` billing only.
 
 5. **Do you want agentic review after translated work lands? If so, which
-   backend, model, provider, and billing should perform each review?**
-   (`id: review-agent`)
-   - Answer: `<no | backend, provider/model, api | subscription billing>`
+   model and billing should perform each review?** (`id: review-agent`)
+   - Answer: `<no | provider/model, api | subscription>`
 
 6. **Should the campaign run the optional agentic UB audit pass? If so, which
-   backend, model, provider, and billing should run it?** (`id: ub-audit`)
-   - Answer: `<no | backend, provider/model, api | subscription billing>`
+   model and billing should run it?** (`id: ub-audit`)
+   - Answer: `<no | provider/model, api | subscription>`
 
 7. **Should I run fully autonomously end to end?** (`id: autonomy`)
    - Answer: `<yes | no>`
