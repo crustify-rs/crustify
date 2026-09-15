@@ -32,9 +32,10 @@ template's own wording, only for the ids it leaves unresolved. Never restate a
 question from memory or invent alternative wording: the answers are compared
 across campaigns, so the question text is part of the measurement.
 
-Ask interactively, one at a time, when no `TASK.md` is mounted. An unresolved
-optional id takes its documented default; an unresolved mandatory id must be
-asked. `translate-agent`, `review-agent` and `ub-audit` each fix a backend,
+Ask one at a time, whatever the task leaves open: an id it does not answer, or
+one whose answer is genuinely ambiguous for this repository. An unresolved
+optional id takes its documented default rather than a question. Never re-ask
+what the task already answers. `translate-agent`, `review-agent` and `ub-audit` each fix a backend,
 provider, model and billing together — a model is only priceable and only
 routable alongside the service that bills it, so never resolve one without the
 others.
