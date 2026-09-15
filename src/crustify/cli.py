@@ -142,6 +142,11 @@ def main() -> None:
         "kind", choices=["translate", "audit"],
         help="Which campaign to supervise.")
     orch_p.add_argument(
+        "--task-only", action="store_true",
+        help="Ablation control: the task file is the entire prompt and the "
+             "harness contributes nothing -- no conventions, no skill index, "
+             "no stage prompt.")
+    orch_p.add_argument(
         "--task", required=True, type=Path, metavar="PATH",
         help="Campaign TASK.md. Required: the campaign's decisions are an "
              "input, not something the orchestrator interviews for.")
@@ -241,8 +246,9 @@ def _handle_orchestrate(args: argparse.Namespace, target: Path) -> None:
     if not args.task.is_file():
         raise SystemExit(f"no campaign task at {args.task}")
     model = _cfg.MODEL_OVERRIDE or "anthropic/claude-opus-5"
-    OrchestrateAgent(target, kind=args.kind, task=args.task,
-                     model=model, workdir=Path(args.workdir)).run()
+    OrchestrateAgent(target, kind=args.kind, task=args.task, model=model,
+                     task_only=args.task_only,
+                     workdir=Path(args.workdir)).run()
 
 
 def _handle_translate(args: argparse.Namespace, target: Path) -> None:

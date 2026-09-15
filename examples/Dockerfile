@@ -16,7 +16,7 @@
 #   # translate
 #   docker run -it --name crustify-libgit2 \
 #       -e CRUSTIFY_COMMAND=translate \
-#       -e ANTHROPIC_API_KEY -e CRUSTIFY_BACKEND=claude \
+#       -e OPENROUTER_API_KEY -e CRUSTIFY_MODEL=openrouter/anthropic/claude-opus-5 \
 #       -v "$(dirname "$PWD")/wavefront:/opt/wavefront" \
 #       -v "$(dirname "$PWD")/ffibox:/opt/ffibox" \
 #       -v /absolute/path/to/your/target-fork:/target \
@@ -26,7 +26,7 @@
 #   # audit
 #   docker run --rm -it --name audit-ippcp \
 #       -e CRUSTIFY_COMMAND=audit \
-#       -e ANTHROPIC_API_KEY \
+#       -e OPENROUTER_API_KEY -e CRUSTIFY_MODEL=openrouter/anthropic/claude-opus-5 \
 #       -v /path/to/target-repo:/target \
 #       -v /host/campaign/TASK.md:/campaign/TASK.md:ro \
 #       -v audit-ippcp-work:/work \
@@ -44,9 +44,11 @@
 #                      CodeQL data, partial translation and logs are used in
 #                      place and remain on the host. The orchestrator must not
 #                      clone, reset or replace it.
-#   /campaign/TASK.md  The campaign task, read-only. Edit on the host and the
-#                      next run picks it up. Without it the orchestrator asks
-#                      for unresolved details interactively.
+#   /campaign/TASK.md  The campaign task, read-only, and REQUIRED: the
+#                      campaign's decisions are an input, not an interview.
+#                      Edit on the host and the next run picks it up. An
+#                      unanswered optional decision takes its documented
+#                      default; an unanswered mandatory one is an error.
 #   /opt/crustify      The harness, baked into the image. Mount a checkout here
 #                      to test live harness changes. Both packages live in one
 #                      distribution, so this single tree serves both roles.
@@ -310,14 +312,15 @@ ENV CRUSTIFY_DEP_CRUSTIFY=/opt/crustify \
     CRUSTIFY_DEP_AUDIT=/opt/crustify \
     CRUSTIFY_BIN_CLI=/opt/venv/bin/crustify \
     CRUSTIFY_BIN_WAVEFRONT=/opt/venv/bin/wavefront \
-    CRUSTIFY_BIN_AUDIT=/opt/venv/bin/crustify-audit
+    CRUSTIFY_BIN_AUDIT=/opt/venv/bin/crustify
 
-# The CLI, model and gateway used by the ORCHESTRATOR, whichever role runs.
-# The agents an orchestrator spawns get theirs per wave from `crustify --model`
-# or per auditor from the orchestrator's own `--model`.
-ENV CRUSTIFY_BACKEND=claude
-ENV CRUSTIFY_MODEL=claude-opus-5
-ENV CRUSTIFY_PROVIDER=
+# The model used by the ORCHESTRATOR, whichever role runs. One qualified route
+# rather than a backend/provider/model triple the entrypoint recombined: the
+# provider is the first segment, it selects the billing rate table, and
+# resolve() derives the CLI from it. The agents an orchestrator spawns get
+# theirs per wave from `crustify --model`, or per auditor from the
+# orchestrator's own `--model`.
+ENV CRUSTIFY_MODEL=anthropic/claude-opus-5
 
 # Interactive by default: translate asks what to port before Phase 1 and
 # reports a wave's --dry-run plan before spending on it; audit asks for
@@ -365,102 +368,12 @@ RUN git config --system --add safe.directory '*'
 
 
 
-# One resolver and one exec, shared by both orchestrators. The two roles differ
-# only in what they check before starting and how they build the prompt; the
-# backend, gateway, billing and effort handling below is the same job, and was
-# previously duplicated -- which is how the translate path came to have no
-# --model and no openrouter support.
-RUN mkdir -p /usr/local/lib/crustify
-RUN printf '%s\n' \
-      '# Shared agent invocation for both orchestrators. Sourced rather than exec-ed' \
-      '# so a prompt can reference the resolved provider before the agent starts.' \
-      '' \
-      '# Sets: backend, provider, auth[], effort[]. Exits on any bad combination.' \
-      'crustify_resolve_agent() {' \
-      '    case "${CRUSTIFY_BACKEND:-}" in' \
-      '        claude) backend=claude ;;' \
-      '        codex)  backend=codex ;;' \
-      '        *) echo "bad CRUSTIFY_BACKEND: ${CRUSTIFY_BACKEND:-<empty>} (claude|codex)" >&2' \
-      '           exit 2 ;;' \
-      '    esac' \
-      '    case "$backend/${CRUSTIFY_PROVIDER:-}" in' \
-      '        claude/|claude/anthropic) provider=anthropic ;;' \
-      '        claude/openrouter)        provider=openrouter ;;' \
-      '        codex/|codex/openai)      provider=openai ;;' \
-      '        codex/openrouter)         provider=openrouter ;;' \
-      '        *) echo "bad CRUSTIFY_PROVIDER for $backend: ${CRUSTIFY_PROVIDER:-<empty>}" >&2' \
-      '           exit 2 ;;' \
-      '    esac' \
-      '    [ -n "${CRUSTIFY_MODEL:-}" ] || {' \
-      '        echo "CRUSTIFY_MODEL must name the orchestrator model" >&2; exit 2; }' \
-      '    # Checked here: an agent with no usable auth issues no request and exits' \
-      '    # 0, which reads as a hunt that found nothing.' \
-      '    auth=()' \
-      '    case "${CRUSTIFY_BILLING:-}" in' \
-      '        subscription)' \
-      '            [ "$provider" != openrouter ] || {' \
-      '                echo "openrouter requires CRUSTIFY_BILLING=api" >&2; exit 2; } ;;' \
-      '        api|"")' \
-      '            case "$backend/$provider" in' \
-      '            # Claude Code speaks to any Anthropic-compatible gateway through' \
-      '            # ANTHROPIC_BASE_URL. The key must be blanked explicitly or the' \
-      '            # CLI keeps preferring it over the gateway token. No --bare here:' \
-      '            # that switch forces ANTHROPIC_API_KEY auth, which is empty.' \
-      '            claude/openrouter) [ -n "${OPENROUTER_API_KEY:-}" ] || {' \
-      '                echo "CRUSTIFY_BILLING=api needs OPENROUTER_API_KEY" >&2; exit 2; }' \
-      '                export ANTHROPIC_BASE_URL="https://openrouter.ai/api"' \
-      '                export ANTHROPIC_AUTH_TOKEN="$OPENROUTER_API_KEY"' \
-      '                export ANTHROPIC_API_KEY="" ;;' \
-      '            claude/anthropic) [ -n "${ANTHROPIC_API_KEY:-}" ] || {' \
-      '                echo "CRUSTIFY_BILLING=api needs ANTHROPIC_API_KEY" >&2; exit 2; }' \
-      '                auth=(--bare) ;;' \
-      '            codex/openai) [ -n "${OPENAI_API_KEY:-}" ] || {' \
-      '                echo "CRUSTIFY_BILLING=api needs OPENAI_API_KEY" >&2; exit 2; }' \
-      '                auth=(-c "model_provider=openai_apikey"' \
-      '                      -c "model_providers.openai_apikey.name=\"OpenAI\""' \
-      '                      -c "model_providers.openai_apikey.base_url=\"https://api.openai.com/v1\""' \
-      '                      -c "model_providers.openai_apikey.env_key=\"OPENAI_API_KEY\""' \
-      '                      -c "model_providers.openai_apikey.wire_api=\"responses\"") ;;' \
-      '            codex/openrouter) [ -n "${OPENROUTER_API_KEY:-}" ] || {' \
-      '                echo "CRUSTIFY_BILLING=api needs OPENROUTER_API_KEY" >&2; exit 2; }' \
-      '                auth=(-c "model_provider=openrouter_apikey"' \
-      '                      -c "model_providers.openrouter_apikey.name=\"OpenRouter\""' \
-      '                      -c "model_providers.openrouter_apikey.base_url=\"https://openrouter.ai/api/v1\""' \
-      '                      -c "model_providers.openrouter_apikey.env_key=\"OPENROUTER_API_KEY\""' \
-      '                      -c "model_providers.openrouter_apikey.wire_api=\"responses\"") ;;' \
-      '            esac ;;' \
-      '        *) echo "bad CRUSTIFY_BILLING: ${CRUSTIFY_BILLING}" >&2; exit 2 ;;' \
-      '    esac' \
-      '    effort=()' \
-      '    case "${CRUSTIFY_EFFORT:-}" in' \
-      '        "") ;;' \
-      '        low|medium|high|xhigh|max|ultra)' \
-      '            effort=(-c "model_reasoning_effort=\"${CRUSTIFY_EFFORT}\"") ;;' \
-      '        *) echo "bad CRUSTIFY_EFFORT: ${CRUSTIFY_EFFORT}" >&2; exit 2 ;;' \
-      '    esac' \
-      '}' \
-      '' \
-      'crustify_exec_agent() {' \
-      '    text="$1"; shift' \
-      '    skip=--dangerously-skip-permissions' \
-      '    bypass=--dangerously-bypass-approvals-and-sandbox' \
-      '    case "${backend}:${CRUSTIFY_HEADLESS}" in' \
-      '        claude:0) exec claude "$skip" "${auth[@]}" --model "$CRUSTIFY_MODEL" "$text" "$@" ;;' \
-      '        claude:1) exec claude "$skip" "${auth[@]}" --model "$CRUSTIFY_MODEL" -p "$text" "$@" ;;' \
-      '        codex:0)  exec codex "$bypass" "${auth[@]}" "${effort[@]}" --model "$CRUSTIFY_MODEL" "$text" "$@" ;;' \
-      '        codex:1)  exec codex exec "$bypass" "${auth[@]}" "${effort[@]}" --model "$CRUSTIFY_MODEL" "$text" "$@" ;;' \
-      '        *) echo "bad CRUSTIFY_BACKEND/CRUSTIFY_HEADLESS:" \' \
-      '                "${CRUSTIFY_BACKEND}/${CRUSTIFY_HEADLESS}" >&2; exit 2 ;;' \
-      '    esac' \
-      '}' \
-      > /usr/local/lib/crustify/agent.sh
 
 # The one orchestrator. CRUSTIFY_COMMAND selects the prompt; everything else
 # below is shared.
 RUN printf '%s\n' \
       '#!/usr/bin/env bash' \
       'set -euo pipefail' \
-      '. /usr/local/lib/crustify/agent.sh' \
       '# The two campaigns differ in one thing only: which orchestrator prompt they' \
       '# load. Everything else -- preflight, agent settings, task handling, exec -- is' \
       '# the same job, and was two scripts long enough for the translate path to lose' \
@@ -501,25 +414,19 @@ RUN printf '%s\n' \
       '    # checkout is all it needs.' \
       '    uv pip install --python /opt/venv -e /opt/wavefront' \
       'fi' \
-      'crustify_resolve_agent' \
       '# Append a task only when the conventional external mount is present.' \
       'task=' \
       'if [ -f /campaign/TASK.md ]; then' \
       '    task=/campaign/TASK.md' \
       'fi' \
-      '# ABLATION SWITCH. With CRUSTIFY_BARE=1 the harness contributes NOTHING to the' \
-      '# prompt: no orchestrator role, no container context, no workset or instrument' \
-      '# guidance, no artifact layout. The TASK file IS the whole prompt. That is the' \
-      '# point -- it measures what the bare model finds on its own, against a full' \
-      '# crustify run on the same target and budget.' \
-      'if [ "${CRUSTIFY_BARE:-0}" = 1 ]; then' \
-      '    [ -n "$task" ] || {' \
-      '        echo "CRUSTIFY_BARE=1 needs a task at /campaign/TASK.md" >&2' \
-      '        exit 2; }' \
-      '    echo "[crustify] BARE: /campaign/TASK.md is the entire prompt"' \
-      '    text="$(cat "$task")"' \
-      '    crustify_exec_agent "$text" "$@"' \
-      'fi' \
+      '# ABLATION SWITCH. With CRUSTIFY_BARE=1 the harness contributes NOTHING to' \
+      '# the prompt: no orchestrator role, no conventions, no skill index. The TASK' \
+      '# file IS the whole prompt. That is the point -- it measures what the bare' \
+      '# model finds on its own, against a full crustify run on the same target and' \
+      '# budget. The CLI implements it, so the ablation and the real run differ in' \
+      '# one flag rather than in which program composed the prompt.' \
+      'bare=' \
+      '[ "${CRUSTIFY_BARE:-0}" = 1 ] && bare=--task-only' \
       '# The prompt is composed by the CLI now, not here: it reads its own prompt' \
       '# file, skill index, conventions and the campaign task, and puts them in a' \
       '# system slot this shell had no way to reach. What is left is the one thing' \
@@ -529,7 +436,7 @@ RUN printf '%s\n' \
       '    exit 2; }' \
       'echo "[crustify] task $task"' \
       'exec crustify --model "$provider/$CRUSTIFY_MODEL" --billing "$CRUSTIFY_BILLING" \' \
-      '    /target . orchestrate "$CRUSTIFY_COMMAND" --task "$task" "$@"' \
+      '    /target . orchestrate "$CRUSTIFY_COMMAND" --task "$task" $bare "$@"' \
       > /usr/local/bin/crustify-orchestrator \
     && chmod +x /usr/local/bin/crustify-orchestrator
 
@@ -537,4 +444,9 @@ RUN printf '%s\n' \
 # in it makes the existing checkout -- and any partial campaign -- the
 # orchestrator's unambiguous working repository.
 WORKDIR /target
-CMD ["crustify-orchestrator"]
+# Idle by default so the container is an environment, not one run: a campaign
+# started with `docker exec <name> crustify ... orchestrate ...` survives its
+# own crash, and a shell beside it can read the worktrees and caches it left.
+# The one-shot form still works, because CMD is only a default:
+# `docker run ... crustify crustify-orchestrator`.
+CMD ["sleep", "infinity"]
