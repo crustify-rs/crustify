@@ -128,13 +128,15 @@ playbook`](docs/translator-playbook.md).
 
 ## CLI
 
-This repository installs four commands:
+This repository installs two commands:
 
 ```text
-crustify                      validate crate placement and execute one thin batch
-crustify-audit                audit Rust safety; optional undefined-behavior pass
-crustify-log-cost             summarize agent usage and cost logs
-crustify-orchestrator-prompt  render the campaign orchestrator prompt
+crustify           one entry point for every stage:
+                     orchestrate  spawn a translate or audit campaign supervisor
+                     translate    execute one thin batch
+                     audit        unsafe metrics; optional undefined-behavior pass
+                     crates       validate crate placement
+crustify-log-cost  summarize agent usage and cost logs
 ```
 
 The oracle interface is owned by its own repository. Use `<command> --help` for

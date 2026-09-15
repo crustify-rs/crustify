@@ -33,7 +33,7 @@
 #       crustify
 #
 # The deterministic scan needs no agent and no auth, so it bypasses the
-# orchestrator entirely: `docker run ... crustify crustify-audit /target unsafe`.
+# orchestrator entirely: `docker run ... crustify crustify /target audit unsafe`.
 # CRUSTIFY_BARE=1 makes the mounted TASK.md the entire prompt, for either
 # command -- the ablation control, and the only other way in.
 #
@@ -290,7 +290,8 @@ RUN if [ "${INSTALL_CLAUDE}" = "1" ]; then \
 COPY . /opt/crustify
 RUN uv pip install --python /opt/venv/bin/python -e /opt/crustify \
     && crustify --help >/dev/null \
-    && crustify-audit --help >/dev/null
+    && crustify . . audit --help >/dev/null \
+    && crustify . . orchestrate --help >/dev/null
 ENV PYTHONPATH=/opt/crustify/src
 
 # Which campaign the container starts. The two differ in one thing only --
@@ -362,13 +363,6 @@ RUN mkdir -p /work /target
 # build time is masked whenever that volume already exists.
 RUN git config --system --add safe.directory '*'
 
-# `crustify-audit` is the CLI an audit orchestrator spawns auditors with, and
-# the way to reach the deterministic scan without an agent:
-# `docker run ... crustify crustify-audit /target unsafe`.
-RUN printf '%s\n' '#!/usr/bin/env bash' \
-      'exec python3 -m crustify_audit.cli "$@"' \
-      > /usr/local/bin/crustify-audit \
-    && chmod +x /usr/local/bin/crustify-audit
 
 
 # One resolver and one exec, shared by both orchestrators. The two roles differ
@@ -526,69 +520,16 @@ RUN printf '%s\n' \
       '    text="$(cat "$task")"' \
       '    crustify_exec_agent "$text" "$@"' \
       'fi' \
-      'case "$CRUSTIFY_COMMAND" in' \
-      'translate)' \
-      '    # /opt/crustify may be a mount, so only a prompt generated now matches the' \
-      '    # checkout driving this run. Passing the optional task to the renderer' \
-      '    # keeps container and direct CLI usage identical.' \
-      '    if [ -n "$task" ]; then' \
-      '        crustify-orchestrator-prompt /opt/wavefront /opt/crustify/src/crustify_audit "$task" -o /tmp/orchestrator.md' \
-      '    else' \
-      '        crustify-orchestrator-prompt /opt/wavefront /opt/crustify/src/crustify_audit -o /tmp/orchestrator.md' \
-      '    fi' \
-      '    text="$(cat /tmp/orchestrator.md)"' \
-      '    ;;' \
-      'audit)' \
-      '    # A development mount overrides the prompt baked into the image.' \
-      '    prompt=/opt/crustify/src/crustify_audit/prompts/orchestrator.md' \
-      '    [ -f "$prompt" ] || { echo "no orchestrator prompt at $prompt" >&2; exit 2; }' \
-      '    text="$(cat "$prompt")"' \
-      '    # A pre-filled task answers part of the interview. Appended, not merged:' \
-      '    # the orchestrator reads it and resolves what is missing. The translate' \
-      '    # renderer does this itself, which is why it is only done here.' \
-      '    if [ -n "$task" ]; then' \
-      '        echo "[crustify] task $task"' \
-      '        text="$text' \
-      '' \
-      '---' \
-      '' \
-      'The user pre-filled the task below. Concrete answers are decided. Ask' \
-      'for mandatory answers that are missing or still in angle brackets;' \
-      'choose unanswered optional values yourself. In headless mode, do not' \
-      'launch while a mandatory answer is unresolved.' \
-      '' \
-      '$(cat "$task")"' \
-      '    fi' \
-      '    ;;' \
-      'esac' \
-      '# What only the container knows, appended rather than templated into either' \
-      '# prompt: both files stay usable outside a container.' \
-      'text="$text' \
-      '' \
-      '---' \
-      '' \
-      'Container context, for the questions you are about to ask:' \
-      '' \
-      '- The target checkout is mounted at /target. It is the only one available, so' \
-      '  confirm it rather than asking where it is. Resolve and record the revision' \
-      '  you work on yourself, with git in /target.' \
-      '- Defaults you may propose: --model $provider/$CRUSTIFY_MODEL, --billing' \
-      '  $CRUSTIFY_BILLING, --effort $CRUSTIFY_EFFORT.' \
-      '- Interaction mode: $CRUSTIFY_HEADLESS (0 is interactive, 1 is headless)."' \
-      'case "$CRUSTIFY_COMMAND" in' \
-      'translate)' \
-      '    text="$text' \
-      '- The crustify and wavefront CLIs are on PATH. wavefront and ffibox are already' \
-      '  present at /opt/wavefront and /opt/ffibox, and CRUSTIFY_DEP_* names them, so' \
-      '  the Bootstrap stage has nothing to clone." ;;' \
-      'audit)' \
-      '    text="$text' \
-      '- Budget: --timeout $CRUSTIFY_TIMEOUT (minutes per auditor).' \
-      '- The crustify-audit CLI is on PATH. Spawn auditors with it. Run the' \
-      '  deterministic scan first -- crustify-audit /target unsafe -- for the data' \
-      '  that tells you how to partition worksets." ;;' \
-      'esac' \
-      'crustify_exec_agent "$text" "$@"' \
+      '# The prompt is composed by the CLI now, not here: it reads its own prompt' \
+      '# file, skill index, conventions and the campaign task, and puts them in a' \
+      '# system slot this shell had no way to reach. What is left is the one thing' \
+      '# only the container knows -- where the checkout is mounted.' \
+      '[ -n "$task" ] || {' \
+      '    echo "no /campaign/TASK.md: mount one, it is the campaign input" >&2' \
+      '    exit 2; }' \
+      'echo "[crustify] task $task"' \
+      'exec crustify --model "$provider/$CRUSTIFY_MODEL" --billing "$CRUSTIFY_BILLING" \' \
+      '    /target . orchestrate "$CRUSTIFY_COMMAND" --task "$task" "$@"' \
       > /usr/local/bin/crustify-orchestrator \
     && chmod +x /usr/local/bin/crustify-orchestrator
 

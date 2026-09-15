@@ -455,7 +455,7 @@ After review lands:
 Run the deterministic scan with the exact scheduled C names:
 
 ```bash
-crustify-audit <repo_root> unsafe --name <wave names...> --json
+crustify <workdir> audit unsafe --name <wave names...> --json
 ```
 
 Inspect each source site. Fix unsafe wrapper bypasses and unsound references.
@@ -468,12 +468,12 @@ been reviewed. Add one only for a named cross-wave obligation.
 At campaign end, record an unseeded scan:
 
 ```bash
-crustify-audit <repo_root> unsafe --json
+crustify <workdir> audit unsafe --json
 ```
 
 ### 7. Optional UB audit
 
-Run `crustify-audit ub` only with explicit user approval. Run it once after the
+Run `crustify <workdir> audit ub` only with explicit user approval. Run it once after the
 campaign unless the user requests another milestone or a confirmed finding
 blocks progress.
 

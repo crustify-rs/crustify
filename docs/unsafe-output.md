@@ -1,6 +1,6 @@
 # Deterministic `unsafe` output
 
-`crustify-audit REPO unsafe` builds the workspace through a rustc driver over
+`crustify WORKDIR audit unsafe` builds the workspace through a rustc driver over
 HIR and type checking. Its output is a deterministic description of the code
 that the build's active `cfg` selects—not a soundness verdict or quality score.
 
@@ -53,7 +53,7 @@ whose underlying memory C may mutate. Read it together with
 Repeat `--name` to search for C type or symbol names:
 
 ```sh
-crustify-audit REPO unsafe --name SSL SSL_new --name SSL_free
+crustify WORKDIR audit unsafe --name SSL SSL_new --name SSL_free
 ```
 
 Names resolve independently within each compiled workspace crate, and each
