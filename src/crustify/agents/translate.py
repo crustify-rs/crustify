@@ -14,7 +14,7 @@ _CORE_SKILLS = (
 _CAPABILITY_SKILLS: dict[str, SkillSpec] = {
     "wavefront": SkillSpec(
         "wavefront", "SKILL.md", capability="wavefront",
-        role_header="skills/wavefront.md",
+        role_header="skills/wavefront-translator.md",
     ),
     "ffibox": SkillSpec(
         "ffibox", "SKILL.md", capability="ffibox",

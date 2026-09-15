@@ -16,7 +16,7 @@ condition below is met.
 - unchecked-out wave integration branch: `{git_base}`
 - your git entity: `crustify`
 
-## Procedure
+## Workflow
 
 1. Read the `crustify-translator` skill in full. Read every enabled capability
    skill whose description applies to the worklist.

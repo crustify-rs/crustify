@@ -19,7 +19,11 @@ from crustify.agents.base import CrustifyAgent, SkillSpec, _PKG_ROOT
 #: surface whatever the campaign does, so neither is a selectable capability.
 _SKILLS = (
     SkillSpec("crustify", "src/crustify/prompts/skills/orchestrator.md"),
-    SkillSpec("wavefront", "SKILL.md"),
+    #: One wavefront skill, two role overlays. The oracle a translator queries
+    #: and the oracle an orchestrator plans with are the same tool used for
+    #: different work, so the metadata is shared and only the guidance splits.
+    SkillSpec("wavefront", "SKILL.md",
+              role_header="skills/wavefront-orchestrator.md"),
     SkillSpec("crustify-audit", "SKILL.md"),
 )
 
