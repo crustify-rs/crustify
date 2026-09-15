@@ -117,6 +117,24 @@ def main() -> None:
         "inserts that batch's TODO anchors and starts one translator. The "
         "translator lands atomically on the base branch and prunes its own "
         "successful worktree.")
+    # -- orchestrate (spawn the campaign supervisor) ---------------------
+    _orch_blurb = (
+        "Start a campaign orchestrator. It reads the campaign task, plans the "
+        "sub-campaigns and waves, and spawns the stage agents itself. The "
+        "kind selects which orchestrator prompt it runs under; there is no "
+        "default, because a wrong guess starts the wrong campaign and spends "
+        "a budget before anyone reads the transcript.")
+    orch_p = sub.add_parser(
+        "orchestrate", help=_orch_blurb, description=_orch_blurb,
+    )
+    orch_p.add_argument(
+        "kind", choices=["translate", "audit"],
+        help="Which campaign to supervise.")
+    orch_p.add_argument(
+        "--task", required=True, type=Path, metavar="PATH",
+        help="Campaign TASK.md. Required: the campaign's decisions are an "
+             "input, not something the orchestrator interviews for.")
+
     wrap_p = sub.add_parser(
         "translate", help=_translate_blurb, description=_translate_blurb,
     )
@@ -173,6 +191,9 @@ def main() -> None:
     elif args.command == "translate":
         _handle_translate(args, target)
 
+    elif args.command == "orchestrate":
+        _handle_orchestrate(args, target)
+
 
 
 # -- analyze dispatch -----------------------------------------------------
@@ -187,6 +208,18 @@ def _handle_crates(args: argparse.Namespace, target: Path) -> None:
                       name=args.name)
     elif args.crates_command == "validate":
         crates.validate_command(target)
+
+
+def _handle_orchestrate(args: argparse.Namespace, target: Path) -> None:
+    """Spawn the campaign orchestrator for this checkout."""
+    from crustify import config as _cfg
+    from crustify.agents.orchestrate import OrchestrateAgent
+
+    if not args.task.is_file():
+        raise SystemExit(f"no campaign task at {args.task}")
+    model = _cfg.MODEL_OVERRIDE or "anthropic/claude-opus-5"
+    OrchestrateAgent(target, kind=args.kind, task=args.task,
+                     model=model, workdir=Path(args.workdir)).run()
 
 
 def _handle_translate(args: argparse.Namespace, target: Path) -> None:
