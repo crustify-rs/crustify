@@ -33,17 +33,28 @@ class OrchestrateAgent(CrustifyAgent):
     tier = "workdir"
 
     def __init__(self, target: Path, *, kind: str, task: Path,
-                 model: str, **kwargs) -> None:
+                 model: str, task_only: bool = False, **kwargs) -> None:
         self.kind = kind
         self.task = Path(task)
         self.model = model
+        self.task_only = task_only
         self.stage_suffix = kind
         super().__init__(target, **kwargs)
+
+    def _task_text(self) -> str:
+        text = self.task.read_text().strip()
+        if not text:
+            raise SystemExit(f"campaign task is empty: {self.task}")
+        return text
 
     def skill_specs(self) -> tuple[SkillSpec, ...]:
         return _SKILLS
 
     def _prompt(self) -> str:
+        if self.task_only:
+            # The ablation control: the harness contributes nothing, so the
+            # task file is the whole prompt and the system slot stays empty.
+            return self._task_text().replace("{", "{{").replace("}", "}}")
         if self.kind == "audit":
             return (_PKG_ROOT.parent / "crustify_audit" / "prompts"
                     / "orchestrator.md").read_text()
@@ -61,9 +72,9 @@ class OrchestrateAgent(CrustifyAgent):
         the wrong thing and says nothing. Everything here is a document; the
         harness composes, it does not author.
         """
-        task = self.task.read_text().strip()
-        if not task:
-            raise SystemExit(f"campaign task is empty: {self.task}")
+        if self.task_only:
+            return ""
+        task = self._task_text()
         return "\n\n---\n\n".join((
             super().system_preamble(),
             "## Campaign task\n\n"
