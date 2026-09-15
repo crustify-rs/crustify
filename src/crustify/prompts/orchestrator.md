@@ -19,9 +19,48 @@ context, above the campaign task; follow them without re-reading a file.
 
 <!-- CONVENTIONS -->
 
-Read the `crustify-orchestrator` skill in full before Phase 1 and re-read the
-applicable playbook section before each later phase. Read a standalone tool
-skill before first using that tool.
+Read the `crustify-orchestrator` skill in full before Phase 1. Read a
+standalone tool skill before first using that tool.
+
+## Workflow
+
+The two phases below are the campaign, in order. Each line names a step of the
+orchestrator playbook and says only what it produces. **Read that step in the
+playbook before starting it** — the how, the flags, the file formats and the
+failure cases live there, and the line here is a map, not an instruction.
+
+Phase 1, setup. Runs once, and only after the campaign brief is approved.
+
+1. Provision dependencies — the harness, oracle and library checkouts the
+   campaign runs against, recorded so a later reader knows what ran.
+2. Bootstrap `crustify/` — the artifact tree this campaign writes into.
+3. Create `build.json` and record the baseline — the C build commands, and the
+   pass/total the campaign must not regress.
+4. Extract CodeQL data — the tables the oracle plans from.
+5. Prepare reusable C builds — plain, ASan+UBSan, TSan, BSan and coverage,
+   immutable and shared, so agents neither rebuild nor diverge.
+6. Configure campaign-wide source analysis — one config every agent resolves
+   its queries through.
+7. Create `subsystems.json` — the link-unit decomposition sub-campaigns follow.
+8. Create crate shells — the `-sys` and safe crates waves land into.
+
+Then the setup gate: baseline recorded, tables populated, scope matched,
+`crates validate` clean, every `-sys` crate building and testing, layer 0
+resolving. Do not start a wave until it passes.
+
+Phase 2, translation. Repeats per sub-campaign, and within one, per wave.
+
+1. Plan sub-campaigns — what each covers, in what order.
+2. Assign execution objectives — `wrap`, `port` or `raw lifetime` per worklist.
+3. Preflight agentic stages — one batch end to end before spending on a wave.
+4. Prepare a sub-campaign and wave — the wave plan and its integration branch.
+5. Execute and monitor batches — spawn translators, watch them land.
+6. Review, scan, and promote — judge the landed wave, gate it, move the tip.
+7. Optional UB audit — only with explicit approval, at campaign end.
+8. Accounting — cost, wall and the per-batch rows of the results tables.
+
+A defect you find in the harness is repaired on its own branch, never mixed
+into a campaign commit; the playbook's self-repair section says how.
 
 ## Campaign intake and approval
 
