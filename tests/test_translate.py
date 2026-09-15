@@ -207,7 +207,7 @@ class GitHarnessTests(unittest.TestCase):
             objective="review",
             campaign_objective="review",
             prompt_capabilities=(),
-            repo_root=self.repo,
+            workdir=self.repo,
             git_base="wave-0",
             log_dir=self.output,
             log_stem="batch-id",
@@ -231,7 +231,7 @@ class GitHarnessTests(unittest.TestCase):
 
             def run(self):
                 call = calls[-1]
-                rs = call["repo_root"] / "crustify/rust/demo/src/lib.rs"
+                rs = call["workdir"] / "crustify/rust/demo/src/lib.rs"
                 self.assert_anchor = rs.read_text()
                 from crustify.agentlog import open_agent_log
                 with open_agent_log(
@@ -255,7 +255,7 @@ class GitHarnessTests(unittest.TestCase):
         usage = json.loads(
             (self.output / f"{call['log_stem']}.usage.json").read_text())
         self.assertEqual(usage["stage"], "wrap-type_Frame")
-        anchored = (call["repo_root"] / "crustify/rust/demo/src/lib.rs").read_text()
+        anchored = (call["workdir"] / "crustify/rust/demo/src/lib.rs").read_text()
         self.assertIn("// crustify:todo: Frame", anchored)
         self.assertIn("// crustify:todo: Frame.data", anchored)
 
@@ -266,7 +266,7 @@ class GitHarnessTests(unittest.TestCase):
                 return ()
 
             def __init__(self, _target, **kwargs):
-                self.repo_root = kwargs["repo_root"]
+                self.workdir = kwargs["workdir"]
 
             def run(self):
                 raise RuntimeError("agent failed")

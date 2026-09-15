@@ -166,7 +166,7 @@ class ProviderRoutingTests(unittest.TestCase):
                 objective="wrap",
                 campaign_objective="wrap",
                 prompt_capabilities=(),
-                repo_root=repo,
+                workdir=repo,
                 git_base="wave-0",
                 log_dir=logs,
                 log_stem="batch",
