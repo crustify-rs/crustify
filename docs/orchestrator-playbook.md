@@ -31,8 +31,8 @@ approve individual waves unless requested.
   commands.
 - `crustify/cli-config.json` — records machine-local dependency and executable
   paths plus prompt capabilities; ignored and linked into worktrees.
-- `crustify/subsystems.json` — records link units, subsystem scope, and the
-  subsystem dependency graph.
+- `crustify/subsystems.json` — records link units, each subsystem's objective,
+  contents and imported dependencies, and the shape the Rust tree mirrors.
 - `crustify/wavefront/wavefront-config.json` — defines the campaign-wide source
   inventory.
 - `crustify/wavefront/ownership-store.json` — stores authored semantic findings.
@@ -221,19 +221,22 @@ Create `crustify/subsystems.json` from `specs/subsystems.json`; see
 `docs/schemas/subsystems.md`.
 
 Use actual linker outputs to identify link units. Cover the selected target and
-its complete imported producer closure. Assign every translation unit to one
-subsystem. Keep each subsystem entirely `targeted` or entirely `imported`.
+its complete imported producer closure. Assign every file — translation unit
+or header — to one subsystem. Keep each subsystem entirely one objective.
 
-Use these scope rules:
+Use these objective rules:
 
-- `targeted`: project-specific behaviour or invariants to implement in Rust;
-- `imported`: generic facilities retained behind a wrapped C boundary; and
-- split mixed subsystems so project-specific code and generic facilities have
-  separate scopes.
+- `port`: project-specific behaviour or invariants to implement in Rust;
+- `wrap`: generic facilities kept behind a safe Rust API over the C; and
+- split mixed subsystems so project-specific code and generic facilities carry
+  separate objectives.
 
-Before marking a generic facility imported, verify the proposed Rust
-replacement's semantics, platform support, performance, and licensing. Record
-the replacement and reason for deferral.
+Record any well established Rust crate or `std` facility that could replace a
+subsystem outright in its `rust_native_equivalent`, in descending order of fit.
+Before leaning on one, verify its semantics, platform support, performance and
+licensing. Naming a candidate does not by itself change the objective: it is
+the usual reason to leave a generic facility wrapped during a partial
+migration.
 
 Aggregate each consumer-to-producer relation into one `depends_on` record with
 `nr_edges`. The subsystem graph must be acyclic. Resolve cycles by rehoming
@@ -282,7 +285,7 @@ Before the first wave, verify:
 
 - baseline pass/total and disabled tests are recorded;
 - T1 and T2 directories are populated;
-- targeted and imported file queries match the approved scope;
+- the per-objective file queries match the approved scope;
 - every `-sys` crate builds, links, and tests; and
 - `query dag --layer 0` returns the producer leaf set.
 
