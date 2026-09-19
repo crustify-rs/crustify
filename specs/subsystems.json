@@ -27,7 +27,6 @@
             "enums": 0,
             "unions": 0,
             "callbacks": 0,
-            "non_callback_typedefs": 0,
             "macros": 0
           },
           "imported_deps": {
@@ -43,7 +42,6 @@
                   "enums": 0,
                   "unions": 2,
                   "callbacks": 7,
-                  "non_callback_typedefs": 0,
                   "macros": 4
                 }
               },
@@ -58,7 +56,6 @@
                   "enums": 5,
                   "unions": 3,
                   "callbacks": 11,
-                  "non_callback_typedefs": 1,
                   "macros": 0
                 }
               }
@@ -73,7 +70,6 @@
                   "enums": 4,
                   "unions": 9,
                   "callbacks": 0,
-                  "non_callback_typedefs": 1,
                   "macros": 5
                 }
               }
@@ -99,7 +95,6 @@
             "enums": 0,
             "unions": 0,
             "callbacks": 0,
-            "non_callback_typedefs": 0,
             "macros": 0
           },
           "imported_deps": {
@@ -115,7 +110,6 @@
                   "enums": 0,
                   "unions": 2,
                   "callbacks": 7,
-                  "non_callback_typedefs": 0,
                   "macros": 4
                 }
               },
@@ -130,7 +124,6 @@
                   "enums": 5,
                   "unions": 3,
                   "callbacks": 11,
-                  "non_callback_typedefs": 1,
                   "macros": 0
                 }
               }
@@ -163,7 +156,6 @@
             "enums": 0,
             "unions": 0,
             "callbacks": 0,
-            "non_callback_typedefs": 0,
             "macros": 0
           },
           "imported_deps": {
@@ -194,7 +186,6 @@
             "enums": 0,
             "unions": 0,
             "callbacks": 0,
-            "non_callback_typedefs": 0,
             "macros": 0
           },
           "imported_deps": {

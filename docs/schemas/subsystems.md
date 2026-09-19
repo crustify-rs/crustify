@@ -85,7 +85,6 @@ artifact from the campaign-wide Wavefront config.
 | `enums` | enum definitions |
 | `unions` | union definitions |
 | `callbacks` | function-pointer types the subsystem defines |
-| `non_callback_typedefs` | typedefs that are not function pointers |
 | `macros` | object- and function-like macro definitions |
 
 Derive these by grouping the oracle's own records — `wavefront ... query types`
@@ -104,12 +103,11 @@ The oracle's kinds map onto these counters as:
 | `macros` | `macro` |
 | `functions` | symbol `function_exported`, `function_inline_header` |
 | `global_variables` | symbol `global_extern` |
-| `non_callback_typedefs` | a typedef that resolves to none of the above |
 
 A typedef is reported under the kind it resolves to, so a typedef of a struct
-counts as a struct and a function-pointer typedef counts as a callback.
-`non_callback_typedefs` is therefore only the remainder — aliases of scalars
-and pointers — and is zero wherever the oracle resolves every typedef away.
+counts as a struct and a function-pointer typedef counts as a callback. There
+is no typedef counter: the oracle resolves them away deliberately, and one
+would either duplicate a count already made or stay zero.
 
 ## link_units[*].subsystems[*].imported_deps
 
@@ -131,7 +129,7 @@ every in-tree destination resolves through `link_units`.
 
 A dependency's `counters` carries the same item kinds a subsystem's own does —
 `structs`, `functions`, `global_variables`, `enums`, `unions`, `callbacks`,
-`non_callback_typedefs`, `macros` — counting what this subsystem consumes, not
+`macros` — counting what this subsystem consumes, not
 what the destination contains. It has no `impl_files` or `loc`: those describe
 a subsystem's own files, and a consumer imports entities, not files.
 
