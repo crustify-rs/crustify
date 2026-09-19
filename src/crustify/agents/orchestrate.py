@@ -15,17 +15,30 @@ from pathlib import Path
 
 from crustify.agents.base import CrustifyAgent, SkillSpec, _PKG_ROOT
 
-#: Always on. The orchestrator plans with the oracle and reads the audit
-#: surface whatever the campaign does, so neither is a selectable capability.
-_SKILLS = (
+#: Always on: the orchestrator's own role skill is what makes it an
+#: orchestrator, so there is no campaign in which it is not rendered.
+_CORE_SKILLS = (
     SkillSpec("crustify", "src/crustify/prompts/skills/orchestrator.md"),
+)
+
+#: Selectable through `crustify/skills-config.json`. Both are on by default —
+#: an ordinary campaign plans with the oracle and reads the audit surface —
+#: but both are things the orchestrator is TOLD about rather than things it
+#: is, which is what makes them ablatable.
+_CAPABILITY_SKILLS: dict[str, SkillSpec] = {
     #: One wavefront skill, two role overlays. The oracle a translator queries
     #: and the oracle an orchestrator plans with are the same tool used for
     #: different work, so the metadata is shared and only the guidance splits.
-    SkillSpec("wavefront", "SKILL.md",
-              role_header="skills/wavefront-orchestrator.md"),
-    SkillSpec("crustify-audit", "SKILL.md"),
-)
+    "wavefront": SkillSpec(
+        "wavefront", "SKILL.md", capability="wavefront",
+        role_header="skills/wavefront-orchestrator.md",
+    ),
+    #: `crustify-audit` was folded into `crustify audit`, so its skill ships
+    #: in this package rather than in a checkout of its own.
+    "audit": SkillSpec(
+        "crustify", "src/crustify_audit/SKILL.md", capability="audit",
+    ),
+}
 
 
 class OrchestrateAgent(CrustifyAgent):
@@ -35,6 +48,10 @@ class OrchestrateAgent(CrustifyAgent):
     stage = "orchestrate"
     #: Its artifacts belong to the checkout, not to one oracle target.
     tier = "workdir"
+    SKILLS = _CORE_SKILLS
+    CAPABILITIES = _CAPABILITY_SKILLS
+    DEFAULT_CAPABILITIES = tuple(_CAPABILITY_SKILLS)
+    skills_role = "orchestrator"
 
     def __init__(self, target: Path, *, kind: str, task: Path,
                  model: str, task_only: bool = False, **kwargs) -> None:
@@ -52,7 +69,9 @@ class OrchestrateAgent(CrustifyAgent):
         return text
 
     def skill_specs(self) -> tuple[SkillSpec, ...]:
-        return _SKILLS
+        # `--task-only` is the control arm: the harness contributes nothing,
+        # so it contributes no skill index either.
+        return () if self.task_only else super().skill_specs()
 
     def _prompt(self) -> str:
         if self.task_only:

@@ -191,8 +191,6 @@ def execute(
 
     target_rel = main_layout.rel_target(target)
     work_target = tree.path if target_rel == "." else tree.path / target_rel
-    work_layout = Layout(tree.path)
-
 
     log_path = output / f"{batch_id}.log"
     print(f"[crustify translate] batch id: {batch_id}")
@@ -203,14 +201,12 @@ def execute(
 
     from crustify.agents.translate import TranslateAgent
 
-    capabilities = TranslateAgent.configured_capabilities(work_layout)
     TranslateAgent(
         work_target,
         route=batch.route,
         items=batch.items,
         objective=effective,
         campaign_objective=batch.objective,
-        prompt_capabilities=capabilities,
         workdir=tree.path,
         git_base=base_branch.removeprefix("refs/heads/"),
         log_dir=output,
