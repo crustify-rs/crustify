@@ -29,8 +29,9 @@ approve individual waves unless requested.
   logs, and generated analysis output.
 - `crustify/build.json` — records the versioned configure, build, and test
   commands.
-- `crustify/cli-config.json` — records machine-local dependency and executable
-  paths plus prompt capabilities; ignored and linked into worktrees.
+- `crustify/skills-config.json` — records which optional skills each agent
+  role carries in its system prompt; tracked, and present only for an
+  ablation.
 - `crustify/subsystems.json` — records link units, each subsystem's objective,
   contents and imported dependencies, and the shape the Rust tree mirrors.
 - `crustify/wavefront/wavefront-config.json` — defines the campaign-wide source
@@ -91,14 +92,18 @@ Required dependencies:
 - `bindgen-cli`;
 - CodeQL CLI;
 - supported agent backends;
-- Crustify and `crustify-audit`;
+- Crustify;
 - Wavefront; and
 - ffibox.
 
 CodeQL on macOS arm64 requires Rosetta.
 
-If `CRUSTIFY_DEP_CRUSTIFY` is set, use the provisioned toolchains and checkout
-paths. Do not clone or reinstall them.
+Wavefront and ffibox are checkouts under the data prefix of the environment
+crustify is installed in — `<prefix>/share/wavefront` and
+`<prefix>/share/ffibox`. Crustify resolves them there itself; you configure no
+paths. A checkout already present at either location is provisioned: do not
+clone or reinstall it. `CRUSTIFY_DEP_WAVEFRONT` / `CRUSTIFY_DEP_FFIBOX`
+override one of them for a checkout kept elsewhere.
 
 ### 2. Bootstrap `crustify/`
 
@@ -107,18 +112,17 @@ mkdir -p <repo>/crustify
 cp specs/gitignore <repo>/crustify/.gitignore
 ```
 
-Create `crustify/cli-config.json` from `specs/cli-config.json`:
+Create `crustify/skills-config.json` from `specs/skills-config.json` only if
+the `skills` task answer is anything other than `defaults`. One entry per
+agent role naming the optional skills that role carries in its system prompt;
+a role left out carries all of them.
 
-- `deps`: absolute checkout paths;
-- `bins`: absolute executable paths; and
-- `prompt_capabilities`: optional role-specific skill instructions.
+- orchestrator: `wavefront`, `audit`;
+- translator: `wavefront`, `ffibox`, `audit`.
 
-Use absolute paths because agents run in isolated worktrees. The file is
-machine-local and reaches worktrees through `worktree.link_shared`.
-
-Translator capabilities may include `wavefront`, `ffibox`, and
-`crustify-audit`. Omitting a capability removes its prompt instructions only;
-it does not hide the executable, checkout, or path.
+Omitting a capability removes its prompt instructions only; it does not hide
+the executable, checkout, or path. Commit the file: it decides what a wave's
+agents were told, so the commits that wave lands must carry it.
 
 ### 3. Create `build.json` and record the baseline
 
@@ -517,7 +521,6 @@ otherwise leave every per-batch pair blank and say so once in Notes.
 
 ## Self-repair
 
-When a campaign exposes a defect in Crustify, Wavefront, `crustify-audit`, or
-ffibox, create a dedicated branch and worktree in that component's repository.
+When a campaign exposes a defect in Crustify, Wavefront, or ffibox, create a dedicated branch and worktree in that component's repository.
 Implement and validate the reusable fix there; do not mix it into campaign
 translation commits.

@@ -60,26 +60,41 @@ Unanswered optional questions use their defaults.
    - Answer: `<same as translation | max-types: N,
      max-syms: N, max-loc: N>`
 
+10. **Should any agent role run without some of its optional skills?**
+    (`id: skills`)
+    - Answer: `<defaults | orchestrator: ..., translator: ...>`. The default
+      is every capability for both roles; answer otherwise only to run an
+      ablation. Recorded in `crustify/skills-config.json`, which is tracked,
+      so the commits a wave lands carry the prompt composition it ran under.
+      Selecting a capability adds that skill's metadata and role guidance to
+      the agent's system prompt; it does not hide the tool from the agent's
+      shell.
+      - orchestrator: `wavefront` (plan waves with the oracle), `audit`
+        (read the safety surface through `crustify audit`);
+      - translator: `wavefront` (query records the batch does not carry),
+        `ffibox` (represent C ownership with the wrap-primitive crate),
+        `audit` (reason about soundness with `crustify audit`).
+
 ## Autonomy (if question 7 is answered `no`)
 
 Answer these approval-gate questions only if question 7 is answered `no`.
 
-10. **Should I wait for your approval before starting the setup phase?** (`id: gates.setup`)
+11. **Should I wait for your approval before starting the setup phase?** (`id: gates.setup`)
     - Answer: `<yes | no>`
-11. **Should I wait for your approval before starting the translation phase?**
+12. **Should I wait for your approval before starting the translation phase?**
     (`id: gates.translation`)
     - Answer: `<yes | no>`
-12. **Should I wait for your approval between sub-campaigns?** (`id: gates.sub-campaign`)
+13. **Should I wait for your approval between sub-campaigns?** (`id: gates.sub-campaign`)
     - Answer: `<yes | no | not applicable>`
-13. **Should I wait for your approval before starting review passes?** (`id: gates.review`)
+14. **Should I wait for your approval before starting review passes?** (`id: gates.review`)
     - Answer: `<yes | no | not applicable>`
-14. **Should I wait for your approval before starting UB audit passes?**
+15. **Should I wait for your approval before starting UB audit passes?**
     (`id: gates.ub-audit`)
     - Answer: `<yes | no | not applicable>`
 
 # Benchmark recording questions
 
-15. **Where and in what format should results be recorded?** (`id: results`)
+16. **Where and in what format should results be recorded?** (`id: results`)
     - Answer: `<results path>, <standard | custom template>`
 
 # Additional instructions

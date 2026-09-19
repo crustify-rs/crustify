@@ -113,6 +113,13 @@ def main() -> None:
         help="Campaign TASK.md. Required: the campaign's decisions are an "
              "input, not something the orchestrator interviews for.")
 
+    # -- translate (one agent over one orchestrator-projected batch) -----
+    _translate_blurb = (
+        "Translate one thin batch in an isolated worktree. It creates the "
+        "branch, runs exactly one agent over the batch's items, and lands the "
+        "result on the wave's integration branch. The batch is the whole "
+        "input: which items, which objective, and the Rust home each item "
+        "belongs in.")
     wrap_p = sub.add_parser(
         "translate", help=_translate_blurb, description=_translate_blurb,
     )

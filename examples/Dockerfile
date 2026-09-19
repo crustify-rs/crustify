@@ -17,8 +17,8 @@
 #   docker run -it --name crustify-libgit2 \
 #       -e CRUSTIFY_COMMAND=translate \
 #       -e OPENROUTER_API_KEY -e CRUSTIFY_MODEL=openrouter/anthropic/claude-opus-5 \
-#       -v "$(dirname "$PWD")/wavefront:/opt/wavefront" \
-#       -v "$(dirname "$PWD")/ffibox:/opt/ffibox" \
+#       -v "$(dirname "$PWD")/wavefront:/opt/venv/share/wavefront" \
+#       -v "$(dirname "$PWD")/ffibox:/opt/venv/share/ffibox" \
 #       -v /absolute/path/to/your/target-fork:/target \
 #       -v "$PWD/examples/crustify/libgit2/src-port/TASK.md:/campaign/TASK.md:ro" \
 #       crustify
@@ -52,12 +52,15 @@
 #   /opt/crustify      The harness, baked into the image. Mount a checkout here
 #                      to test live harness changes. Both packages live in one
 #                      distribution, so this single tree serves both roles.
-#   /opt/{wavefront,ffibox}
+#   /opt/venv/share/{wavefront,ffibox}
 #                      Optional read-write host checkouts, used by a translate
-#                      run and untouched by an audit. A mount always wins; when
-#                      one is absent the entrypoint clones main into it and says
-#                      so on stderr, because a silent clone is how a run comes
-#                      to differ from the checkout it was believed to test.
+#                      run and untouched by an audit. This is where crustify
+#                      LOOKS for them -- `<prefix>/share/<name>` for the
+#                      environment it is installed in -- so nothing configures
+#                      a path. A mount always wins; when one is absent the
+#                      entrypoint clones main into it and says so on stderr,
+#                      because a silent clone is how a run comes to differ
+#                      from the checkout it was believed to test.
 #   /work              Named volume, and `HOME`: the C library the agent
 #                      builds, the cargo registry. Not the artifacts -- those
 #                      land in the target checkout.
@@ -301,18 +304,12 @@ ENV PYTHONPATH=/opt/crustify/src
 # run, so there is NO default: a wrong guess starts the wrong agent and spends
 # a budget before anyone reads the transcript.
 ENV CRUSTIFY_COMMAND=
-# Absolute paths for a target's cli-config.json, which is machine-local and
-# cannot come from any clone. The orchestrator playbook's "Bootstrap
-# crustify/" reads these by name: set here, copied verbatim into `deps` and
-# `bins`. CRUSTIFY_DEP_CRUSTIFY doubles as the "this environment is already
-# provisioned" flag that tells it not to re-clone the checkouts above.
-ENV CRUSTIFY_DEP_CRUSTIFY=/opt/crustify \
-    CRUSTIFY_DEP_FFIBOX=/opt/ffibox \
-    CRUSTIFY_DEP_WAVEFRONT=/opt/wavefront \
-    CRUSTIFY_DEP_AUDIT=/opt/crustify \
-    CRUSTIFY_BIN_CLI=/opt/venv/bin/crustify \
-    CRUSTIFY_BIN_WAVEFRONT=/opt/venv/bin/wavefront \
-    CRUSTIFY_BIN_AUDIT=/opt/venv/bin/crustify
+# No dependency or binary paths are set here. crustify derives both from the
+# environment it is running in: executables from its own bin/, checkouts from
+# `<prefix>/share/<name>`. Seven variables and a machine-local config file
+# used to spell this out, which meant an agent could not render its own prompt
+# until someone had transcribed paths correctly, and a stale entry produced a
+# silently different prompt rather than an error.
 
 # The model used by the ORCHESTRATOR, whichever role runs. One qualified route
 # rather than a backend/provider/model triple the entrypoint recombined: the
@@ -407,12 +404,12 @@ RUN printf '%s\n' \
       '        [ -f "$path/$marker" ] || {' \
       '            echo "invalid checkout at $path: missing $marker" >&2; exit 2; }' \
       '    }' \
-      '    ensure_checkout /opt/wavefront pyproject.toml https://github.com/crustify-rs/wavefront.git' \
-      '    ensure_checkout /opt/ffibox Cargo.toml https://github.com/crustify-rs/ffibox.git' \
+      '    ensure_checkout /opt/venv/share/wavefront pyproject.toml https://github.com/crustify-rs/wavefront.git' \
+      '    ensure_checkout /opt/venv/share/ffibox Cargo.toml https://github.com/crustify-rs/ffibox.git' \
       '    # wavefront is a Python distribution and has to be installed to put its CLI' \
       '    # on PATH; ffibox is a path dependency the emitted crates point at, so a' \
       '    # checkout is all it needs.' \
-      '    uv pip install --python /opt/venv -e /opt/wavefront' \
+      '    uv pip install --python /opt/venv -e /opt/venv/share/wavefront' \
       'fi' \
       '# Append a task only when the conventional external mount is present.' \
       'task=' \
