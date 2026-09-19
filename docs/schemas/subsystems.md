@@ -103,16 +103,26 @@ every in-tree destination resolves through `link_units`.
 | `link_unit` | destination `link_units[*].name` |
 | `subsystem` | destination subsystem's `name` within that link unit |
 | `nr_edges` | oracle dependency edges aggregated into this relation |
-| `counters` | `items`: distinct entities consumed across those edges |
+| `counters` | distinct entities consumed from that destination, by kind |
 
 | `out_of_tree[*]` field | meaning |
 |---|---|
 | `library` | external library depended on, as linked |
-| `counters` | `items`: distinct entities consumed from it |
+| `counters` | distinct entities consumed from it, by kind |
 
-The emitted in-tree graph is acyclic. When an initial grouping produces a
-cycle, the orchestrator changes the grouping by rehoming files or merging
-subsystems; it does not conceal dependency records. Within a cyclic region, a
-subsystem with more incoming consumer edges has greater producer weight and
-should preferentially remain the producer. `nr_edges` refines that weight when
-choosing boundaries.
+A dependency's `counters` carries the same item kinds a subsystem's own does —
+`structs`, `functions`, `global_variables`, `enums`, `unions`, `callbacks`,
+`non_callback_typedefs`, `macros` — counting what this subsystem consumes, not
+what the destination contains. It has no `impl_files` or `loc`: those describe
+a subsystem's own files, and a consumer imports entities, not files.
+
+The in-tree graph may contain cycles, and this artifact records them. It
+describes the decomposition as it is; it is not a schedule, and dropping an
+edge to make it a DAG would falsify the dependency it documents and hide the
+cycle from everything downstream.
+
+The orchestrator cuts cycles when it schedules, not here. Within a cyclic
+region, a subsystem with more incoming consumer edges has greater producer
+weight and should preferentially remain the producer; `nr_edges` refines that
+weight when choosing where to cut. A cut belongs to the wave plan that made
+it, which records it as an explicit SCC cut.

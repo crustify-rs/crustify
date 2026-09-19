@@ -37,7 +37,14 @@
                 "subsystem": "statem",
                 "nr_edges": 28,
                 "counters": {
-                  "items": 0
+                  "structs": 3,
+                  "functions": 11,
+                  "global_variables": 1,
+                  "enums": 0,
+                  "unions": 2,
+                  "callbacks": 7,
+                  "non_callback_typedefs": 0,
+                  "macros": 4
                 }
               },
               {
@@ -45,7 +52,14 @@
                 "subsystem": "bio",
                 "nr_edges": 41,
                 "counters": {
-                  "items": 0
+                  "structs": 9,
+                  "functions": 0,
+                  "global_variables": 1,
+                  "enums": 5,
+                  "unions": 3,
+                  "callbacks": 11,
+                  "non_callback_typedefs": 1,
+                  "macros": 0
                 }
               }
             ],
@@ -53,7 +67,14 @@
               {
                 "library": "libc",
                 "counters": {
-                  "items": 12
+                  "structs": 2,
+                  "functions": 7,
+                  "global_variables": 0,
+                  "enums": 4,
+                  "unions": 9,
+                  "callbacks": 0,
+                  "non_callback_typedefs": 1,
+                  "macros": 5
                 }
               }
             ]
@@ -88,7 +109,14 @@
                 "subsystem": "bio",
                 "nr_edges": 19,
                 "counters": {
-                  "items": 0
+                  "structs": 3,
+                  "functions": 11,
+                  "global_variables": 1,
+                  "enums": 0,
+                  "unions": 2,
+                  "callbacks": 7,
+                  "non_callback_typedefs": 0,
+                  "macros": 4
                 }
               },
               {
@@ -96,7 +124,14 @@
                 "subsystem": "memory",
                 "nr_edges": 7,
                 "counters": {
-                  "items": 0
+                  "structs": 9,
+                  "functions": 0,
+                  "global_variables": 1,
+                  "enums": 5,
+                  "unions": 3,
+                  "callbacks": 11,
+                  "non_callback_typedefs": 1,
+                  "macros": 0
                 }
               }
             ],
