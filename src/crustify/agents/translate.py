@@ -20,8 +20,10 @@ _CAPABILITY_SKILLS: dict[str, SkillSpec] = {
         "ffibox", "SKILL.md", capability="ffibox",
         role_header="skills/ffibox.md",
     ),
-    "crustify-audit": SkillSpec(
-        "crustify-audit", "SKILL.md", capability="crustify-audit",
+    #: The audit capability is not a separate checkout: `crustify-audit` was
+    #: folded into `crustify audit`, so its skill ships in this package.
+    "audit": SkillSpec(
+        "crustify", "src/crustify_audit/SKILL.md", capability="audit",
         role_header="skills/audit.md",
     ),
 }
@@ -33,6 +35,12 @@ class TranslateAgent(CrustifyAgent):
     name = "TranslateAgent"
     model = "anthropic/claude-opus-5"
     output = None  # scheduler gates via the per-item todo; agent runs when called.
+    SKILLS = _CORE_SKILLS
+    CAPABILITIES = _CAPABILITY_SKILLS
+    #: Every optional capability, which is what a wrap or port campaign wants;
+    #: skills-config.json exists to say something narrower.
+    DEFAULT_CAPABILITIES = tuple(_CAPABILITY_SKILLS)
+    skills_role = "translator"
 
     def __init__(
         self,
@@ -42,7 +50,6 @@ class TranslateAgent(CrustifyAgent):
         items: list[dict],
         objective: str,
         campaign_objective: str,
-        prompt_capabilities: tuple[str, ...] | None = None,
         workdir: Path,
         git_base: str,
         log_dir: Path,
@@ -56,33 +63,6 @@ class TranslateAgent(CrustifyAgent):
         self._items = [dict(item) for item in items]
         self._objective = objective
         self._campaign_objective = campaign_objective
-        self._prompt_capabilities = (
-            tuple(prompt_capabilities) if prompt_capabilities is not None
-            else self.configured_capabilities(self.layout)
-        )
-
-    @staticmethod
-    def configured_capabilities(layout) -> tuple[str, ...]:
-        """Read the translator's prompt-only capability set once."""
-        p = layout.repo_config
-        cfg = json.loads(p.read_text()) if p.exists() else {}
-        block = cfg.get("prompt_capabilities") or {}
-        names = block.get("translator") or []
-        if not isinstance(names, list) or not all(isinstance(n, str) for n in names):
-            raise SystemExit(
-                "cli-config.json: prompt_capabilities.translator must be a list of names")
-        unknown = sorted(set(names) - set(_CAPABILITY_SKILLS))
-        if unknown:
-            raise SystemExit(
-                "cli-config.json: unknown translator prompt capability: "
-                + ", ".join(unknown))
-        # Preserve authored order in the prompt; collapse accidental repeats.
-        return tuple(dict.fromkeys(names))
-
-    def skill_specs(self) -> tuple[SkillSpec, ...]:
-        return _CORE_SKILLS + tuple(
-            _CAPABILITY_SKILLS[name] for name in self._prompt_capabilities
-        )
 
     @property
     def stage(self) -> str:  # type: ignore[override]
