@@ -50,6 +50,15 @@ class Layout:
     def rust(self) -> Path:
         return self.root / "rust"
 
+    @property
+    def skills_config(self) -> Path:
+        """Which optional skills each agent role carries in its system prompt.
+
+        Tracked, like `build.json` and `subsystems.json`, and for the same
+        reason: it decides what a wave's agents were told, so the commits a
+        wave lands must carry it. See :mod:`crustify.skills_config`."""
+        return self.root / "skills-config.json"
+
     def providers(self, cli: str) -> Path:
         """Config home crustify hands a provider CLI (``claude`` / ``codex``),
         so a run reads crustify's settings rather than the operator's.
@@ -62,17 +71,6 @@ class Layout:
         d = self.root / ".providers" / cli
         d.mkdir(parents=True, exist_ok=True)
         return d
-
-    @property
-    def repo_config(self) -> Path:
-        """Repo-wide crustify config (``cli-config.json``): dependency checkout
-        paths, executable paths and optional prompt capabilities. Lives at the
-        ``crustify/`` root so it is shared across targets. Core role skills come
-        from the agent class; ``prompt_capabilities`` selects optional generic
-        skills and role guidance resolved through ``deps`` and ``bins``.
-
-        Oracle target configuration lives in the standalone oracle tree."""
-        return self.root / "cli-config.json"
 
     # ------------------------------------------------- target identity
     def rel_target(self, target: Path) -> str:

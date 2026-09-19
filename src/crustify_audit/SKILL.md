@@ -1,7 +1,7 @@
-# crustify-audit
+# crustify audit
 
 - Skill name: crustify-audit
-- Bin path: crustify-audit
+- Bin path: crustify audit
 - Doc path: ../../docs/audit.md
 - Description: Review the safety of Rust repositories, especially crates that
   wrap native libraries. The deterministic `unsafe` command reports compiled
@@ -11,5 +11,7 @@
   that trigger sanitizer in Miri, ASan/UBSan, and BorrowSanitizer.
   Read the referenced documentation before choosing a command.
 
-`Doc path` is relative to this file. `Bin path` is the logical executable name
-for a harness to resolve in its own environment.
+`Doc path` is relative to this file. `Bin path` is the logical invocation —
+its first word is the executable, which a harness resolves in its own
+environment. This capability used to ship a `crustify-audit` entry point of its
+own; it is now a subcommand of `crustify`.

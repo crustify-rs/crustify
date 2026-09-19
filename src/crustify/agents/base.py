@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import hashlib
-import json
 import re as _re
 from dataclasses import dataclass
 from pathlib import Path
 
+from crustify import deps
 from crustify.agentlog import AgentLog, open_agent_log
 from crustify.artifact_store import ArtifactStore
 from crustify.layout import Layout
@@ -30,7 +30,13 @@ _GENERIC_SKILL_ANCHOR = "<!-- SKILL -->"
 
 @dataclass(frozen=True)
 class SkillSpec:
-    """A generic skill plus optional role-specific prompt guidance."""
+    """A generic skill plus optional role-specific prompt guidance.
+
+    ``dep`` names the checkout the skill file belongs to and ``path`` locates
+    it inside that checkout; :func:`crustify.deps.dep_root` turns the pair into
+    an absolute path. ``capability`` is set when the skill is optional — the
+    name the campaign task selects it by; core role skills leave it None.
+    """
 
     dep: str
     path: str
@@ -138,9 +144,15 @@ class CrustifyAgent:
     stage: str        # label used in skip messages + log filename
     prompt_dir: str | None = None  # optional subdir under prompts/ (e.g. "wrapper");
                                     # the prompt file is prompts/<prompt_dir>/<stage>.md
-    # Core skills are a property of the role. Subclasses may add optional
-    # prompt-only capabilities selected from cli-config.json.
+    # Core skills are a property of the role: always rendered, never
+    # selectable. CAPABILITIES are the optional ones, keyed by the name
+    # `crustify/skills-config.json` selects them by; DEFAULT_CAPABILITIES is
+    # what a role carries when that file says nothing about it.
     SKILLS: tuple[SkillSpec, ...] = ()
+    CAPABILITIES: dict[str, SkillSpec] = {}
+    DEFAULT_CAPABILITIES: tuple[str, ...] = ()
+    #: Key this agent reads from skills-config.json; None means not selectable.
+    skills_role: str | None = None
     output: str | None = None  # path under .crustify/; when set, artifact existence
                                # is the agent-level done signal (skip on re-run).
                                # When None the agent always runs — the orchestrator
@@ -302,27 +314,28 @@ class CrustifyAgent:
         return {"target": self.target_rel, "workdir": str(self.workdir),
                 "git_base": self.git_base}
 
-    def _repo_config(self) -> dict:
-        """Repo-wide config: dependency paths, binaries and prompt capabilities.
-
-        Memoised per agent; an absent file is an empty configuration.
-        """
-        cfg = getattr(self, "_repo_cfg_cache", None)
-        if cfg is None:
-            p = self.layout.repo_config
-            cfg = json.loads(p.read_text()) if p.exists() else {}
-            self._repo_cfg_cache = cfg
-        return cfg
-
-    def _dep(self, name: str, fallback: Path | None = None) -> Path | None:
-        """Resolve an absolute dependency path declared under ``deps`` in the
-        repo config (e.g. ``ffibox``), else ``fallback``."""
-        raw = self._repo_config().get("deps", {}).get(name)
-        return Path(raw) if raw else fallback
-
     def skill_specs(self) -> tuple[SkillSpec, ...]:
-        """The generic skills and role overlays rendered for this agent."""
-        return self.SKILLS
+        """The generic skills and role overlays rendered for this agent.
+
+        Core skills first, then the optional capabilities this role carries,
+        in the order `skills-config.json` authored them. Memoised because
+        the answer is read from a file and rendered more than once per run.
+        """
+        cached = getattr(self, "_skill_specs_cache", None)
+        if cached is None:
+            cached = self.SKILLS + tuple(
+                self.CAPABILITIES[name] for name in self.capability_names())
+            self._skill_specs_cache = cached
+        return cached
+
+    def capability_names(self) -> tuple[str, ...]:
+        """Optional capabilities selected for this role, in prompt order."""
+        if self.skills_role is None or not self.CAPABILITIES:
+            return ()
+        from crustify import skills_config
+        return skills_config.selected(
+            self.layout.skills_config, self.skills_role,
+            tuple(self.CAPABILITIES), self.DEFAULT_CAPABILITIES)
 
     def prompt_capabilities(self) -> tuple[str, ...]:
         """Optional capabilities selected for this prompt.
@@ -351,19 +364,12 @@ class CrustifyAgent:
         here rather than kept in conventions.md: it is about how to read the
         index, so it belongs to the index, and conventions.md stays
         conventions."""
-        bins = self._repo_config().get("bins", {})
-        # `crustify` resolves without config in a source checkout.
-        # Out-of-tree capabilities have no meaningful fallback. When selected,
-        # a missing path is an error rather than a silently different prompt.
-        fallback = {"crustify": _PKG_ROOT.parent.parent}
         blocks = []
         for spec in self.skill_specs():
-            root = self._dep(spec.dep, fallback.get(spec.dep))
-            if root is None:
-                raise SystemExit(
-                    f"prompt capability {spec.capability or spec.path!r}: "
-                    f"cli-config.json has no deps.{spec.dep} path")
-            p = root / spec.path
+            # Derived, never configured: see crustify.deps. A dependency whose
+            # skill file is missing is an error rather than a silently
+            # different prompt, because the prompt is the experiment.
+            p = deps.dep_root(spec.dep) / spec.path
             if not p.exists():
                 raise SystemExit(
                     f"prompt capability {spec.capability or spec.path!r}: "
@@ -379,12 +385,13 @@ class CrustifyAgent:
             if body:
                 block += f"\n  read in full: {body}"
             # A skill that declares a `bin:` also advertises that tool's
-            # absolute path (from the repo config's `bins` map) — so the agent
-            # invokes it directly rather than relying on PATH, and discovers its
-            # flags from the tool's own `--help`. Same rail as the SKILL.md path.
-            binpath = bins.get(binname) if binname else None
-            if binpath:
-                block += f"\n  binary: {binpath}"
+            # absolute invocation — so the agent runs it directly rather than
+            # relying on PATH, which is whatever the provider CLI inherited and
+            # is not something crustify controls. Same rail as the SKILL.md
+            # path, and resolved the same way: from the environment crustify is
+            # itself running in.
+            if binname:
+                block += f"\n  binary: {deps.resolve_bin(binname)}"
             if spec.role_header:
                 header = _PKG_ROOT / "prompts" / spec.role_header
                 if not header.is_file():
@@ -424,7 +431,7 @@ class CrustifyAgent:
         skill descriptions. Neither provider CLI loads this from a canonical
         path — claude reads ``CLAUDE.md``, codex a repo-root ``AGENTS.md``, and
         it is at neither — so it reaches an agent only by being read here."""
-        return _PKG_ROOT.parent.parent / "docs" / "conventions.md"
+        return deps.CHECKOUT / "docs" / "conventions.md"
 
     def _render_conventions(self) -> str:
         """conventions.md verbatim. Empty string if the doc is absent.

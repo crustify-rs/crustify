@@ -17,9 +17,6 @@ campaigns/**/logs
 # Deterministic safety scan output.
 audit/unsafe.json
 
-# Machine-local dependency and binary paths.
-cli-config.json
-
 bak
 stats.md
 evaluation/**/manifests/
