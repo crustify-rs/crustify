@@ -78,9 +78,9 @@ def add_batch_worktree(repo: Path, base_branch: str, batch_id: str) -> BatchWork
 #: for that reason — an agent submits through `query --update` into its own
 #: copy and its landing commit carries the findings, the route its Rust output
 #: already takes.
-_SHARED = (".providers", "wavefront", "campaigns", "tmp", "cli-config.json")
+_SHARED = (".providers", "wavefront", "campaigns", "tmp")
 
-#: Shared entries created ON DEMAND rather than by an earlier stage, so the
+#: Shared dirs created ON DEMAND rather than by an earlier stage, so the
 #: main checkout may not hold them yet when the first wave starts. They are
 #: seeded there before linking (see :func:`link_shared`); everything else in
 #: `_SHARED` is produced by a prior stage and its absence is a real error.
@@ -114,14 +114,12 @@ def link_shared(wt: Path, repo: Path) -> None:
     against it with no error: a silent loss of provider settings, which is the
     worst available failure mode.
 
-    ``cli-config.json`` is the one shared FILE, and it is here because it is the
-    inverse of the two above: hand-authored, machine-local (absolute paths to the
-    crustify, wavefront, ffibox and audit checkouts, and to their binaries), and
-    therefore gitignored — so HEAD cannot carry it into a worktree. Without the
-    symlink an agent's ``Layout.repo_config`` resolves to a file that is not
-    there, every skill path fails to resolve, and the whole set silently
-    disappears from its system prompt as the literal "(no skills configured)"
-    beside conventions.md."""
+    Every entry is a directory. There used to be one shared FILE here,
+    ``cli-config.json``, carrying machine-local paths to the crustify,
+    wavefront and ffibox checkouts and their binaries. Those paths are now
+    derived from the environment crustify is running in
+    (:mod:`crustify.deps`), which is the same in a worktree as in the main
+    checkout, so there is nothing left to share."""
     for d in _SHARED:
         src = repo / "crustify" / d
         dst = wt / "crustify" / d
@@ -134,9 +132,7 @@ def link_shared(wt: Path, repo: Path) -> None:
         # exactly the silent failure this docstring warns about, plus a worse
         # one: codex's session rollout lands in CODEX_HOME, so the run's cost
         # accounting is destroyed with the worktree ("no session rollout found;
-        # this run is unaccounted"). Only dirs are seeded — the one shared FILE
-        # (cli-config.json) must stay skipped when absent, since an empty
-        # stand-in for it is worse than none.
+        # this run is unaccounted").
         if not src.exists() and d in _SHARED_LAZY_DIRS:
             src.mkdir(parents=True, exist_ok=True)
         if src.exists():
