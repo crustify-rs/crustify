@@ -238,10 +238,16 @@ licensing. Naming a candidate does not by itself change the objective: it is
 the usual reason to leave a generic facility wrapped during a partial
 migration.
 
-Aggregate each consumer-to-producer relation into one `depends_on` record with
-`nr_edges`. The subsystem graph must be acyclic. Resolve cycles by rehoming
-translation units or merging subsystems; never remove a real dependency edge.
-Prefer the side with higher incoming producer weight when selecting a boundary.
+Aggregate each consumer-to-producer relation into one `imported_deps` record
+with its `nr_edges` and the item kinds consumed across them, splitting in-tree
+destinations from out-of-tree libraries.
+
+Record the graph as it is, cycles included. Never remove a real dependency
+edge, and do not rehome or merge subsystems to flatten one: this artifact
+describes the decomposition, and a cycle hidden here is a cycle nothing
+downstream can see. Cut cycles when you schedule, where the cut is recorded as
+an explicit SCC cut in the wave plan that made it. Prefer the side with higher
+incoming producer weight when selecting a boundary.
 
 ### 8. Scaffold the Rust tree
 
@@ -261,10 +267,11 @@ subsystem's headers and translation units share one module.
   are independently consumable public libraries or require incompatible build
   boundaries. Do not split solely because the C build emits multiple link
   units.
-- Record the link units owned by each crate. Derive `depends_on` only from
-  subsystem edges that cross crate boundaries; internal edges stay between
-  modules in the target crate.
-- Leave `modules` empty; do not home items yet.
+- Derive each crate's Cargo dependencies from the `imported_deps` that cross
+  crate boundaries; edges internal to a crate stay between its modules.
+- Create the module tree, empty: a module per subsystem, and nothing homed in
+  it yet. A batch names the `.rs` home of every item it schedules, so the
+  module must exist before the wave that fills it.
 - Create minimal `Cargo.toml` and crate roots using `conventions.md`.
 - Each `-sys` crate needs `Cargo.toml`, `src/lib.rs`, `build.rs`, and bindgen
   input.
