@@ -64,59 +64,6 @@ def main() -> None:
     # the parent's subcommand listing) and `description=` (which renders on the
     # stage's own --help). Without the second, `crustify … <stage> --help`
     # prints a usage line and a flag list and never says what the stage does.
-    # -- crates (read-only crates.json interface) ------------------------
-    _crates_blurb = (
-        "Read-only access to the authored crates.json placement oracle. "
-        "Locate C symbols/types in Rust modules or validate placement "
-        "consistency; never writes Rust or Cargo files.")
-    crates_p = sub.add_parser(
-        "crates", help=_crates_blurb, description=_crates_blurb,
-    )
-    crates_sub = crates_p.add_subparsers(dest="crates_command", required=True)
-
-    locate_p = crates_sub.add_parser(
-        "locate",
-        help="Resolve crates.json entries to their Rust .rs paths.",
-        description="Resolve crates.json entries to their Rust .rs paths "
-                    "without modifying the tree.",
-    )
-    # `--file` lives outside the group because it is both a standalone
-    # selection and a qualifier for an ambiguous `--name`.
-    locate_sel = locate_p.add_mutually_exclusive_group()
-    locate_sel.add_argument(
-        "--all", action="store_true",
-        help="Print every Rust module path recorded in crates.json.",
-    )
-    locate_sel.add_argument(
-        "--dir", default=None, metavar="DIR",
-        help="Print homes reached by C files under DIR, relative to the target.",
-    )
-    locate_sel.add_argument(
-        "--name", nargs="+", action="extend", default=None, metavar="NAME",
-        help="Locate these type tags and/or symbol names. A name with several "
-             "homes is refused unless --file disambiguates it.",
-    )
-    locate_p.add_argument(
-        "--file", default=None, metavar="FILE",
-        help="Locate entries reached by this C file, or qualify --name by its "
-             "defining translation unit/header.",
-    )
-
-    crates_sub.add_parser(
-        "validate",
-        help="Validate the crates.json manifest.",
-        description="Check manifest uniqueness, dependency validity/cycles, "
-                    "and module-path collisions. Rust-tree validity belongs "
-                    "to the compiler.",
-    )
-
-    # -- translate ---------------------------------------------------------
-    _translate_blurb = (
-        "Execute one orchestrator-projected translation batch. The harness "
-        "forks one isolated worktree from the unchecked-out base branch, "
-        "inserts that batch's TODO anchors and starts one translator. The "
-        "translator lands atomically on the base branch and prunes its own "
-        "successful worktree.")
     # -- cost (accounting over the usage records) ------------------------
     _cost_blurb = (
         "Price the per-agent usage.json records named on the command line. "
@@ -216,10 +163,7 @@ def main() -> None:
     if getattr(args, "override_base_prompt", None) is not None:
         crustify_config.OVERRIDE_BASE_PROMPT = args.override_base_prompt
 
-    if args.command == "crates":
-        _handle_crates(args, target)
-
-    elif args.command == "translate":
+    if args.command == "translate":
         _handle_translate(args, target)
 
     elif args.command == "orchestrate":
@@ -234,18 +178,6 @@ def main() -> None:
 
 
 # -- analyze dispatch -----------------------------------------------------
-
-# -- crates dispatch ------------------------------------------------------
-
-def _handle_crates(args: argparse.Namespace, target: Path) -> None:
-    from crustify import crates
-
-    if args.crates_command == "locate":
-        crates.locate(target, all=args.all, dir=args.dir, file=args.file,
-                      name=args.name)
-    elif args.crates_command == "validate":
-        crates.validate_command(target)
-
 
 def _handle_cost(args: argparse.Namespace) -> None:
     """Report agent cost and wall time for this checkout."""

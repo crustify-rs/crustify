@@ -4,7 +4,7 @@
 - Doc path: ../../../../docs/orchestrator-playbook.md
 - Description: How to drive crustify end to end, in two phases. Setup: toolchain
   install through the first commit of the initial Rust tree — authoring
-  `build.json`, `cli-config.json`, `crates.json` and a campaign-wide
+  `build.json`, `cli-config.json`, `subsystems.json` and a campaign-wide
   `wavefront-config.json`, building the CodeQL database, extracting the T1/T2
   tables, emitting `subsystems.json`, crate placement and crate shells.
   Translation: planning bottom-up subsystem sub-campaigns with per-sub-campaign

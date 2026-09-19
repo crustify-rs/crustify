@@ -25,9 +25,10 @@ class BatchValidationTests(unittest.TestCase):
     @staticmethod
     def item(name: str = "thing", *, kind: str = "symbol",
              defined_in: str | None = "include/thing.h",
-             fields: list[str] | None = None) -> dict:
+             fields: list[str] | None = None,
+             home: str = "crustify/rust/demo/src/lib.rs") -> dict:
         return {"name": name, "defined_in": defined_in, "kind": kind,
-                "field_anchors": fields or []}
+                "field_anchors": fields or [], "home": home}
 
     def test_thin_symbol_and_callback_batch(self) -> None:
         batch = self.load({
@@ -100,32 +101,6 @@ class GitHarnessTests(unittest.TestCase):
         self.git("config", "user.email", "test@example.invalid")
         (self.repo / "crustify/rust/demo/src").mkdir(parents=True)
         (self.repo / "crustify/rust/demo/src/lib.rs").write_text("pub struct Frame;\n")
-        crates = {
-            "crates": {
-                "demo": {
-                    "crate_path": "crustify/rust/demo",
-                    "depends_on": [],
-                    "modules": {
-                        "root": {
-                            "rs": {
-                                "src/lib.rs": {
-                                    "tu": None,
-                                    "headers": ["include/frame.h"],
-                                    "members": {
-                                        "functions": [],
-                                        "types": ["Frame"],
-                                        "callbacks": [],
-                                        "macros": [],
-                                        "globals": [],
-                                    },
-                                }
-                            }
-                        }
-                    },
-                }
-            }
-        }
-        (self.repo / "crustify/crates.json").write_text(json.dumps(crates))
         (self.repo / "README").write_text("test\n")
         self.git("add", ".")
         self.git("commit", "-qm", "base")
@@ -140,6 +115,7 @@ class GitHarnessTests(unittest.TestCase):
                 "defined_in": "include/frame.h",
                 "kind": "type",
                 "field_anchors": ["data"],
+                "home": "crustify/rust/demo/src/lib.rs",
             }],
         }))
 
@@ -218,7 +194,7 @@ class GitHarnessTests(unittest.TestCase):
         self.assertEqual(json.loads(arguments["worklist"])["route"], "type")
         self.assertIn("unchecked-out wave integration branch: `wave-0`", rendered)
 
-    def test_harness_places_anchors_and_uses_explicit_log_names(self) -> None:
+    def test_harness_forks_a_worktree_and_uses_explicit_log_names(self) -> None:
         calls: list[dict] = []
 
         class FakeAgent:
@@ -231,8 +207,6 @@ class GitHarnessTests(unittest.TestCase):
 
             def run(self):
                 call = calls[-1]
-                rs = call["workdir"] / "crustify/rust/demo/src/lib.rs"
-                self.assert_anchor = rs.read_text()
                 from crustify.agentlog import open_agent_log
                 with open_agent_log(
                         call["log_dir"], call["log_stem"],
@@ -255,9 +229,12 @@ class GitHarnessTests(unittest.TestCase):
         usage = json.loads(
             (self.output / f"{call['log_stem']}.usage.json").read_text())
         self.assertEqual(usage["stage"], "wrap-type_Frame")
-        anchored = (call["workdir"] / "crustify/rust/demo/src/lib.rs").read_text()
-        self.assertIn("// crustify:todo: Frame", anchored)
-        self.assertIn("// crustify:todo: Frame.data", anchored)
+        # The worktree is the agent's, forked from the wave branch, and the
+        # authored home the batch names is present in it. Nothing writes an
+        # anchor ahead of the agent any more: the batch carries the home.
+        home = call["workdir"] / "crustify/rust/demo/src/lib.rs"
+        self.assertTrue(home.is_file())
+        self.assertNotIn("crustify:todo", home.read_text())
 
     def test_agent_failure_retains_batch_worktree(self) -> None:
         class FailingAgent:

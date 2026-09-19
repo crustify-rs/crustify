@@ -47,10 +47,6 @@ class Layout:
         return self.root / "subsystems.json"
 
     @property
-    def crates_json(self) -> Path:
-        return self.root / "crates.json"
-
-    @property
     def rust(self) -> Path:
         return self.root / "rust"
 

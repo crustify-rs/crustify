@@ -28,8 +28,10 @@ bindings, `mod ffi_export` exports, `crustify_<NAME>` macro shims and the
 
 ## Crates and modules
 
-`crustify/crates.json` is the source of truth for an entity's Rust home. Each
-library wrapper crate has a companion `<lib>-sys` crate for raw bindings.
+The Rust tree mirrors the subsystem decomposition in `subsystems.json`, and
+the filesystem is the source of truth for an entity's home: a batch names the
+`.rs` file each of its items belongs in. Each library wrapper crate has a
+companion `<lib>-sys` crate for raw bindings.
 
 There is one `.rs` home per C translation unit, or per header group when no
 translation unit owns the entity. Entities sharing a definition site co-home.
@@ -70,14 +72,10 @@ sanitizing the translation unit's path.
 
 ## Anchors
 
-The scheduler inserts one TODO anchor for each scheduled item:
-
-| anchor | meaning |
-|---|---|
-| `// crustify:todo: <name>` | unfilled function, global, type or callback |
-| `// crustify:todo: <name>.<field>` | unfilled owner-qualified field |
-
-The translator replaces it with exactly one filled doc-comment anchor:
+A scheduled item arrives with the authored Rust file it belongs in, named by
+its batch. Nothing is written into that file ahead of the agent: the translator
+emits exactly one filled doc-comment anchor per item, and those anchors are the
+only record that an item was translated.
 
 | anchor | meaning |
 |---|---|
