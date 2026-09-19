@@ -12,7 +12,7 @@ from typing import NoReturn
 
 _OBJECTIVES = frozenset({"wrap", "port", "review"})
 _KINDS = frozenset({"type", "symbol", "callback", "raw-lifetime"})
-_ITEM_FIELDS = frozenset({"name", "defined_in", "kind", "field_anchors"})
+_ITEM_FIELDS = frozenset({"name", "defined_in", "kind", "field_anchors", "home"})
 _FIELD_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 _LIFETIME_TIERS = frozenset({"void", "string"})
 
@@ -81,6 +81,7 @@ def load_batch(path: Path) -> Batch:
         defined_in = item["defined_in"]
         kind = item["kind"]
         anchors = item["field_anchors"]
+        home = item["home"]
         if not isinstance(name, str) or not name:
             _fail(f"{label}.name must be a non-empty string")
         if not isinstance(kind, str) or kind not in _KINDS:
@@ -95,6 +96,12 @@ def load_batch(path: Path) -> Batch:
             _fail(f"{label}.field_anchors contains duplicates")
         if kind != "type" and anchors:
             _fail(f"{label}.field_anchors must be empty for kind {kind!r}")
+
+        # The authored Rust file this item belongs in, decided by the
+        # orchestrator and carried in the worklist. A translator resolves no
+        # repo-tier artifact to find it: the batch is the whole input.
+        if not isinstance(home, str) or not home or not home.endswith(".rs"):
+            _fail(f"{label}.home must be a repo-relative .rs path")
 
         if kind == "raw-lifetime":
             if defined_in is not None:
@@ -112,6 +119,7 @@ def load_batch(path: Path) -> Batch:
             "defined_in": defined_in,
             "kind": kind,
             "field_anchors": list(anchors),
+            "home": home,
         })
 
     if len(routes) != 1:
@@ -185,22 +193,6 @@ def execute(
     work_target = tree.path if target_rel == "." else tree.path / target_rel
     work_layout = Layout(tree.path)
 
-    if batch.route != "raw-lifetime":
-        from crustify.anchors import place_batch_anchors
-
-        _inserted, unanchored = place_batch_anchors(
-            work_layout, batch.items, emit=effective != "review")
-        if unanchored:
-            action = (
-                "have no existing anchor to review"
-                if effective == "review"
-                else "could not be anchored"
-            )
-            print(
-                f"[crustify translate] {len(unanchored)} item(s) {action}: "
-                + ", ".join(sorted(unanchored)[:8])
-                + (" ..." if len(unanchored) > 8 else "")
-            )
 
     log_path = output / f"{batch_id}.log"
     print(f"[crustify translate] batch id: {batch_id}")

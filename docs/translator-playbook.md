@@ -62,18 +62,14 @@ queries. Do not substitute a narrow scheduling configuration from a wave
 directory. The schedule should contain each dependency or place it in an
 earlier wave, except explicit SCC cuts.
 
-### 2. Locate homes and bindings
+### 2. Read homes, and extend bindings
 
-Run:
-
-```bash
-crustify <repo_root> <target> crates locate --name <worklist names...>
-```
-
-Use `--file <defined_in>` for a colliding name. The orchestrator has already
-created and connected ordinary item modules. Report a missing home. A
-raw-lifetime batch discovers its concrete primitives first, then homes them in
-`crates.json`.
+Every item in the worklist names the authored `.rs` file it belongs in. Use it.
+Resolve no repo-tier artifact to find a home: the batch is the whole input, and
+the orchestrator has already created and connected the modules it names. Report
+an item whose named home does not exist rather than choosing another. A
+raw-lifetime batch discovers its concrete primitives first, then homes them
+beside the translation unit that defines them.
 
 Use filled anchors as context. Revisit one only when the objective permits it.
 
@@ -409,9 +405,9 @@ they are unreachable, environment-dependent, or intentionally nondeterministic.
 
 ## Completion
 
-Replace every scheduled TODO with the canonical anchor from `conventions.md`.
+Emit the canonical anchor from `conventions.md` for every scheduled item.
 If a lifecycle strategy belongs in another authored home, leave a thin
-cross-file reference at the scheduled TODO and put the promoted anchor at the
+cross-file reference at the item's own home and put the promoted anchor at the
 definition.
 
 Run:

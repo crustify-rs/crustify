@@ -29,10 +29,12 @@ The two phases below are the campaign, in order.
 6. Configure campaign-wide source analysis — one config every agent resolves
    its queries through.
 7. Create `subsystems.json` — the link-unit decomposition sub-campaigns follow.
-8. Create crate shells — the `-sys` and safe crates waves land into.
+8. Scaffold the Rust tree — the `-sys` and safe crates waves land into,
+   mirroring the subsystem decomposition. The filesystem is the placement
+   spec; there is no separate one to author or keep in step.
 
 Then the setup gate: baseline recorded, tables populated, scope matched,
-`crates validate` clean, every `-sys` crate building and testing, layer 0
+every `-sys` crate building and testing, layer 0
 resolving. Do not start a wave until it passes.
 
 ### Phase 2 -- Translation

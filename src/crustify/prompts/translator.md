@@ -29,11 +29,11 @@ condition below is met.
    `--config {wavefront_config}` after `{workdir}`; this campaign-wide config
    gives translators the repo-wide dependency view. Do not substitute a narrow
    scheduling config from the wave directory.
-4. Locate every authored Rust home with
-   `crustify {workdir} {target} crates locate`. For a raw-lifetime route,
-   locate the concrete primitives after discovering them and home them yourself
-   in `crates.json`. Otherwise, you should never really have to edit the spec;
-   report a missing home.
+4. Every item in your worklist names the authored Rust file it belongs in.
+   Use it; resolve no other artifact to find a home. For a raw-lifetime route,
+   home the concrete primitives you discover beside the translation unit that
+   defines them, following `conventions.md`. Report an item whose named home
+   does not exist rather than choosing another.
 5. If required bindings are missing, extend only the affected `-sys` crate's
    agent-owned bindgen allowlist and required shims, regenerate its bindings,
    and check that crate.

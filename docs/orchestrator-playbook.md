@@ -31,7 +31,6 @@ approve individual waves unless requested.
   commands.
 - `crustify/cli-config.json` — records machine-local dependency and executable
   paths plus prompt capabilities; ignored and linked into worktrees.
-- `crustify/crates.json` — assigns translated items and modules to Rust crates.
 - `crustify/subsystems.json` — records link units, subsystem scope, and the
   subsystem dependency graph.
 - `crustify/wavefront/wavefront-config.json` — defines the campaign-wide source
@@ -241,10 +240,12 @@ Aggregate each consumer-to-producer relation into one `depends_on` record with
 translation units or merging subsystems; never remove a real dependency edge.
 Prefer the side with higher incoming producer weight when selecting a boundary.
 
-### 8. Create crate shells
+### 8. Scaffold the Rust tree
 
-Create `crustify/crates.json` from `specs/crates.json`; see
-`docs/schemas/crates.md`.
+Mirror the subsystem decomposition in `subsystems.json`. The filesystem is the
+placement spec: a module exists because a subsystem does, and there is no
+separate document to author or keep in step with it. Rust has no headers, so a
+subsystem's headers and translation units share one module.
 
 - Create one wrapper crate for the selected in-tree target. Place its link
   units and subsystems in Rust modules so internal APIs can remain
@@ -269,7 +270,6 @@ Create `crustify/crates.json` from `specs/crates.json`; see
 Run:
 
 ```bash
-crustify <repo_root> <target> crates validate
 cargo build
 cargo test
 ```
@@ -283,7 +283,6 @@ Before the first wave, verify:
 - baseline pass/total and disabled tests are recorded;
 - T1 and T2 directories are populated;
 - targeted and imported file queries match the approved scope;
-- `crates validate` passes;
 - every `-sys` crate builds, links, and tests; and
 - `query dag --layer 0` returns the producer leaf set.
 
@@ -367,9 +366,9 @@ Before the sub-campaign starts:
 1. verify reusable C-build provenance;
 2. generate its schedule with the narrow configuration and approved caps;
 3. verify config hash, counts, barriers, and batch identities;
-4. home all scheduled items in `crates.json`;
-5. create and connect their `.rs` modules;
-6. run `crates validate` and compile affected crates; and
+4. name each scheduled item's authored `.rs` home in its batch;
+5. create and connect any module a batch names but the tree lacks;
+6. compile the affected crates; and
 7. record the canonical tip as wave zero's base.
 
 For each recorded wave:
@@ -412,8 +411,9 @@ crustify <repo_root> <target> translate <batch.json> \
   --base-branch <wave-branch> --output <wave-log-dir> --dry-run
 ```
 
-Do not edit `crates.json` during a wave. After parallel landings, union
-conflicting `-sys` allowlist additions and retest the affected crates.
+Do not restructure the Rust tree during a wave: a batch names homes that must
+still exist when its agent starts. After parallel landings, union conflicting
+`-sys` allowlist additions and retest the affected crates.
 
 ### 5. Execute and monitor batches
 
