@@ -1,7 +1,5 @@
 <!-- SKILL -->
 
-Additional role guidance for a Crustify orchestrator:
-
 - Read wavefront's CLI helpstring via `--help` to learn how to use it.
 
 ## For Phase 1: Setup
