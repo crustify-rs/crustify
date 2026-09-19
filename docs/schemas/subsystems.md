@@ -88,9 +88,28 @@ artifact from the campaign-wide Wavefront config.
 | `non_callback_typedefs` | typedefs that are not function pointers |
 | `macros` | object- and function-like macro definitions |
 
-Take these from the oracle's file, type, symbol and edge statistics. Do not
-recount them independently: a second count that disagrees is indistinguishable
-from a decomposition that has drifted.
+Derive these by grouping the oracle's own records — `wavefront ... query types`
+and `query symbols` return each entity's resolved kind — not by reading C. A
+second count that disagrees is indistinguishable from a decomposition that has
+drifted.
+
+The oracle's kinds map onto these counters as:
+
+| counter | oracle kind |
+|---|---|
+| `structs` | type `struct` |
+| `unions` | type `union` |
+| `enums` | type `enum` |
+| `callbacks` | `callback` |
+| `macros` | `macro` |
+| `functions` | symbol `function_exported`, `function_inline_header` |
+| `global_variables` | symbol `global_extern` |
+| `non_callback_typedefs` | a typedef that resolves to none of the above |
+
+A typedef is reported under the kind it resolves to, so a typedef of a struct
+counts as a struct and a function-pointer typedef counts as a callback.
+`non_callback_typedefs` is therefore only the remainder — aliases of scalars
+and pointers — and is zero wherever the oracle resolves every typedef away.
 
 ## link_units[*].subsystems[*].imported_deps
 
