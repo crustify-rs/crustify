@@ -54,7 +54,8 @@ target gives `crustify/campaigns/`, `ssl/statem` gives
 `schedule.json` is the campaign's total execution order and its projected
 batches; see `docs/schemas/schedule.md`. Each `<plan-name>.json` is one
 sub-campaign's objective-neutral plan from `wavefront schedule`, the input it
-is projected from; see `docs/schemas/wave.md`.
+is projected from; its fields are documented by Wavefront, in that checkout's
+own `docs/schemas/schedule.md`.
 
 Every path under a campaign is derived from
 `(campaign-id, link-unit, subsystem, index)`, so nothing records one. Wave

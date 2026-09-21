@@ -14,6 +14,10 @@ Each sub-campaign's objective-neutral plan from `wavefront schedule` is the
 input; this document is the orchestrator's projection of those plans into one
 ordered, objective-bearing whole.
 
+Wavefront documents its own output in a file of the same name, in the
+Wavefront checkout. That one describes a single sub-campaign's waves; this one
+orders the campaign and carries the projected batches.
+
 | root field | meaning |
 |---|---|
 | `schema_version` | `1` |
