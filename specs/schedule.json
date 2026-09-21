@@ -1,0 +1,52 @@
+{
+  "_comment": [
+    "Example `<workdir>/crustify/campaigns/<campaign-id>/schedule.json`.",
+    "The campaign's total execution order, emitted once before the first",
+    "agent starts. Waves run in array order; the batches within one wave run",
+    "in parallel. Membership is NOT here: each wave points at the",
+    "sub-campaign plan that holds its items, so the two cannot drift.",
+    "Raw-lifetime discovery runs first and has no subsystem of its own."
+  ],
+  "schema_version": 1,
+  "campaign": "libwidget-wrap",
+  "subsystems": "crustify/subsystems.json",
+  "waves": [
+    {
+      "index": 0,
+      "link_unit": "libwidget",
+      "subsystem": "raw-lifetime-void",
+      "objective": "wrap",
+      "plan": "crustify/campaigns/libwidget-wrap/libwidget/raw-lifetime-void/void.json",
+      "plan_wave": 0,
+      "dir": "crustify/campaigns/libwidget-wrap/libwidget/raw-lifetime-void/wave-void",
+      "batches": [
+        { "index": 0, "kind": "raw-lifetime" }
+      ]
+    },
+    {
+      "index": 1,
+      "link_unit": "libwidget",
+      "subsystem": "core",
+      "objective": "wrap",
+      "plan": "crustify/campaigns/libwidget-wrap/libwidget/core/types.json",
+      "plan_wave": 0,
+      "dir": "crustify/campaigns/libwidget-wrap/libwidget/core/wave-0",
+      "batches": [
+        { "index": 0, "kind": "type" },
+        { "index": 1, "kind": "type" }
+      ]
+    },
+    {
+      "index": 2,
+      "link_unit": "libwidget",
+      "subsystem": "core",
+      "objective": "wrap",
+      "plan": "crustify/campaigns/libwidget-wrap/libwidget/core/types.json",
+      "plan_wave": 1,
+      "dir": "crustify/campaigns/libwidget-wrap/libwidget/core/wave-1",
+      "batches": [
+        { "index": 0, "kind": "symbol" }
+      ]
+    }
+  ]
+}

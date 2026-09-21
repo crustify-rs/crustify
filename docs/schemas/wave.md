@@ -9,11 +9,15 @@ Crustify does not execute or reinterpret this whole document.
 
 The filename is not identity. `schedule --output` accepts any path whose parent
 directory already exists, so tracked plans normally use descriptive names such
-as `crustify/campaigns/<target>/<sub-campaign>/types.json`, beside that
+as `crustify/campaigns/<campaign-id>/<link-unit>/<subsystem>/types.json`,
+beside that
 sub-campaign's narrow `wavefront-config.json`. The orchestrator scaffolds the
 sub-campaign directory; the oracle never creates it. For execution, it numbers
 the `waves` array as `wave-0`, `wave-1`, and so on, and routes each harness's
-generated logs to that wave's `logs/` directory.
+generated logs to that wave's `logs/` directory. A wave's place in the
+campaign's overall order is recorded separately, in `schedule.json`
+(`docs/schemas/schedule.md`): this document orders one sub-campaign, not the
+campaign.
 
 ## Version 3
 

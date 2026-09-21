@@ -13,12 +13,15 @@ records results. Translators implement their assigned worklists.
 - `crustify/subsystems.json` — records link units and subsystems, their objective,
   contents, and imported dependencies; governs the shape the Rust tree mirrors.
 
-- `crustify/campaigns/<target>/<sub-campaign>/<wave-name>.json` — records the
-  generated wave and batch plan; should be tracked.
-- `crustify/campaigns/<target>/<sub-campaign>/wave-<index>/logs/<batch-id>.log`
-  — contains one agent's output stream.
-- `crustify/campaigns/<target>/<sub-campaign>/wave-<index>/logs/<batch-id>.usage.json`
-  — contains one agent's token, cost, and wall-time record.
+- `crustify/campaigns/<campaign-id>/schedule.json` — records the campaign's
+  total execution order over every link unit, subsystem, wave and batch;
+  tracked.
+- `crustify/campaigns/<campaign-id>/<link-unit>/<subsystem>/<plan-name>.json`
+  — records one sub-campaign's generated wave and batch plan; tracked.
+- `…/wave-<index>/batch-<index>.json` — the thin batch projected for one agent.
+- `…/wave-<index>/logs/<batch-id>.log` — one agent's output stream.
+- `…/wave-<index>/logs/<batch-id>.usage.json` — one agent's token, cost, and
+  wall-time record.
 
 Read the corresponding example in `specs/` and schema description in `docs/schemas` before
 creating an artifact. 
@@ -26,24 +29,35 @@ creating an artifact.
 ## Directory structure
 
 ```text
-crustify/campaigns/<target>/
-├── {<sub-campaign>, raw-lifetime-{void, string}}/
-│   └── wave-{<index>, void, string}/
-│       └── batch-<index>.json
-│       └── logs/
-│           ├── batch-<index>.log
-│           └── batch-<index>.usage.json
-└──
+crustify/campaigns/<campaign-id>/
+├── schedule.json
+└── <link-unit>/
+    └── {<subsystem>, raw-lifetime-{void, string}}/
+        ├── <plan-name>.json
+        └── wave-{<index>, void, string}/
+            ├── batch-<index>.json
+            └── logs/
+                ├── <batch-id>.log
+                └── <batch-id>.usage.json
 crustify/rust/
 crustify/tmp/
 ```
 
-`<target>` is the repository-relative CLI target. A root target uses
-`crustify/campaigns/`; `ssl/statem` uses `crustify/campaigns/ssl/statem/`.
+A sub-campaign is a subsystem, so it nests under the link unit that contains
+it: `(link_unit, subsystem)` is the globally addressable identity, and the two
+levels of directory are that pair. Raw-lifetime discovery has no subsystem of
+its own and occupies the same level under its link unit.
 
-Number the schedule's `waves` array from zero. For each wave, pass its `logs/`
-directory to every batch through `--output`. Wave indices follow executable
-wave order, not individual DAG layers.
+`<campaign-id>` names the campaign, normally the CLI target's slug — a root
+target gives `crustify/campaigns/`, `ssl/statem` gives
+`crustify/campaigns/ssl/statem/`.
+
+`schedule.json` is the campaign's total execution order across every link unit
+and subsystem; see `docs/schemas/schedule.md`. Each `<plan-name>.json` is one
+sub-campaign's objective-neutral plan from `wavefront schedule`; see
+`docs/schemas/wave.md`. Number each plan's `waves` array from zero, and pass a
+wave's `logs/` directory to every batch in it through `--output`. Wave indices
+follow executable wave order, not individual DAG layers.
 
 ## Phase 1: setup
 
@@ -64,7 +78,7 @@ Required dependencies:
 ```bash
 mkdir -p <repo>/crustify
 cp specs/gitignore <repo>/crustify/.gitignore
-mkdir -p <repo>/crustify/campaigns/<target>
+mkdir -p <repo>/crustify/campaigns/<campaign-id>
 ```
 
 If you're working in a git repo, create the campaign branch:
@@ -125,37 +139,7 @@ with its `nr_edges` and the item kinds consumed across them, splitting in-tree
 destinations from out-of-tree libraries. Record the graph as it is, cycles included.
 
 
-### 5. Rust tree scaffolding
-
-Generally, the target's filesystem is the placement spec.
-Mirror the following layout, all relative to `<repo>/crustify/rust/`:
-
-- `Cargo.toml` - top-level virtual manifest.
-- `<link-unit>-sys` - raw bindings package, one per link unit.
-- `<repo>/` - safe repo package, one for the whole repo.
-- `<repo>/<link-unit>/` - one sub-dir per link unit, cfg-gated mod in `lib.rs`.
-
-
-Create minimal `Cargo.toml` and crate roots using the established conventions.
-Do this only for the link units included in the scope established by the user.
-Scaffold source files lazily before spawning translator agents.  
-
-For each `-sys` package, author the build scripts required by bindgen so that translator
-agents can reuse them; each  `-sys` crate needs `Cargo.toml`, `src/lib.rs`, `build.rs`,
-and bindgen input. Allowlists are populated by translators lazily.
-
-
-Commit the initial Rust tree on the campaign branch.
-
-
-### 6. Side campaigns
-
-TODO
-
-
-## Phase 2: translation
-
-### 1. Sub-campaign planning
+### 5. Sub-campaign planning
 
 Plan only link units and subsystems included in the campaign scope established
 by the user.
@@ -194,6 +178,38 @@ For a port campaign:
 Wavefront schedules are objective-neutral. The orchestrator adds the execution
 objective to each projected batch.
 
+
+### 5. Rust tree scaffolding
+
+Generally, the target's filesystem is the placement spec.
+Mirror the following layout, all relative to `<repo>/crustify/rust/`:
+
+- `Cargo.toml` - top-level virtual manifest.
+- `<link-unit>-sys` - raw bindings package, one per link unit.
+- `<repo>/` - safe repo package, one for the whole repo.
+- `<repo>/<link-unit>/` - one sub-dir per link unit, cfg-gated mod in `lib.rs`.
+
+
+Create minimal `Cargo.toml` and crate roots using the established conventions.
+Do this only for the link units included in the scope established by the user.
+Scaffold source files lazily before spawning translator agents.  
+
+For each `-sys` package, author the build scripts required by bindgen so that translator
+agents can reuse them; each  `-sys` crate needs `Cargo.toml`, `src/lib.rs`, `build.rs`,
+and bindgen input. Allowlists are populated by translators lazily.
+
+
+Commit the initial Rust tree on the campaign branch.
+
+
+### 6. Side campaigns
+
+TODO
+
+
+## Phase 2: translation
+
+
 ### 3. Preflight agentic stages
 
 Before translation, review, or UB-audit agents start:
@@ -230,9 +246,12 @@ Before the sub-campaign starts:
 For each recorded wave:
 
 - create the unchecked-out integration branch
-  `crustify/wave/<target-slug>/<sub-campaign>/wave-<index>`;
+  `crustify/wave/<campaign-id>/<link-unit>/<subsystem>/wave-<index>`;
 - create its log directory under the campaign; and
 - project each recorded batch without changing its membership.
+
+Branch and directory carry the same `(link_unit, subsystem)` pair, so a wave's
+branch, its plan and its logs are addressable from its `schedule.json` entry.
 
 The thin batch format is:
 
