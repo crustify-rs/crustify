@@ -4,25 +4,6 @@ The orchestrator sets up the campaign, schedules batches, monitors agents,
 lands and reviews waves, runs regression gates, promotes verified tips, and
 records results. Translators implement their assigned worklists.
 
-Paths are relative to the Crustify checkout in `deps.crustify`. Read each
-artifact's example under `specs/` and its schema before creating it. Use live
-`--help` output for command flags and defaults.
-
-## Required campaign decisions
-
-Every campaign decision is asked and defaulted in
-`examples/crustify/TASK-template.md`. Resolve them all before changing the
-campaign repository: take what the mounted `TASK.md` answers, ask the user for
-the rest, and let an unanswered optional decision fall to its documented
-default. Do not restate the questions here or in the prompt — one wording,
-one file.
-
-If the user delegates scope, prefer code with manual memory management or
-untrusted-input parsing. If execution is not autonomous, record separate gates
-for setup, translation, sub-campaign transitions, review, and UB audit. Present
-one campaign brief and obtain approval before setup. Do not ask the user to
-approve individual waves unless requested.
-
 ## Artifacts
 
 - `crustify/.gitignore` — excludes machine-local configuration, caches, builds,
@@ -30,41 +11,32 @@ approve individual waves unless requested.
 - `crustify/build.json` — records the versioned configure, build, and test
   commands.
 - `crustify/skills-config.json` — records which optional skills each agent
-  role carries in its system prompt; tracked, and present only for an
-  ablation.
-- `crustify/subsystems.json` — records link units, each subsystem's objective,
-  contents and imported dependencies, and the shape the Rust tree mirrors.
-- `crustify/wavefront/wavefront-config.json` — defines the campaign-wide source
-  inventory.
-- `crustify/wavefront/ownership-store.json` — stores authored semantic findings.
-- `crustify/wavefront/codeql/t1/*.csv` — contains extracted entity records.
-- `crustify/wavefront/codeql/t2/*.csv` — contains extracted dependency edges.
-- `crustify/campaigns/<target>/<sub-campaign>/wavefront-config.json` — narrows
-  source inventory to one sub-campaign.
+  role carries in its system prompt.
+- `crustify/subsystems.json` — records link units and subsystems, their objective,
+  contents, and imported dependencies; governs the shape the Rust tree mirrors.
+
 - `crustify/campaigns/<target>/<sub-campaign>/<wave-name>.json` — records the
-  generated wave and batch plan.
+  generated wave and batch plan; should be tracked.
 - `crustify/campaigns/<target>/<sub-campaign>/wave-<index>/logs/<batch-id>.log`
   — contains one agent's output stream.
 - `crustify/campaigns/<target>/<sub-campaign>/wave-<index>/logs/<batch-id>.usage.json`
   — contains one agent's token, cost, and wall-time record.
 
-Read the corresponding example and schema before creating an artifact. Track
-authored configs and wave plans. Ignore machine-local config, extracted data,
-caches, build outputs, and execution logs as specified by `crustify/.gitignore`.
+Read the corresponding example in `specs/` and schema description in `docs/schemas` before
+creating an artifact. 
 
 ## Directory structure
 
 ```text
 crustify/campaigns/<target>/
-├── raw-lifetime-void/
-│   ├── wavefront-config.json
-│   └── <wave-name>.json
-├── raw-lifetime-string/
-│   ├── wavefront-config.json
-│   └── <wave-name>.json
+├── raw-lifetime-{void, string}/
+│   └── wave-{void, string}.json
+│   └── wave-{void, string}/
+│       └── logs/
+│           ├── <batch-id>.log
+│           └── <batch-id>.usage.json
 ├── <sub-campaign>/
-│   ├── wavefront-config.json
-│   ├── <wave-name>.json
+│   ├── wave-<index>.json
 │   └── wave-<index>/
 │       └── logs/
 │           ├── <batch-id>.log
@@ -73,8 +45,7 @@ crustify/campaigns/<target>/
 ```
 
 `<target>` is the repository-relative CLI target. A root target uses
-`crustify/campaigns/`; `ssl/statem` uses
-`crustify/campaigns/ssl/statem/`.
+`crustify/campaigns/`; `ssl/statem` uses `crustify/campaigns/ssl/statem/`.
 
 Number the schedule's `waves` array from zero. For each wave, pass its `logs/`
 directory to every batch through `--output`. Wave indices follow executable
@@ -90,20 +61,9 @@ Required dependencies:
 - Rust stable with `cargo` and `clippy`;
 - Rust nightly with `rustc-dev` and `llvm-tools`;
 - `bindgen-cli`;
-- CodeQL CLI;
 - supported agent backends;
 - Crustify;
-- Wavefront; and
-- ffibox.
 
-CodeQL on macOS arm64 requires Rosetta.
-
-Wavefront and ffibox are checkouts under the data prefix of the environment
-crustify is installed in — `<prefix>/share/wavefront` and
-`<prefix>/share/ffibox`. Crustify resolves them there itself; you configure no
-paths. A checkout already present at either location is provisioned: do not
-clone or reinstall it. `CRUSTIFY_DEP_WAVEFRONT` / `CRUSTIFY_DEP_FFIBOX`
-override one of them for a checkout kept elsewhere.
 
 ### 2. Bootstrap `crustify/`
 
@@ -120,104 +80,34 @@ a role left out carries all of them.
 - orchestrator: `wavefront`, `audit`;
 - translator: `wavefront`, `ffibox`, `audit`.
 
-Omitting a capability removes its prompt instructions only; it does not hide
-the executable, checkout, or path. Commit the file: it decides what a wave's
-agents were told, so the commits that wave lands must carry it.
+Commit the authored schema: it decides what a wave's agents were told, so the commits that
+wave lands must carry it.
 
 ### 3. Create `build.json` and record the baseline
 
-Create `crustify/build.json` from `specs/build.json`. Store the exact
-repository-root commands for `configure`, `build`, and `test`. Increment
-`version` whenever any command changes.
-
-- Disable deprecated features when practical.
-- Enable campaign sanitizers.
-- Use parallel builds.
-
-Run `configure`, `build`, and `test` against the unmodified source revision.
-Disable unstable baseline tests as needed. Record pass/total and every disabled
-test in the campaign results. Post-port results must match this baseline.
-
-### 4. Extract CodeQL data
-
-Build the CodeQL database, then run:
-
-```bash
-wavefront <repo_root> extract-ql
-```
-
-This creates T1 entity CSVs and T2 edge CSVs under
-`crustify/wavefront/codeql/{t1,t2}/`. Re-run only when the C source or CodeQL
-database changes.
+Create `crustify/build.json` from `specs/build.json`.
+Increment `version` whenever any command changes.
+Disable deprecated features unless otherwise instructed by the user.
+Use parallel builds.
+Disable unstable baseline tests as needed, record pass/total and every disabled
+test in the campaign results.
+Post-campaign results must match this baseline.
 
 ### 5. Prepare reusable C builds
 
-Create immutable out-of-tree builds for the exact C revision, `build.json`
+Create immutable builds for the exact C revision, `build.json`
 version, compiler, and instrumentation, so that translator agents can reuse
 them:
 
 - plain build for the functional baseline;
-- ASan + UBSan build for FFI and lifecycle tests;
-- TSan build for race tests; do not combine it with ASan;
-- BSan build when BorrowSanitizer is available; and
 - coverage build for campaign measurements.
 
-Miri does not need a C build and cannot call the foreign library.
-
-A Rust-only change, bindgen allowlist change, or bindgen input-header change may
-reuse a matching build. A change to compiled C or a compiled shim requires a
-private build; refresh shared builds after that change lands.
+A Rust- or bindgen-only change may reuse a matching build.
+A change to compiled C or a compiled shim requires a private build; refresh
+shared builds after that change lands.
 
 After each reviewed wave, run the sanitized regression gate. Measure
 UB, equivalence, and unit coverage separately; do not sum them.
-
-### 6. Configure campaign-wide source analysis
-
-Create `crustify/wavefront/wavefront-config.json` from Wavefront's specification.
-It contains:
-
-| key | contents |
-|---|---|
-| `impl_files` | implementation sources and private defining headers |
-| `api_headers` | published API headers |
-
-A directory entry ends with `/`. Uncompiled candidates are removed by T1
-anchoring.
-
-Selection rules:
-
-- `impl_files` and `api_headers` seed the implementation graph.
-- An entity is targeted when its definition is in a named file. For an entity
-  without a body, all declarations must be in named files.
-- Headers outside the implementation tree must be named when they define
-  target types.
-- Add a header to `api_headers` only when its implementors are in `impl_files`.
-- Dependencies merely used by the target enter the imported closure.
-- `--api-headers-only` selects declarations published by `api_headers` and
-  does not walk bodies.
-- A struct defined in `api_headers` retains field layout. A forward declaration
-  remains opaque.
-- `--transitive` adds signature dependencies.
-- `targeted` and `imported` describe ownership; `api` describes publication.
-  These sets intersect.
-- `out_of_scope.paths` changes selection. `out_of_scope.features` is
-  documentation only.
-
-Verify the configuration:
-
-```bash
-wavefront <repo_root> --config <campaign-config> query files --targeted-only
-wavefront <repo_root> --config <campaign-config> query files --imported-only
-```
-
-Create the campaign branch and directory:
-
-```bash
-git -C <repo> checkout -b crustify/<target>-<model>
-mkdir -p <repo>/crustify/campaigns/<target>
-```
-
-Wavefront does not create the parent directory for `schedule --output`.
 
 ### 7. Create `subsystems.json`
 
@@ -524,3 +414,100 @@ otherwise leave every per-batch pair blank and say so once in Notes.
 When a campaign exposes a defect in Crustify, Wavefront, or ffibox, create a dedicated branch and worktree in that component's repository.
 Implement and validate the reusable fix there; do not mix it into campaign
 translation commits.
+
+
+## To be moved
+
+- `crustify/wavefront/wavefront-config.json` — defines the campaign-wide source
+  inventory.
+- `crustify/wavefront/ownership-store.json` — stores authored semantic findings.
+- `crustify/wavefront/codeql/t1/*.csv` — contains extracted entity records.
+- `crustify/wavefront/codeql/t2/*.csv` — contains extracted dependency edges.
+- `crustify/campaigns/<target>/<sub-campaign>/wavefront-config.json` — narrows
+  source inventory to one sub-campaign.
+
+
+- ASan + UBSan build for FFI and lifecycle tests;
+- TSan build for race tests; do not combine it with ASan;
+- BSan build when BorrowSanitizer is available; and
+Miri does not need a C build and cannot call the foreign library.
+
+
+## Directory structure
+
+```text
+crustify/campaigns/<target>/
+├── raw-lifetime-void/
+│   ├── wavefront-config.json
+│   └── wave-void.json
+├── raw-lifetime-string/
+│   ├── wavefront-config.json
+│   └── wave-string.json
+├── <sub-campaign>/
+│   ├── wavefront-config.json
+│   ├── wave-<index>.json
+│   └── wave-<index>/
+│       └── logs/
+│           ├── <batch-id>.log
+│           └── <batch-id>.usage.json
+└── ...
+```
+
+
+### 6. Configure campaign-wide source analysis
+
+Create `crustify/wavefront/wavefront-config.json` from Wavefront's specification.
+It contains:
+
+| key | contents |
+|---|---|
+| `impl_files` | implementation sources and private defining headers |
+| `api_headers` | published API headers |
+
+A directory entry ends with `/`. Uncompiled candidates are removed by T1
+anchoring.
+
+Selection rules:
+
+- `impl_files` and `api_headers` seed the implementation graph.
+- An entity is targeted when its definition is in a named file. For an entity
+  without a body, all declarations must be in named files.
+- Headers outside the implementation tree must be named when they define
+  target types.
+- Add a header to `api_headers` only when its implementors are in `impl_files`.
+- Dependencies merely used by the target enter the imported closure.
+- `--api-headers-only` selects declarations published by `api_headers` and
+  does not walk bodies.
+- A struct defined in `api_headers` retains field layout. A forward declaration
+  remains opaque.
+- `--transitive` adds signature dependencies.
+- `targeted` and `imported` describe ownership; `api` describes publication.
+  These sets intersect.
+- `out_of_scope.paths` changes selection. `out_of_scope.features` is
+  documentation only.
+
+Verify the configuration:
+
+```bash
+wavefront <repo_root> --config <campaign-config> query files --targeted-only
+wavefront <repo_root> --config <campaign-config> query files --imported-only
+```
+
+Create the campaign branch and directory:
+
+```bash
+git -C <repo> checkout -b crustify/<target>-<model>
+mkdir -p <repo>/crustify/campaigns/<target>
+```
+
+Wavefront does not create the parent directory for `schedule --output`.
+
+## Required deps
+
+CodeQL on macOS arm64 requires Rosetta.
+Wavefront and ffibox are checkouts under the data prefix of the environment
+crustify is installed in — `<prefix>/share/wavefront` and
+`<prefix>/share/ffibox`. Crustify resolves them there itself; you configure no
+paths. A checkout already present at either location is provisioned: do not
+clone or reinstall it. `CRUSTIFY_DEP_WAVEFRONT` / `CRUSTIFY_DEP_FFIBOX`
+override one of them for a checkout kept elsewhere.
