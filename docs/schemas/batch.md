@@ -5,8 +5,9 @@ Field meaning for the JSON the orchestrator passes to
 entire worklist.
 
 The orchestrator projects it from one recorded batch of a sub-campaign
-schedule (`docs/schemas/wave.md`), adding the execution objective and each
-item's authored Rust home. Projection must not change batch membership.
+schedule — Wavefront's output, documented in that checkout's
+`docs/schemas/schedule.md` — adding the execution objective and each item's
+authored Rust home. Projection must not change batch membership.
 
 The file is transient input, not a tracked artifact: it names no wave, branch,
 log path or dependency, and the harness reads it once.
