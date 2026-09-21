@@ -17,12 +17,15 @@ from crustify.agents.base import CrustifyAgent, SkillSpec, _PKG_ROOT
 
 #: Every skill an orchestrator can carry, in prompt order. Which of them it
 #: actually carries is decided by discovery: a skill whose files are on disk
-#: is rendered, one whose files are not is silently absent. The role skill
-#: has no `capability` because it is what makes this agent an orchestrator;
-#: the other two are things it is TOLD about rather than things it is, which
-#: is what makes them ablatable.
+#: is rendered, one whose files are not is silently absent. Each lives at
+#: `prompts/skills/<skill>/orchestrator.md` — one directory per skill, one file
+#: per role — so deleting the file ablates it here and deleting the
+#: directory ablates it everywhere. The playbook skill has no `capability`
+#: because it is what makes this agent an orchestrator; the other two are
+#: things it is TOLD about rather than things it is, which is what makes
+#: them ablatable.
 _SKILLS = (
-    SkillSpec("crustify", "src/crustify/prompts/skills/orchestrator.md"),
+    SkillSpec("crustify", "src/crustify/prompts/skills/playbook/orchestrator.md"),
     #: One wavefront skill, two role overlays. The oracle a translator queries
     #: and the oracle an orchestrator plans with are the same tool used for
     #: different work, so the metadata is shared and only the guidance splits.
@@ -30,11 +33,11 @@ _SKILLS = (
     #: a translator runs only `unsafe`, an orchestrator also gates `ub`.
     SkillSpec(
         "wavefront", "SKILL.md", capability="wavefront",
-        role_header="skills/wavefront-orchestrator.md",
+        role_header="skills/wavefront/orchestrator.md",
     ),
     SkillSpec(
         "crustify", "src/crustify_audit/SKILL.md", capability="audit",
-        role_header="skills/audit-orchestrator.md",
+        role_header="skills/audit/orchestrator.md",
     ),
 )
 

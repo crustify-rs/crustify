@@ -9,25 +9,28 @@ from crustify.agents.base import CrustifyAgent, SkillSpec, _PKG_ROOT
 
 #: Every skill a translator can carry, in prompt order. Which of them it
 #: actually carries is decided by discovery: a skill whose files are on disk
-#: is rendered, one whose files are not is silently absent. The role skill
-#: has no `capability` because it is what makes this agent a translator; the
-#: rest are optional, and their names are what the run logs.
+#: is rendered, one whose files are not is silently absent. Each lives at
+#: `prompts/skills/<skill>/translator.md` — one directory per skill, one file
+#: per role — so deleting the file ablates it here and deleting the
+#: directory ablates it everywhere. The playbook skill has no `capability`
+#: because it is what makes this agent a translator; the rest are optional,
+#: and their names are what the run logs.
 _SKILLS = (
-    SkillSpec("crustify", "src/crustify/prompts/skills/translator.md"),
+    SkillSpec("crustify", "src/crustify/prompts/skills/playbook/translator.md"),
     SkillSpec(
         "wavefront", "SKILL.md", capability="wavefront",
-        role_header="skills/wavefront-translator.md",
+        role_header="skills/wavefront/translator.md",
     ),
     SkillSpec(
         "ffibox", "SKILL.md", capability="ffibox",
-        role_header="skills/ffibox.md",
+        role_header="skills/ffibox/translator.md",
     ),
     #: The audit capability is not a separate checkout: `crustify-audit` was
     #: folded into `crustify audit`, so its skill ships in this package. Its
     #: role header is therefore what a deletion ablates.
     SkillSpec(
         "crustify", "src/crustify_audit/SKILL.md", capability="audit",
-        role_header="skills/audit-translator.md",
+        role_header="skills/audit/translator.md",
     ),
 )
 
