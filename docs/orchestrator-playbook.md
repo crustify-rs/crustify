@@ -59,9 +59,10 @@ own `docs/schemas/schedule.md`.
 
 Every path under a campaign is derived from
 `(campaign-id, link-unit, subsystem, index)`, so nothing records one. Wave
-directories take the campaign-global `index`, which makes them unique across
-the campaign; a wave's `logs/` is what its batches receive through `--output`.
-Wave indices follow executable wave order, not individual DAG layers.
+indices restart at zero in each subsystem, and the directory pair above is
+what keeps them distinct; a wave's `logs/` is what its batches receive through
+`--output`. Wave indices follow executable wave order, not individual DAG
+layers.
 
 ## Phase 1: setup
 
@@ -145,6 +146,15 @@ destinations from out-of-tree libraries. Record the graph as it is, cycles inclu
 
 ### 5. Sub-campaign planning
 
+Emit `crustify/campaigns/<campaign-id>/schedule.json` describing a total ordering
+of this campaign's worksets based on dependency relations. It nests link unit,
+then subsystem, then wave; the total order is that nesting read depth-first, so
+ordering the three levels is the whole plan.
+
+Order link units by their own dependency graph. A link unit runs to completion
+before the next starts, so a subsystem's dependencies in another link unit must
+belong to an earlier one.
+
 Plan only link units and subsystems included in the campaign scope established
 by the user.
 
@@ -155,18 +165,12 @@ Execute link unit and subsystem sub-campaigns bottom-up, producers before
 consumers. Turn the tree of link units and subsystems into a DAG, removing its
 cyclic edges; use `subsystemA.imported_deps.subsystemB.nr_edges` as the descriminator
 for determining producer->consumer ordering, a smaller value making the left-hand
-side a producer for the right-hand side consumer.
+side a producer for the right-hand side consumer. Raw lifetime sub-campaigns are leaves
+and they run first.
 
-In a port campaign, each subsystem gets a Rust-side sub-dir and top-level sub-module in their
-link unit: `rust/<repo>/<link-unit>/<subsystem>/<subsystem>.rs`; TUs and headers become
-sub-modules of their subsystem. In a wrap campaign subsystems don't appear as sub-modules;
-TUs and headers are top-level modules directly on their link unit.
+Skip link units or subsystems when resuming a campaign that already completed them.
 
-Run raw-lifetime sub-campaigns first.
-
-Skip sub-campaigns or waves when resuming a campaign that already completed them.
-
-### 2. Assign execution objectives
+### 6. Wave and batch planning
 
 For a wrap campaign, every batch uses `objective: wrap`.
 
@@ -204,6 +208,11 @@ For each `-sys` package, author the build scripts required by bindgen so that tr
 agents can reuse them; each  `-sys` crate needs `Cargo.toml`, `src/lib.rs`, `build.rs`,
 and bindgen input. Allowlists are populated by translators lazily.
 
+In a port campaign, each subsystem gets a Rust-side sub-dir and top-level sub-module in their
+link unit: `rust/<repo>/<link-unit>/<subsystem>/<subsystem>.rs`; TUs and headers become
+sub-modules of their subsystem. In a wrap campaign subsystems don't appear as sub-modules;
+TUs and headers are top-level modules directly on their link unit. Emit TU and header modules
+lazily before scheduling their first units.
 
 Commit the initial Rust tree on the campaign branch.
 
