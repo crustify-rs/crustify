@@ -14,8 +14,7 @@ records results. Translators implement their assigned worklists.
   contents, and imported dependencies; governs the shape the Rust tree mirrors.
 
 - `crustify/campaigns/<campaign-id>/schedule.json` — records the campaign's
-  total execution order over every link unit, subsystem, wave and batch;
-  tracked.
+  total execution order and every projected batch; tracked.
 - `crustify/campaigns/<campaign-id>/<link-unit>/<subsystem>/<plan-name>.json`
   — records one sub-campaign's generated wave and batch plan; tracked.
 - `…/wave-<index>/batch-<index>.json` — the thin batch projected for one agent.
@@ -52,12 +51,16 @@ its own and occupies the same level under its link unit.
 target gives `crustify/campaigns/`, `ssl/statem` gives
 `crustify/campaigns/ssl/statem/`.
 
-`schedule.json` is the campaign's total execution order across every link unit
-and subsystem; see `docs/schemas/schedule.md`. Each `<plan-name>.json` is one
-sub-campaign's objective-neutral plan from `wavefront schedule`; see
-`docs/schemas/wave.md`. Number each plan's `waves` array from zero, and pass a
-wave's `logs/` directory to every batch in it through `--output`. Wave indices
-follow executable wave order, not individual DAG layers.
+`schedule.json` is the campaign's total execution order and its projected
+batches; see `docs/schemas/schedule.md`. Each `<plan-name>.json` is one
+sub-campaign's objective-neutral plan from `wavefront schedule`, the input it
+is projected from; see `docs/schemas/wave.md`.
+
+Every path under a campaign is derived from
+`(campaign-id, link-unit, subsystem, index)`, so nothing records one. Wave
+directories take the campaign-global `index`, which makes them unique across
+the campaign; a wave's `logs/` is what its batches receive through `--output`.
+Wave indices follow executable wave order, not individual DAG layers.
 
 ## Phase 1: setup
 
@@ -176,7 +179,9 @@ For a port campaign:
   running `review`.
 
 Wavefront schedules are objective-neutral. The orchestrator adds the execution
-objective to each projected batch.
+objective to each projected batch, and records it there rather than on the
+wave: one wave can hold batches of differing objectives, which is exactly what
+the type rule above produces.
 
 
 ### 5. Rust tree scaffolding
@@ -248,10 +253,12 @@ For each recorded wave:
 - create the unchecked-out integration branch
   `crustify/wave/<campaign-id>/<link-unit>/<subsystem>/wave-<index>`;
 - create its log directory under the campaign; and
-- project each recorded batch without changing its membership.
+- write each `schedule.json` batch entry out to its `batch-<index>.json`
+  verbatim, changing no field and no membership.
 
 Branch and directory carry the same `(link_unit, subsystem)` pair, so a wave's
-branch, its plan and its logs are addressable from its `schedule.json` entry.
+branch, its batches and its logs are addressable from its `schedule.json`
+entry alone.
 
 The thin batch format is:
 

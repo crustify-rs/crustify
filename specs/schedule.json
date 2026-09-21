@@ -3,8 +3,9 @@
     "Example `<workdir>/crustify/campaigns/<campaign-id>/schedule.json`.",
     "The campaign's total execution order, emitted once before the first",
     "agent starts. Waves run in array order; the batches within one wave run",
-    "in parallel. Membership is NOT here: each wave points at the",
-    "sub-campaign plan that holds its items, so the two cannot drift.",
+    "in parallel. A batch entry is exactly the object `crustify translate`",
+    "accepts, so writing it out to batch-<index>.json is a copy.",
+    "Every path is derived from (campaign, link_unit, subsystem, index).",
     "Raw-lifetime discovery runs first and has no subsystem of its own."
   ],
   "schema_version": 1,
@@ -15,37 +16,69 @@
       "index": 0,
       "link_unit": "libwidget",
       "subsystem": "raw-lifetime-void",
-      "objective": "wrap",
-      "plan": "crustify/campaigns/libwidget-wrap/libwidget/raw-lifetime-void/void.json",
-      "plan_wave": 0,
-      "dir": "crustify/campaigns/libwidget-wrap/libwidget/raw-lifetime-void/wave-void",
       "batches": [
-        { "index": 0, "kind": "raw-lifetime" }
+        {
+          "objective": "wrap",
+          "items": [
+            {
+              "name": "void",
+              "defined_in": null,
+              "kind": "raw-lifetime",
+              "field_anchors": [],
+              "home": "crustify/rust/libwidget/src/raw.rs"
+            }
+          ]
+        }
       ]
     },
     {
       "index": 1,
       "link_unit": "libwidget",
       "subsystem": "core",
-      "objective": "wrap",
-      "plan": "crustify/campaigns/libwidget-wrap/libwidget/core/types.json",
-      "plan_wave": 0,
-      "dir": "crustify/campaigns/libwidget-wrap/libwidget/core/wave-0",
       "batches": [
-        { "index": 0, "kind": "type" },
-        { "index": 1, "kind": "type" }
+        {
+          "objective": "wrap",
+          "items": [
+            {
+              "name": "widget_handle",
+              "defined_in": "include/widget/core.h",
+              "kind": "type",
+              "field_anchors": ["refcount", "flags"],
+              "home": "crustify/rust/libwidget/src/core.rs"
+            }
+          ]
+        },
+        {
+          "objective": "port",
+          "items": [
+            {
+              "name": "widget_opts",
+              "defined_in": "include/widget/core.h",
+              "kind": "type",
+              "field_anchors": [],
+              "home": "crustify/rust/libwidget/src/core.rs"
+            }
+          ]
+        }
       ]
     },
     {
       "index": 2,
       "link_unit": "libwidget",
       "subsystem": "core",
-      "objective": "wrap",
-      "plan": "crustify/campaigns/libwidget-wrap/libwidget/core/types.json",
-      "plan_wave": 1,
-      "dir": "crustify/campaigns/libwidget-wrap/libwidget/core/wave-1",
       "batches": [
-        { "index": 0, "kind": "symbol" }
+        {
+          "objective": "wrap",
+          "items": [
+            {
+              "name": "widget_open",
+              "defined_in": "src/core.c",
+              "kind": "symbol",
+              "field_anchors": [],
+              "home": "crustify/rust/libwidget/src/core.rs"
+            }
+          ]
+        }
       ]
     }
   ]
