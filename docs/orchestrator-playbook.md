@@ -10,8 +10,6 @@ records results. Translators implement their assigned worklists.
   logs, and generated analysis output.
 - `crustify/build.json` — records the versioned configure, build, and test
   commands.
-- `crustify/skills-config.json` — records which optional skills each agent
-  role carries in its system prompt.
 - `crustify/subsystems.json` — records link units and subsystems, their objective,
   contents, and imported dependencies; governs the shape the Rust tree mirrors.
 
@@ -71,17 +69,6 @@ Required dependencies:
 mkdir -p <repo>/crustify
 cp specs/gitignore <repo>/crustify/.gitignore
 ```
-
-Create `crustify/skills-config.json` from `specs/skills-config.json` only if
-the `skills` task answer is anything other than `defaults`. One entry per
-agent role naming the optional skills that role carries in its system prompt;
-a role left out carries all of them.
-
-- orchestrator: `wavefront`, `audit`;
-- translator: `wavefront`, `ffibox`, `audit`.
-
-Commit the authored schema: it decides what a wave's agents were told, so the commits that
-wave lands must carry it.
 
 ### 3. Create `build.json` and record the baseline
 

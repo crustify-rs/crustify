@@ -15,30 +15,28 @@ from pathlib import Path
 
 from crustify.agents.base import CrustifyAgent, SkillSpec, _PKG_ROOT
 
-#: Always on: the orchestrator's own role skill is what makes it an
-#: orchestrator, so there is no campaign in which it is not rendered.
-_CORE_SKILLS = (
+#: Every skill an orchestrator can carry, in prompt order. Which of them it
+#: actually carries is decided by discovery: a skill whose files are on disk
+#: is rendered, one whose files are not is silently absent. The role skill
+#: has no `capability` because it is what makes this agent an orchestrator;
+#: the other two are things it is TOLD about rather than things it is, which
+#: is what makes them ablatable.
+_SKILLS = (
     SkillSpec("crustify", "src/crustify/prompts/skills/orchestrator.md"),
-)
-
-#: Selectable through `crustify/skills-config.json`. Both are on by default —
-#: an ordinary campaign plans with the oracle and reads the audit surface —
-#: but both are things the orchestrator is TOLD about rather than things it
-#: is, which is what makes them ablatable.
-_CAPABILITY_SKILLS: dict[str, SkillSpec] = {
     #: One wavefront skill, two role overlays. The oracle a translator queries
     #: and the oracle an orchestrator plans with are the same tool used for
     #: different work, so the metadata is shared and only the guidance splits.
-    "wavefront": SkillSpec(
+    #: The same holds for audit, whose two roles use opposite halves of it:
+    #: a translator runs only `unsafe`, an orchestrator also gates `ub`.
+    SkillSpec(
         "wavefront", "SKILL.md", capability="wavefront",
         role_header="skills/wavefront-orchestrator.md",
     ),
-    #: `crustify-audit` was folded into `crustify audit`, so its skill ships
-    #: in this package rather than in a checkout of its own.
-    "audit": SkillSpec(
+    SkillSpec(
         "crustify", "src/crustify_audit/SKILL.md", capability="audit",
+        role_header="skills/audit-orchestrator.md",
     ),
-}
+)
 
 
 class OrchestrateAgent(CrustifyAgent):
@@ -48,10 +46,7 @@ class OrchestrateAgent(CrustifyAgent):
     stage = "orchestrate"
     #: Its artifacts belong to the checkout, not to one oracle target.
     tier = "workdir"
-    SKILLS = _CORE_SKILLS
-    CAPABILITIES = _CAPABILITY_SKILLS
-    DEFAULT_CAPABILITIES = tuple(_CAPABILITY_SKILLS)
-    skills_role = "orchestrator"
+    SKILLS = _SKILLS
 
     def __init__(self, target: Path, *, kind: str, task: Path,
                  model: str, task_only: bool = False, **kwargs) -> None:

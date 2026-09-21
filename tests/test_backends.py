@@ -152,11 +152,6 @@ class ProviderRoutingTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             repo = Path(tmp)
             (repo / "crustify").mkdir()
-            # No optional skills: this test is about backend routing, and
-            # rendering the real capability set would need the wavefront and
-            # ffibox checkouts installed.
-            (repo / "crustify/skills-config.json").write_text(
-                '{"translator": []}')
             logs = repo / "logs"
             logs.mkdir()
             agent = TranslateAgent(

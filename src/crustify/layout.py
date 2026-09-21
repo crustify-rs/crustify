@@ -50,15 +50,6 @@ class Layout:
     def rust(self) -> Path:
         return self.root / "rust"
 
-    @property
-    def skills_config(self) -> Path:
-        """Which optional skills each agent role carries in its system prompt.
-
-        Tracked, like `build.json` and `subsystems.json`, and for the same
-        reason: it decides what a wave's agents were told, so the commits a
-        wave lands must carry it. See :mod:`crustify.skills_config`."""
-        return self.root / "skills-config.json"
-
     def providers(self, cli: str) -> Path:
         """Config home crustify hands a provider CLI (``claude`` / ``codex``),
         so a run reads crustify's settings rather than the operator's.

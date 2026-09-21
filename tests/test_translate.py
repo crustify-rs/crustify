@@ -100,10 +100,6 @@ class GitHarnessTests(unittest.TestCase):
         self.git("config", "user.name", "Test")
         self.git("config", "user.email", "test@example.invalid")
         (self.repo / "crustify/rust/demo/src").mkdir(parents=True)
-        # No optional skills: rendering the real capability set would need the
-        # wavefront and ffibox checkouts installed.
-        (self.repo / "crustify/skills-config.json").write_text(
-            '{"translator": []}')
         (self.repo / "crustify/rust/demo/src/lib.rs").write_text("pub struct Frame;\n")
         (self.repo / "README").write_text("test\n")
         self.git("add", ".")
