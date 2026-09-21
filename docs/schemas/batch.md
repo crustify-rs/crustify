@@ -4,10 +4,8 @@ Field meaning for the JSON the orchestrator passes to
 `crustify <workdir> <target> translate <batch.json>`. One batch is one agent's
 entire worklist.
 
-The orchestrator projects it from one recorded batch of a sub-campaign
-schedule — Wavefront's output, documented in that checkout's
-`docs/schemas/schedule.md` — adding the execution objective and each item's
-authored Rust home. Projection must not change batch membership.
+The orchestrator plans it as one batch entry of
+`docs/schemas/schedule.md` and writes it out verbatim.
 
 The file is transient input, not a tracked artifact: it names no wave, branch,
 log path or dependency, and the harness reads it once.

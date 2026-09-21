@@ -5,12 +5,10 @@
     "agent starts. Waves run in array order; the batches within one wave run",
     "in parallel. A batch entry is exactly the object `crustify translate`",
     "accepts, so writing it out to batch-<index>.json is a copy.",
-    "Every path is derived from (campaign, link_unit, subsystem, index).",
+    "Every path is derived from (campaign-id, link_unit, subsystem, index).",
     "Raw-lifetime discovery runs first and has no subsystem of its own."
   ],
   "schema_version": 1,
-  "campaign": "libwidget-wrap",
-  "subsystems": "crustify/subsystems.json",
   "waves": [
     {
       "index": 0,
@@ -43,7 +41,10 @@
               "name": "widget_handle",
               "defined_in": "include/widget/core.h",
               "kind": "type",
-              "field_anchors": ["refcount", "flags"],
+              "field_anchors": [
+                "refcount",
+                "flags"
+              ],
               "home": "crustify/rust/libwidget/src/core.rs"
             }
           ]

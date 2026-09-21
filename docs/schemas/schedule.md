@@ -4,68 +4,53 @@ Field meaning for `<workdir>/crustify/campaigns/<campaign-id>/schedule.json`,
 the campaign's total execution order. Layout example:
 [`specs/schedule.json`](../../specs/schedule.json).
 
-The orchestrator emits it once, after `subsystems.json` and after running
-`wavefront schedule` for every sub-campaign. Nothing in it is discovered during
-execution: link units, subsystems, waves and batches are all computable before
-the first agent starts, and writing them down makes a campaign's cost and shape
-reviewable in advance.
-
-Each sub-campaign's objective-neutral plan from `wavefront schedule` is the
-input; this document is the orchestrator's projection of those plans into one
-ordered, objective-bearing whole.
-
-Wavefront documents its own output in a file of the same name, in the
-Wavefront checkout. That one describes a single sub-campaign's waves; this one
-orders the campaign and carries the projected batches.
+The orchestrator emits it once, before the first agent starts. Waves and
+batches are computable in advance, so writing them down makes a campaign's
+shape and cost reviewable before it spends anything.
 
 | root field | meaning |
 |---|---|
 | `schema_version` | `1` |
-| `campaign` | campaign id; the directory this file sits in |
-| `subsystems` | repo-relative path to the `subsystems.json` this order was derived from |
 | `waves` | every wave of the campaign, in execution order |
 
 ## waves[*]
 
-`waves` is the campaign's total order. Entry *n* runs only after entry *n-1*
-has landed, been reviewed, and passed its regression gate — including across a
-link-unit or subsystem change, which is what makes this a total order rather
-than a set of independent per-subsystem sequences.
+Entry *n* runs only after entry *n-1* has landed, been reviewed and passed its
+regression gate — across a link-unit or subsystem change too, which is what
+makes this a total order rather than independent per-subsystem sequences.
 
 | field | meaning |
 |---|---|
-| `index` | position in the campaign's total order, from zero |
+| `index` | position in the total order, from zero |
 | `link_unit` | containing link unit's `name` in `subsystems.json` |
 | `subsystem` | containing subsystem's `name`, or `raw-lifetime-void` / `raw-lifetime-string` |
 | `batches` | the batches of this wave, which execute in parallel |
 
 ## waves[*].batches[*]
 
-A batch entry **is** a thin batch: the exact object `crustify translate`
-accepts, documented in `docs/schemas/batch.md`. It carries `objective` and
-`items` and nothing else — no index, no route, no paths.
+A batch entry is a thin batch: the exact object `crustify translate` accepts,
+documented in `docs/schemas/batch.md`. It carries `objective` and `items` and
+nothing else.
 
-`objective` sits here rather than on the wave because it is a per-batch
-decision. A port campaign wraps a type while C still reads its fields and
-ports it afterwards, so one wave can hold batches of differing objectives.
+`objective` is per batch, not per wave. A port campaign wraps a type while C
+still reads its fields and ports it afterwards, so one wave holds batches of
+differing objectives.
 
-Writing a batch out is a copy, not a transformation: the entry is serialized
-verbatim to its `batch-<index>.json`, with no field added or removed. That is
-the whole reason the schemas are identical — a projection step that reshaped
-anything could reshape it wrongly.
+Writing one out is a copy: serialized verbatim to `batch-<index>.json`, no
+field added or removed.
 
 ## Derived paths
 
-Nothing records a path that `(campaign, link_unit, subsystem, index)` already
-determines:
+Nothing records a path that `(campaign-id, link_unit, subsystem, index)`
+already determines:
 
 ```text
-crustify/campaigns/<campaign>/<link_unit>/<subsystem>/wave-<index>/
+crustify/campaigns/<campaign-id>/<link_unit>/<subsystem>/wave-<index>/
 ├── batch-<n>.json      n is the batch's position in `batches`
-└── logs/               passed to every batch in the wave as --output
+└── logs/               every batch in the wave receives this as --output
 ```
 
-Wave directories are named by the campaign-global `index`, so they are unique
-across the whole campaign, and the integration branch
-`crustify/wave/<campaign>/<link_unit>/<subsystem>/wave-<index>` carries the
+Wave directories take the campaign-global `index`, so they are unique
+campaign-wide, and the integration branch
+`crustify/wave/<campaign-id>/<link_unit>/<subsystem>/wave-<index>` carries the
 same coordinates.
