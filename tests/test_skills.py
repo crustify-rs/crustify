@@ -45,6 +45,31 @@ class DeclaredPathTests(unittest.TestCase):
                 self.assertTrue(
                     all(s.capability for s in cls.SKILLS[1:]))
 
+    def test_role_headers_follow_the_directory_layout(self) -> None:
+        """`skills/<skill>/<role>.md`, one directory per skill and one file
+        per role. The layout is what gives an ablation two grains, so a spec
+        that spells its path some other way silently loses the coarse one."""
+        for cls, role in ((TranslateAgent, "translator"),
+                          (OrchestrateAgent, "orchestrator")):
+            for spec in cls.SKILLS:
+                if spec.role_header is None:
+                    continue
+                with self.subTest(role=role, header=spec.role_header):
+                    self.assertEqual(
+                        spec.role_header, f"skills/{spec.capability}/{role}.md")
+
+    def test_a_skill_directory_holds_every_role_that_carries_it(self) -> None:
+        """The inverse: nothing sits in prompts/skills/ that no role reads."""
+        declared = {
+            (spec.capability or spec.path.rsplit("/", 2)[-2], role)
+            for cls, role in ((TranslateAgent, "translator"),
+                              (OrchestrateAgent, "orchestrator"))
+            for spec in cls.SKILLS
+        }
+        root = _PKG_ROOT / "prompts" / "skills"
+        on_disk = {(f.parent.name, f.stem) for f in root.glob("*/*.md")}
+        self.assertEqual(on_disk, declared)
+
     def test_every_capability_is_ablatable_by_deleting_one_file(self) -> None:
         """Each optional skill names a role header under prompts/skills/.
         Without one, a skill shipped inside this distribution could not be
@@ -67,7 +92,7 @@ class DiscoveryTests(unittest.TestCase):
 
     def test_deleting_a_role_header_ablates_that_skill(self) -> None:
         real = Path.is_file
-        header = _PKG_ROOT / "prompts" / "skills/audit-orchestrator.md"
+        header = _PKG_ROOT / "prompts" / "skills/audit/orchestrator.md"
         with mock.patch.object(
                 Path, "is_file",
                 lambda p: False if p == header else real(p)):

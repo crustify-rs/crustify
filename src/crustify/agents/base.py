@@ -37,10 +37,12 @@ class SkillSpec:
     an absolute path. ``capability`` is set when the skill is optional — the
     name a run logs it under; a core role skill leaves it None.
 
-    Both named files are load-bearing for discovery: a spec renders only when
-    each of them exists, so deleting a ``role_header`` from
-    ``prompts/skills/`` ablates that skill even though the generic skill it
-    wraps is still installed.
+    ``role_header`` is ``skills/<skill>/<role>.md``: one directory per skill,
+    one file per role that carries it. Both named files are load-bearing for
+    discovery, so the layout gives an ablation two grains — delete one file
+    and that skill leaves one role's prompt, delete the directory and it
+    leaves every role's, even though the generic skill it wraps is still
+    installed.
     """
 
     dep: str
@@ -320,8 +322,8 @@ class CrustifyAgent:
 
         Discovery is the whole selection mechanism. A skill is present in a
         prompt because its files are on disk, so removing one from
-        ``prompts/skills/`` — or not installing the checkout a generic skill
-        lives in — removes it from the prompt. That makes an ablation a
+        ``prompts/skills/<skill>/`` — or not installing the checkout a generic
+        skill lives in — removes it from the prompt. That makes an ablation a
         deletion rather than an edit to a config file that has to agree with
         the tree, and it is the same rule a skill-aware harness already
         follows: what is in the directory is what loads.
