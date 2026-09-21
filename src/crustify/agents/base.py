@@ -35,7 +35,12 @@ class SkillSpec:
     ``dep`` names the checkout the skill file belongs to and ``path`` locates
     it inside that checkout; :func:`crustify.deps.dep_root` turns the pair into
     an absolute path. ``capability`` is set when the skill is optional — the
-    name the campaign task selects it by; core role skills leave it None.
+    name a run logs it under; a core role skill leaves it None.
+
+    Both named files are load-bearing for discovery: a spec renders only when
+    each of them exists, so deleting a ``role_header`` from
+    ``prompts/skills/`` ablates that skill even though the generic skill it
+    wraps is still installed.
     """
 
     dep: str
@@ -144,15 +149,11 @@ class CrustifyAgent:
     stage: str        # label used in skip messages + log filename
     prompt_dir: str | None = None  # optional subdir under prompts/ (e.g. "wrapper");
                                     # the prompt file is prompts/<prompt_dir>/<stage>.md
-    # Core skills are a property of the role: always rendered, never
-    # selectable. CAPABILITIES are the optional ones, keyed by the name
-    # `crustify/skills-config.json` selects them by; DEFAULT_CAPABILITIES is
-    # what a role carries when that file says nothing about it.
+    # Every skill this role can carry, in prompt order. Which of them it
+    # ACTUALLY carries is decided by discovery, not by configuration: a skill
+    # whose files are on disk is rendered, and one whose files are not is
+    # silently absent. See :meth:`skill_specs`.
     SKILLS: tuple[SkillSpec, ...] = ()
-    CAPABILITIES: dict[str, SkillSpec] = {}
-    DEFAULT_CAPABILITIES: tuple[str, ...] = ()
-    #: Key this agent reads from skills-config.json; None means not selectable.
-    skills_role: str | None = None
     output: str | None = None  # path under .crustify/; when set, artifact existence
                                # is the agent-level done signal (skip on re-run).
                                # When None the agent always runs — the orchestrator
@@ -315,33 +316,41 @@ class CrustifyAgent:
                 "git_base": self.git_base}
 
     def skill_specs(self) -> tuple[SkillSpec, ...]:
-        """The generic skills and role overlays rendered for this agent.
+        """The skills rendered for this agent: every one whose files exist.
 
-        Core skills first, then the optional capabilities this role carries,
-        in the order `skills-config.json` authored them. Memoised because
-        the answer is read from a file and rendered more than once per run.
+        Discovery is the whole selection mechanism. A skill is present in a
+        prompt because its files are on disk, so removing one from
+        ``prompts/skills/`` — or not installing the checkout a generic skill
+        lives in — removes it from the prompt. That makes an ablation a
+        deletion rather than an edit to a config file that has to agree with
+        the tree, and it is the same rule a skill-aware harness already
+        follows: what is in the directory is what loads.
+
+        A path that is missing because it is misspelled therefore ablates
+        silently. That is a source bug, not an operator mistake, and it is
+        caught by a test that asserts every declared path resolves.
         """
         cached = getattr(self, "_skill_specs_cache", None)
         if cached is None:
-            cached = self.SKILLS + tuple(
-                self.CAPABILITIES[name] for name in self.capability_names())
+            cached = tuple(spec for spec in self.SKILLS
+                           if self._skill_present(spec))
             self._skill_specs_cache = cached
         return cached
 
-    def capability_names(self) -> tuple[str, ...]:
-        """Optional capabilities selected for this role, in prompt order."""
-        if self.skills_role is None or not self.CAPABILITIES:
-            return ()
-        from crustify import skills_config
-        return skills_config.selected(
-            self.layout.skills_config, self.skills_role,
-            tuple(self.CAPABILITIES), self.DEFAULT_CAPABILITIES)
+    def _skill_present(self, spec: SkillSpec) -> bool:
+        """Whether every file ``spec`` names is on disk."""
+        if not (deps.dep_root(spec.dep) / spec.path).exists():
+            return False
+        return (spec.role_header is None
+                or (_PKG_ROOT / "prompts" / spec.role_header).is_file())
 
     def prompt_capabilities(self) -> tuple[str, ...]:
-        """Optional capabilities selected for this prompt.
+        """The optional capabilities this prompt ended up carrying.
 
-        This is descriptive, not an access-control boundary: omitted
-        capabilities remain discoverable through the ordinary shell.
+        Logged per run, so the transcript records what the agent was told
+        without anyone having to reconstruct which files were on disk at the
+        time. Descriptive, not an access-control boundary: a capability that
+        is absent from the prompt stays reachable through the ordinary shell.
         """
         return tuple(
             spec.capability for spec in self.skill_specs()
@@ -366,14 +375,10 @@ class CrustifyAgent:
         conventions."""
         blocks = []
         for spec in self.skill_specs():
-            # Derived, never configured: see crustify.deps. A dependency whose
-            # skill file is missing is an error rather than a silently
-            # different prompt, because the prompt is the experiment.
+            # Paths are derived, never configured: see crustify.deps. Both
+            # files are known to exist -- skill_specs() dropped any spec whose
+            # did not, which is how an ablation is expressed.
             p = deps.dep_root(spec.dep) / spec.path
-            if not p.exists():
-                raise SystemExit(
-                    f"prompt capability {spec.capability or spec.path!r}: "
-                    f"skill file does not exist: {p}")
             name, desc, binname, doc = _skill_meta(p)
             block = f"- {name} — {desc}"
             # What to open, if anything. A frontmatter skill carries its own
@@ -394,10 +399,6 @@ class CrustifyAgent:
                 block += f"\n  binary: {deps.resolve_bin(binname)}"
             if spec.role_header:
                 header = _PKG_ROOT / "prompts" / spec.role_header
-                if not header.is_file():
-                    raise SystemExit(
-                        f"prompt capability {spec.capability or spec.path!r}: "
-                        f"role header does not exist: {header}")
                 template = header.read_text()
                 if template.count(_GENERIC_SKILL_ANCHOR) != 1:
                     raise SystemExit(

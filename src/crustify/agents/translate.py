@@ -7,26 +7,29 @@ from pathlib import Path
 
 from crustify.agents.base import CrustifyAgent, SkillSpec, _PKG_ROOT
 
-_CORE_SKILLS = (
+#: Every skill a translator can carry, in prompt order. Which of them it
+#: actually carries is decided by discovery: a skill whose files are on disk
+#: is rendered, one whose files are not is silently absent. The role skill
+#: has no `capability` because it is what makes this agent a translator; the
+#: rest are optional, and their names are what the run logs.
+_SKILLS = (
     SkillSpec("crustify", "src/crustify/prompts/skills/translator.md"),
-)
-
-_CAPABILITY_SKILLS: dict[str, SkillSpec] = {
-    "wavefront": SkillSpec(
+    SkillSpec(
         "wavefront", "SKILL.md", capability="wavefront",
         role_header="skills/wavefront-translator.md",
     ),
-    "ffibox": SkillSpec(
+    SkillSpec(
         "ffibox", "SKILL.md", capability="ffibox",
         role_header="skills/ffibox.md",
     ),
     #: The audit capability is not a separate checkout: `crustify-audit` was
-    #: folded into `crustify audit`, so its skill ships in this package.
-    "audit": SkillSpec(
+    #: folded into `crustify audit`, so its skill ships in this package. Its
+    #: role header is therefore what a deletion ablates.
+    SkillSpec(
         "crustify", "src/crustify_audit/SKILL.md", capability="audit",
-        role_header="skills/audit.md",
+        role_header="skills/audit-translator.md",
     ),
-}
+)
 
 
 class TranslateAgent(CrustifyAgent):
@@ -35,12 +38,7 @@ class TranslateAgent(CrustifyAgent):
     name = "TranslateAgent"
     model = "anthropic/claude-opus-5"
     output = None  # scheduler gates via the per-item todo; agent runs when called.
-    SKILLS = _CORE_SKILLS
-    CAPABILITIES = _CAPABILITY_SKILLS
-    #: Every optional capability, which is what a wrap or port campaign wants;
-    #: skills-config.json exists to say something narrower.
-    DEFAULT_CAPABILITIES = tuple(_CAPABILITY_SKILLS)
-    skills_role = "translator"
+    SKILLS = _SKILLS
 
     def __init__(
         self,

@@ -10,5 +10,5 @@
   Read the playbook in full before editing code.
 
 Translator-facing. The procedure is capability-neutral; optional tool and
-library guidance is injected separately, per the campaign's
-`skills-config.json`.
+library guidance is injected separately, from whichever capability skills the
+installation carries.
