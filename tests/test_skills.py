@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import collections
+import tempfile
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -165,6 +166,55 @@ class PromptRenderTests(unittest.TestCase):
             with self.subTest(role=cls.name):
                 agent = object.__new__(cls)
                 self.assertTrue(cls._conventions_md(agent).is_file())
+
+
+class OrchestratorPromptTests(unittest.TestCase):
+    """The orchestrator's whole prompt rides the system slot."""
+
+    def setUp(self) -> None:
+        self.tmp = tempfile.TemporaryDirectory()
+        self.repo = Path(self.tmp.name)
+        (self.repo / "crustify").mkdir()
+        self.task = self.repo / "TASK.md"
+        self.task.write_text("1. **Q** (`id: source`)\n   - Answer: `{brace}`")
+
+    def tearDown(self) -> None:
+        self.tmp.cleanup()
+
+    def _agent(self, **kw):
+        return OrchestrateAgent(self.repo, kind="translate", task=self.task,
+                                model="anthropic/claude-opus-5",
+                                workdir=self.repo, **kw)
+
+    def test_the_task_replaces_its_anchor(self) -> None:
+        pre = self._agent().system_preamble()
+        self.assertNotIn("<!-- TASK -->", pre)
+        self.assertIn("`{brace}`", pre)
+
+    def test_a_task_with_braces_survives_formatting(self) -> None:
+        """The task is arbitrary user text spliced into a body that `format`
+        then runs over, so its braces must be escaped on the way in."""
+        self.task.write_text("- Answer: `{max_loc: 500}`")
+        self.assertIn("`{max_loc: 500}`", self._agent().system_preamble())
+
+    def test_the_user_turn_carries_no_instruction(self) -> None:
+        """Everything the agent is told is in the system slot; neither backend
+        accepts an empty positional, which is all the user turn is for."""
+        agent = self._agent()
+        self.assertLess(len(agent._prompt()), 100)
+        self.assertGreater(len(agent.system_preamble()), 10_000)
+
+    def test_a_missing_anchor_is_an_error(self) -> None:
+        """Without it the task would vanish from the prompt in silence."""
+        agent = self._agent()
+        with mock.patch.object(Path, "read_text", lambda self: "no anchor"):
+            with self.assertRaises(SystemExit):
+                agent._body()
+
+    def test_the_ablation_arm_contributes_nothing(self) -> None:
+        agent = self._agent(task_only=True)
+        self.assertEqual(agent.system_preamble(), "")
+        self.assertEqual(agent.skill_specs(), ())
 
 
 if __name__ == "__main__":

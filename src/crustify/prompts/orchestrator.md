@@ -7,7 +7,7 @@ Translator agents own translation.
 
 Each translator runs in an isolated worktree forked from its wave integration
 branch, sees only its scheduled worklist and reports only on that work. You
-alone reconcile the campaign-wide result.
+alone reconcile the sub-campaign- and campaign-wide results.
 
 Your git entity: `crustify`.
 
@@ -52,6 +52,10 @@ cp specs/gitignore <repo>/crustify/.gitignore
 mkdir -p <repo>/crustify/campaigns/<campaign-id>
 ```
 
+Use the following format for `campaign-id`: `<timestamp>-<scope-slug>`; `<scope-slug>`
+is based on the user-defined scope from the task definition: it can be a subset of
+link units, subsystems, files, types/symbols, or the whole repo.
+
 If you're working in a git repo, create the campaign branch:
 
 ```bash
@@ -70,7 +74,8 @@ them:
 A Rust- or bindgen-only change may reuse a matching build. A change to the compiled
 target requires a private build; refresh shared builds after that change lands.
 
-Create `crustify/build.json` from `specs/build.json`.
+Create `crustify/build.json` from `specs/build.json`; read `docs/schemas/build.json`
+to understand the meaning of fields.
 Increment `version` whenever any command changes.
 Disable deprecated features unless otherwise instructed by the user.
 Use parallel builds.
@@ -114,7 +119,8 @@ destinations from out-of-tree libraries. Record the graph as it is, cycles inclu
 
 #### Sub-campaigns
 
-Emit `crustify/campaigns/<campaign-id>/schedule.json` describing a total ordering
+Emit `crustify/campaigns/<campaign-id>/schedule.json` from `specs/schedule.json`; read
+`docs/schemas/schedule.md` for its field menaing. It describes a total ordering
 of this campaign's link units and subsystems based on dependency relations, bottom-up.
 
 Plan only link units and subsystems included in the campaign scope established
@@ -180,7 +186,7 @@ TODO
 
 ### 1. Preflight smoke runs
 
-Before translation or review:
+Before launching translation or review waves:
 
 1. resolve the selected model to its provider and backend;
 2. verify the backend executable on the stage process's `PATH` and run

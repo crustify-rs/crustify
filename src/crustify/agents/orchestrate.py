@@ -15,6 +15,14 @@ from pathlib import Path
 
 from crustify.agents.base import CrustifyAgent, SkillSpec, _PKG_ROOT
 
+#: Where the campaign task is spliced into the stage prompt.
+_TASK_ANCHOR = "<!-- TASK -->"
+
+#: The user turn. Both backends pass this as the CLI's positional task and
+#: neither accepts an empty one, so the agent needs a sentence -- but only a
+#: sentence: everything it is actually told is in the system slot.
+_KICKOFF = "Start the campaign described by your system prompt."
+
 #: Every skill an orchestrator can carry, in prompt order. Which of them it
 #: actually carries is decided by discovery: a skill whose files are on disk
 #: is rendered, one whose files are not is silently absent. Each lives at
@@ -78,36 +86,54 @@ class OrchestrateAgent(CrustifyAgent):
         # so it contributes no skill index either.
         return () if self.task_only else super().skill_specs()
 
+    def _body(self) -> str:
+        """The stage prompt, with the campaign task at its ``<!-- TASK -->``
+        anchor. It is the system preamble here, not the user turn — see
+        :meth:`system_preamble`."""
+        if self.kind == "audit":
+            path = (_PKG_ROOT.parent / "crustify_audit" / "prompts"
+                    / "orchestrator.md")
+        else:
+            path = _PKG_ROOT / "prompts" / "orchestrator.md"
+        body = path.read_text()
+        if body.count(_TASK_ANCHOR) != 1:
+            raise SystemExit(
+                f"{path}: expected exactly one {_TASK_ANCHOR} anchor")
+        # Escaped, because the body is formatted with this agent's arguments
+        # and a task is arbitrary user text that may contain braces.
+        task = self._task_text().replace("{", "{{").replace("}", "}}")
+        return body.replace(_TASK_ANCHOR, task)
+
     def _prompt(self) -> str:
         if self.task_only:
             # The ablation control: the harness contributes nothing, so the
             # task file is the whole prompt and the system slot stays empty.
             return self._task_text().replace("{", "{{").replace("}", "}}")
-        if self.kind == "audit":
-            return (_PKG_ROOT.parent / "crustify_audit" / "prompts"
-                    / "orchestrator.md").read_text()
-        return (_PKG_ROOT / "prompts" / "orchestrator.md").read_text()
+        return _KICKOFF
 
     def _arguments(self) -> dict:
         return {**super()._arguments(), "campaign_kind": self.kind}
 
     def system_preamble(self) -> str:
-        """Conventions, the skill index, and the campaign task.
+        """The whole stage prompt, then the conventions and the skill index.
 
-        The task joins them because campaign decisions are exactly what a long
-        run must not paraphrase: an orchestrator that has compacted away which
-        model reviews, or whether a UB pass was authorised, spends a budget on
-        the wrong thing and says nothing. Everything here is a document; the
-        harness composes, it does not author.
+        Everything this agent is told rides the system slot, which is not part
+        of ``messages`` and so cannot be compacted. For a translator the split
+        is worth keeping -- its worklist varies per agent, and moving it here
+        would give every agent of a wave a different prefix to cache. An
+        orchestrator has no such wave: it is one agent, it runs for hundreds of
+        turns, and what compaction would paraphrase away is its own procedure
+        and the campaign's decisions.
+
+        Order follows the body's own anchors: the task at ``<!-- TASK -->``,
+        then ``<!-- CODING CONVENTIONS -->``, then ``<!-- SKILLS -->``.
+
+        Everything here is a document; the harness composes, it does not
+        author.
         """
         if self.task_only:
             return ""
-        task = self._task_text()
         return "\n\n---\n\n".join((
+            self._body().format(**self._arguments()),
             super().system_preamble(),
-            "## Campaign task\n\n"
-            "The decisions below are the campaign's input. An unanswered\n"
-            "optional decision takes its documented default. Ask the user\n"
-            "about one that is unanswered or genuinely ambiguous; never guess\n"
-            "it, and never re-ask one the task already answers.\n\n" + task,
         ))
