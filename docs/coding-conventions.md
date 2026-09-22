@@ -67,6 +67,10 @@ Owning handles produce `FooRef` and `FooMut` through `as_ref()` and `as_mut()`;
 they do not dereference to `Foo`. Layout access starts from
 `FooRef::as_ptr()` or `FooMut::as_mut_ptr()`.
 
+Never form a Rust reference to the wrapped C object. Borrowed handles contain
+pointers and carry lifetimes; references to handles cover Rust-owned handle
+storage only. Keep raw layout access in small justified unsafe blocks.
+
 ## Functions and FFI names
 
 The raw binding for a C function lives under `ffi::<name>`. Its safe wrapper is

@@ -144,9 +144,9 @@ Plan waves and batches per sub-campaign and record them in `schedule.json`.
 Waves execute sequentially, bottom-up, producers before consumers; batches execute in parallel
 according to the configured parallelism setting.
 
-For a wrap campaign, every batch uses `objective: wrap`.
+For a `wrap` campaign, every batch uses `objective: wrap`.
 
-For a port campaign:
+For a `port` campaign:
 
 - a selected symbol uses `port` immediately;
 - a selected type uses `wrap` while C reads its fields, then `port` after those
@@ -175,10 +175,6 @@ and bindgen input. Bindgen allowlists are populated by translators lazily.
 
 Commit the initial Rust tree on the campaign branch.
 
-
-### 6. Side campaigns
-
-TODO
 
 
 ## Phase 2: translation
