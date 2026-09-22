@@ -1,6 +1,7 @@
 """Discovery is the whole skill-selection mechanism."""
 from __future__ import annotations
 
+import collections
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -36,14 +37,15 @@ class DeclaredPathTests(unittest.TestCase):
                 with self.subTest(role=cls.name, path=spec.path):
                     self.assertTrue((deps.CHECKOUT / spec.path).is_file())
 
-    def test_the_role_skill_is_not_a_capability(self) -> None:
-        """The first skill is what makes the agent that role, so it carries no
-        capability name and nothing selects it."""
+    def test_a_role_skill_comes_first_and_is_not_a_capability(self) -> None:
+        """A role skill is what makes the agent that role, so it carries no
+        capability name and nothing selects it. An agent may have none — the
+        orchestrator's was its playbook, which is now its prompt."""
         for cls in _ROLES:
             with self.subTest(role=cls.name):
-                self.assertIsNone(cls.SKILLS[0].capability)
-                self.assertTrue(
-                    all(s.capability for s in cls.SKILLS[1:]))
+                plain = [i for i, s in enumerate(cls.SKILLS)
+                         if s.capability is None]
+                self.assertIn(plain, ([], [0]))
 
     def test_role_headers_follow_the_directory_layout(self) -> None:
         """`skills/<skill>/<role>.md`, one directory per skill and one file
@@ -91,7 +93,9 @@ class DeclaredPathTests(unittest.TestCase):
         prompt without uninstalling crustify."""
         for cls, role in ((TranslateAgent, "translator"),
                           (OrchestrateAgent, "orchestrator")):
-            for spec in cls.SKILLS[1:]:
+            for spec in cls.SKILLS:
+                if spec.capability is None:
+                    continue
                 with self.subTest(role=role, cap=spec.capability):
                     governing = spec.role_header or spec.path
                     self.assertTrue(
@@ -139,6 +143,25 @@ class DiscoveryTests(unittest.TestCase):
             task_only=True)
         self.assertEqual(agent.skill_specs(), ())
         self.assertEqual(agent.system_preamble(), "")
+
+
+class PromptRenderTests(unittest.TestCase):
+    """`run()` calls `prompt.format(**arguments)`, so a stage prompt holding
+    literal braces must escape them. The orchestrator's does, since its body
+    is the campaign playbook and that documents a directory tree."""
+
+    def test_every_stage_prompt_survives_format(self) -> None:
+        """Any placeholder resolves here; what is under test is that no
+        unescaped literal brace makes `format` raise."""
+        for path in (_PKG_ROOT / "prompts").glob("*.md"):
+            with self.subTest(prompt=path.name):
+                path.read_text().format_map(collections.defaultdict(str))
+
+    def test_the_orchestrator_prompt_keeps_its_literal_braces(self) -> None:
+        text = (_PKG_ROOT / "prompts" / "orchestrator.md").read_text()
+        rendered = text.format(target=".", workdir="/w", git_base="b",
+                               campaign_kind="translate")
+        self.assertIn("{<subsystem>, raw-lifetime-{void, string}}/", rendered)
 
 
 if __name__ == "__main__":
