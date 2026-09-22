@@ -1,7 +1,7 @@
 # Translator playbook
 
 Translate one orchestrator-projected worklist, validate it, commit once, and
-land it on the supplied wave integration branch. Follow `conventions.md` for
+land it on the supplied wave integration branch. Follow `coding-conventions.md` for
 names, modules, anchors, exports, and safety comments. Read every enabled skill
 whose description matches the work.
 
@@ -116,7 +116,7 @@ Rust consumers use safe APIs. Restrict raw operations to:
 
 Keep SCC cuts and unavailable higher-layer dependencies as narrow documented
 raw seams. Replace them when a safe dependency becomes available. Every unsafe
-block requires the safety comment specified by `conventions.md`.
+block requires the safety comment specified by `coding-conventions.md`.
 
 ## Type route
 
@@ -243,7 +243,7 @@ discovery pass.
 
 Translate the implementation to safe idiomatic Rust and preserve observable
 behaviour. Re-export it to C through the feature-gated ABI wiring in
-`conventions.md` while C consumers remain.
+`coding-conventions.md` while C consumers remain.
 
 - The raw gateway reconstructs safe wrappers and calls the native function.
 - Remove a TU-local export after its last C consumer is removed.
@@ -405,7 +405,7 @@ they are unreachable, environment-dependent, or intentionally nondeterministic.
 
 ## Completion
 
-Emit the canonical anchor from `conventions.md` for every scheduled item.
+Emit the canonical anchor from `coding-conventions.md` for every scheduled item.
 If a lifecycle strategy belongs in another authored home, leave a thin
 cross-file reference at the item's own home and put the promoted anchor at the
 definition.

@@ -32,7 +32,7 @@ condition below is met.
 4. Every item in your worklist names the authored Rust file it belongs in.
    Use it; resolve no other artifact to find a home. For a raw-lifetime route,
    home the concrete primitives you discover beside the translation unit that
-   defines them, following `conventions.md`. Report an item whose named home
+   defines them, following `coding-conventions.md`. Report an item whose named home
    does not exist rather than choosing another.
 5. If required bindings are missing, extend only the affected `-sys` crate's
    agent-owned bindgen allowlist and required shims, regenerate its bindings,
@@ -77,6 +77,6 @@ condition below is met.
     `{git_base}`, revalidate, and retry the atomic fast-forward. Purge the
     worktree only after landing succeeds. Never push to a remote.
 
-<!-- CONVENTIONS -->
+<!-- CODING CONVENTIONS -->
 
 <!-- SKILLS -->

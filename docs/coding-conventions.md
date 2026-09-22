@@ -28,6 +28,13 @@ bindings, `mod ffi_export` exports, `crustify_<NAME>` macro shims and the
 
 ## Crates and modules
 
+The Rust tree mirrors the following layout, all relative to `<repo>/crustify/rust/`:
+
+- `Cargo.toml` - top-level virtual manifest.
+- `<link-unit>-sys/` - raw bindings package, one per link unit.
+- `<repo>/` - safe repo package, one for the whole repo.
+- `<repo>/<link-unit>/` - one sub-dir per link unit, cfg-gated mod in `lib.rs`.
+
 The Rust tree mirrors the subsystem decomposition in `subsystems.json`, and
 the filesystem is the source of truth for an entity's home: a batch names the
 `.rs` file each of its items belongs in. Each library wrapper crate has a
@@ -36,6 +43,15 @@ companion `<lib>-sys` crate for raw bindings.
 There is one `.rs` home per C translation unit, or per header group when no
 translation unit owns the entity. Entities sharing a definition site co-home.
 A home is shared across waves; completed items remain in place.
+
+Rust has no headers, they are homed using the following rules:
+- for a wrap campaign: each public header gets its own `mod` and `.rs`. 
+- for a port campaign:
+  - a subsystem's headers and translation units share one module;
+  - a TU and its companion header share a sub-module in their subsystem;
+  - headers that export implementation (e.g. `static inline` functions)
+  which logically do not belong to any TU get their own `_h.rs` sub-module;
+  headers shared by multiple subsystems become sub-modules for each subsystem;
 
 ## Wrapped types
 
