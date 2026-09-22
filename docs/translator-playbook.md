@@ -126,7 +126,7 @@ block requires the safety comment specified by our coding conventions.
 
 ## Workflow - type route
 
-### 1. Choose the surface
+### 1. Surface
 
 For `wrap`, include fields and lifecycle primitives published by the public
 API. For `port`, include fields touched by targeted symbols and every lifecycle
@@ -135,7 +135,7 @@ and pointer-field semantics before selecting a representation.
 
 ### 2. Safe layout
 
-For `wrap`, emit a safe layout over the raw type and its handles acording to our coding
+For `objective: wrap`, emit a safe layout over the raw type and its handles acording to our coding
 conventions.
 
 For a synthetic type generator:
@@ -145,7 +145,7 @@ For a synthetic type generator:
   wrapper; and
 - specialize only behaviour that differs from the generic surface.
 
-### Encode lifecycle
+### 3. Lifecycle
 
 Implement every ownership variant supported by the analysis findings. Prefer stateless,
 layout-compatible, statically selected drop and clone strategies when state is
@@ -158,15 +158,15 @@ fully owns allocation and destruction, use native Rust lifecycle operations.
 Promoting construction-phase storage into an owner is unsafe. Isolate the
 operation and prove every required invariant before promotion.
 
-### Emit field accessors
+### 4. Field accessors
 
 Derive each accessor from ownership, mutability, nullability, cardinality, and
 lifetime findings. Tie every pointer-derived result to the state that keeps it
 alive.
 
 Project fields with `addr_of!`, `addr_of_mut!`, `&raw const`, or `&raw mut`.
-Never use `&(*p).field` or `&mut (*p).field`. Read through the shared handle's
-pointer and write through the mutable handle's pointer.
+Never use `&(*p).field` or `&mut (*p).field`. Follow our coding conventions
+for access.
 
 Accessor requirements:
 
@@ -193,7 +193,7 @@ gap only for an unavailable higher-layer dependency.
 If an inline function-pointer helper lacks an ownership-compatible wrapper,
 emit one with the type.
 
-### Port layout and storage
+### 5. Porting layout and storage
 
 For `objective: port`, port layout only after every C-side field toucher is gone and no public C
 consumer receives the concrete body. A public forward declaration alone does
@@ -202,9 +202,11 @@ not block opacification.
 Port storage only after no C path allocates or frees it. If C still owns either
 operation, retain compatible storage and report the blocker.
 
-## Symbol route
+---
 
-### Functions and globals
+## Workflow - symbol route
+
+### 1. Functions and globals
 
 Emit `pub fn`; use `pub unsafe fn` only when no safe type-level contract can
 express the caller obligation. Use typed ownership wrappers for arguments and
@@ -222,7 +224,7 @@ Use safe translated dependencies. Keep a documented raw pointer only for an
 unavailable higher-layer wrapper. Update lower-layer raw surfaces when the new
 safe contract replaces them.
 
-### Callbacks
+### 2. Callbacks
 
 Inspect the typedef and all call sites. Emit a callable handle with safe
 argument and result wrappers. When call sites use different ownership
@@ -232,7 +234,7 @@ the shared C function-pointer type.
 Wrap an inline function pointer when no ownership-compatible callable wrapper
 exists.
 
-### Raw lifetime strategies
+### 3. Raw lifetime strategies
 
 For every discovered `void` or string releaser, disposer, or cloner, emit the
 strategy required by owned pointers. Home it with the primitive's translation
@@ -241,11 +243,11 @@ unit. Do not also expose the primitive as an ordinary safe function.
 For `review`, verify existing findings and strategies instead of adding a new
 discovery pass.
 
-### Port symbols
+### 4. Porting symbols
 
-Translate the implementation to safe idiomatic Rust and preserve observable
-behaviour. Re-export it to C through the feature-gated ABI wiring in
-`coding-conventions.md` while C consumers remain.
+For `port`, translate the implementation to safe idiomatic Rust and preserve observable
+behaviour. Re-export it to C through according to our coding conventions while C consumers
+remain.
 
 - The raw gateway reconstructs safe wrappers and calls the native function.
 - Remove a TU-local export after its last C consumer is removed.
@@ -255,6 +257,8 @@ behaviour. Re-export it to C through the feature-gated ABI wiring in
   collision-safe exports.
 - Wire the file flag and Rust static library through the actual build system;
   do not assume link mechanics.
+
+---
 
 ## Tests
 

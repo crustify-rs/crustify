@@ -143,7 +143,7 @@ class GitHarnessTests(unittest.TestCase):
                 ["git", "-C", str(tree.path), "branch", "--show-current"],
                 check=True, capture_output=True, text=True,
             ).stdout.strip(),
-            "crustify/batch/batch-a",
+            "crustify/batches/batch-a",
         )
         self.assertEqual((tree.path / "README").read_text(), "test\n")
 
