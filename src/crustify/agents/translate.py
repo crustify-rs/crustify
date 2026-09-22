@@ -32,6 +32,13 @@ _SKILLS = (
         "crustify", "src/crustify_audit/SKILL.md", capability="audit",
         role_header="skills/audit/translator.md",
     ),
+    #: Self-contained: no external checkout and no generic skill to wrap, so
+    #: the per-role file is the skill. Its own path is what a deletion removes.
+    SkillSpec(
+        "crustify",
+        "src/crustify/prompts/skills/sanitizers/translator.md",
+        capability="sanitizers",
+    ),
 )
 
 

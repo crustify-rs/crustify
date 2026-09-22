@@ -58,6 +58,19 @@ class DeclaredPathTests(unittest.TestCase):
                     self.assertEqual(
                         spec.role_header, f"skills/{spec.capability}/{role}.md")
 
+    def test_a_self_contained_skill_carries_its_own_metadata(self) -> None:
+        """A skill with no generic file to wrap must be frontmatter, or the
+        renderer emits its name and description and nothing points at the
+        body — the procedure would never reach the agent."""
+        for cls in _ROLES:
+            for spec in cls.SKILLS:
+                if spec.role_header is not None:
+                    continue
+                with self.subTest(role=cls.name, path=spec.path):
+                    text = (deps.CHECKOUT / spec.path).read_text()
+                    self.assertTrue(
+                        text.startswith("---") or "Doc path:" in text)
+
     def test_a_skill_directory_holds_every_role_that_carries_it(self) -> None:
         """The inverse: nothing sits in prompts/skills/ that no role reads."""
         declared = {
@@ -71,13 +84,21 @@ class DeclaredPathTests(unittest.TestCase):
         self.assertEqual(on_disk, declared)
 
     def test_every_capability_is_ablatable_by_deleting_one_file(self) -> None:
-        """Each optional skill names a role header under prompts/skills/.
-        Without one, a skill shipped inside this distribution could not be
-        removed from a prompt without uninstalling crustify itself."""
-        for cls in _ROLES:
+        """Each optional skill is governed by exactly one file under
+        prompts/skills/<capability>/<role>.md — its role header when it wraps
+        a generic skill, its own path when it is self-contained. Without one,
+        a skill shipped inside this distribution could not be removed from a
+        prompt without uninstalling crustify."""
+        for cls, role in ((TranslateAgent, "translator"),
+                          (OrchestrateAgent, "orchestrator")):
             for spec in cls.SKILLS[1:]:
-                with self.subTest(role=cls.name, cap=spec.capability):
-                    self.assertIsNotNone(spec.role_header)
+                with self.subTest(role=role, cap=spec.capability):
+                    governing = spec.role_header or spec.path
+                    self.assertTrue(
+                        governing.endswith(
+                            f"prompts/skills/{spec.capability}/{role}.md")
+                        or governing == f"skills/{spec.capability}/{role}.md",
+                        governing)
 
 
 class DiscoveryTests(unittest.TestCase):
