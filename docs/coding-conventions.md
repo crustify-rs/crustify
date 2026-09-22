@@ -70,6 +70,7 @@ they do not dereference to `Foo`. Layout access starts from
 Never form a Rust reference to the wrapped C object. Borrowed handles contain
 pointers and carry lifetimes; references to handles cover Rust-owned handle
 storage only. Keep raw layout access in small justified unsafe blocks.
+Read through the shared handle's pointer and write through the mutable handle's pointer.
 
 ## Functions and FFI names
 

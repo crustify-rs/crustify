@@ -60,7 +60,9 @@ def add_batch_worktree(repo: Path, base_branch: str, batch_id: str) -> BatchWork
     base_ref = f"refs/heads/{base_branch}"
     validate_base_branch(repo, base_branch)
 
-    branch = f"crustify/batch/{batch_id}"
+    #: `crustify/batches/<batch-id>`, the name the orchestrator prompt tells
+    #: the orchestrator to expect. Plural, matching `crustify/waves/...`.
+    branch = f"crustify/batches/{batch_id}"
     wt = repo / _WT_DIR / batch_id
     wt.parent.mkdir(parents=True, exist_ok=True)
     _git(repo, "worktree", "add", "--quiet", "-b", branch, str(wt), base_ref)

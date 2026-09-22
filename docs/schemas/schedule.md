@@ -75,5 +75,5 @@ crustify/campaigns/<campaign-id>/<link_unit>/<subsystem>/wave-<index>/
 ```
 
 The integration branch
-`crustify/wave/<campaign-id>/<link_unit>/<subsystem>/wave-<index>` carries the
+`crustify/waves/<campaign-id>/<link_unit>/<subsystem>/wave-<index>` carries the
 same coordinates.
