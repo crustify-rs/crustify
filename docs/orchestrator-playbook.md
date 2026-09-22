@@ -353,14 +353,3 @@ When a campaign exposes a defect in Crustify or enabled skills with a local chec
 create a dedicated branch and worktree in that component's repository.
 Implement and validate the reusable fix there; do not mix it into campaign
 translation commits.
-
-
-
-## Required deps
-
-Wavefront and ffibox are checkouts under the data prefix of the environment
-crustify is installed in — `<prefix>/share/wavefront` and
-`<prefix>/share/ffibox`. Crustify resolves them there itself; you configure no
-paths. A checkout already present at either location is provisioned: do not
-clone or reinstall it. `CRUSTIFY_DEP_WAVEFRONT` / `CRUSTIFY_DEP_FFIBOX`
-override one of them for a checkout kept elsewhere.
