@@ -21,9 +21,8 @@ from crustify.agents.base import CrustifyAgent, SkillSpec, _PKG_ROOT
 #: `prompts/skills/<skill>/orchestrator.md` — one directory per skill, one file
 #: per role — so deleting the file ablates it here and deleting the
 #: directory ablates it everywhere. The playbook skill has no `capability`
-#: because it is what makes this agent an orchestrator; the other two are
-#: things it is TOLD about rather than things it is, which is what makes
-#: them ablatable.
+#: because it is what makes this agent an orchestrator; the rest are things it
+#: is TOLD about rather than things it is, which is what makes them ablatable.
 _SKILLS = (
     SkillSpec("crustify", "src/crustify/prompts/skills/playbook/orchestrator.md"),
     #: One wavefront skill, two role overlays. The oracle a translator queries
@@ -38,6 +37,13 @@ _SKILLS = (
     SkillSpec(
         "crustify", "src/crustify_audit/SKILL.md", capability="audit",
         role_header="skills/audit/orchestrator.md",
+    ),
+    #: Self-contained: no external checkout and no generic skill to wrap, so
+    #: the per-role file is the skill. Its own path is what a deletion removes.
+    SkillSpec(
+        "crustify",
+        "src/crustify/prompts/skills/sanitizers/orchestrator.md",
+        capability="sanitizers",
     ),
 )
 

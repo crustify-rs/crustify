@@ -89,7 +89,7 @@ mkdir -p <repo>/crustify/campaigns/<campaign-id>
 If you're working in a git repo, create the campaign branch:
 
 ```bash
-git -C <repo> checkout -b crustify/<target>-<language-model>
+git -C <repo> checkout -b crustify/campaigns/<campaign-id>
 ```
 
 
@@ -144,16 +144,12 @@ with its `nr_edges` and the item kinds consumed across them, splitting in-tree
 destinations from out-of-tree libraries. Record the graph as it is, cycles included.
 
 
-### 5. Sub-campaign planning
+### 5. Planning
+
+#### Sub-campaigns
 
 Emit `crustify/campaigns/<campaign-id>/schedule.json` describing a total ordering
-of this campaign's worksets based on dependency relations. It nests link unit,
-then subsystem, then wave; the total order is that nesting read depth-first, so
-ordering the three levels is the whole plan.
-
-Order link units by their own dependency graph. A link unit runs to completion
-before the next starts, so a subsystem's dependencies in another link unit must
-belong to an earlier one.
+of this campaign's link units and subsystems based on dependency relations, bottom-up.
 
 Plan only link units and subsystems included in the campaign scope established
 by the user.
@@ -161,16 +157,20 @@ by the user.
 Each ordinary sub-campaign translates one subsystem of one link unit from
 `subsystems.json`. Raw-lifetime discovery is the only synthetic sub-campaign.
 
-Execute link unit and subsystem sub-campaigns bottom-up, producers before
-consumers. Turn the tree of link units and subsystems into a DAG, removing its
+Turn the tree of link units and subsystems into a DAG, removing its
 cyclic edges; use `subsystemA.imported_deps.subsystemB.nr_edges` as the descriminator
 for determining producer->consumer ordering, a smaller value making the left-hand
-side a producer for the right-hand side consumer. Raw lifetime sub-campaigns are leaves
-and they run first.
+side a producer for the right-hand side consumer. Raw lifetime sub-campaigns are campaign
+leaves and they run first.
 
 Skip link units or subsystems when resuming a campaign that already completed them.
 
-### 6. Wave and batch planning
+
+#### Waves and batches
+
+Plan waves and batches per sub-campaign and record them in `schedule.json`.
+Waves execute sequentially, bottom-up, producers before consumers; batches execute in parallel
+according to the configured parallelism setting.
 
 For a wrap campaign, every batch uses `objective: wrap`.
 
@@ -183,13 +183,21 @@ For a port campaign:
 - a filled anchor may be revisited only when escalating that item to `port` or
   running `review`.
 
-Wavefront schedules are objective-neutral. The orchestrator adds the execution
-objective to each projected batch, and records it there rather than on the
-wave: one wave can hold batches of differing objectives, which is exactly what
-the type rule above produces.
+See `docs/schemas/batch.md` for schema format, field meaning, routing and the raw-lifetime
+rule. Every field shown is required.
 
+Home each batches' items set, but scaffold them lazily before launch.
 
-### 5. Rust tree scaffolding
+Rust has no headers, assign them using the following rules:
+- for a wrap campaign: each public header gets its own `mod` and `.rs`. 
+- for a port campaign:
+  - a subsystem's headers and translation units share one module;
+  - a TU and its companion header share a sub-module in their subsystem;
+  - headers that export implementation (e.g. `static inline` functions)
+  which logically do not belong to any TU get their own `_h.rs` sub-module;
+  headers shared by multiple subsystems become sub-modules for each subsystem;
+
+### 6. Rust tree scaffolding
 
 Generally, the target's filesystem is the placement spec.
 Mirror the following layout, all relative to `<repo>/crustify/rust/`:
@@ -199,7 +207,6 @@ Mirror the following layout, all relative to `<repo>/crustify/rust/`:
 - `<repo>/` - safe repo package, one for the whole repo.
 - `<repo>/<link-unit>/` - one sub-dir per link unit, cfg-gated mod in `lib.rs`.
 
-
 Create minimal `Cargo.toml` and crate roots using the established conventions.
 Do this only for the link units included in the scope established by the user.
 Scaffold source files lazily before spawning translator agents.  
@@ -207,12 +214,6 @@ Scaffold source files lazily before spawning translator agents.
 For each `-sys` package, author the build scripts required by bindgen so that translator
 agents can reuse them; each  `-sys` crate needs `Cargo.toml`, `src/lib.rs`, `build.rs`,
 and bindgen input. Allowlists are populated by translators lazily.
-
-In a port campaign, each subsystem gets a Rust-side sub-dir and top-level sub-module in their
-link unit: `rust/<repo>/<link-unit>/<subsystem>/<subsystem>.rs`; TUs and headers become
-sub-modules of their subsystem. In a wrap campaign subsystems don't appear as sub-modules;
-TUs and headers are top-level modules directly on their link unit. Emit TU and header modules
-lazily before scheduling their first units.
 
 Commit the initial Rust tree on the campaign branch.
 
@@ -225,104 +226,65 @@ TODO
 ## Phase 2: translation
 
 
-### 3. Preflight agentic stages
+### 1. Preflight smoke runs
 
-Before translation, review, or UB-audit agents start:
+Before translation or review:
 
 1. resolve the selected model to its provider and backend;
 2. verify the backend executable on the stage process's `PATH` and run
    `--version`;
 3. verify required credential variables without printing their values;
 4. reject unsupported provider and billing combinations;
-5. run the stage dry-run; and
+5. dry-run a dummy batch to verify things are ready for launch; and
 6. compare unit, wave, and batch counts with the approved schedule.
 
-A launch succeeds only after every expected process is live, its log exists,
-and the backend emits a model handshake or first repository action. On an
-immediate backend, authentication, or routing failure, stop the wave, repair
-the environment, and restart the same batch set.
 
-Attach a completion monitor to every process. On exit, verify status, log,
-usage record, landed commit, and worktree state. A detached process without a
-monitor is not an active stage.
+### 2. Launch preparations
 
-### 4. Prepare a sub-campaign and wave
+#### Sub-campaigns
 
-Before the sub-campaign starts:
+Pick the next sub-campaign from this campaign's `schedule.json`.
 
-1. verify reusable C-build provenance;
-2. generate its schedule with the narrow configuration and approved caps;
-3. verify config hash, counts, barriers, and batch identities;
-4. name each scheduled item's authored `.rs` home in its batch;
-5. create and connect any module a batch names but the tree lacks;
-6. compile the affected crates; and
-7. record the canonical tip as wave zero's base.
+Create the sub-campaign branch:
+
+```bash
+git -C <repo> checkout -b crustify/subcampaigns/<link-unit>/<subsystem>
+```
+
+In a port campaign, each subsystem gets a Rust-side sub-dir and top-level sub-module in their
+link unit: `rust/<repo>/<link-unit>/<subsystem>/<subsystem>.rs`; TUs and headers become
+sub-modules of their subsystem.
+
+In a wrap campaign, subsystems don't appear as sub-modules; TUs and headers are top-level modules
+directly on their link unit. Emit TU and header modules lazily before scheduling their first units.
+
+Commit the canonical tip as the sub-campaign's base.
+
+#### Waves and batches
+
+Pick the next wave from the live sub-campaign's `schedule.json` record.
 
 For each recorded wave:
 
 - create the unchecked-out integration branch
-  `crustify/wave/<campaign-id>/<link-unit>/<subsystem>/wave-<index>`;
-- create its log directory under the campaign; and
+  `crustify/waves/<campaign-id>/<link-unit>/<subsystem>/wave-<index>`;
+- create its log directory under the campaign;
 - write each `schedule.json` batch entry out to its `batch-<index>.json`
-  verbatim, changing no field and no membership.
+  verbatim, changing no field and no membership;
+- create and connect any module a batch names but the tree lacks, compiling the affected crates; and
+- record the canonical tip as the wave's base.
 
 Branch and directory carry the same `(link_unit, subsystem)` pair, so a wave's
 branch, its batches and its logs are addressable from its `schedule.json`
 entry alone.
 
-The thin batch format is:
-
-```json
-{
-  "objective": "wrap",
-  "items": [
-    {
-      "name": "AVFrame",
-      "defined_in": "libavutil/frame.h",
-      "kind": "type",
-      "field_anchors": ["data", "linesize"],
-      "home": "crustify/rust/libavutil/src/frame.rs"
-    }
-  ]
-}
-```
-
-See `docs/schemas/batch.md` for field meaning, routing and the raw-lifetime
-rule. Every field shown is required; do not add route, wave, branch, log, or
-dependency fields.
-
-Example commands:
-
-```bash
-wavefront <repo_root> --config <sub-campaign-config> schedule \
-  --output <wave-plan.json> --name <items...> \
-  [--transitive] [--api-headers-only] \
-  [--max-syms N] [--max-loc N] [--max-types N] [--min-fields N]
-
-crustify <repo_root> <target> translate <batch.json> \
-  --base-branch <wave-branch> --output <wave-log-dir> --dry-run
-```
-
-Do not restructure the Rust tree during a wave: a batch names homes that must
-still exist when its agent starts. After parallel landings, union conflicting
-`-sys` allowlist additions and retest the affected crates.
-
-Scaffold the batches' source files:
+Promote completed sub-campaigns in the canonical campaign integration branch.
 
 
-Rust has no headers, migrate them using the following rules:
-- for a wrap campaign: each public header gets its own `mod` and `.rs`. 
-- for a port campaign:
-  - a subsystem's headers and translation units share one module;
-  - a TU and its companion header share a sub-module in their subsystem;
-  - headers that export implementation (e.g. `static inline` functions)
-  which logically do not belong to any TU get their own `_h.rs` sub-module;
-  headers shared by multiple subsystems become sub-modules for each subsystem;
-
-### 5. Execute and monitor batches
+### 3. Launch and monitoring
 
 Run one CLI process per batch, concurrently up to approved parallelism. The
-harness creates `crustify/batch/<batch-id>` and an isolated worktree from the
+harness creates `crustify/batches/<batch-id>` and an isolated worktree from the
 wave branch. It links ignored shared campaign state, starts the backend, and
 writes the agent stream and usage record.
 
@@ -332,138 +294,67 @@ revalidates, and retries. Failed translators retain their branches and
 worktrees. The orchestrator must not translate the failed worklist or discard a
 competing landing.
 
-Verify every batch's exit status, log, usage record, landed commit, and cleaned
-worktree before review.
+Promote a batch's branch on its integration branch.
 
-### 6. Review, scan, and promote
 
-Every translated wave requires agentic review before a consumer starts.
-Reviewers must inspect the merged wave for ownership, lifetime, thread-safety,
+### 4. Review waves
+
+Every translated wave may be followed by agentic review before a consumer starts.
+
+Reviewers inspect the merged wave for ownership, lifetime, thread-safety,
 error-mapping, and C-equivalence failures; add focused regressions; fix the
 findings; and land through the same branch flow.
 
-Use the translated item projections with `objective: review`. Default to the
-translation batch caps. If review caps differ, ask Wavefront to rebatch the
-exact translated identities without expanding their closure, then execute all
-review waves in order.
+Scaffold `crustify/campaigns/<campaign-id>/<link-unit>/<subsystem>/review-wave-<index>/`
+following the same artifact structure as a translation wave's.
 
-After review lands:
+Create an integration branch for the review wave:
+`crustify/review/<campaign-id>/<link-unit>/<subsystem>/wave-<index>` 
 
-1. verify all translation and review batch records;
-2. build and test Rust;
-3. build and test C when C changed;
-4. run the feature-enabled baseline for port work;
-5. run the deterministic safety scan; and
-6. promote the reviewed wave tip to the canonical campaign branch.
+Use the translated item projections with `objective: review`.
 
-Run the deterministic scan with the exact scheduled C names:
+After review lands, promote the reviewed wave tip to the canonical sub-campaign
+integration branch.
+
+
+### 5. Accounting
+
+#### Static safety scan
+
+After each wave, including review, run the deterministic scan with the exact scheduled
+workset names:
 
 ```bash
 crustify <workdir> audit unsafe --name <wave names...> --json
 ```
 
-Inspect each source site. Fix unsafe wrapper bypasses and unsound references.
-Keep necessary FFI seams with a safety justification. The generated
-`crustify/audit/unsafe.json` is ignored.
+Record it in the wave's workdir; it becomes tracked by git.
 
-Do not run a generic end-of-sub-campaign review after every wave has already
-been reviewed. Add one only for a named cross-wave obligation.
-
-At campaign end, record an unseeded scan:
+At campaign and sub-campaign end, record an unseeded scan:
 
 ```bash
 crustify <workdir> audit unsafe --json
 ```
 
-### 7. Optional UB audit
+Record them in their respective workdirs.
 
-Run `crustify <workdir> audit ub` only with explicit user approval. Run it once after the
-campaign unless the user requests another milestone or a confirmed finding
-blocks progress.
+#### Cost
 
-The UB agent must:
-
-- create a dedicated target-repository branch;
-- produce evidence and a focused regression;
-- implement the repair;
-- run affected builds and tests;
-- rerun the reproducer; and
-- commit without merging.
-
-Independently inspect the diff and rerun the build, tests, and reproducer. Merge
-only a confined patch for a confirmed finding with green evidence. Otherwise
-leave the branch unmerged and report the failed gate.
-
-### 8. Accounting
-
-Run `crustify ... cost` over the `<batch-id>.usage.json` files. Use its computed
-cost and token counts, not provider-reported dollar totals. Record agent wall
-times from usage files. Record wave wall time from first batch launch through
-final review and regression completion. Fill the user's evaluation table.
-
-Fill it per batch too, for translation and review alike. Key each row by the
-`wave` and `batch` index of its entry in the sub-campaign's `waves.json`; a
-review batch uses its own review plan's indices. Take `$` and `wall` from that
-batch's `usage.json`, never apportioned from a total. Take `+LoC` and the three
-test deltas from its landing commit against its parent. The `(+C/+Rust pp)`
-pair needs a coverage run per workload per commit: measure it when affordable,
-otherwise leave every per-batch pair blank and say so once in Notes.
+After each batch, both translation and review, run `crustify ... cost` over the
+`<batch-id>.usage.json` files.
+Use its computed cost and token counts, not provider-reported dollar totals. Record
+agent wall times from usage files. Record wave wall time from first batch launch through
+final review and regression completion. Fill the default evaluation table or the
+user-provided one, matching their format exactly.
 
 ## Self-repair
 
-When a campaign exposes a defect in Crustify, Wavefront, or ffibox, create a dedicated branch and worktree in that component's repository.
+When a campaign exposes a defect in Crustify or enabled skills with a local checkout,
+create a dedicated branch and worktree in that component's repository.
 Implement and validate the reusable fix there; do not mix it into campaign
 translation commits.
 
 
-## To be moved
-
-
-- ASan + UBSan build for FFI and lifecycle tests;
-- TSan build for race tests; do not combine it with ASan;
-- BSan build when BorrowSanitizer is available; and
-Miri does not need a C build and cannot call the foreign library.
-
-### 6. Configure campaign-wide source analysis
-
-Create `crustify/wavefront/wavefront-config.json` from Wavefront's specification.
-It contains:
-
-| key | contents |
-|---|---|
-| `impl_files` | implementation sources and private defining headers |
-| `api_headers` | published API headers |
-
-A directory entry ends with `/`. Uncompiled candidates are removed by T1
-anchoring.
-
-Selection rules:
-
-- `impl_files` and `api_headers` seed the implementation graph.
-- An entity is targeted when its definition is in a named file. For an entity
-  without a body, all declarations must be in named files.
-- Headers outside the implementation tree must be named when they define
-  target types.
-- Add a header to `api_headers` only when its implementors are in `impl_files`.
-- Dependencies merely used by the target enter the imported closure.
-- `--api-headers-only` selects declarations published by `api_headers` and
-  does not walk bodies.
-- A struct defined in `api_headers` retains field layout. A forward declaration
-  remains opaque.
-- `--transitive` adds signature dependencies.
-- `targeted` and `imported` describe ownership; `api` describes publication.
-  These sets intersect.
-- `out_of_scope.paths` changes selection. `out_of_scope.features` is
-  documentation only.
-
-Verify the configuration:
-
-```bash
-wavefront <repo_root> --config <campaign-config> query files --targeted-only
-wavefront <repo_root> --config <campaign-config> query files --imported-only
-```
-
-Wavefront does not create the parent directory for `schedule --output`.
 
 ## Required deps
 
