@@ -23,8 +23,9 @@ from crustify.agents.base import CrustifyAgent, SkillSpec, _PKG_ROOT
 #: directory ablates it everywhere. The playbook skill has no `capability`
 #: because it is what makes this agent an orchestrator; the rest are things it
 #: is TOLD about rather than things it is, which is what makes them ablatable.
+#: There is no role skill here: it existed to route the orchestrator to its
+#: playbook, and the playbook is now this agent's prompt.
 _SKILLS = (
-    SkillSpec("crustify", "src/crustify/prompts/skills/playbook/orchestrator.md"),
     #: One wavefront skill, two role overlays. The oracle a translator queries
     #: and the oracle an orchestrator plans with are the same tool used for
     #: different work, so the metadata is shared and only the guidance splits.

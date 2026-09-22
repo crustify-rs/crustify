@@ -429,7 +429,7 @@ class CrustifyAgent:
 
         Human-readable in its own right and read by anyone working on crustify,
         not only spliced into a prompt — which is what puts it beside
-        ``docs/orchestrator-playbook.md`` rather than under ``prompts/``. What lives in
+        ``docs/translator-playbook.md`` rather than under ``prompts/``. What lives in
         ``prompts/`` is what the pipeline RENDERS: the stage templates and the
         skill descriptions. Neither provider CLI loads this from a canonical
         path — claude reads ``CLAUDE.md``, codex a repo-root ``AGENTS.md``, and

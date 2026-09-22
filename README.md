@@ -122,9 +122,9 @@ For a reproducible container environment or a pre-filled campaign manifest, see
 5. **Promote and audit:** the orchestrator reconciles parallel landings, runs
    regression and deterministic safety gates, then promotes the reviewed wave.
 
-The authoritative procedures are the [`orchestrator
-playbook`](docs/orchestrator-playbook.md) and [`translator
-playbook`](docs/translator-playbook.md).
+The authoritative translator procedure is the [`translator
+playbook`](docs/translator-playbook.md). The orchestrator's is its own prompt,
+`src/crustify/prompts/orchestrator.md`.
 
 ## CLI
 
@@ -167,8 +167,6 @@ Below is an overview of the campaign's stats:
 
 ## Documentation
 
-- [`docs/orchestrator-playbook.md`](docs/orchestrator-playbook.md): campaign
-  setup, translation, landing, review, accounting, and self-repair
 - [`docs/translator-playbook.md`](docs/translator-playbook.md): translator
   procedures for types, symbols, lifetimes, tests, and completion
 - [`docs/conventions.md`](docs/conventions.md): generated Rust conventions
