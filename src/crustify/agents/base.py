@@ -299,7 +299,7 @@ class CrustifyAgent:
             if self.prompt_dir else base / f"{self.stage}.md"
         )
         # No substitution beyond the caller's `.format(**arguments)`. The
-        # `<!-- CONVENTIONS -->` and `<!-- SKILLS -->` markers a stage prompt
+        # `<!-- CODING CONVENTIONS -->` and `<!-- SKILLS -->` markers a stage prompt
         # carries are inert: they record where each part of the system preamble
         # sits relative to the task, and are deliberately NOT sentinels — a
         # marker that silently expanded would put the text back in the user
@@ -362,7 +362,7 @@ class CrustifyAgent:
     def _render_skills(self) -> str:
         """Render this agent's :attr:`SKILLS` set as a metadata index
         (name — description + on-disk path), as its own section of the system
-        preamble — a sibling of conventions.md, not a section inside it.
+        preamble — a sibling of coding-conventions.md, not a section inside it.
 
         Mirrors a skill-aware harness's tier-1 load: the metadata rides in the
         system prompt unconditionally (the routing signal), while the body is
@@ -372,8 +372,8 @@ class CrustifyAgent:
 
         Descriptions are single-sourced from each skill's metadata, so
         they never drift from the skill itself. The framing sentence is emitted
-        here rather than kept in conventions.md: it is about how to read the
-        index, so it belongs to the index, and conventions.md stays
+        here rather than kept in coding-conventions.md: it is about how to read the
+        index, so it belongs to the index, and coding-conventions.md stays
         conventions."""
         blocks = []
         for spec in self.skill_specs():
@@ -434,10 +434,10 @@ class CrustifyAgent:
         skill descriptions. Neither provider CLI loads this from a canonical
         path — claude reads ``CLAUDE.md``, codex a repo-root ``AGENTS.md``, and
         it is at neither — so it reaches an agent only by being read here."""
-        return deps.CHECKOUT / "docs" / "conventions.md"
+        return deps.CHECKOUT / "docs" / "coding-conventions.md"
 
     def _render_conventions(self) -> str:
-        """conventions.md verbatim. Empty string if the doc is absent.
+        """coding-conventions.md verbatim. Empty string if the doc is absent.
 
         No substitution: the skill index used to be spliced into a sentinel in
         here, which made a conventions doc that was partly not conventions. The
@@ -462,9 +462,9 @@ class CrustifyAgent:
         at full concurrency still pays N writes; staggering the first agent is
         what collects the reads.)
 
-        Two independent documents, concatenated: conventions.md is the same for
+        Two independent documents, concatenated: coding-conventions.md is the same for
         every agent, the skill index varies with :meth:`skill_specs`. The
-        `<!-- CONVENTIONS -->` and `<!-- SKILLS -->` markers in the stage prompts
+        `<!-- CODING CONVENTIONS -->` and `<!-- SKILLS -->` markers in the stage prompts
         record where each one lands relative to the task; neither is a
         substitution point."""
         return "\n\n---\n\n".join(

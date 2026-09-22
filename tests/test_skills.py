@@ -157,11 +157,14 @@ class PromptRenderTests(unittest.TestCase):
             with self.subTest(prompt=path.name):
                 path.read_text().format_map(collections.defaultdict(str))
 
-    def test_the_orchestrator_prompt_keeps_its_literal_braces(self) -> None:
-        text = (_PKG_ROOT / "prompts" / "orchestrator.md").read_text()
-        rendered = text.format(target=".", workdir="/w", git_base="b",
-                               campaign_kind="translate")
-        self.assertIn("{<subsystem>, raw-lifetime-{void, string}}/", rendered)
+    def test_the_coding_conventions_doc_resolves(self) -> None:
+        """`_render_conventions` returns "" for an absent file, so a rename
+        that misses `_conventions_md` deletes the conventions from every
+        agent's system prompt and nothing raises."""
+        for cls in _ROLES:
+            with self.subTest(role=cls.name):
+                agent = object.__new__(cls)
+                self.assertTrue(cls._conventions_md(agent).is_file())
 
 
 if __name__ == "__main__":

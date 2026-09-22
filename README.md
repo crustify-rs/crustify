@@ -169,7 +169,8 @@ Below is an overview of the campaign's stats:
 
 - [`docs/translator-playbook.md`](docs/translator-playbook.md): translator
   procedures for types, symbols, lifetimes, tests, and completion
-- [`docs/conventions.md`](docs/conventions.md): generated Rust conventions
+- [`docs/coding-conventions.md`](docs/coding-conventions.md): generated Rust
+  conventions, including the Rust tree layout
 - [`docs/schemas/`](docs/schemas/): crate-placement and wave schemas
 - [`docs/schemas/subsystems.md`](docs/schemas/subsystems.md): link-unit and
   subsystem decomposition artifact

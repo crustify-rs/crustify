@@ -11,46 +11,11 @@ alone reconcile the campaign-wide result.
 
 Your git entity: `crustify`.
 
-## Workflow
+---
 
-The two phases below are the campaign, in order.
+## Task
 
-### Phase 1 -- Setup
-
-1. Provision dependencies — the harness, skills, and toolkits required by the campaign.
-2. Artifact tree scaffolding — the artifact tree this campaign writes into.
-3. Prebuilds and test baselines - author `build.json` specifying the the target's
-   fixed config, build commands, and the pass/total tests that the campaign must not regress; additionally, prepare
-   reusable C builds — plain and coverage-instrumented, immutable and shared, so agents
-   neither rebuild nor diverge; update the shared builds only when the target changes.
-4. Subsystem decomposition - create `subsystems.json` specifying the target decomposition
-   that sub-campaigns follow.
-5. Planning - create `schedule.json` specifying a total ordering of link units, subsystems,
-   and types/symbols based on dependencies, bottom-up; waves group dependency-ordered worksets
-   that execute sequentially within a subsystem, while batches group unrelated worksets that
-   execute in parallel within a wave.
-6. Scaffold the Rust tree — the `-sys` and safe crates waves land into,
-   mirroring the target's subsystem decomposition; the filesystem is the placement
-   spec.
-
-### Phase 2 -- Translation
-
-1. Preflight smoke runs
-2. Launch preparations
-3. Launch and monitoring
-4. Review waves
-5. Accounting
-
-## Self-repair
-
-When a campaign exposes a defect in Crustify or enabled skills with a local checkout,
-create a dedicated branch and worktree in that component's repository.
-Implement and validate the reusable fix there; do not mix it into campaign
-translation commits.
-
-## Campaign intake
-
-The following sections depcits the campaign settings configured by the user.
+The following depcits the campaign settings configured by the user.
 
 It is similar to a questionaire that the user filled by answering questions
 that have fixed labels, split in mandatory and optional. If the user left
@@ -66,79 +31,18 @@ assumptions, models, review policy, execution policy and audit policy, then ask
 for approval. Do not begin Phase 1 or mutate the campaign repository before
 approval.
 
-## Artifacts
+<!-- TASK -->
 
-- `crustify/.gitignore` — excludes machine-local configuration, caches, builds,
-  logs, and generated analysis output.
-- `crustify/build.json` — records the versioned configure, build, and test
-  commands.
-- `crustify/subsystems.json` — records link units and subsystems, their objective,
-  contents, and imported dependencies; governs the shape the Rust tree mirrors.
+---
 
-- `crustify/campaigns/<campaign-id>/schedule.json` — records the campaign's
-  total execution order and every projected batch; tracked.
-- `crustify/campaigns/<campaign-id>/<link-unit>/<subsystem>/<plan-name>.json`
-  — records one sub-campaign's generated wave and batch plan; tracked.
-- `…/wave-<index>/batch-<index>.json` — the thin batch projected for one agent.
-- `…/wave-<index>/logs/<batch-id>.log` — one agent's output stream.
-- `…/wave-<index>/logs/<batch-id>.usage.json` — one agent's token, cost, and
-  wall-time record.
+## Workflow
 
-Read the corresponding example in `specs/` and schema description in `docs/schemas` before
-creating an artifact. 
+### Phase 1: setup
 
-## Directory structure
+#### 1. Provision dependencies
 
-```text
-crustify/campaigns/<campaign-id>/
-├── schedule.json
-└── <link-unit>/
-    └── {{<subsystem>, raw-lifetime-{{void, string}}}}/
-        ├── <plan-name>.json
-        └── wave-{{<index>, void, string}}/
-            ├── batch-<index>.json
-            └── logs/
-                ├── <batch-id>.log
-                └── <batch-id>.usage.json
-crustify/rust/
-crustify/tmp/
-```
-
-A sub-campaign is a subsystem, so it nests under the link unit that contains
-it: `(link_unit, subsystem)` is the globally addressable identity, and the two
-levels of directory are that pair. Raw-lifetime discovery has no subsystem of
-its own and occupies the same level under its link unit.
-
-`<campaign-id>` names the campaign, normally the CLI target's slug — a root
-target gives `crustify/campaigns/`, `ssl/statem` gives
-`crustify/campaigns/ssl/statem/`.
-
-`schedule.json` is the campaign's total execution order and its projected
-batches; see `docs/schemas/schedule.md`. Each `<plan-name>.json` is one
-sub-campaign's objective-neutral plan from `wavefront schedule`, the input it
-is projected from; its fields are documented by Wavefront, in that checkout's
-own `docs/schemas/schedule.md`.
-
-Every path under a campaign is derived from
-`(campaign-id, link-unit, subsystem, index)`, so nothing records one. Wave
-indices restart at zero in each subsystem, and the directory pair above is
-what keeps them distinct; a wave's `logs/` is what its batches receive through
-`--output`. Wave indices follow executable wave order, not individual DAG
-layers.
-
-## Phase 1: setup
-
-### 1. Provision dependencies
-
-Required dependencies:
-
-- Python 3.13 or newer;
-- Rust stable with `cargo` and `clippy`;
-- Rust nightly with `rustc-dev` and `llvm-tools`;
-- `bindgen-cli`;
-- supported agent backends;
-- Crustify;
-
+Install any dependency required by the steps of this workflow, the enabled skills,
+and the task's target repo.
 
 ### 2. Artifact tree scaffolding
 
@@ -248,34 +152,20 @@ For a port campaign:
 See `docs/schemas/batch.md` for schema format, field meaning, routing and the raw-lifetime
 rule. Every field shown is required.
 
-Home each batches' items set, but scaffold them lazily before launch.
+Home each batch's set of items using the established coding conventions below; 
+scaffold them lazily on disk before launch.
 
-Rust has no headers, assign them using the following rules:
-- for a wrap campaign: each public header gets its own `mod` and `.rs`. 
-- for a port campaign:
-  - a subsystem's headers and translation units share one module;
-  - a TU and its companion header share a sub-module in their subsystem;
-  - headers that export implementation (e.g. `static inline` functions)
-  which logically do not belong to any TU get their own `_h.rs` sub-module;
-  headers shared by multiple subsystems become sub-modules for each subsystem;
 
 ### 6. Rust tree scaffolding
 
-Generally, the target's filesystem is the placement spec.
-Mirror the following layout, all relative to `<repo>/crustify/rust/`:
-
-- `Cargo.toml` - top-level virtual manifest.
-- `<link-unit>-sys` - raw bindings package, one per link unit.
-- `<repo>/` - safe repo package, one for the whole repo.
-- `<repo>/<link-unit>/` - one sub-dir per link unit, cfg-gated mod in `lib.rs`.
-
-Create minimal `Cargo.toml` and crate roots using the established conventions.
+Scaffold the top-level manifest, raw `-sys` and safe crates according to the coding conventions
+below.
 Do this only for the link units included in the scope established by the user.
-Scaffold source files lazily before spawning translator agents.  
+Scaffold source files and modules lazily before spawning translator agents.  
 
 For each `-sys` package, author the build scripts required by bindgen so that translator
 agents can reuse them; each  `-sys` crate needs `Cargo.toml`, `src/lib.rs`, `build.rs`,
-and bindgen input. Allowlists are populated by translators lazily.
+and bindgen input. Bindgen allowlists are populated by translators lazily.
 
 Commit the initial Rust tree on the campaign branch.
 
@@ -409,7 +299,23 @@ agent wall times from usage files. Record wave wall time from first batch launch
 final review and regression completion. Fill the default evaluation table or the
 user-provided one, matching their format exactly.
 
-<!-- CONVENTIONS -->
+---
+
+## Self-repair
+
+When a campaign exposes a defect in Crustify or enabled skills with a local checkout,
+create a dedicated branch and worktree in that component's repository.
+Implement and validate the reusable fix there; do not mix it into campaign
+translation commits.
+
+---
+
+Follow these coding conventions where applicable throughout your workflow; translator
+agents will also follow them:
+
+<!-- CODING CONVENTIONS -->
+
+---
 
 ## Skills
 
