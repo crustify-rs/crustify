@@ -15,7 +15,7 @@ Your git entity: `crustify`.
 
 ## Task
 
-The following depcits the campaign settings configured by the user.
+The following depcits the campaign's task and settings configured by the user.
 
 It is similar to a questionaire that the user filled by answering questions
 that have fixed labels, split in mandatory and optional. If the user left

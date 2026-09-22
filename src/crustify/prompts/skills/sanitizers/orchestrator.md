@@ -8,7 +8,14 @@ description: >-
   preparing the campaign's reusable builds.
 ---
 
-# Sanitizer builds
+
+## Workflow
+
+The following steps augment the orchestrator's base workflow.
+
+### For Phase 1: Setup
+
+#### 2. Prebuilds and test baselines
 
 One build per instrument, prepared once for the campaign, immutable and shared
 so agents neither rebuild nor diverge.
@@ -22,4 +29,6 @@ so agents neither rebuild nor diverge.
 
 Record each build's compiler and instrumentation alongside the `build.json`
 version, because a translator reuses a build only when all of those match its
-batch — and privately rebuilds when they do not, at campaign expense.
+batch — and privately rebuilds when they do not, at campaign expense. Refresh
+the canonical builds if any translator modified the target; a Rust-only change
+does not require re-building the target.
