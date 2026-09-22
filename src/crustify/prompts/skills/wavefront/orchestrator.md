@@ -4,23 +4,32 @@ Read wavefront's CLI helpstring via `--help` to learn how to use it.
 
 ## Workflow
 
-## For Phase 1: Setup
+The following steps augment the orchestrator's base workflow.
 
-### 1. Provision dependencies
+### For Phase 1: Setup
+
+#### 1. Provision dependencies
 
 - Install CodeQL if it's not already installed.
 
-### 2. Artifact tree scaffolding
+
+#### 2. Artifact tree scaffolding
 
 - Scaffold `crustify/wavefront/` for wavefront-owned artifacts.
 
-### 3.1 CodeQL setup
+
+#### 3. Prebuilds and test baselines
+
+##### CodeQL setup
 
 - Wavefront requires the CodeQL T1/T2 tables for computing dependencies; emit
   them after creating the target's builds and recording the test baseline; place
   codeql-owned artifacts in `crustify/codeql/{t1, t2, ...}`.
 
-### 4.1 Configuring `wavefront-config.json`
+
+#### 4. Subsystem decomposition
+
+##### Configuring `wavefront-config.json`
 
 After after subsystem decomposition emit campaign-wide and per-subsystem
 `wavefront-config.json` that can be consumed by wavefront CLI.
@@ -43,12 +52,12 @@ Selection rules:
 - `out_of_scope.paths` changes selection. `out_of_scope.features` is
   documentation only.
 
-### Campaign-wide
+###### Campaign-wide
 
 - Configure a campaign-wide `crustify/campaigns/<target>/wavefront-config.json`
   that every translator agent will resolve its queries through.
 
-### Per subsystem
+###### Per subsystem
 
 - To get exact counts when authoring `subsystems.json`,
   configure for each subsystem a
@@ -59,7 +68,7 @@ Selection rules:
 
 - Verify the authored configurations against wavefront's CLI.
 
-### 5. Planning
+#### 5. Planning
 
 - Leverage the per-subsystem `wavefront-config.json` when emitting `schedule.json`
   to form dependency-ordered DAGs over link units, subsystems, and type/symbol batches.

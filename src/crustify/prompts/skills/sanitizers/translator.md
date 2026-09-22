@@ -10,7 +10,7 @@ description: >-
 # Sanitizer builds
 
 The campaign prepares one reusable build per instrument. Reuse the matching
-one; treat it as immutable and write agent-unique logs and outputs.
+one; treat it as immutable; re-build privately when you change the target.
 
 - **ASan + UBSan** — FFI and lifecycle tests.
 - **TSan** — race tests only, and a build of its own. Never run a test against
