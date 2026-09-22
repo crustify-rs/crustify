@@ -2,6 +2,41 @@
 
 Deferred decisions and follow-up work on the crustify contracts and playbooks.
 
+## Side campaigns for out-of-tree dependencies
+
+A campaign wraps one repository, but its subsystems import libraries that live
+elsewhere — libz and pcre2 for libgit2, and so on. Today those are a boundary
+the campaign stops at: the imported entities are recorded but nothing safe is
+generated for them, so a wrapper built on the campaign's output still reaches
+foreign code through raw bindings.
+
+A side campaign would translate one of those dependencies in **its own**
+repository, producing a wrapper crate the main campaign depends on rather than
+one it vendors. The orchestrator prompt reserves a step for it
+(`Phase 1 / Side campaigns`) with nothing behind it yet.
+
+The input already exists. `subsystems.json` records
+`imported_deps.out_of_tree[*]` as `{library, counters}`, so the orchestrator
+can already see which external libraries a span consumes and how many distinct
+entities it takes from each. That count is what decides whether a side
+campaign is worth spawning: a subsystem calling two functions from libz does
+not need one.
+
+Open questions:
+
+- **When to skip.** A dependency with a maintained safe crate should use it
+  rather than be re-wrapped. Deciding that is a judgement the campaign task
+  may want to answer rather than the orchestrator.
+- **Scope.** A side campaign covers what the parent consumes, not the whole
+  dependency, so its scope is a closure over `out_of_tree` counters rather
+  than a subsystem span.
+- **Ordering.** A side campaign is a producer of the parent's link units, so
+  it precedes them — but it lives in another repository with its own branches,
+  build baseline and results, which the current `schedule.json` nesting
+  (`link_unit` → `subsystem` → `wave`) cannot express.
+- **Results and accounting.** Whether a side campaign reports into the parent's
+  results table or its own.
+
 ## Ship `docs/` so a non-editable install keeps its conventions
 
 `_conventions_md` resolves `coding-conventions.md` under `deps.CHECKOUT`, which
