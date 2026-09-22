@@ -58,7 +58,7 @@ condition below is met.
    capability according to its role guidance. Fix failures and unsafe wrapper
    bypasses.
 8. Under a `review` objective, file an advisory under
-   `crustify/audit/advisories/` for every defect you fix, following the
+   `crustify/review/advisories/` for every defect you fix, following the
    defect-advisory requirement in the translator playbook's UB-test and
    equivalence-test protocols. UB and equivalence defects carry equal weight.
    Every reproducer must build and run against the affected revision using only
