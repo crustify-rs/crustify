@@ -70,8 +70,10 @@ Every index also addresses the filesystem, so nothing records a path:
 
 ```text
 crustify/campaigns/<campaign-id>/<link_unit>/<subsystem>/wave-<index>/
-├── batch-<n>.json      n is the batch's position in `batches`
-└── logs/               every batch in the wave receives this as --output
+├── batch-<n>.json          n is the batch's position in `batches`
+└── batch-<n>/              that batch's --output directory
+    ├── translator.log
+    └── translator.usage.json
 ```
 
 The integration branch

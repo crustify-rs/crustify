@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import json
 import re
-import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 from typing import NoReturn
@@ -14,6 +13,10 @@ _KINDS = frozenset({"type", "symbol", "callback", "raw-lifetime"})
 _ITEM_FIELDS = frozenset({"name", "defined_in", "kind", "field_anchors", "home"})
 _FIELD_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 _LIFETIME_TIERS = frozenset({"void", "string"})
+
+#: Both artifacts a batch writes, named for the role that wrote them. They sit
+#: in the batch's own `--output` directory, so nothing has to be unique.
+_LOG_STEM = "translator"
 
 
 @dataclass(frozen=True)
@@ -138,29 +141,6 @@ def _task_objective(batch: Batch) -> str:
     return batch.objective
 
 
-def _validate_base_branch(repo: Path, base_branch: str) -> str:
-    """The base branch's commit, or a failure naming why it cannot be landed on.
-
-    Not worktree management -- the orchestrator owns that now. This is input
-    validation: the agent's last act is an atomic fast-forward onto this
-    branch, and both failures it catches would otherwise surface there, after
-    the batch has been paid for.
-    """
-    base_branch = base_branch.removeprefix("refs/heads/")
-    r = subprocess.run(
-        ["git", "-C", str(repo), "rev-parse", "--verify",
-         f"refs/heads/{base_branch}"],
-        capture_output=True, text=True)
-    if r.returncode != 0:
-        _fail(f"base branch does not exist: {base_branch}")
-    for line in subprocess.run(
-            ["git", "-C", str(repo), "worktree", "list", "--porcelain"],
-            capture_output=True, text=True, check=True).stdout.splitlines():
-        if line.strip() == f"branch refs/heads/{base_branch}":
-            _fail(f"base branch is checked out in a worktree: {base_branch}")
-    return r.stdout.strip()
-
-
 def execute(
     workdir: Path,
     batch_path: Path,
@@ -172,8 +152,8 @@ def execute(
     """Run exactly one translator in ``workdir``.
 
     ``workdir`` is the isolated worktree the orchestrator forked for this
-    batch; the harness neither creates nor purges it. It validates the batch
-    and the landing branch, then spends on the agent.
+    batch and ``output`` the directory that batch's artifacts land in; the
+    harness creates and purges neither.
     """
     batch = load_batch(batch_path)
     output = output.resolve()
@@ -181,8 +161,6 @@ def execute(
         _fail(f"--output must name an existing directory: {output}")
 
     workdir = workdir.resolve()
-    base_commit = _validate_base_branch(workdir, base_branch)
-
     effective = _task_objective(batch)
     if dry_run:
         normalized = (
@@ -192,18 +170,17 @@ def execute(
         print(
             f"[translate dry-run] one {batch.route} agent; "
             f"{len(batch.items)} item(s); campaign objective "
-            f"{batch.objective}{normalized}; base {base_branch} at "
-            f"{base_commit}; no agent spawned."
+            f"{batch.objective}{normalized}; landing on {base_branch}; "
+            "no agent spawned."
         )
         return
 
-    # The worktree's directory name is the batch id the orchestrator chose, so
-    # a batch's logs carry the same name as the tree that produced them.
-    batch_id = workdir.name
-    print(f"[crustify translate] batch id: {batch_id}")
+    # Fixed names: `output` is this batch's own directory, so there is nothing
+    # to disambiguate. The orchestrator decides what a batch is called by
+    # deciding where its artifacts go.
     print(f"[crustify translate] workdir: {workdir}")
-    print(f"[crustify translate] base: {base_branch} at {base_commit}")
-    print(f"[crustify translate] log: {output / f'{batch_id}.log'}")
+    print(f"[crustify translate] landing on: {base_branch}")
+    print(f"[crustify translate] log: {output / f'{_LOG_STEM}.log'}")
 
     from crustify.agents.translate import TranslateAgent
 
@@ -214,6 +191,6 @@ def execute(
         objective=effective,
         git_base=base_branch.removeprefix("refs/heads/"),
         log_dir=output,
-        log_stem=batch_id,
+        log_stem=_LOG_STEM,
     ).run()
-    print(f"[crustify translate] batch {batch_id} completed.")
+    print("[crustify translate] batch completed.")
