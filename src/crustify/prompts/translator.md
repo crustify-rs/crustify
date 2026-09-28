@@ -12,7 +12,6 @@ Your git entity: `crustify`
 ## Inputs
 
 - repository: `{workdir}`
-- target: `{target}`
 - Cargo workspace: `{workspace_root}`
 - build manifest: `{build_json}`
 - worklist: `{worklist}`
@@ -65,7 +64,8 @@ Establish:
 - construction, clone, and destruction paths.
 
 Observed behaviour overrides names and comments. Preserve known distinctions
-in Rust instead of copying an ambiguous C signature.
+in Rust instead of copying an ambiguous C signature. Leverage these findings
+later when emitting safe bindings.
 
 ### 2. Prerequisites
 

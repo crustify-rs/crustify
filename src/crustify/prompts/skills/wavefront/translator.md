@@ -1,22 +1,51 @@
 <!-- SKILL -->
 
-- Treat the wave worklist as fixed. Use oracle queries to understand an
-  item and submit ownership findings, never to expand the scheduled batch.
-- Read `query {types|symbols|dag} --help` before the first query and submit
-  findings only through `--update`.
-- The submitted sub-campaign schedule is orchestrator state. Do not edit or regenerate it from an
-  agent worktree.
+Read wavefront's CLI helpstring via `--help` to learn how to use it.
 
+## Workflow - base
 
-  ## Moved from playbook
+The following steps augment your base workflow.
 
+### 1. Item analysis
 
-Use the enabled analysis capability when present. Submit missing agent-owned
-findings through its update interface and resolve rejected or inconsistent
-records. Never edit derived analysis files. Without that capability, derive
-the same facts from source.
+Leverage the repo-wide Wavefront configuration prepared by the orchestrator
+at `crustify/wavefront/configs/wavefront-config.json` to emit queries that will
+assist you in performing the analysis of your workset's items.
 
-Use the campaign-wide Wavefront configuration supplied in the task for
-queries. Do not substitute a narrow scheduling configuration from a wave
-directory. The schedule should contain each dependency or place it in an
-earlier wave, except explicit SCC cuts.
+Submit your findings using Wavefront's `--update` CLI flag and query them later if
+you need to consult these findings again.
+
+---
+
+## Workflow - type route
+
+The following steps augment your workflow for a type route.
+
+### 1. Surface
+
+Leverage Wavefront's `--schema` CLI flag to get hints on identifying a type's lifecycle
+primitives and submit your findings through the CLI's `--update`.
+
+---
+
+## Workflow - symbol route
+
+The following steps augment your workflow for a symbol route.
+
+### 3. Raw lifetime strategies
+
+Leverage Wavefront's `--schema` CLI flag to get hints on identifying raw lifecycle
+primitives for void and string and submit your findings through the CLI's `--update`.
+
+---
+
+## Review mode
+
+### Analysis and lifecycle findings
+
+Verify Wavefront's analysis and lifecycle findings submitted by an earlier run
+for your workset. If you find any analysis defect or missing property/lifecycle
+primitive, resubmit with a corrected set of findings. File a report describing each
+discovered defect in less than 200 words in
+`<artifact-dir>/wavefront/<defect-slug>`,
+including evidence that proves the previous finding was wrong/incomplete. 

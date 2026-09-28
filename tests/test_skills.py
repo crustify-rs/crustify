@@ -123,7 +123,7 @@ class DiscoveryTests(unittest.TestCase):
         self.repo = Path(__file__).resolve().parent
         self.agent = OrchestrateAgent(
             self.repo, kind="translate", task=Path(__file__),
-            model="anthropic/claude-opus-5", workdir=self.repo)
+            model="anthropic/claude-opus-5")
 
     def test_a_present_skill_is_carried(self) -> None:
         self.assertIn("audit", self.agent.prompt_capabilities())
@@ -136,7 +136,7 @@ class DiscoveryTests(unittest.TestCase):
                 lambda p: False if p == header else real(p)):
             agent = OrchestrateAgent(
                 self.repo, kind="translate", task=Path(__file__),
-                model="anthropic/claude-opus-5", workdir=self.repo)
+                model="anthropic/claude-opus-5")
             self.assertNotIn("audit", agent.prompt_capabilities())
 
     def test_an_uninstalled_dependency_ablates_its_skill(self) -> None:
@@ -146,13 +146,13 @@ class DiscoveryTests(unittest.TestCase):
                                return_value=Path("/nonexistent")):
             agent = OrchestrateAgent(
                 self.repo, kind="translate", task=Path(__file__),
-                model="anthropic/claude-opus-5", workdir=self.repo)
+                model="anthropic/claude-opus-5")
             self.assertEqual(agent.skill_specs(), ())
 
     def test_the_ablation_control_carries_no_skills(self) -> None:
         agent = OrchestrateAgent(
             self.repo, kind="translate", task=Path(__file__),
-            model="anthropic/claude-opus-5", workdir=self.repo,
+            model="anthropic/claude-opus-5",
             task_only=True)
         self.assertEqual(agent.skill_specs(), ())
         self.assertEqual(agent.system_preamble(), "")
@@ -195,8 +195,7 @@ class OrchestratorPromptTests(unittest.TestCase):
 
     def _agent(self, **kw):
         return OrchestrateAgent(self.repo, kind="translate", task=self.task,
-                                model="anthropic/claude-opus-5",
-                                workdir=self.repo, **kw)
+                                model="anthropic/claude-opus-5", **kw)
 
     def test_the_task_replaces_its_anchor(self) -> None:
         pre = self._agent().system_preamble()

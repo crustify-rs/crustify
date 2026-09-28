@@ -62,14 +62,14 @@ class OrchestrateAgent(CrustifyAgent):
     prompt_in_system_slot = True
     SKILLS = _SKILLS
 
-    def __init__(self, target: Path, *, kind: str, task: Path,
+    def __init__(self, workdir: Path, *, kind: str, task: Path,
                  model: str, task_only: bool = False, **kwargs) -> None:
         self.kind = kind
         self.task = Path(task)
         self.model = model
         self.task_only = task_only
         self.stage_suffix = kind
-        super().__init__(target, **kwargs)
+        super().__init__(workdir, **kwargs)
 
     def _task_text(self) -> str:
         text = self.task.read_text().strip()

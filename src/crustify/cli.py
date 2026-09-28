@@ -19,11 +19,6 @@ def main() -> None:
              "filesystem to find it.",
     )
     parser.add_argument(
-        "target",
-        help="Repo-relative oracle target id recorded in the schedule "
-             "(e.g. ssl/statem). Use . for the repo root.",
-    )
-    parser.add_argument(
         "--no-console",
         action="store_true",
         default=False,
@@ -139,23 +134,16 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    # workdir is explicit (no marker-walking); target is repo-relative.
+    # workdir is explicit: crustify never walks the filesystem to find it.
     from crustify.layout import set_workdir
     workdir = Path(args.workdir).resolve()
     set_workdir(workdir)
-    target_rel = (args.target or "").strip("/")
-    target = workdir if target_rel in ("", ".") else (workdir / target_rel)
-    target = target.resolve()
-    args._target_path = str(target)
 
     if not workdir.exists():
         print(f"error: workdir does not exist: {workdir}", file=sys.stderr)
         sys.exit(1)
     if not (workdir / "crustify").is_dir():
         print(f"error: no crustify/ under workdir: {workdir}", file=sys.stderr)
-        sys.exit(1)
-    if not target.exists():
-        print(f"error: target does not exist: {target}", file=sys.stderr)
         sys.exit(1)
 
     # -- Apply logging flags ----------------------------------------------
@@ -171,10 +159,10 @@ def main() -> None:
         crustify_config.OVERRIDE_BASE_PROMPT = args.override_base_prompt
 
     if args.command == "translate":
-        _handle_translate(args, target)
+        _handle_translate(args)
 
     elif args.command == "orchestrate":
-        _handle_orchestrate(args, target)
+        _handle_orchestrate(args)
 
     elif args.command == "audit":
         _handle_audit(args)
@@ -203,7 +191,7 @@ def _handle_audit(args: argparse.Namespace) -> None:
                               args.audit_command))
 
 
-def _handle_orchestrate(args: argparse.Namespace, target: Path) -> None:
+def _handle_orchestrate(args: argparse.Namespace) -> None:
     """Spawn the campaign orchestrator for this checkout."""
     from crustify import config as _cfg
     from crustify.agents.orchestrate import OrchestrateAgent
@@ -211,13 +199,12 @@ def _handle_orchestrate(args: argparse.Namespace, target: Path) -> None:
     if not args.task.is_file():
         raise SystemExit(f"no campaign task at {args.task}")
     model = _cfg.MODEL_OVERRIDE or "anthropic/claude-opus-5"
-    OrchestrateAgent(target, kind=args.kind, task=args.task, model=model,
-                     task_only=args.task_only,
-                     workdir=Path(args.workdir)).run()
+    OrchestrateAgent(Path(args.workdir), kind=args.kind, task=args.task,
+                     model=model, task_only=args.task_only).run()
 
 
-def _handle_translate(args: argparse.Namespace, target: Path) -> None:
+def _handle_translate(args: argparse.Namespace) -> None:
     """Execute one orchestrator-projected batch."""
     from crustify.translate import execute
-    execute(target, args.batch, base_branch=args.base_branch,
+    execute(Path(args.workdir), args.batch, base_branch=args.base_branch,
             output=args.output, dry_run=args.dry_run)

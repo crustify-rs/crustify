@@ -145,7 +145,7 @@ def _task_objective(batch: Batch) -> str:
 
 
 def execute(
-    target: Path,
+    workdir: Path,
     batch_path: Path,
     *,
     base_branch: str,
@@ -161,8 +161,7 @@ def execute(
     if not output.is_dir():
         _fail(f"--output must name an existing directory: {output}")
 
-    main_layout = Layout.discover(target)
-    repo = main_layout.workdir
+    repo = Layout(workdir).workdir
     try:
         base_commit = worktree.validate_base_branch(repo, base_branch)
     except RuntimeError as exc:
@@ -189,8 +188,6 @@ def execute(
     except RuntimeError as exc:
         _fail(str(exc))
 
-    target_rel = main_layout.rel_target(target)
-    work_target = tree.path if target_rel == "." else tree.path / target_rel
 
     log_path = output / f"{batch_id}.log"
     print(f"[crustify translate] batch id: {batch_id}")
@@ -202,12 +199,11 @@ def execute(
     from crustify.agents.translate import TranslateAgent
 
     TranslateAgent(
-        work_target,
+        tree.path,
         route=batch.route,
         items=batch.items,
         objective=effective,
         campaign_objective=batch.objective,
-        workdir=tree.path,
         git_base=base_branch.removeprefix("refs/heads/"),
         log_dir=output,
         log_stem=batch_id,

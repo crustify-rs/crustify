@@ -1,7 +1,7 @@
 # Thin batch schema
 
 Field meaning for the JSON the orchestrator passes to
-`crustify <workdir> <target> translate <batch.json>`. One batch is one agent's
+`crustify <workdir> translate <batch.json>`. One batch is one agent's
 entire worklist.
 
 The orchestrator plans it as one batch entry of

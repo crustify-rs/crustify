@@ -58,20 +58,18 @@ class TranslateAgent(CrustifyAgent):
 
     def __init__(
         self,
-        target: Path,
+        workdir: Path,
         *,
         route: str,
         items: list[dict],
         objective: str,
         campaign_objective: str,
-        workdir: Path,
         git_base: str,
         log_dir: Path,
         log_stem: str,
     ) -> None:
         super().__init__(
-            target, workdir=workdir, git_base=git_base,
-            log_dir=log_dir, log_stem=log_stem,
+            workdir, git_base=git_base, log_dir=log_dir, log_stem=log_stem,
         )
         self._route = route
         self._items = [dict(item) for item in items]
@@ -104,15 +102,11 @@ class TranslateAgent(CrustifyAgent):
             configured = configured.get("path")
         if isinstance(configured, str) and configured:
             return configured
-        legacy = doc.get("oracle_target")
-        if isinstance(legacy, str) and legacy:
-            return str(Path("crustify/wavefront/targets") / legacy
-                       / "wavefront-config.json")
         return "crustify/wavefront/wavefront-config.json"
 
     def _arguments(self) -> dict:
         common = {
-            # Base first: `target`, `workdir`, and `git_base` (the wave's
+            # Base first: `workdir` and `git_base` (the wave's
             # integration branch). Building this dict from scratch silently dropped
             # every key the base adds — a template naming one dies with KeyError
             # before the agent issues a request.

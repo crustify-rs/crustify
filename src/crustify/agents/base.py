@@ -119,33 +119,20 @@ def _skill_meta(path: Path) -> tuple[str, str, str | None, Path | None]:
             in_desc = True
     return name, " ".join(" ".join(desc).split()), binname, None
 
-def _resolve_workdir(target: Path) -> Path:
-    """The repo root for ``target``: the one pinned by the CLI
-    (:func:`crustify.layout.set_workdir`), else ``target`` itself.
-
-    It does NOT walk ancestors looking for a ``crustify/`` marker — an earlier
-    docstring here claimed it did. That matters because `Layout` mkdirs the
-    artifact dirs it is asked for, so constructing an agent for a subdirectory
-    target WITHOUT a pinned root silently creates `<target>/crustify/` and
-    resolves every later path under it."""
-    return Layout.discover(target).workdir
-
-
 class CrustifyAgent:
     """One pipeline stage, driven by a provider-CLI backend.
 
-    Each agent runs against a *target* (the subdirectory crustify is
-    scoped to) and additionally has access to the *workdir* (the
-    repository the target lives in). The two coincide for repo-root targets.
+    Each agent runs against a *workdir*: the checkout it reads and writes.
+    For an isolated wave agent that is its own worktree, which is why every
+    path the prompt hands it resolves there rather than in the pinned main
+    repo.
 
-    The ``tier`` class attribute decides which ``.crustify/`` directory
-    this agent's ``output`` artifact lives in:
+    The ``tier`` class attribute decides which directory this agent's
+    ``output`` artifact lives in:
 
-      - ``tier = "target"`` (default) — `<target>/.crustify/<output>`.
-        Used by every agent that produces subsystem-scoped output
-        (types, symbols, …).
-      - ``tier = "workdir"`` — `<workdir>/.crustify/<output>`. Used
-        by agents whose artifact is project-wide and target-independent.
+      - ``tier = "campaign"`` (default) — `crustify/campaigns/<output>`.
+      - ``tier = "workdir"`` — `crustify/<output>`. Used by agents whose
+        artifact is project-wide.
 
     Batch agents write to the explicit harness output directory. Other agents
     use the campaign tier as a fallback because logs are scoped to an
@@ -172,8 +159,8 @@ class CrustifyAgent:
     #: the whole body in the system slot, out of reach of compaction, and
     #: leaves the user turn a kickoff.
     prompt_in_system_slot: bool = False
-    tier: str = "target"       # "target" | "workdir"; selects which tier owns
-                               # this agent's output artifact.
+    tier: str = "campaign"     # "campaign" | "workdir"; selects which tier
+                               # owns this agent's output artifact.
     # Set per-instance (not class) when an agent is one of many running
     # in parallel — disambiguates log filenames so concurrent agents
     # don't clobber each other's logs. None on instances that don't
@@ -182,31 +169,24 @@ class CrustifyAgent:
 
     def __init__(
         self,
-        target: Path,
+        workdir: Path,
         *,
-        workdir: Path | None = None,
         git_base: str = "",
         log_dir: Path | None = None,
         log_stem: str | None = None,
     ) -> None:
-        self.target = target.resolve()
-        # An isolated-wave agent passes its WORKTREE as `workdir` (only when a
-        # worktree is actually in play) so every `crustify <workdir> …` the
-        # prompt runs — and every artifact path (rust/, logs) — resolves to the
-        # worktree, not the pinned main repo. Without it, parallel agents' Rust-tree
-        # writes and commits leak into the shared main checkout. Default (None) keeps
-        # the pinned-main behaviour for the in-place / non-isolated path.
-        self.layout = Layout(workdir) if workdir is not None else Layout.discover(self.target)
+        # An isolated-wave agent is constructed with its WORKTREE, so every
+        # `crustify <workdir> …` the prompt runs — and every artifact path
+        # (rust/, logs) — resolves to the worktree, not the pinned main repo.
+        # Without it, parallel agents' Rust-tree writes and commits leak into
+        # the shared main checkout.
+        self.layout = Layout(workdir)
         self.workdir = self.layout.workdir
         self.git_base = git_base
         self.log_dir = log_dir
         self.log_stem = log_stem
-        # Repo-relative target id (e.g. "ssl/statem", or "." for the repo
-        # root) — the value the prompt passes as crustify's second positional.
-        self.target_rel = self.layout.rel_target(self.target)
-        # Target-scoped campaign store (tracked wave plans and logs).
-        self.campaign_store = ArtifactStore(
-            self.layout.campaign_dir(self.target))
+        # Campaign-tier store: crustify/campaigns/.
+        self.campaign_store = ArtifactStore(self.layout.campaigns)
         # Repo-root-tier store: crustify/ (analysis, build.json,
         # subsystems.json).
         self.root_store = ArtifactStore(self.layout.root)
@@ -249,7 +229,7 @@ class CrustifyAgent:
                 route=route,
                 prompt=rendered_prompt,
                 system_preamble=system_preamble,
-                work_dir=str(getattr(self, "_work_dir", None) or self.target),
+                work_dir=str(self.workdir),
                 log=log,
                 billing=_cfg.BILLING,
                 override_base_prompt=_cfg.OVERRIDE_BASE_PROMPT,
@@ -280,7 +260,7 @@ class CrustifyAgent:
         batch id. The fallback remains for non-batch callers.
         """
         return open_agent_log(
-            self.log_dir or self.campaign_store.root / "logs",
+            self.log_dir or self.store.root / "logs",
             self.log_stem or self._log_stem(),
             stage=self.stage,
         )
@@ -329,15 +309,13 @@ class CrustifyAgent:
         return prompt_file.read_text()
 
     def _arguments(self) -> dict:
-        # `target` is the repo-RELATIVE id and `workdir` the full path —
-        # together the two positionals every `crustify <workdir> <target> …`
-        # invocation in a prompt needs. `git_base` is the unchecked-out wave
+        # `workdir` is the full path every `crustify <workdir> …` invocation
+        # in a prompt needs. `git_base` is the unchecked-out wave
         # integration branch supplied by the orchestrator. Supplied to every
         # agent: `str.format` ignores a key the template does not reference, and
         # a template referencing a key nobody supplies dies before the request.
         # Subclasses extend (super()._arguments()).
-        return {"target": self.target_rel, "workdir": str(self.workdir),
-                "git_base": self.git_base}
+        return {"workdir": str(self.workdir), "git_base": self.git_base}
 
     def skill_specs(self) -> tuple[SkillSpec, ...]:
         """The skills rendered for this agent: every one whose files exist.

@@ -52,7 +52,7 @@ cp specs/gitignore <repo>/crustify/.gitignore
 mkdir -p <repo>/crustify/campaigns/<campaign-id>
 ```
 
-Use the following format for `campaign-id`: `<timestamp>-<scope-slug>`; `<scope-slug>`
+Use the following format for `campaign-id`: `<scope-slug>-<timestamp>`, where `<scope-slug>`
 is based on the user-defined scope from the task definition: it can be a subset of
 link units, subsystems, files, types/symbols, or the whole repo.
 
@@ -74,8 +74,7 @@ them:
 A Rust- or bindgen-only change may reuse a matching build. A change to the compiled
 target requires a private build; refresh shared builds after that change lands.
 
-Create `crustify/build.json` from `specs/build.json`; read `docs/translate/schemas/build.json`
-to understand the meaning of fields.
+Create `crustify/build.json` from `specs/build.json`.
 Increment `version` whenever any command changes.
 Disable deprecated features unless otherwise instructed by the user.
 Use parallel builds.
@@ -119,8 +118,8 @@ destinations from out-of-tree libraries. Record the graph as it is, cycles inclu
 
 #### Sub-campaigns
 
-Emit `crustify/campaigns/<campaign-id>/schedule.json` from `specs/schedule.json`; read
-`docs/translate/schemas/schedule.md` for its field menaing. It describes a total ordering
+Emit a campaign-wide `crustify/campaigns/<campaign-id>/schedule.json` from `specs/schedule.json`; read
+`docs/translate/schemas/schedule.md` for its field menaing. It will state a total ordering
 of this campaign's link units and subsystems based on dependency relations, bottom-up.
 
 Plan only link units and subsystems included in the campaign scope established
@@ -222,7 +221,7 @@ For each recorded wave:
 
 - create the unchecked-out integration branch
   `crustify/waves/<campaign-id>/<link-unit>/<subsystem>/wave-<index>`;
-- create its log directory under the campaign;
+- create its log directory under `crustify/campaigns/<campaign-id>/<link-unit>/<subsystem>/wave-<index>`;
 - write each `schedule.json` batch entry out to its `batch-<index>.json`
   verbatim, changing no field and no membership;
 - create and connect any module a batch names but the tree lacks, compiling the affected crates; and
@@ -263,7 +262,7 @@ Scaffold `crustify/campaigns/<campaign-id>/<link-unit>/<subsystem>/review-wave-<
 following the same artifact structure as a translation wave's.
 
 Create an integration branch for the review wave:
-`crustify/review/<campaign-id>/<link-unit>/<subsystem>/wave-<index>` 
+`crustify/reviews/<campaign-id>/<link-unit>/<subsystem>/wave-<index>` 
 
 Use the translated item projections with `objective: review`.
 
