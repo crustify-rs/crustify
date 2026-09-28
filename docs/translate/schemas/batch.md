@@ -5,7 +5,7 @@ Field meaning for the JSON the orchestrator passes to
 entire worklist.
 
 The orchestrator plans it as one batch entry of
-`docs/schemas/schedule.md` and writes it out verbatim.
+`docs/translate/schemas/schedule.md` and writes it out verbatim.
 
 The file is transient input, not a tracked artifact: it names no wave, branch,
 log path or dependency, and the harness reads it once.

@@ -74,7 +74,7 @@ them:
 A Rust- or bindgen-only change may reuse a matching build. A change to the compiled
 target requires a private build; refresh shared builds after that change lands.
 
-Create `crustify/build.json` from `specs/build.json`; read `docs/schemas/build.json`
+Create `crustify/build.json` from `specs/build.json`; read `docs/translate/schemas/build.json`
 to understand the meaning of fields.
 Increment `version` whenever any command changes.
 Disable deprecated features unless otherwise instructed by the user.
@@ -87,7 +87,7 @@ Post-campaign results must match this baseline.
 ### 4. Subsystem decomposition
 
 Create `crustify/subsystems.json` from `specs/subsystems.json`; see
-`docs/schemas/subsystems.md`.
+`docs/translate/schemas/subsystems.md`.
 
 Use actual linker outputs to identify link units. Cover the selected target and
 its complete imported producer closure. Assign every translation unit
@@ -120,7 +120,7 @@ destinations from out-of-tree libraries. Record the graph as it is, cycles inclu
 #### Sub-campaigns
 
 Emit `crustify/campaigns/<campaign-id>/schedule.json` from `specs/schedule.json`; read
-`docs/schemas/schedule.md` for its field menaing. It describes a total ordering
+`docs/translate/schemas/schedule.md` for its field menaing. It describes a total ordering
 of this campaign's link units and subsystems based on dependency relations, bottom-up.
 
 Plan only link units and subsystems included in the campaign scope established
@@ -155,7 +155,7 @@ For a `port` campaign:
 - a filled anchor may be revisited only when escalating that item to `port` or
   running `review`.
 
-See `docs/schemas/batch.md` for schema format, field meaning, routing and the raw-lifetime
+See `docs/translate/schemas/batch.md` for schema format, field meaning, routing and the raw-lifetime
 rule. Every field shown is required.
 
 Home each batch's set of items using the established coding conventions below; 

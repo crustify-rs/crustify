@@ -54,7 +54,7 @@ independent sequences.
 ## …waves[*].batches[*]
 
 A batch entry is a thin batch: the exact object `crustify translate` accepts,
-documented in `docs/schemas/batch.md`. It carries `objective` and `items` and
+documented in `docs/translate/schemas/batch.md`. It carries `objective` and `items` and
 nothing else.
 
 `objective` is per batch, not per wave. A port campaign wraps a type while C

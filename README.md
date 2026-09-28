@@ -12,7 +12,7 @@ agents with the tools and skills the job actually requires:
   dependency oracle that resolves the semantic order of a closure
 - [ffibox](https://github.com/crustify-rs/ffibox): a crate of smart pointers
   and lifetime traits for safe interop across the FFI boundary
-- [crustify-audit](docs/audit.md): a compiled Rust safety auditor with an
+- [crustify-audit](docs/audit/audit.md): a compiled Rust safety auditor with an
   optional undefined-behavior agentic pass.
 
 Agents write and review code inside isolated worktrees, behind build, test, and
@@ -48,7 +48,7 @@ as skills.
 |---|---|
 | `crustify` | Agent execution, isolated worktrees, crate placement, logging, and campaign artifacts |
 | [`wavefront`](https://github.com/crustify-rs/wavefront) | CodeQL-backed dependency analysis, scope selection, and deterministic scheduling |
-| [`crustify-audit`](docs/audit.md) | Compiled Rust safety analysis and optional UB review, shipped in this repository |
+| [`crustify-audit`](docs/audit/audit.md) | Compiled Rust safety analysis and optional UB review, shipped in this repository |
 | [`ffibox`](https://github.com/crustify-rs/ffibox) | Safe FFI smart pointers and lifetime traits used by generated wrappers |
 
 Claude Code and OpenAI Codex are supported as agent backends with access to latest
@@ -167,10 +167,10 @@ Below is an overview of the campaign's stats:
 
 ## Documentation
 
-- [`docs/coding-conventions.md`](docs/coding-conventions.md): generated Rust
+- [`docs/translate/coding-conventions.md`](docs/translate/coding-conventions.md): generated Rust
   conventions, including the Rust tree layout
-- [`docs/schemas/`](docs/schemas/): crate-placement and wave schemas
-- [`docs/schemas/subsystems.md`](docs/schemas/subsystems.md): link-unit and
+- [`docs/translate/schemas/`](docs/translate/schemas/): crate-placement and wave schemas
+- [`docs/translate/schemas/subsystems.md`](docs/translate/schemas/subsystems.md): link-unit and
   subsystem decomposition artifact
 - [`examples/crustify/TASK-template.md`](examples/crustify/TASK-template.md): optional pre-filled
   campaign questionnaire

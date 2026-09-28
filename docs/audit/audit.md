@@ -182,7 +182,7 @@ either command.
 
 ## Reference
 
-- [Deterministic output and named-site semantics](docs/unsafe-output.md)
+- [Deterministic output and named-site semantics](unsafe-output.md)
 - [Task questionnaire](examples/crustify_audit/TASK.md.template)
 - [Example results and report format](examples/crustify_audit/results.md)
 - [`ub` auditor prompt](src/crustify_audit/prompts/ub.md)

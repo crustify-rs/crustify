@@ -412,6 +412,13 @@ class CrustifyAgent:
             # the file would spend a tool call re-reading what was just inlined.
             body = p if p.read_text().startswith("---") else doc
             if body:
+                if not body.is_file():
+                    # Not an ablation: `path` and `role_header` decide whether
+                    # a skill is present, and both resolved. A `Doc path` that
+                    # does not is a malformed skill, and emitting it would
+                    # spend the agent a turn opening nothing.
+                    raise SystemExit(
+                        f"skill {name!r}: Doc path does not exist: {body}")
                 block += f"\n  read in full: {body}"
             # A skill that declares a `bin:` also advertises that tool's
             # absolute invocation — so the agent runs it directly rather than
@@ -457,7 +464,7 @@ class CrustifyAgent:
         stage templates and the skill descriptions. Neither provider CLI loads this from a canonical
         path — claude reads ``CLAUDE.md``, codex a repo-root ``AGENTS.md``, and
         it is at neither — so it reaches an agent only by being read here."""
-        return deps.CHECKOUT / "docs" / "coding-conventions.md"
+        return deps.CHECKOUT / "docs" / "translate" / "coding-conventions.md"
 
     def _render_conventions(self) -> str:
         """coding-conventions.md verbatim. Empty string if the doc is absent.

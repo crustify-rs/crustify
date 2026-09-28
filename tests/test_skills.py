@@ -61,6 +61,18 @@ class DeclaredPathTests(unittest.TestCase):
                     self.assertEqual(
                         spec.role_header, f"skills/{spec.capability}/{role}.md")
 
+    def test_every_declared_doc_path_resolves(self) -> None:
+        """A `Doc path` is followed by the agent but decides no discovery, so
+        a broken one is a dead instruction rather than an ablation."""
+        from crustify.agents.base import _skill_meta
+        for cls in _ROLES:
+            for spec in cls.SKILLS:
+                if spec.dep != "crustify":
+                    continue
+                _, _, _, doc = _skill_meta(deps.CHECKOUT / spec.path)
+                with self.subTest(role=cls.name, path=spec.path):
+                    self.assertTrue(doc is None or doc.is_file(), doc)
+
     def test_a_self_contained_skill_carries_its_own_metadata(self) -> None:
         """A skill with no generic file to wrap must be frontmatter, or the
         renderer emits its name and description and nothing points at the
