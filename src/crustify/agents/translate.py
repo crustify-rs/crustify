@@ -12,11 +12,12 @@ from crustify.agents.base import CrustifyAgent, SkillSpec, _PKG_ROOT
 #: is rendered, one whose files are not is silently absent. Each lives at
 #: `prompts/skills/<skill>/translator.md` — one directory per skill, one file
 #: per role — so deleting the file ablates it here and deleting the
-#: directory ablates it everywhere. The playbook skill has no `capability`
-#: because it is what makes this agent a translator; the rest are optional,
-#: and their names are what the run logs.
+#: directory ablates it everywhere. Every one is a capability: they are things
+#: this agent is TOLD about rather than things it is, which is what makes them
+#: ablatable.
+#: There is no role skill here: it existed to route the translator to its
+#: playbook, and the playbook is now this agent's prompt.
 _SKILLS = (
-    SkillSpec("crustify", "src/crustify/prompts/skills/playbook/translator.md"),
     SkillSpec(
         "wavefront", "SKILL.md", capability="wavefront",
         role_header="skills/wavefront/translator.md",

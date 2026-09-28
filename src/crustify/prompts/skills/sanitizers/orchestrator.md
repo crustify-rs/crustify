@@ -11,7 +11,7 @@ description: >-
 
 ## Workflow
 
-The following steps augment the orchestrator's base workflow.
+Augment your base workflow with the following steps.
 
 ### For Phase 1: Setup
 

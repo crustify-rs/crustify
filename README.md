@@ -122,9 +122,9 @@ For a reproducible container environment or a pre-filled campaign manifest, see
 5. **Promote and audit:** the orchestrator reconciles parallel landings, runs
    regression and deterministic safety gates, then promotes the reviewed wave.
 
-The authoritative translator procedure is the [`translator
-playbook`](docs/translator-playbook.md). The orchestrator's is its own prompt,
-`src/crustify/prompts/orchestrator.md`.
+Each role's authoritative procedure is its own prompt:
+[`orchestrator`](src/crustify/prompts/orchestrator.md) and
+[`translator`](src/crustify/prompts/translator.md).
 
 ## CLI
 
@@ -167,8 +167,6 @@ Below is an overview of the campaign's stats:
 
 ## Documentation
 
-- [`docs/translator-playbook.md`](docs/translator-playbook.md): translator
-  procedures for types, symbols, lifetimes, tests, and completion
 - [`docs/coding-conventions.md`](docs/coding-conventions.md): generated Rust
   conventions, including the Rust tree layout
 - [`docs/schemas/`](docs/schemas/): crate-placement and wave schemas

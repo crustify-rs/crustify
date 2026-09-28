@@ -429,9 +429,10 @@ class CrustifyAgent:
 
         Human-readable in its own right and read by anyone working on crustify,
         not only spliced into a prompt — which is what puts it beside
-        ``docs/translator-playbook.md`` rather than under ``prompts/``. What lives in
-        ``prompts/`` is what the pipeline RENDERS: the stage templates and the
-        skill descriptions. Neither provider CLI loads this from a canonical
+        ``docs/`` rather than under ``prompts/``: it is the user's own file,
+        edited to state a campaign's preferences for generated code. What lives
+        in ``prompts/`` is what the pipeline RENDERS and crustify owns: the
+        stage templates and the skill descriptions. Neither provider CLI loads this from a canonical
         path — claude reads ``CLAUDE.md``, codex a repo-root ``AGENTS.md``, and
         it is at neither — so it reaches an agent only by being read here."""
         return deps.CHECKOUT / "docs" / "coding-conventions.md"

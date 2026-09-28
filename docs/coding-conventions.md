@@ -108,7 +108,6 @@ only record that an item was translated.
 wrapped type carries, and campaign coverage counts distinct `type.field` paths
 that reached one.
 
-The TODO does not survive beside the filled anchor. A surviving TODO is open
-work. Duplicate a filled anchor only when several wrappers intentionally
+Duplicate a filled anchor only when several wrappers intentionally
 represent the same item. Existing filled anchors are completed work unless the
 current objective deliberately promotes that item.
