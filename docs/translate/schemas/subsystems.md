@@ -15,7 +15,6 @@ subsystem's headers and translation units share one module.
 | root field | meaning |
 |---|---|
 | `version` | the analyzed tree's revision — a commit, not a counter. What this decomposition describes, pinned |
-| `wavefront_config` | campaign-wide `wavefront-config.json` the decomposition was derived from |
 | `link_units` | ordered list of the campaign's link units |
 
 ## link_units[*]
