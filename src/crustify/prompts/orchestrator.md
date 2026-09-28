@@ -214,10 +214,12 @@ Pick the next wave from the live sub-campaign's `schedule.json` record and:
   `.../<subsystem>/wave-<index>`
 - record the canonical tip as the wave's base.
 
-For each scheduled batch:
+A wave branch that is missing, or checked out in some worktree, fails at the agent's landing push — after the
+batch has been paid for.
 
 For each scheduled batch:
-- create its artifact sub-dir in its wave sub-dir at `.../wave-<index>/batch-<index>`;
+- create its artifact sub-dir in its wave sub-dir at `.../wave-<index>/batch-<index>`,
+  and write its `schedule.json` entry out verbatim as `batch.json` inside it;
 - create its batch branch at `crustify/batches/<campaign-id>/<link-unit>/<subsystem>/wave-<index>/batch-<index>`;
 - fork a worktree at `crustify/.worktrees/<same-as-branch>`
 - symlink any gitignored state from the main checkout that is shared and required for
@@ -233,14 +235,9 @@ Promote completed sub-campaigns in the canonical campaign integration branch.
 ### 3. Launch and monitoring
 
 Run one CLI process per batch, concurrently up to approved parallelism,
-passing its batch worktree as the workdir and its own directory as `--output`.
+passing its batch worktree as the workdir and its batch directory as `--output`.
 The harness validates the batch, starts the backend, and writes
-`translator.log` and `translator.usage.json` there. Those names are fixed, so
-give every batch a directory of its own or one will overwrite another.
-
-The harness does not check the landing branch. A wave branch that is missing,
-or checked out in some worktree, fails at the agent's landing push — after the
-batch has been paid for.
+`translator.log` and `translator.usage.json` there.
 
 The translator commits its changes and atomically fast-forwards the wave
 branch. On rejection, it rebases its own branch onto the current wave tip,

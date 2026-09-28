@@ -11,8 +11,10 @@ rust.bak
 wavefront/codeql
 wavefront/.cache
 
-# Campaign plans are tracked; execution logs are not.
-campaigns/**/logs
+# Campaign plans and the batches projected from them are tracked; the agent
+# stream and usage record a batch produces are not.
+campaigns/**/translator.log
+campaigns/**/translator.usage.json
 
 # Deterministic safety scan output.
 audit/unsafe.json

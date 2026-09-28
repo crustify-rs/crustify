@@ -7,8 +7,10 @@ entire worklist.
 The orchestrator plans it as one batch entry of
 `docs/translate/schemas/schedule.md` and writes it out verbatim.
 
-The file is transient input, not a tracked artifact: it names no wave, branch,
-log path or dependency, and the harness reads it once.
+It lands as `batch.json` in that batch's own directory, beside the log and
+usage record the agent writes there. The harness reads it once and the file
+names no wave, branch, log path or dependency: everything about where the
+batch sits is the directory it sits in.
 
 ```json
 {
