@@ -125,7 +125,9 @@ def main() -> None:
         help="Unchecked-out wave integration branch to fork from and land on.")
     wrap_p.add_argument(
         "--output", required=True, type=Path, metavar="DIR",
-        help="Existing directory for harness-generated batch log and usage files.")
+        help="Existing directory for this batch's artifacts. The agent writes "
+             "translator.log and translator.usage.json into it, so give each "
+             "batch its own directory.")
     wrap_p.add_argument(
         "--dry-run", action="store_true",
         help="Validate and summarize the batch without spawning an agent.")

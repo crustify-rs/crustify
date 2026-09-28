@@ -136,17 +136,6 @@ class GitHarnessTests(unittest.TestCase):
                  f"crustify/batches/{name}", str(path), "refs/heads/wave-0")
         return path
 
-    def test_base_branch_must_exist_and_be_unchecked_out(self) -> None:
-        """Both failures would otherwise surface at the agent's landing push,
-        after the batch has been paid for."""
-        with self.assertRaisesRegex(SystemExit, "does not exist"):
-            translate.execute(self.repo, self.batch, base_branch="missing",
-                              output=self.output, dry_run=True)
-        current = self.git("branch", "--show-current").stdout.strip()
-        with self.assertRaisesRegex(SystemExit, "is checked out"):
-            translate.execute(self.repo, self.batch, base_branch=current,
-                              output=self.output, dry_run=True)
-
     def test_the_harness_creates_no_branch_or_worktree(self) -> None:
         """The orchestrator owns both; the harness runs in the tree it is given."""
         before_refs = self.git("for-each-ref", "--format=%(refname)", "refs/heads").stdout
@@ -223,17 +212,14 @@ class GitHarnessTests(unittest.TestCase):
         self.assertIn("unchecked-out wave integration branch: `wave-0`", rendered)
         self.assertNotIn("{", agent._prompt())
 
-    def test_logs_are_named_after_the_worktree(self) -> None:
+    def test_artifacts_take_fixed_names_in_the_batch_directory(self) -> None:
+        """`--output` is the batch's own directory, so nothing has to be
+        unique; the orchestrator names a batch by choosing where it writes."""
         tree = self._worktree("batch-b")
         calls: list[dict] = []
 
         class FakeAgent:
-            @staticmethod
-            def configured_capabilities(_layout):
-                return ()
-
             def __init__(self, workdir, **kwargs):
-                # `workdir` is the positional now that `target` is gone.
                 calls.append({"workdir": workdir, **kwargs})
 
             def run(self):
@@ -253,16 +239,13 @@ class GitHarnessTests(unittest.TestCase):
         self.assertEqual(len(calls), 1)
         call = calls[0]
         self.assertEqual(call["git_base"], "wave-0")
-        # The orchestrator named the tree; its logs carry the same name.
-        self.assertEqual(call["log_stem"], "batch-b")
-        self.assertTrue((self.output / f"{call['log_stem']}.log").is_file())
-        self.assertTrue((self.output / f"{call['log_stem']}.usage.json").is_file())
-        usage = json.loads(
-            (self.output / f"{call['log_stem']}.usage.json").read_text())
+        self.assertEqual(call["log_stem"], "translator")
+        self.assertTrue((self.output / "translator.log").is_file())
+        self.assertTrue((self.output / "translator.usage.json").is_file())
+        usage = json.loads((self.output / "translator.usage.json").read_text())
         self.assertEqual(usage["stage"], "wrap-type_Frame")
         # The worktree is the agent's, forked from the wave branch, and the
-        # authored home the batch names is present in it. Nothing writes an
-        # anchor ahead of the agent any more: the batch carries the home.
+        # authored home the batch names is present in it.
         home = call["workdir"] / "crustify/rust/demo/src/lib.rs"
         self.assertTrue(home.is_file())
         self.assertNotIn("crustify:todo", home.read_text())
