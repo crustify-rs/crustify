@@ -188,10 +188,13 @@ class GitHarnessTests(unittest.TestCase):
             log_stem="batch-id",
         )
         arguments = agent._arguments()
-        rendered = agent._prompt().format(**arguments)
+        # The body rides the system slot, so the worklist and the wave branch
+        # are rendered there rather than into the user turn.
+        rendered = agent._body().format(**arguments)
         self.assertEqual(arguments["git_base"], "wave-0")
         self.assertEqual(json.loads(arguments["worklist"])["route"], "type")
         self.assertIn("unchecked-out wave integration branch: `wave-0`", rendered)
+        self.assertNotIn("{", agent._prompt())
 
     def test_harness_forks_a_worktree_and_uses_explicit_log_names(self) -> None:
         calls: list[dict] = []

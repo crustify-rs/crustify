@@ -13,6 +13,12 @@ from crustify.layout import Layout
 # Package root — used to locate prompts/.
 _PKG_ROOT = Path(__file__).parent.parent
 
+#: The user turn for an agent whose body rides the system slot. Both backends
+#: pass it as the provider CLI's positional task and neither accepts an empty
+#: one, so such an agent still needs a sentence -- but only a sentence:
+#: everything it is actually told is in the system slot.
+KICKOFF = "Start the work described by your system prompt."
+
 
 #: Plain-markdown skill fields — `- Skill name:` / `- Bin path:` /
 #: `- Doc path:` / `- Description:`, each continued by its indented wrap lines.
@@ -160,6 +166,12 @@ class CrustifyAgent:
                                # is the agent-level done signal (skip on re-run).
                                # When None the agent always runs — the orchestrator
                                # is responsible for gating invocation.
+    #: Where this agent's stage prompt goes. False puts it in the user turn,
+    #: which is right when it carries per-agent data: a wave's translators
+    #: would otherwise each have a different system prefix to cache. True puts
+    #: the whole body in the system slot, out of reach of compaction, and
+    #: leaves the user turn a kickoff.
+    prompt_in_system_slot: bool = False
     tier: str = "target"       # "target" | "workdir"; selects which tier owns
                                # this agent's output artifact.
     # Set per-instance (not class) when an agent is one of many running
@@ -293,6 +305,16 @@ class CrustifyAgent:
     # ------------------------------------------------------------------
 
     def _prompt(self) -> str:
+        """What the backend puts in the user turn.
+
+        A kickoff sentence when this agent's body rides the system slot --
+        both provider CLIs pass this as their positional task and neither
+        accepts an empty one, so there has to be something, but only that.
+        """
+        return KICKOFF if self.prompt_in_system_slot else self._body()
+
+    def _body(self) -> str:
+        """This stage's prompt template, before argument substitution."""
         base = _PKG_ROOT / "prompts"
         prompt_file = (
             base / self.prompt_dir / f"{self.stage}.md"
@@ -457,17 +479,21 @@ class CrustifyAgent:
         happens — the agent keeps working, just against a lossy copy of the
         rules.
 
-        It is also byte-identical across every agent of a wave, which makes it
-        one shared cacheable prefix rather than N. (Cache entries only become
-        readable once the first response starts streaming, so a wave launched
-        at full concurrency still pays N writes; staggering the first agent is
-        what collects the reads.)
+        An agent that sets `prompt_in_system_slot` puts its whole body here
+        too, ahead of both. That trades the shared prefix away when the body
+        carries per-agent data: a wave's translators then each write their own
+        preamble instead of N-1 of them reading one. The trade is deliberate --
+        the shared prefix only ever saved those N-1 first-turn writes, because
+        longest-prefix matching sends every later turn to the agent's own
+        chain, while compaction reaching the procedure costs the run itself.
 
         Two independent documents, concatenated: coding-conventions.md is the same for
         every agent, the skill index varies with :meth:`skill_specs`. The
         `<!-- CODING CONVENTIONS -->` and `<!-- SKILLS -->` markers in the stage prompts
         record where each one lands relative to the task; neither is a
         substitution point."""
-        return "\n\n---\n\n".join(
-            part for part in (self._render_conventions().rstrip(),
-                              self._render_skills()) if part)
+        parts = []
+        if self.prompt_in_system_slot:
+            parts.append(self._body().format(**self._arguments()))
+        parts += [self._render_conventions().rstrip(), self._render_skills()]
+        return "\n\n---\n\n".join(part for part in parts if part)

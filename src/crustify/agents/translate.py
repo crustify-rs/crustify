@@ -49,6 +49,11 @@ class TranslateAgent(CrustifyAgent):
     name = "TranslateAgent"
     model = "anthropic/claude-opus-5"
     output = None  # scheduler gates via the per-item todo; agent runs when called.
+    #: The body carries this agent's worklist, so each translator of a wave
+    #: gets its own system prefix rather than the shared one. Chosen
+    #: deliberately: compaction reaching the procedure costs more than the
+    #: cache writes it gives up.
+    prompt_in_system_slot = True
     SKILLS = _SKILLS
 
     def __init__(
@@ -85,7 +90,7 @@ class TranslateAgent(CrustifyAgent):
         return (f"{self._objective}-{unit}_"
                 f"{re.sub(r'[^A-Za-z0-9_]+', '_', key or 'batch')}")
 
-    def _prompt(self) -> str:
+    def _body(self) -> str:
         return (_PKG_ROOT / "prompts" / "translator.md").read_text()
 
     def _wavefront_config(self) -> str:
