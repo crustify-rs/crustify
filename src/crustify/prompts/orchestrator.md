@@ -275,7 +275,7 @@ integration branch.
 
 #### Static safety scan
 
-After each wave, including review, run the deterministic scan with the exact scheduled
+After each wave, including review, run the static safety scan with the exact scheduled
 workset names:
 
 ```bash
@@ -312,8 +312,7 @@ translation commits.
 
 ---
 
-Follow these coding conventions where applicable throughout your workflow; translator
-agents will also follow them:
+Follow these coding conventions where applicable throughout your workflow:
 
 <!-- CODING CONVENTIONS -->
 
@@ -321,7 +320,7 @@ agents will also follow them:
 
 ## Skills
 
-Read the available headers in the following skill index and leverage them to
-conduct your workflow.
+Reach for the skills advertised by the headers in the following skill index
+and leverage them to conduct your workflow:
 
 <!-- SKILLS -->

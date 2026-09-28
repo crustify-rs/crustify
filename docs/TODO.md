@@ -90,7 +90,7 @@ Two findings decide whether this is worth doing:
   methods they compile at the definition and fail at the call site.
 
 So the case rests on ergonomics, not on lifetime elision. If adopted, the rule
-belongs in `translator-playbook.md` under "Functions and globals", with the
+belongs in the translator prompt under "Functions and globals", with the
 `&self`-on-a-borrowed-handle hazard stated explicitly, and the free-function
 clause in `coding-conventions.md` relaxed to defer the shape to the playbook.
 
