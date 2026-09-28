@@ -61,8 +61,8 @@ nothing else.
 still reads its fields and ports it afterwards, so one wave holds batches of
 differing objectives.
 
-Writing one out is a copy: serialized verbatim to `batch-<index>.json`, no
-field added or removed.
+Writing one out is a copy: serialized verbatim to its `batch.json`, no field
+added or removed.
 
 ## Derived paths
 
@@ -70,11 +70,15 @@ Every index also addresses the filesystem, so nothing records a path:
 
 ```text
 crustify/campaigns/<campaign-id>/<link_unit>/<subsystem>/wave-<index>/
-├── batch-<n>.json          n is the batch's position in `batches`
-└── batch-<n>/              that batch's --output directory
+└── batch-<n>/                  n is the batch's position in `batches`
+    ├── batch.json              the thin batch, written out from this entry
     ├── translator.log
     └── translator.usage.json
 ```
+
+A batch's directory holds everything about that batch: its input, and both
+artifacts the agent writing it produced. That directory is what `--output`
+names.
 
 The integration branch
 `crustify/waves/<campaign-id>/<link_unit>/<subsystem>/wave-<index>` carries the
