@@ -165,7 +165,6 @@ class ProviderRoutingTests(unittest.TestCase):
                 }],
                 objective="wrap",
                 campaign_objective="wrap",
-                workdir=repo,
                 git_base="wave-0",
                 log_dir=logs,
                 log_stem="batch",

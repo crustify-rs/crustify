@@ -295,8 +295,8 @@ RUN if [ "${INSTALL_CLAUDE}" = "1" ]; then \
 COPY . /opt/crustify
 RUN uv pip install --python /opt/venv/bin/python -e /opt/crustify \
     && crustify --help >/dev/null \
-    && crustify . . audit --help >/dev/null \
-    && crustify . . orchestrate --help >/dev/null
+    && crustify . audit --help >/dev/null \
+    && crustify . orchestrate --help >/dev/null
 ENV PYTHONPATH=/opt/crustify/src
 
 # Which campaign the container starts. The two differ in one thing only --
@@ -433,7 +433,7 @@ RUN printf '%s\n' \
       '    exit 2; }' \
       'echo "[crustify] task $task"' \
       'exec crustify --model "$provider/$CRUSTIFY_MODEL" --billing "$CRUSTIFY_BILLING" \' \
-      '    /target . orchestrate "$CRUSTIFY_COMMAND" --task "$task" $bare "$@"' \
+      '    /target orchestrate "$CRUSTIFY_COMMAND" --task "$task" $bare "$@"' \
       > /usr/local/bin/crustify-orchestrator \
     && chmod +x /usr/local/bin/crustify-orchestrator
 

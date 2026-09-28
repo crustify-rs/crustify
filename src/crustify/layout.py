@@ -63,21 +63,8 @@ class Layout:
         d.mkdir(parents=True, exist_ok=True)
         return d
 
-    # ------------------------------------------------- target identity
-    def rel_target(self, target: Path) -> str:
-        t = Path(target).resolve()
-        if t == self.workdir:
-            return "."
-        return t.relative_to(self.workdir).as_posix()
-
+    # ------------------------------------------------- campaign tier
     @property
     def campaigns(self) -> Path:
         """Root of all target-scoped campaign artifacts."""
         return self.root / "campaigns"
-
-    def campaign_dir(self, target: Path) -> Path:
-        """Tracked wave plans and logs for one explicit oracle target."""
-        return self.campaigns / self.rel_target(target)
-
-    def logs(self, target: Path) -> Path:
-        return self.campaign_dir(target) / "logs"

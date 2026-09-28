@@ -4,7 +4,7 @@ Read wavefront's CLI helpstring via `--help` to learn how to use it.
 
 ## Workflow
 
-The following steps augment the orchestrator's base workflow.
+The following steps augment your base workflow.
 
 ### For Phase 1: Setup
 
@@ -24,15 +24,15 @@ The following steps augment the orchestrator's base workflow.
 
 - Wavefront requires the CodeQL T1/T2 tables for computing dependencies; emit
   them after creating the target's builds and recording the test baseline; place
-  codeql-owned artifacts in `crustify/codeql/{t1, t2, ...}`.
+  codeql-owned artifacts in `crustify/wavefront/codeql/{t1, t2, ...}`.
 
 
 #### 4. Subsystem decomposition
 
 ##### Configuring `wavefront-config.json`
 
-After after subsystem decomposition emit campaign-wide and per-subsystem
-`wavefront-config.json` that can be consumed by wavefront CLI.
+After subsystem decomposition, emit campaign-wide and per-subsystem
+`wavefront-config.json` specs that can be consumed by the wavefront CLI.
 
 Selection rules:
 
@@ -54,14 +54,14 @@ Selection rules:
 
 ###### Campaign-wide
 
-- Configure a campaign-wide `crustify/campaigns/<target>/wavefront-config.json`
+- Configure a campaign-wide `crustify/wavefront/configs/wavefront-config.json`
   that every translator agent will resolve its queries through.
 
 ###### Per subsystem
 
 - To get exact counts when authoring `subsystems.json`,
   configure for each subsystem a
-  `crsutify/campaigns/<target>/<sub-campaign>/wavefront-config.json`.
+  `crustify/wavefront/configs/<link-unit>/<subsystem>/wavefront-config.json`.
 
 - Its `impl_files` and `api_headers` must be exact subsets of the campaign-wide
   configuration, and must mirror the subsystem's assigned sources in `subsystems.json`.

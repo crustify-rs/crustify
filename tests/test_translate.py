@@ -182,7 +182,6 @@ class GitHarnessTests(unittest.TestCase):
             items=items,
             objective="review",
             campaign_objective="review",
-            workdir=self.repo,
             git_base="wave-0",
             log_dir=self.output,
             log_stem="batch-id",
@@ -204,8 +203,9 @@ class GitHarnessTests(unittest.TestCase):
             def configured_capabilities(_layout):
                 return ()
 
-            def __init__(self, _target, **kwargs):
-                calls.append(kwargs)
+            def __init__(self, workdir, **kwargs):
+                # `workdir` is the positional now that `target` is gone.
+                calls.append({"workdir": workdir, **kwargs})
 
             def run(self):
                 call = calls[-1]
@@ -244,8 +244,8 @@ class GitHarnessTests(unittest.TestCase):
             def configured_capabilities(_layout):
                 return ()
 
-            def __init__(self, _target, **kwargs):
-                self.workdir = kwargs["workdir"]
+            def __init__(self, workdir, **kwargs):
+                self.workdir = workdir
 
             def run(self):
                 raise RuntimeError("agent failed")

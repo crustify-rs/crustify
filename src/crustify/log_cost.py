@@ -43,7 +43,7 @@ Two views:
     directories; cost split by agent kind. Historical session directories are
     still mapped to their following wave commit.
 
-Usage:  crustify <workdir> <target> cost USAGE_JSON... [--offline]
+Usage:  crustify <workdir> cost USAGE_JSON... [--offline]
 """
 import argparse
 import glob
