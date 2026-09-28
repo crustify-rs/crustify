@@ -64,11 +64,12 @@ class TranslateAgent(CrustifyAgent):
         items: list[dict],
         objective: str,
         git_base: str,
-        log_dir: Path,
+        artifact_dir: Path,
         log_stem: str,
     ) -> None:
         super().__init__(
-            workdir, git_base=git_base, log_dir=log_dir, log_stem=log_stem,
+            workdir, git_base=git_base, artifact_dir=artifact_dir,
+            log_stem=log_stem,
         )
         self._route = route
         self._items = [dict(item) for item in items]
@@ -97,8 +98,9 @@ class TranslateAgent(CrustifyAgent):
             # before the agent issues a request.
             **super()._arguments(),
             "task_objective": self._objective,
-            "workspace_root": str(self.layout.rust),
-            "build_json":     str(self.layout.build_json),
+            # This batch's own directory: its log and usage record, and the
+            # reproducers and reports a review batch is told to file there.
+            "artifact_dir": str(self.artifact_dir),
             # NOTE: no `conventions` key. The conventions doc and skill index are
             # no longer a `.format` slot — they go to the backend's system slot
             # via `system_preamble()`, out of reach of context compaction.

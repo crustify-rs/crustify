@@ -200,7 +200,7 @@ class GitHarnessTests(unittest.TestCase):
             items=items,
             objective="review",
             git_base="wave-0",
-            log_dir=self.output,
+            artifact_dir=self.output,
             log_stem="batch-id",
         )
         arguments = agent._arguments()
@@ -226,7 +226,7 @@ class GitHarnessTests(unittest.TestCase):
                 call = calls[-1]
                 from crustify.agentlog import open_agent_log
                 with open_agent_log(
-                        call["log_dir"], call["log_stem"],
+                        call["artifact_dir"], call["log_stem"],
                         stage="wrap-type_Frame") as log:
                     log.line("fake translator")
                     log.usage({"provider": "test", "model": "test", "requests": []})

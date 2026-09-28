@@ -190,7 +190,7 @@ def execute(
         items=batch.items,
         objective=effective,
         git_base=base_branch.removeprefix("refs/heads/"),
-        log_dir=output,
+        artifact_dir=output,
         log_stem=_LOG_STEM,
     ).run()
     print("[crustify translate] batch completed.")
