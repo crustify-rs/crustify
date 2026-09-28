@@ -47,5 +47,5 @@ Verify Wavefront's analysis and lifecycle findings submitted by an earlier run
 for your workset. If you find any analysis defect or missing property/lifecycle
 primitive, resubmit with a corrected set of findings. File a report describing each
 discovered defect in less than 200 words in
-`<artifact-dir>/wavefront/<defect-slug>`,
+`<artifact-dir>/defects/wavefront/<defect-slug>`,
 including evidence that proves the previous finding was wrong/incomplete. 

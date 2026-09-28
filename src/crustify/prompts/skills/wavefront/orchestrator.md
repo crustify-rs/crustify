@@ -80,3 +80,14 @@ Selection rules:
 - Wrap campaigns use `schedule --api-headers-only`.
 
 - Use the established batch caps to limit agent work.
+
+---
+
+### For Phase 2: Translation
+
+### 2. Launch preparations
+
+#### Waves and batches
+
+Additionally symlink the CodeQL DB files from `crustify/wavefront/codeql/` and wavefront `.cache` after
+forking the worktree for a batch.
