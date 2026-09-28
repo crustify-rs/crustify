@@ -252,19 +252,18 @@ Promote a batch's branch on its integration branch.
 
 ### 4. Review waves
 
-Every translated wave may be followed by agentic review before a consumer starts.
+Every translated wave may be followed by agentic adversarial review before a consumer starts.
 
 Reviewers inspect the merged wave for ownership, lifetime, thread-safety,
 error-mapping, and C-equivalence failures; add focused regressions; fix the
 findings; and land through the same branch flow.
 
-Scaffold `crustify/campaigns/<campaign-id>/<link-unit>/<subsystem>/review-wave-<index>/`
-following the same artifact structure as a translation wave's.
+Create a review wave's artifact dir and integration branch similarly to a translation's:
+- artifact dir: `.../<link-unit>/<subsystem>/review-wave-<index>/`;
+- integration branch: `crustify/reviews/<campaign-id>/<link-unit>/<subsystem>/wave-<index>` 
 
-Create an integration branch for the review wave:
-`crustify/reviews/<campaign-id>/<link-unit>/<subsystem>/wave-<index>` 
-
-Use the translated item projections with `objective: review`.
+Prepare an artifact dir, branch, and worktree for each batch in that wave and use
+the same item projection from its `batch.json` with `objective: review`.
 
 After review lands, promote the reviewed wave tip to the canonical sub-campaign
 integration branch.
@@ -274,22 +273,12 @@ integration branch.
 
 #### Static safety scan
 
-After each wave, including review, run the static safety scan with the exact scheduled
-workset names:
+After each wave, including review, run every enabled static safety-review
+capability over the wave's exact scheduled workset names, and record its output
+in the wave's artifact dir; it becomes tracked by git.
 
-```bash
-crustify <workdir> audit unsafe --name <wave names...> --json
-```
-
-Record it in the wave's workdir; it becomes tracked by git.
-
-At campaign and sub-campaign end, record an unseeded scan:
-
-```bash
-crustify <workdir> audit unsafe --json
-```
-
-Record them in their respective workdirs.
+At wave, campaign, and sub-campaign end, record an unseeded scan for unsafe
+metrics in the respective artifact dirs; those become tracked too.
 
 #### Cost
 

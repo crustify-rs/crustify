@@ -345,15 +345,13 @@ Add focused tests to maximize coverage on the reachable uncovered paths triggere
 by your worklist. Report paths that remain uncovered because
 they are unreachable, environment-dependent, or intentionally nondeterministic.
 
-
 ---
-
 
 ## Review mode
 
 Proceed with the following steps for a `review` objective.
 
-### Defects
+### 1. Defects
 
 #### Safe boundary
 
@@ -364,14 +362,14 @@ less unsafe code. Exclude raw pointers that will be replaced with safe handles o
 the safety obligation stated by their `/// SAFETY` comment is correct and unambiguous.
 
 Fix the affected items and file a report for each defect in
-`{artifact_dir}/defects/unsafe/<defect-slug>` that describes your finding in less than 200 words.
+`<artifact-dir>/defects/unsafe/<defect-slug>` that describes your finding in less than 200 words.
 
 #### UB
 
 Verify your workset's implementation for any UB defect in the safe public API that the `mod ub_tests` suite
 might have missed. Prove that a candidate is a true UB defect by emiting a reproducer that triggeres one of the enabled sanitizers
 from safe Rust code compiled with `#[forbid(unsafe_code)]` against the affected revision.
-Place the reproducer in `{artifact_dir}/defects/ub/<defect-slug>` along with a report
+Place the reproducer in `<artifact-dir>/defects/ub/<defect-slug>` along with a report
 that describes your finding in under 200 words, including the affected SHA revision and a trace of the sanitizer crash.
 
 Emit a patch for every true UB defect that you found and turn its reproducer into a Cargo integration test
@@ -383,7 +381,7 @@ reached the defect.
 
 Verify your workset's implementation for any functional equivalence defects in the public API that the `mod equiv_tests` suite might have missed.
 Prove that a candidate is a true equivalence defect by emiting a reproducer that fails to pass at least one of the equivalence comparisons
-stated above while executing the raw C and the public Rust APIs. Place the reproducer in `{artifact_dir}/defects/equiv/<defect-slug>` along
+stated above while executing the raw C and the public Rust APIs. Place the reproducer in `<artifact-dir>/defects/equiv/<defect-slug>` along
 with a report that describes your finding in less than 200 words, including the affected SHA revision and a trace of the failing equivalence assertion.
 
 Emit a patch for every true equivalence defect that you found and turn its reproducer into a Cargo integration test
@@ -394,7 +392,7 @@ in the `mod equiv_tests` suite to catch future regressions.
 Verify your workset's private implementation for any remaining defects that the `mod unit_tests` suite might have missed.
 Prove that a candidate is a true internal defect by emiting an inline unit test reproducer in
 `mod unit_tests` that fails to pass the expected assertion. File a brief report that describes your
-finding in under 200 words and place it in `{artifact_dir}/defects/equiv/<defect-slug>`,
+finding in under 200 words and place it in `<artifact-dir>/defects/equiv/<defect-slug>`,
 including the affected SHA revision and a trace of the failing equivalence assertion.
 
 Emit a patch for every true defect that you found and leave the unit test reproducer
@@ -408,9 +406,9 @@ less than 200 words in `<artifact-dir>/defects/conventions/<defect-slug>`.
 #### Misc
 
 Fix any other miscelaneous defect that you find and file a report describing it in
-less than 200 words in `{artifact_dir}/defects/misc/<defect-slug>`.
+less than 200 words in `<artifact-dir>/defects/misc/<defect-slug>`.
 
-### Coverage
+### 2. Coverage
 
 Identify any coverage gaps that the existing external or inline test suites might have missed
 for the C and Rust execution paths and add tests that fill those gaps for your
@@ -421,12 +419,23 @@ delta will be demonstrated by measuring the coverage itself.
 
 ## Completion
 
-### 1. Verification
+### 1. Static safety scan
+
+Run every enabled static safety-review capability over your workset names and
+fix any illegal unsafe or raw site it reports that you missed. Rerun it once
+the fixes are in and record its output in your artifact dir; it becomes
+tracked by git.
+
+
+### 2. Marking
 
 Mark every completed item according to our coding conventions, if it requires any such step.
 
 If a lifecycle strategy belongs in another authored home, leave a thin cross-file reference
 at the item's own home.
+
+
+### 3. Regressions
 
 Run:
 
@@ -443,7 +452,7 @@ If C changed, run the configured C build and baseline with the Rust feature
 off. For `port`, repeat with the feature on. A wrap-only batch with no C change
 does not need the full C baseline.
 
-### 2. Commit
+### 4. Commit
 
 Check that the diff contains no unrelated work.
 Commit one changeset, regardless of objective.
