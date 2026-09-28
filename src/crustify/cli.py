@@ -13,10 +13,10 @@ def main() -> None:
     parser.add_argument(
         "workdir",
         help="Full path to the checkout this run works in; its artifacts live "
-             "under <workdir>/crustify/. An isolated agent's workdir is its "
-             "own worktree, which is why this is not called a repository "
-             "root. Required and explicit — crustify never walks the "
-             "filesystem to find it.",
+             "under <workdir>/crustify/. A batch's workdir is the worktree "
+             "the orchestrator forked for it, which is why this is not called "
+             "a repository root. Required and explicit — crustify never walks "
+             "the filesystem to find it.",
     )
     parser.add_argument(
         "--no-console",
@@ -110,11 +110,10 @@ def main() -> None:
 
     # -- translate (one agent over one orchestrator-projected batch) -----
     _translate_blurb = (
-        "Translate one thin batch in an isolated worktree. It creates the "
-        "branch, runs exactly one agent over the batch's items, and lands the "
-        "result on the wave's integration branch. The batch is the whole "
-        "input: which items, which objective, and the Rust home each item "
-        "belongs in.")
+        "Run one agent over one thin batch. The workdir is the isolated "
+        "worktree the orchestrator forked for it; the harness neither creates "
+        "nor purges that tree. The batch is the whole input: which items, "
+        "which objective, and the Rust home each item belongs in.")
     wrap_p = sub.add_parser(
         "translate", help=_translate_blurb, description=_translate_blurb,
     )
@@ -129,8 +128,7 @@ def main() -> None:
         help="Existing directory for harness-generated batch log and usage files.")
     wrap_p.add_argument(
         "--dry-run", action="store_true",
-        help="Validate and summarize the batch without creating a worktree or "
-             "spawning an agent.")
+        help="Validate and summarize the batch without spawning an agent.")
 
     args = parser.parse_args()
 

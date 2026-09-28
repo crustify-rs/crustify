@@ -7,7 +7,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from crustify import translate, worktree
+from crustify import translate
 
 
 class BatchValidationTests(unittest.TestCase):
@@ -128,24 +128,53 @@ class GitHarnessTests(unittest.TestCase):
             capture_output=True, text=True,
         )
 
-    def test_base_branch_must_exist_and_be_unchecked_out(self) -> None:
-        with self.assertRaisesRegex(RuntimeError, "does not exist"):
-            worktree.validate_base_branch(self.repo, "missing")
-        current = self.git("branch", "--show-current").stdout.strip()
-        with self.assertRaisesRegex(RuntimeError, "is checked out"):
-            worktree.validate_base_branch(self.repo, current)
+    def _worktree(self, name: str) -> Path:
+        """Fork a batch worktree the way the orchestrator now does."""
+        path = self.repo / "crustify/.worktrees" / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        self.git("worktree", "add", "--quiet", "-b",
+                 f"crustify/batches/{name}", str(path), "refs/heads/wave-0")
+        return path
 
-    def test_worktree_is_created_from_base_branch(self) -> None:
-        tree = worktree.add_batch_worktree(self.repo, "wave-0", "batch-a")
-        self.assertEqual(tree.base_commit, self.git("rev-parse", "wave-0").stdout.strip())
+    def test_base_branch_must_exist_and_be_unchecked_out(self) -> None:
+        """Both failures would otherwise surface at the agent's landing push,
+        after the batch has been paid for."""
+        with self.assertRaisesRegex(SystemExit, "does not exist"):
+            translate.execute(self.repo, self.batch, base_branch="missing",
+                              output=self.output, dry_run=True)
+        current = self.git("branch", "--show-current").stdout.strip()
+        with self.assertRaisesRegex(SystemExit, "is checked out"):
+            translate.execute(self.repo, self.batch, base_branch=current,
+                              output=self.output, dry_run=True)
+
+    def test_the_harness_creates_no_branch_or_worktree(self) -> None:
+        """The orchestrator owns both; the harness runs in the tree it is given."""
+        before_refs = self.git("for-each-ref", "--format=%(refname)", "refs/heads").stdout
+        before_trees = self.git("worktree", "list", "--porcelain").stdout
+        tree = self._worktree("batch-a")
+        calls: list[Path] = []
+
+        class FakeAgent:
+            def __init__(self, workdir, **kwargs):
+                calls.append(workdir)
+
+            def run(self):
+                pass
+
+        with (mock.patch("crustify.layout._REPO_ROOT", self.repo),
+              mock.patch("crustify.agents.translate.TranslateAgent", FakeAgent)):
+            translate.execute(tree, self.batch, base_branch="wave-0",
+                              output=self.output)
+        self.assertEqual(calls, [tree])
+        # Only the worktree the test forked itself is new.
         self.assertEqual(
-            subprocess.run(
-                ["git", "-C", str(tree.path), "branch", "--show-current"],
-                check=True, capture_output=True, text=True,
-            ).stdout.strip(),
-            "crustify/batches/batch-a",
-        )
-        self.assertEqual((tree.path / "README").read_text(), "test\n")
+            set(self.git("for-each-ref", "--format=%(refname)",
+                         "refs/heads").stdout.split())
+            - set(before_refs.split()),
+            {"refs/heads/crustify/batches/batch-a"})
+        self.assertEqual(
+            self.git("worktree", "list", "--porcelain").stdout.count("worktree "),
+            before_trees.count("worktree ") + 1)
 
     def test_dry_run_does_not_create_refs_or_worktrees(self) -> None:
         before_refs = self.git("for-each-ref", "--format=%(refname)", "refs/heads").stdout
@@ -194,7 +223,8 @@ class GitHarnessTests(unittest.TestCase):
         self.assertIn("unchecked-out wave integration branch: `wave-0`", rendered)
         self.assertNotIn("{", agent._prompt())
 
-    def test_harness_forks_a_worktree_and_uses_explicit_log_names(self) -> None:
+    def test_logs_are_named_after_the_worktree(self) -> None:
+        tree = self._worktree("batch-b")
         calls: list[dict] = []
 
         class FakeAgent:
@@ -218,13 +248,13 @@ class GitHarnessTests(unittest.TestCase):
         with (mock.patch("crustify.layout._REPO_ROOT", self.repo),
               mock.patch("crustify.agents.translate.TranslateAgent", FakeAgent)):
             translate.execute(
-                self.repo, self.batch, base_branch="wave-0", output=self.output)
+                tree, self.batch, base_branch="wave-0", output=self.output)
 
         self.assertEqual(len(calls), 1)
         call = calls[0]
         self.assertEqual(call["git_base"], "wave-0")
-        self.assertRegex(call["log_stem"],
-                         r"^\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}_[0-9a-f]{8}$")
+        # The orchestrator named the tree; its logs carry the same name.
+        self.assertEqual(call["log_stem"], "batch-b")
         self.assertTrue((self.output / f"{call['log_stem']}.log").is_file())
         self.assertTrue((self.output / f"{call['log_stem']}.usage.json").is_file())
         usage = json.loads(
@@ -237,14 +267,14 @@ class GitHarnessTests(unittest.TestCase):
         self.assertTrue(home.is_file())
         self.assertNotIn("crustify:todo", home.read_text())
 
-    def test_agent_failure_retains_batch_worktree(self) -> None:
-        class FailingAgent:
-            @staticmethod
-            def configured_capabilities(_layout):
-                return ()
+    def test_agent_failure_leaves_the_worktree_alone(self) -> None:
+        """The harness neither creates nor purges the tree, so a failed batch
+        keeps its worktree for inspection without the harness doing anything."""
+        tree = self._worktree("batch-c")
 
+        class FailingAgent:
             def __init__(self, workdir, **kwargs):
-                self.workdir = workdir
+                pass
 
             def run(self):
                 raise RuntimeError("agent failed")
@@ -252,22 +282,21 @@ class GitHarnessTests(unittest.TestCase):
         with (mock.patch("crustify.layout._REPO_ROOT", self.repo),
               mock.patch("crustify.agents.translate.TranslateAgent", FailingAgent),
               self.assertRaisesRegex(RuntimeError, "agent failed")):
-            translate.execute(
-                self.repo, self.batch, base_branch="wave-0", output=self.output)
-        self.assertEqual(len(list((self.repo / "crustify/.worktrees").iterdir())), 1)
+            translate.execute(tree, self.batch, base_branch="wave-0",
+                              output=self.output)
+        self.assertTrue(tree.is_dir())
 
     def test_concurrent_sibling_landings_reject_loser_then_rebase(self) -> None:
-        first = worktree.add_batch_worktree(self.repo, "wave-0", "first")
-        second = worktree.add_batch_worktree(self.repo, "wave-0", "second")
+        first, second = self._worktree("first"), self._worktree("second")
         for tree, filename in ((first, "first.txt"), (second, "second.txt")):
-            (tree.path / filename).write_text(filename + "\n")
-            subprocess.run(["git", "-C", str(tree.path), "add", filename], check=True)
+            (tree / filename).write_text(filename + "\n")
+            subprocess.run(["git", "-C", str(tree), "add", filename], check=True)
             subprocess.run(
-                ["git", "-C", str(tree.path), "commit", "-qm", filename], check=True)
+                ["git", "-C", str(tree), "commit", "-qm", filename], check=True)
 
         common = self.git("rev-parse", "--git-common-dir").stdout.strip()
         commands = [
-            ["git", "-C", str(tree.path), "push", "-q", common,
+            ["git", "-C", str(tree), "push", "-q", common,
              "HEAD:refs/heads/wave-0"]
             for tree in (first, second)
         ]
@@ -285,22 +314,22 @@ class GitHarnessTests(unittest.TestCase):
         loser = (first, second)[loser_index]
         self.assertEqual(
             self.git("rev-parse", "wave-0").stdout.strip(),
-            self.git("-C", str(winner.path), "rev-parse", "HEAD").stdout.strip(),
+            self.git("-C", str(winner), "rev-parse", "HEAD").stdout.strip(),
         )
         subprocess.run(
-            ["git", "-C", str(loser.path), "rebase", "wave-0"], check=True,
+            ["git", "-C", str(loser), "rebase", "wave-0"], check=True,
             capture_output=True, text=True)
         subprocess.run(
-            ["git", "-C", str(loser.path), "push", "-q", common,
+            ["git", "-C", str(loser), "push", "-q", common,
              "HEAD:refs/heads/wave-0"], check=True)
 
-        self.git("worktree", "remove", "--force", str(first.path))
-        self.git("worktree", "remove", "--force", str(second.path))
+        self.git("worktree", "remove", "--force", str(first))
+        self.git("worktree", "remove", "--force", str(second))
         tree_files = self.git("ls-tree", "--name-only", "wave-0").stdout.splitlines()
         self.assertIn("first.txt", tree_files)
         self.assertIn("second.txt", tree_files)
-        self.assertFalse(first.path.exists())
-        self.assertFalse(second.path.exists())
+        self.assertFalse(first.exists())
+        self.assertFalse(second.exists())
 
 
 if __name__ == "__main__":

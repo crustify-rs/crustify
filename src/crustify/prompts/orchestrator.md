@@ -198,7 +198,7 @@ Before launching translation or review waves:
 Pick the next sub-campaign from this campaign's `schedule.json`.
 
 Create the sub-campaign branch at `crustify/subcampaigns/<link-unit>/<subsystem>` and
-artifact dir at `crustify/campaigns/<campaign-id>/<link-unit>/<subsystem>`.
+artifact dir in its campaign sub-dir at `.../<campaign-id>/<link-unit>/<subsystem>`.
 
 Scaffold the Rust subsystem root on disk according to our coding conventions.
 Emit TU and header modules lazily before scheduling their first units.
@@ -214,8 +214,8 @@ Pick the next wave from the live sub-campaign's `schedule.json` record and:
   `.../<subsystem>/wave-<index>`
 - record the canonical tip as the wave's base.
 
-For each scheduled batch, create its artifact sub-dir in its wave sub-dir at
-  `.../wave-<index>/batch-<index>`
+For each scheduled batch:
+- create its artifact sub-dir in its wave sub-dir at `.../wave-<index>/batch-<index>`;
 
 Branch and directory carry the same `(link_unit, subsystem)` pair, so a wave's
 branch, its batches and its logs are addressable from its `schedule.json`
@@ -226,17 +226,38 @@ Promote completed sub-campaigns in the canonical campaign integration branch.
 
 ### 3. Launch and monitoring
 
-Run one CLI process per batch, concurrently up to approved parallelism. The
-harness creates the branch `crustify/batches/<batch-id>` and checks it out as
-an isolated worktree under `crustify/.worktrees/<batch-id>`, forked from the
-wave branch. It links ignored shared campaign state, starts the backend, and
-writes the agent stream and usage record.
+For each batch, fork its worktree yourself before launching: create the branch
+`crustify/batches/<batch-id>` from the wave branch and check it out under
+`crustify/.worktrees/<batch-id>`. Then symlink the gitignored campaign state
+from the main checkout into it, so the worktree is a complete crustify tree:
+
+- `crustify/.providers` and `crustify/tmp` whole; and
+- the gitignored children of `crustify/wavefront` and `crustify/campaigns`
+  — extraction caches and wave logs — leaving the tracked files `git worktree
+  add` already checked out in place.
+
+`.providers` is the one that fails silently if you skip it. The backends
+resolve the provider CLI's config home under the agent's own workdir and
+create it when absent, so an unlinked worktree gets a fresh empty provider
+config and the CLI runs against it with no error.
+
+Never link a tracked artifact. `build.json`, `subsystems.json`,
+`schedule.json`, the Wavefront configs and `ownership-store.json` are all
+checked out from HEAD, so the worktree already holds its own copy; sharing a
+written one would send every agent's writes into the same file.
+
+Then run one CLI process per batch, concurrently up to approved parallelism,
+passing that worktree as the workdir. The harness validates the batch and the
+landing branch, starts the backend, and writes the agent stream and usage
+record named after the worktree.
 
 The translator commits its changes and atomically fast-forwards the wave
 branch. On rejection, it rebases its own branch onto the current wave tip,
 revalidates, and retries. Failed translators retain their branches and
-worktrees. The orchestrator must not translate the failed worklist or discard a
-competing landing.
+worktrees: the harness neither creates nor purges them, so a failed batch's
+tree stays for inspection until you remove it. Purge a worktree only after its
+batch lands. The orchestrator must not translate the failed worklist or
+discard a competing landing.
 
 Promote a batch's branch on its integration branch.
 

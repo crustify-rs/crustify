@@ -3,8 +3,7 @@ from __future__ import annotations
 
 import json
 import re
-import secrets
-import time
+import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 from typing import NoReturn
@@ -132,16 +131,34 @@ def load_batch(path: Path) -> Batch:
     return Batch(objective=objective, route=route, items=validated)
 
 
-def _batch_id() -> str:
-    """Return a chronologically sortable, collision-resistant invocation id."""
-    return f"{time.strftime('%Y-%m-%d_%H-%M-%S')}_{secrets.token_hex(4)}"
-
-
 def _task_objective(batch: Batch) -> str:
     """Raw-lifetime discovery always wraps, except during explicit review."""
     if batch.route == "raw-lifetime" and batch.objective != "review":
         return "wrap"
     return batch.objective
+
+
+def _validate_base_branch(repo: Path, base_branch: str) -> str:
+    """The base branch's commit, or a failure naming why it cannot be landed on.
+
+    Not worktree management -- the orchestrator owns that now. This is input
+    validation: the agent's last act is an atomic fast-forward onto this
+    branch, and both failures it catches would otherwise surface there, after
+    the batch has been paid for.
+    """
+    base_branch = base_branch.removeprefix("refs/heads/")
+    r = subprocess.run(
+        ["git", "-C", str(repo), "rev-parse", "--verify",
+         f"refs/heads/{base_branch}"],
+        capture_output=True, text=True)
+    if r.returncode != 0:
+        _fail(f"base branch does not exist: {base_branch}")
+    for line in subprocess.run(
+            ["git", "-C", str(repo), "worktree", "list", "--porcelain"],
+            capture_output=True, text=True, check=True).stdout.splitlines():
+        if line.strip() == f"branch refs/heads/{base_branch}":
+            _fail(f"base branch is checked out in a worktree: {base_branch}")
+    return r.stdout.strip()
 
 
 def execute(
@@ -152,20 +169,19 @@ def execute(
     output: Path,
     dry_run: bool = False,
 ) -> None:
-    """Prepare one isolated worktree and run exactly one translator."""
-    from crustify import worktree
-    from crustify.layout import Layout
+    """Run exactly one translator in ``workdir``.
 
+    ``workdir`` is the isolated worktree the orchestrator forked for this
+    batch; the harness neither creates nor purges it. It validates the batch
+    and the landing branch, then spends on the agent.
+    """
     batch = load_batch(batch_path)
     output = output.resolve()
     if not output.is_dir():
         _fail(f"--output must name an existing directory: {output}")
 
-    repo = Layout(workdir).workdir
-    try:
-        base_commit = worktree.validate_base_branch(repo, base_branch)
-    except RuntimeError as exc:
-        _fail(str(exc))
+    workdir = workdir.resolve()
+    base_commit = _validate_base_branch(workdir, base_branch)
 
     effective = _task_objective(batch)
     if dry_run:
@@ -176,30 +192,23 @@ def execute(
         print(
             f"[translate dry-run] one {batch.route} agent; "
             f"{len(batch.items)} item(s); campaign objective "
-            f"{batch.objective}{normalized}; base {base_branch} at {base_commit}; "
-            "no branch or worktree created."
+            f"{batch.objective}{normalized}; base {base_branch} at "
+            f"{base_commit}; no agent spawned."
         )
         return
 
-    batch_id = _batch_id()
-    try:
-        tree = worktree.add_batch_worktree(repo, base_branch, batch_id)
-        worktree.link_shared(tree.path, repo)
-    except RuntimeError as exc:
-        _fail(str(exc))
-
-
-    log_path = output / f"{batch_id}.log"
+    # The worktree's directory name is the batch id the orchestrator chose, so
+    # a batch's logs carry the same name as the tree that produced them.
+    batch_id = workdir.name
     print(f"[crustify translate] batch id: {batch_id}")
-    print(f"[crustify translate] base: {base_branch} at {tree.base_commit}")
-    print(f"[crustify translate] branch: {tree.branch}")
-    print(f"[crustify translate] worktree: {tree.path}")
-    print(f"[crustify translate] log: {log_path}")
+    print(f"[crustify translate] workdir: {workdir}")
+    print(f"[crustify translate] base: {base_branch} at {base_commit}")
+    print(f"[crustify translate] log: {output / f'{batch_id}.log'}")
 
     from crustify.agents.translate import TranslateAgent
 
     TranslateAgent(
-        tree.path,
+        workdir,
         route=batch.route,
         items=batch.items,
         objective=effective,
