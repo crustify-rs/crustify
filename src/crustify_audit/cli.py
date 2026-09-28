@@ -55,7 +55,8 @@ def add_stages(sub: "argparse._SubParsersAction") -> None:
                     "approximate ones. It says HOW MUCH unsafety is there, never "
                     "which of it is wrong.")
     m.add_argument("--json", action="store_true",
-                   help="Print the document instead of a summary.")
+                   help="Print the document on stdout instead of a summary. "
+                        "Redirect it to keep it; the scan writes no file.")
     m.add_argument(
         "--name", nargs="+", action="extend", default=None, metavar="NAME",
         help="Report raw-pointer, dereference, manual Deref/DerefMut, and "
@@ -177,15 +178,13 @@ def dispatch(layout, args, command: str) -> int:
 
 def _cmd_unsafe(layout: Layout, args) -> int:
     from crustify_audit import unsafe_scan as M
-    path = M.write(layout, names=args.name)
-    doc = json.loads(path.read_text())
+    doc = M.compose(layout, names=args.name)
     if args.json:
         print(json.dumps(doc, indent=2))
     else:
-        print(f"[crustify-audit] unsafe -> {path}\n")
         print(M.summarize(doc))
-        print(f"\n  Counts, not judgement. Next: crustify-audit "
-              f"{layout.repo} ub")
+        print(f"\n  Counts, not judgement. Next: crustify "
+              f"{layout.repo} audit ub")
     return 0
 
 

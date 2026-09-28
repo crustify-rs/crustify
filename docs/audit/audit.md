@@ -31,7 +31,6 @@ appropriate to each finding. It warns when Miri or BorrowSanitizer is unavailabl
 Every run uses `<repo>/crustify/audit/`:
 
 ```text
-unsafe.json        deterministic scan output
 advisories/        confirmed bugs and their reproducers
 leads/             every investigated candidate, including cleared ones
 scratch/           disposable experiments
@@ -61,7 +60,7 @@ crustify WORKDIR audit ub [--objective audit|audit+patch|patch|revisit]
                        [--timeout MINUTES]
 ```
 
-- `unsafe --json` prints the document written to `unsafe.json`. - `unsafe --name` adds
+- `unsafe --json` prints the document on stdout; redirect it to keep it. - `unsafe --name` adds
   source sites for selected C types or symbols. - `ub --workset` confines an auditor to
   specified work items. For audit objectives these are source files; omit it for the whole
   crate. Under `--objective patch` it carries advisory directories under
