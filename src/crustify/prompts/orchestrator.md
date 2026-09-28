@@ -163,8 +163,7 @@ scaffold them lazily on disk before launch.
 
 ### 6. Rust tree scaffolding
 
-Scaffold the top-level manifest, raw `-sys` and safe crates according to the coding conventions
-below.
+Scaffold the top-level manifest, raw `-sys` and safe crates according to our coding conventions.
 Do this only for the link units included in the scope established by the user.
 Scaffold source files and modules lazily before spawning translator agents.  
 
@@ -198,34 +197,25 @@ Before launching translation or review waves:
 
 Pick the next sub-campaign from this campaign's `schedule.json`.
 
-Create the sub-campaign branch:
+Create the sub-campaign branch at `crustify/subcampaigns/<link-unit>/<subsystem>` and
+artifact dir at `crustify/campaigns/<campaign-id>/<link-unit>/<subsystem>`.
 
-```bash
-git -C <repo> checkout -b crustify/subcampaigns/<link-unit>/<subsystem>
-```
-
-In a port campaign, each subsystem gets a Rust-side sub-dir and top-level sub-module in their
-link unit: `rust/<repo>/<link-unit>/<subsystem>/<subsystem>.rs`; TUs and headers become
-sub-modules of their subsystem.
-
-In a wrap campaign, subsystems don't appear as sub-modules; TUs and headers are top-level modules
-directly on their link unit. Emit TU and header modules lazily before scheduling their first units.
-
+Scaffold the Rust subsystem root on disk according to our coding conventions.
+Emit TU and header modules lazily before scheduling their first units.
 Commit the canonical tip as the sub-campaign's base.
 
 #### Waves and batches
 
-Pick the next wave from the live sub-campaign's `schedule.json` record.
+Pick the next wave from the live sub-campaign's `schedule.json` record and:
 
-For each recorded wave:
-
-- create the unchecked-out integration branch
+- create the unchecked-out wave integration branch
   `crustify/waves/<campaign-id>/<link-unit>/<subsystem>/wave-<index>`;
-- create its log directory under `crustify/campaigns/<campaign-id>/<link-unit>/<subsystem>/wave-<index>`;
-- write each `schedule.json` batch entry out to its `batch-<index>.json`
-  verbatim, changing no field and no membership;
-- create and connect any module a batch names but the tree lacks, compiling the affected crates; and
+- create the wave's artifact dir in its subsystem sub-dir
+  `.../<subsystem>/wave-<index>`
 - record the canonical tip as the wave's base.
+
+For each scheduled batch, create its artifact sub-dir in its wave sub-dir at
+  `.../wave-<index>/batch-<index>`
 
 Branch and directory carry the same `(link_unit, subsystem)` pair, so a wave's
 branch, its batches and its logs are addressable from its `schedule.json`
@@ -237,7 +227,8 @@ Promote completed sub-campaigns in the canonical campaign integration branch.
 ### 3. Launch and monitoring
 
 Run one CLI process per batch, concurrently up to approved parallelism. The
-harness creates `crustify/batches/<batch-id>` and an isolated worktree from the
+harness creates the branch `crustify/batches/<batch-id>` and checks it out as
+an isolated worktree under `crustify/.worktrees/<batch-id>`, forked from the
 wave branch. It links ignored shared campaign state, starts the backend, and
 writes the agent stream and usage record.
 

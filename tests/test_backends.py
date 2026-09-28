@@ -164,7 +164,6 @@ class ProviderRoutingTests(unittest.TestCase):
                     "field_anchors": [],
                 }],
                 objective="wrap",
-                campaign_objective="wrap",
                 git_base="wave-0",
                 log_dir=logs,
                 log_stem="batch",

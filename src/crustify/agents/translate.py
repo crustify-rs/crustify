@@ -63,7 +63,6 @@ class TranslateAgent(CrustifyAgent):
         route: str,
         items: list[dict],
         objective: str,
-        campaign_objective: str,
         git_base: str,
         log_dir: Path,
         log_stem: str,
@@ -74,7 +73,6 @@ class TranslateAgent(CrustifyAgent):
         self._route = route
         self._items = [dict(item) for item in items]
         self._objective = objective
-        self._campaign_objective = campaign_objective
 
     @property
     def stage(self) -> str:  # type: ignore[override]
@@ -91,19 +89,6 @@ class TranslateAgent(CrustifyAgent):
     def _body(self) -> str:
         return (_PKG_ROOT / "prompts" / "translator.md").read_text()
 
-    def _wavefront_config(self) -> str:
-        """Return the campaign-wide config translators use for oracle queries."""
-        try:
-            doc = json.loads(self.layout.subsystems_json.read_text())
-        except (OSError, ValueError):
-            doc = {}
-        configured = doc.get("oracle_config")
-        if isinstance(configured, dict):
-            configured = configured.get("path")
-        if isinstance(configured, str) and configured:
-            return configured
-        return "crustify/wavefront/wavefront-config.json"
-
     def _arguments(self) -> dict:
         common = {
             # Base first: `workdir` and `git_base` (the wave's
@@ -114,13 +99,10 @@ class TranslateAgent(CrustifyAgent):
             "task_objective": self._objective,
             "workspace_root": str(self.layout.rust),
             "build_json":     str(self.layout.build_json),
-            "wavefront_config": self._wavefront_config(),
             # NOTE: no `conventions` key. The conventions doc and skill index are
             # no longer a `.format` slot — they go to the backend's system slot
             # via `system_preamble()`, out of reach of context compaction.
         }
-        common["campaign_objective"] = self._campaign_objective
-
         common["worklist"] = json.dumps(
             {"route": self._route, "items": self._items})
         return common

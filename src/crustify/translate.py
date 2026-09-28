@@ -203,7 +203,6 @@ def execute(
         route=batch.route,
         items=batch.items,
         objective=effective,
-        campaign_objective=batch.objective,
         git_base=base_branch.removeprefix("refs/heads/"),
         log_dir=output,
         log_stem=batch_id,

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import collections
+import re
 import tempfile
 import unittest
 from pathlib import Path
@@ -178,6 +179,53 @@ class PromptRenderTests(unittest.TestCase):
             with self.subTest(role=cls.name):
                 agent = object.__new__(cls)
                 self.assertTrue(cls._conventions_md(agent).is_file())
+
+
+class PromptArgumentTests(unittest.TestCase):
+    """Every supplied argument is used, and every used one is supplied.
+
+    The two failures are asymmetric: a placeholder with no argument raises
+    KeyError at launch, loudly. An argument no placeholder names is silently
+    dead, and stays dead until someone audits it.
+    """
+
+    def setUp(self) -> None:
+        self.tmp = tempfile.TemporaryDirectory()
+        self.repo = Path(self.tmp.name)
+        (self.repo / "crustify").mkdir()
+
+    def tearDown(self) -> None:
+        self.tmp.cleanup()
+
+    #: Supplied to every agent by `CrustifyAgent._arguments`; a role that does
+    #: not name one is not carrying a dead key, it is just not using shared
+    #: infrastructure.
+    _BASE = {"workdir", "git_base"}
+
+    def _declared(self, body: str) -> set[str]:
+        return set(re.findall(r"(?<!\{)\{([a-z_]+)\}(?!\})", body))
+
+    def _check(self, agent) -> None:
+        declared, supplied = self._declared(agent._body()), set(agent._arguments())
+        self.assertEqual(declared - supplied, set(), "placeholder with no argument")
+        self.assertEqual(supplied - declared - self._BASE, set(),
+                         "argument no placeholder names")
+
+    def test_translator_arguments_match_its_placeholders(self) -> None:
+        agent = TranslateAgent(
+            self.repo, route="type",
+            items=[{"name": "T", "defined_in": "a.h", "kind": "type",
+                    "field_anchors": [], "home": "crustify/rust/x/src/a.rs"}],
+            objective="wrap", git_base="wave-0",
+            log_dir=self.repo, log_stem="x")
+        self._check(agent)
+
+    def test_orchestrator_arguments_match_its_placeholders(self) -> None:
+        task = self.repo / "TASK.md"
+        task.write_text("- Answer: none")
+        agent = OrchestrateAgent(self.repo, kind="translate", task=task,
+                                 model="anthropic/claude-opus-5")
+        self._check(agent)
 
 
 class OrchestratorPromptTests(unittest.TestCase):
