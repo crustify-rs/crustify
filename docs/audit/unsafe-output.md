@@ -4,9 +4,10 @@
 HIR and type checking. Its output is a deterministic description of the code
 that the build's active `cfg` selects—not a soundness verdict or quality score.
 
-The scan is written to `crustify/audit/unsafe.json`. For ordinary repositories,
-the tool adds `/unsafe.json` to `crustify/audit/.gitignore`; campaigns may ignore
-it from `crustify/.gitignore` instead.
+The scan writes no file. `--json` prints the document on stdout and the caller
+redirects it wherever that run's record belongs — for a campaign, the wave or
+batch artifact directory. Where a scan is kept is the caller's decision, so
+nothing here creates paths or edits a `.gitignore`.
 
 ## Availability
 

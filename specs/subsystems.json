@@ -1,7 +1,7 @@
 {
   "_comment": "Example `<workdir>/crustify/subsystems.json` (REPO-ROOT tier), emitted by the orchestrator from the campaign-wide Wavefront config. `link_units` and each link unit's `subsystems` are ordered lists; their `name` fields are identifiers. `objective` records translation intent and any well established Rust replacement. The Rust tree mirrors this decomposition; there is no second placement document. Counters come from the oracle, never a recount. All paths are workdir-relative.",
   "version": "1f053298e30c0a9b5d0f3c1e7a4b8d2f6c9e0a11",
-  "wavefront_config": "crustify/wavefront/wavefront-config.json",
+  "wavefront_config": "crustify/wavefront/configs/wavefront-config.json",
   "link_units": [
     {
       "name": "libssl",

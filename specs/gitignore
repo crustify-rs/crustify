@@ -6,18 +6,17 @@ tmp
 rust/target
 rust.bak
 
-# Oracle extraction and deterministic caches. Target configs and ownership
-# findings remain tracked.
-wavefront/codeql
-wavefront/.cache
-
 # Campaign plans and the batches projected from them are tracked; the agent
 # stream and usage record a batch produces are not.
 campaigns/**/translator.log
 campaigns/**/translator.usage.json
 
-# Deterministic safety scan output.
-audit/unsafe.json
+# The UB auditor's working area, and the cargo trees under its reproducers --
+# typically ~99% of the directory's bytes. Advisories, their reproducer
+# sources and the logs are the deliverable and stay tracked.
+audit/scratch
+audit/**/target
+audit/**/target-*
 
 bak
 stats.md

@@ -63,10 +63,6 @@ class Layout(_Layout):
         return self.workdir
 
     # ---- `unsafe`: the deterministic half
-    @property
-    def scan(self) -> Path:
-        """The deterministic pass's output: the unsafe metrics. Reproducible."""
-        return self.root / "unsafe.json"
 
     # ---- `ub`: the agentic half
     @property

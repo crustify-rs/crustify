@@ -1,7 +1,9 @@
 """unsafe_scan.py — the DETERMINISTIC half, behind `crustify-audit … unsafe`.
 
-Writes ``unsafe.json``: the rustc driver's metrics for the workspace, and the
-ratios worth comparing crates on.
+Composes the rustc driver's metrics for the workspace and the ratios worth
+comparing crates on, and hands them back. It writes nothing: the caller
+decides whether the document goes to a file and which one, because where a
+scan belongs is a campaign's business and not the scanner's.
 
 WHY THIS IS NOT SOMETHING THE AGENT DOES. Not because an agent could not count
 — because a count it produced would be a sample. The composer's output is a
@@ -20,38 +22,6 @@ from pathlib import Path
 
 from crustify_audit import driver
 from crustify_audit.layout import Layout
-
-#: The canonical ignore template, tracked as package data so every audit gets
-#: the same one and a fix to it reaches every target. Regenerating build trees
-#: is cheap; re-deriving an advisory is not, so only the former is excluded.
-_IGNORE_TEMPLATE = Path(__file__).resolve().parent / "templates" / "audit.gitignore"
-
-#: First line of the template. Its presence is what makes writing idempotent,
-#: so the whole block moves when the template changes rather than accumulating
-#: one line at a time.
-_IGNORE_MARKER = "# crustify-audit artifacts"
-
-
-def scan_ignore_template() -> str:
-    """The canonical `crustify/audit/.gitignore` body."""
-    return _IGNORE_TEMPLATE.read_text()
-
-
-def _ensure_scan_ignored(layout: Layout) -> None:
-    """Keep regenerable output out of commits without hiding the record."""
-    campaign_ignore = layout.repo / "crustify" / ".gitignore"
-    if campaign_ignore.is_file():
-        if "audit/unsafe.json" in campaign_ignore.read_text().splitlines():
-            return
-    ignore = layout.root / ".gitignore"
-    existing = ignore.read_text() if ignore.is_file() else ""
-    if _IGNORE_MARKER in existing:
-        return
-    prefix = existing
-    if prefix and not prefix.endswith("\n"):
-        prefix += "\n"
-    ignore.write_text(prefix + scan_ignore_template())
-
 
 #: `unsafe {` or `unsafe impl`, the two forms a SAFETY comment is expected on.
 _UNSAFE_SITE = re.compile(r"\bunsafe\s*(?:\{|impl\b)")
@@ -192,12 +162,6 @@ def _derive(doc: dict) -> dict:
     }
 
 
-def write(layout: Layout, names: list[str] | None = None) -> Path:
-    layout.root.mkdir(parents=True, exist_ok=True)
-    _ensure_scan_ignored(layout)
-    doc = compose(layout, names=names)
-    layout.scan.write_text(json.dumps(doc, indent=2) + "\n")
-    return layout.scan
 
 
 def summarize(doc: dict) -> str:

@@ -17,8 +17,11 @@ class DeterministicWorkspaceTests(unittest.TestCase):
             (workspace / "Cargo.toml").write_text("[workspace]\n")
             layout = Layout(repo)
 
+            # The workspace is resolved; artifacts still sit at the campaign
+            # root. The scan itself writes nothing, so there is no path for it.
             self.assertEqual(layout.workspace, workspace)
-            self.assertEqual(layout.scan, repo / "crustify/audit/unsafe.json")
+            self.assertEqual(layout.root, repo / "crustify/audit")
+            self.assertFalse(hasattr(layout, "scan"))
 
             with mock.patch(
                     "crustify_audit.unsafe_scan.driver.measure",
