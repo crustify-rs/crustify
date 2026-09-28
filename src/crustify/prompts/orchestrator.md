@@ -273,12 +273,22 @@ integration branch.
 
 #### Static safety scan
 
-After each wave, including review, run every enabled static safety-review
-capability over the wave's exact scheduled workset names, and record its output
-in the wave's artifact dir; it becomes tracked by git.
+After each wave, including review, run the static safety scan with the exact scheduled
+workset names:
 
-At wave, campaign, and sub-campaign end, record an unseeded scan for unsafe
-metrics in the respective artifact dirs; those become tracked too.
+```bash
+crustify <workdir> audit unsafe --name <wave names...> --json
+```
+
+Record it in the wave's artifact dir; it becomes tracked by git.
+
+At wave, campaign, and sub-campaign end, record an unseeded scan for unsafe metrics:
+
+```bash
+crustify <workdir> audit unsafe --json
+```
+
+Record them in their respective workdirs; they become tracked by git.
 
 #### Cost
 

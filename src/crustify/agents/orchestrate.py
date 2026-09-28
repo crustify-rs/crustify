@@ -23,24 +23,21 @@ _TASK_ANCHOR = "<!-- TASK -->"
 #: is rendered, one whose files are not is silently absent. Each lives at
 #: `prompts/skills/<skill>/orchestrator.md` — one directory per skill, one file
 #: per role — so deleting the file ablates it here and deleting the
-#: directory ablates it everywhere. The playbook skill has no `capability`
-#: because it is what makes this agent an orchestrator; the rest are things it
-#: is TOLD about rather than things it is, which is what makes them ablatable.
-#: There is no role skill here: it existed to route the orchestrator to its
-#: playbook, and the playbook is now this agent's prompt.
+#: directory ablates it everywhere. There is no role skill: it existed to
+#: route the orchestrator to its playbook, and the playbook is now this
+#: agent's prompt.
+#:
+#: Nothing crustify ships is here either. `crustify audit` is on the agent's
+#: PATH and in its `--help` whatever the index says, so a role header for it
+#: could only ablate the instructions and never the tool -- which is not an
+#: ablation. Its guidance lives in the prompt with the rest of the workflow.
 _SKILLS = (
     #: One wavefront skill, two role overlays. The oracle a translator queries
     #: and the oracle an orchestrator plans with are the same tool used for
     #: different work, so the metadata is shared and only the guidance splits.
-    #: The same holds for audit, whose two roles use opposite halves of it:
-    #: a translator runs only `unsafe`, an orchestrator also gates `ub`.
     SkillSpec(
         "wavefront", "SKILL.md", capability="wavefront",
         role_header="skills/wavefront/orchestrator.md",
-    ),
-    SkillSpec(
-        "crustify", "src/crustify_audit/SKILL.md", capability="audit",
-        role_header="skills/audit/orchestrator.md",
     ),
     #: Self-contained: no external checkout and no generic skill to wrap, so
     #: the per-role file is the skill. Its own path is what a deletion removes.

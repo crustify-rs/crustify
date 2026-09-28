@@ -127,18 +127,22 @@ class DiscoveryTests(unittest.TestCase):
             model="anthropic/claude-opus-5")
 
     def test_a_present_skill_is_carried(self) -> None:
-        self.assertIn("audit", self.agent.prompt_capabilities())
+        self.assertIn("sanitizers", self.agent.prompt_capabilities())
 
-    def test_deleting_a_role_header_ablates_that_skill(self) -> None:
-        real = Path.is_file
-        header = _PKG_ROOT / "prompts" / "skills/audit/orchestrator.md"
+    def test_deleting_a_skills_file_ablates_it(self) -> None:
+        """For a self-contained skill the file IS the skill, so its own path
+        is what decides presence; a wrapped one is decided by its role header
+        instead. Both are one file under prompts/skills/."""
+        real = Path.exists
+        skill = (deps.CHECKOUT
+                 / "src/crustify/prompts/skills/sanitizers/orchestrator.md")
         with mock.patch.object(
-                Path, "is_file",
-                lambda p: False if p == header else real(p)):
+                Path, "exists",
+                lambda p: False if p == skill else real(p)):
             agent = OrchestrateAgent(
                 self.repo, kind="translate", task=Path(__file__),
                 model="anthropic/claude-opus-5")
-            self.assertNotIn("audit", agent.prompt_capabilities())
+            self.assertNotIn("sanitizers", agent.prompt_capabilities())
 
     def test_an_uninstalled_dependency_ablates_its_skill(self) -> None:
         """The other half of the same rule: a generic skill lives in a

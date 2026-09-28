@@ -421,10 +421,15 @@ delta will be demonstrated by measuring the coverage itself.
 
 ### 1. Static safety scan
 
-Run every enabled static safety-review capability over your workset names and
-fix any illegal unsafe or raw site it reports that you missed. Rerun it once
-the fixes are in and record its output in your artifact dir; it becomes
-tracked by git.
+Run the static safety scan with your workset names and fix any illegal unsafe/raw sites
+that you might have missed:
+
+```bash
+crustify <workdir> audit unsafe --name <batch names...> --json
+```
+
+After fixing the illegal sites, rerun the scan once again and record its emitted output
+in your artifact dir; it will become tracked by git.
 
 
 ### 2. Marking
