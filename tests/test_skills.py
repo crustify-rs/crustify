@@ -217,7 +217,7 @@ class PromptArgumentTests(unittest.TestCase):
             items=[{"name": "T", "defined_in": "a.h", "kind": "type",
                     "field_anchors": [], "home": "crustify/rust/x/src/a.rs"}],
             objective="wrap", git_base="wave-0",
-            log_dir=self.repo, log_stem="x")
+            artifact_dir=self.repo, log_stem="x")
         self._check(agent)
 
     def test_orchestrator_arguments_match_its_placeholders(self) -> None:

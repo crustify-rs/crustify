@@ -12,10 +12,9 @@ Your git entity: `crustify`
 ## Inputs
 
 - repository: `{workdir}`
-- Cargo workspace: `{workspace_root}`
-- build manifest: `{build_json}`
 - worklist: `{worklist}`
 - task objective: `{task_objective}`
+- artifact dir: `{artifact_dir}`
 - unchecked-out wave integration branch: `{git_base}`
 
 ## Routes and objectives
@@ -84,8 +83,8 @@ When a binding is missing:
 5. build and test the affected `-sys` crate.
 
 Before rebuilding C, check for the orchestrator's reusable build and runner.
-Reuse it only when the C revision, `build.json` version, compiler, and
-instrumentation match. Treat it as immutable and use agent-unique logs and
+Reuse it only when the C revision, the version in
+`crustify/build.json`, the compiler and the instrumentation all match. Treat it as immutable and use agent-unique logs and
 outputs.
 
 Create private builds when no matching build exists or the batch
@@ -365,14 +364,14 @@ less unsafe code. Exclude raw pointers that will be replaced with safe handles o
 the safety obligation stated by their `/// SAFETY` comment is correct and unambiguous.
 
 Fix the affected items and file a report for each defect in
-`crustify/review/unsafe/<defect-slub>` that describes your finding in less than 200 words.
+`{artifact_dir}/defects/unsafe/<defect-slug>` that describes your finding in less than 200 words.
 
 #### UB
 
 Verify your workset's implementation for any UB defect in the safe public API that the `mod ub_tests` suite
 might have missed. Prove that a candidate is a true UB defect by emiting a reproducer that triggeres one of the enabled sanitizers
 from safe Rust code compiled with `#[forbid(unsafe_code)]` against the affected revision.
-Place the reproducer in `crustify/review/ub/<defect-slug>` along with a report
+Place the reproducer in `{artifact_dir}/defects/ub/<defect-slug>` along with a report
 that describes your finding in under 200 words, including the affected SHA revision and a trace of the sanitizer crash.
 
 Emit a patch for every true UB defect that you found and turn its reproducer into a Cargo integration test
@@ -384,7 +383,7 @@ reached the defect.
 
 Verify your workset's implementation for any functional equivalence defects in the public API that the `mod equiv_tests` suite might have missed.
 Prove that a candidate is a true equivalence defect by emiting a reproducer that fails to pass at least one of the equivalence comparisons
-stated above while executing the raw C and the public Rust APIs. Place the reproducer in `crustify/review/equiv/<defect-slug>` along
+stated above while executing the raw C and the public Rust APIs. Place the reproducer in `{artifact_dir}/defects/equiv/<defect-slug>` along
 with a report that describes your finding in less than 200 words, including the affected SHA revision and a trace of the failing equivalence assertion.
 
 Emit a patch for every true equivalence defect that you found and turn its reproducer into a Cargo integration test
@@ -395,7 +394,7 @@ in the `mod equiv_tests` suite to catch future regressions.
 Verify your workset's private implementation for any remaining defects that the `mod unit_tests` suite might have missed.
 Prove that a candidate is a true internal defect by emiting an inline unit test reproducer in
 `mod unit_tests` that fails to pass the expected assertion. File a brief report that describes your
-finding in under 200 words and place it in `crustify/review/equiv/<defect-slug>`,
+finding in under 200 words and place it in `{artifact_dir}/defects/equiv/<defect-slug>`,
 including the affected SHA revision and a trace of the failing equivalence assertion.
 
 Emit a patch for every true defect that you found and leave the unit test reproducer
@@ -404,12 +403,12 @@ as an inline regression test in the `mod unit_tests` suite to catch future regre
 #### Conventions
 
 Fix any deviation from our coding conventions and file a report describing it in
-less than 200 words in `crustify/review/conventions/<defect-slug>`.
+less than 200 words in `<artifact-dir>/defects/conventions/<defect-slug>`.
 
 #### Misc
 
 Fix any other miscelaneous defect that you find and file a report describing it in
-less than 200 words in `crustify/review/misc/<defect-slug>`.
+less than 200 words in `{artifact_dir}/defects/misc/<defect-slug>`.
 
 ### Coverage
 

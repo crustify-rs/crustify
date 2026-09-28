@@ -165,7 +165,7 @@ class ProviderRoutingTests(unittest.TestCase):
                 }],
                 objective="wrap",
                 git_base="wave-0",
-                log_dir=logs,
+                artifact_dir=logs,
                 log_stem="batch",
             )
             with (mock.patch(

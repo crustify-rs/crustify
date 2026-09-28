@@ -172,7 +172,7 @@ class CrustifyAgent:
         workdir: Path,
         *,
         git_base: str = "",
-        log_dir: Path | None = None,
+        artifact_dir: Path | None = None,
         log_stem: str | None = None,
     ) -> None:
         # An isolated-wave agent is constructed with its WORKTREE, so every
@@ -183,7 +183,10 @@ class CrustifyAgent:
         self.layout = Layout(workdir)
         self.workdir = self.layout.workdir
         self.git_base = git_base
-        self.log_dir = log_dir
+        # Where this agent's artifacts land. For a batch that is its own
+        # directory under the wave: the log and usage record, and whatever
+        # else the agent is told to write there.
+        self.artifact_dir = artifact_dir
         self.log_stem = log_stem
         # Campaign-tier store: crustify/campaigns/.
         self.campaign_store = ArtifactStore(self.layout.campaigns)
@@ -260,7 +263,7 @@ class CrustifyAgent:
         batch id. The fallback remains for non-batch callers.
         """
         return open_agent_log(
-            self.log_dir or self.store.root / "logs",
+            self.artifact_dir or self.store.root / "logs",
             self.log_stem or self._log_stem(),
             stage=self.stage,
         )
