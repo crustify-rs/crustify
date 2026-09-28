@@ -181,7 +181,6 @@ class GitHarnessTests(unittest.TestCase):
             route="type",
             items=items,
             objective="review",
-            campaign_objective="review",
             git_base="wave-0",
             log_dir=self.output,
             log_stem="batch-id",

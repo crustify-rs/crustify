@@ -106,9 +106,6 @@ class OrchestrateAgent(CrustifyAgent):
             return self._task_text().replace("{", "{{").replace("}", "}}")
         return super()._prompt()
 
-    def _arguments(self) -> dict:
-        return {**super()._arguments(), "campaign_kind": self.kind}
-
     def system_preamble(self) -> str:
         """Empty for the ablation arm, the base composition otherwise.
 
