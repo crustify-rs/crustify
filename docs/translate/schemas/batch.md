@@ -1,16 +1,14 @@
 # Thin batch schema
 
-Field meaning for the JSON the orchestrator passes to
-`crustify <workdir> translate <batch.json>`. One batch is one agent's
-entire worklist.
+Field meaning for the JSON the orchestrator passes to `crustify <workdir> translate
+<batch.json>`. One batch is one agent's entire worklist.
 
-The orchestrator plans it as one batch entry of
-`docs/translate/schemas/schedule.md` and writes it out verbatim.
+The orchestrator plans it as one batch entry of `docs/translate/schemas/schedule.md` and
+writes it out verbatim.
 
-It lands as `batch.json` in that batch's own directory, beside the log and
-usage record the agent writes there. The harness reads it once and the file
-names no wave, branch, log path or dependency: everything about where the
-batch sits is the directory it sits in.
+It lands as `batch.json` in that batch's own directory, beside the log and usage record
+the agent writes there. The harness reads it once and the file names no wave, branch, log
+path or dependency: everything about where the batch sits is the directory it sits in.
 
 ```json
 {
@@ -49,14 +47,14 @@ Every field is required on every item, and no other field is accepted.
 `(name, defined_in)` identifies an item and must be unique within the batch.
 `field_anchors` must not repeat a name.
 
-`home` is the sole placement input. A translator resolves no repo-tier artifact
-to decide where an item goes, so the tree the batch names must still exist when
-its agent starts: do not restructure `rust/` during a wave.
+`home` is the sole placement input. A translator resolves no repo-tier artifact to decide
+where an item goes, so the tree the batch names must still exist when its agent starts: do
+not restructure `rust/` during a wave.
 
 ## Routes
 
-`kind` selects the agent route, and every item in a batch must select the same
-one. A batch mixing routes is rejected.
+`kind` selects the agent route, and every item in a batch must select the same one. A
+batch mixing routes is rejected.
 
 | kind | route |
 |---|---|
@@ -64,7 +62,6 @@ one. A batch mixing routes is rejected.
 | `symbol`, `callback` | `symbol` |
 | `raw-lifetime` | `raw-lifetime` |
 
-A `raw-lifetime` batch holds exactly one item, named `void` or `string`, with
-`defined_in: null`. Its task objective is always `wrap` unless the batch
-objective is `review` — raw lifetime discovery wraps a C primitive, so `port`
-normalizes to `wrap`.
+A `raw-lifetime` batch holds exactly one item, named `void` or `string`, with `defined_in:
+null`. Its task objective is always `wrap` unless the batch objective is `review` — raw
+lifetime discovery wraps a C primitive, so `port` normalizes to `wrap`.
