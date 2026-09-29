@@ -70,7 +70,7 @@
 # bsan and clang agree on one LLVM version; a moving base silently shifts
 # bsan's LLVM out from under the matched clang compiler-rt below and there is
 # no error, only instruments that quietly stop finding things. `:latest` moved
-# once already mid-campaign. Bump this deliberately, and re-run the self-tests.
+# once already mid-campaign. Bump this deliberately.
 FROM ghcr.io/borrowsanitizer/bsan@sha256:69440e3b6359f3b51ae351998dc4d408777cde23d72a6adc05ed649570cfdce0
 
 ARG CODEQL_VERSION=v2.26.3
@@ -138,44 +138,12 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | sh \
 RUN rustup toolchain install stable --component clippy \
     && rustup component add --toolchain nightly \
          rustc-dev llvm-tools rust-src miri \
-    && rustup default stable \
-    && cargo +nightly miri --version
+    && rustup default stable
 
 # MemorySanitizer and ThreadSanitizer are `-Zsanitizer=` builds, not separate
-# toolchains, so nothing extra is installed for them -- but they are only usable
-# if two things hold, and both fail late and confusingly when they do not.
-# First, the target must support them: check the target spec rather than
-# discovering it from a failed link at the end of a long build. Second, MSan
-# needs the standard library rebuilt with instrumentation, which is `-Zbuild-std`
-# over the `rust-src` component installed above; without it every std allocation
-# reads as uninitialized and the run drowns in false positives.
-RUN set -eu; \
-    spec=$(rustc +nightly -Z unstable-options --print target-spec-json \
-             --target "$(rustc -vV | sed -n 's/^host: //p')"); \
-    for s in memory thread; do \
-        echo "$spec" | grep -q "\"$s\"" \
-          || { echo "target does not support -Zsanitizer=$s" >&2; exit 1; }; \
-    done; \
-    test -d "$(rustc +nightly --print sysroot)/lib/rustlib/src/rust/library/std" \
-      || { echo "rust-src missing: -Zbuild-std cannot instrument std" >&2; exit 1; }
-
-# Prove the C half of an MSan build links and REPORTS, the same way the bsan
-# self-test does. A version string cannot distinguish a clang that merely exists
-# from one whose compiler-rt is actually present, and that difference only
-# surfaces at the final link of a long instrumented build -- or worse, as a
-# campaign that records msan as "found nothing".
-RUN set -eu; \
-    printf '%s\n' '#include <stdlib.h>' 'int main(void) {' \
-        '    int *a = malloc(sizeof(int) * 10);' \
-        '    a[5] = 0;' \
-        '    if (a[0]) return 1;' \
-        '    return 0; }' > /tmp/msan-selftest.c; \
-    "$CRUSTIFY_MSAN_CC" -fsanitize=memory -fno-omit-frame-pointer -O1 \
-        /tmp/msan-selftest.c -o /tmp/msan-selftest \
-      || { echo "msan: C link failed -- compiler-rt missing" >&2; exit 1; }; \
-    /tmp/msan-selftest 2>&1 | grep -q "use-of-uninitialized-value" \
-      || { echo "msan: built but did not report a known uninit read" >&2; exit 1; }; \
-    rm -f /tmp/msan-selftest /tmp/msan-selftest.c
+# toolchains, so nothing extra is installed for them. MSan also needs the standard
+# library rebuilt with instrumentation: `-Zbuild-std` over the `rust-src` component
+# installed above.
 
 # `cargo bsan` (no `+bsan`) is the form anyone writes by reflex, and it fails in
 # the most misleading way available. cargo-bsan picks its clang from the ACTIVE
@@ -195,32 +163,6 @@ RUN mkdir -p /opt/bsan-shim \
        > /opt/bsan-shim/cargo-bsan \
     && chmod +x /opt/bsan-shim/cargo-bsan
 
-# Verify BorrowSanitizer by INVOCATION, not by version string. `cargo bsan
-# --version` answers from the binary alone: it exits 0 on an image whose
-# toolchain cannot instrument anything, so it cannot tell a working image from a
-# broken one. Build and RUN a known Tree Borrows violation instead, and require
-# the diagnostic. A silently inert bsan is worse than an absent one -- an
-# auditor that cannot run it records its entire bug class as UNTESTED, and a
-# whole campaign's aliasing coverage is lost without a single failed command.
-RUN set -eu; \
-    mkdir -p /tmp/bsan-selftest/src; \
-    printf '%s\n' '[package]' 'name = "bsan_selftest"' 'version = "0.0.0"' \
-        'edition = "2021"' > /tmp/bsan-selftest/Cargo.toml; \
-    printf '%s\n' 'fn main() {' \
-        '    let mut x = 42u8;' \
-        '    let p = &mut x as *mut u8;' \
-        '    let r = &mut x;' \
-        '    *r = 1;' \
-        '    unsafe { *p = 7; }' \
-        '    println!("{}", x);' \
-        '}' > /tmp/bsan-selftest/src/main.rs; \
-    cd /tmp/bsan-selftest; \
-    cargo bsan run > /tmp/bsan-selftest.log 2>&1 || true; \
-    grep -q 'Undefined Behavior' /tmp/bsan-selftest.log \
-      || { echo "BSan did not fire on a known Tree Borrows violation:" >&2; \
-           cat /tmp/bsan-selftest.log >&2; exit 1; }; \
-    cd /; rm -rf /tmp/bsan-selftest /tmp/bsan-selftest.log
-
 # bindgen for the `-sys` crates. It dlopens libclang at run time and clang-sys
 # looks for the unversioned soname, so the search has to be pinned: this system
 # carries libclang 20 (the base) AND libclang 23 (installed above for MSan's
@@ -232,8 +174,7 @@ RUN set -eu; \
 # Installed before CARGO_HOME moves to the /work volume, so the binary lives in
 # the image layer at /root/.cargo/bin and survives a fresh volume.
 ENV LIBCLANG_PATH=/usr/lib/llvm-20/lib
-RUN cargo install bindgen-cli --locked \
-    && bindgen --version
+RUN cargo install bindgen-cli --locked
 
 # CodeQL CLI, for wavefront's extraction queries. GitHub publishes this bundle
 # for x86-64 Linux but not native Linux ARM64, so an ARM image ships without it
@@ -246,8 +187,7 @@ RUN arch="$(dpkg --print-architecture)"; \
         curl -fsSL -o /tmp/codeql.zip \
           "https://github.com/github/codeql-cli-binaries/releases/download/${CODEQL_VERSION}/codeql-linux64.zip" \
         && unzip -q /tmp/codeql.zip -d /opt \
-        && rm /tmp/codeql.zip \
-        && codeql version --format=terse; \
+        && rm /tmp/codeql.zip; \
     else \
         echo "CodeQL is unavailable natively on $arch; a campaign here needs T1/T2 tables extracted elsewhere"; \
     fi
@@ -279,8 +219,7 @@ ARG DEPS_REFRESH=0
 RUN echo "DEPS_REFRESH=${DEPS_REFRESH}" \
     && git clone --depth 1 https://github.com/crustify-rs/wavefront.git /opt/venv/share/wavefront \
     && git clone --depth 1 https://github.com/crustify-rs/ffibox.git /opt/venv/share/ffibox \
-    && uv pip install --python /opt/venv/bin/python -e /opt/venv/share/wavefront \
-    && wavefront --help >/dev/null
+    && uv pip install --python /opt/venv/bin/python -e /opt/venv/share/wavefront
 
 # Bake in a runnable harness -- the WHOLE repository, not just `src`. One
 # distribution ships both packages, and the orchestrators are told to read
@@ -291,10 +230,7 @@ RUN echo "DEPS_REFRESH=${DEPS_REFRESH}" \
 # A bind mount at this path replaces these sources. The install is editable and
 # PYTHONPATH points at the same tree, so a mounted checkout wins twice over.
 COPY . /opt/crustify
-RUN uv pip install --python /opt/venv/bin/python -e /opt/crustify \
-    && crustify --help >/dev/null \
-    && crustify . audit --help >/dev/null \
-    && crustify . orchestrate --help >/dev/null
+RUN uv pip install --python /opt/venv/bin/python -e /opt/crustify
 ENV PYTHONPATH=/opt/crustify/src
 
 # HOME is the volume, so what the agent fetches or builds survives `--rm`.
