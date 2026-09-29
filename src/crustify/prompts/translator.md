@@ -14,7 +14,6 @@ Your git entity: `crustify`
 - repository: `{workdir}`
 - worklist: `{worklist}`
 - task objective: `{task_objective}`
-- artifact dir: `{artifact_dir}`
 - unchecked-out wave integration branch: `{git_base}`
 
 ## Routes and objectives
@@ -223,9 +222,6 @@ For every discovered `void` or string releaser, disposer, or cloner, emit the st
 required by owned pointers. Home it with the primitive's translation unit. Do not also
 expose the primitive as an ordinary safe function.
 
-For `review`, verify existing findings and strategies instead of adding a new discovery
-pass.
-
 ### 4. Porting symbols
 
 For `port`, translate the implementation to safe idiomatic Rust and preserve observable
@@ -245,24 +241,29 @@ remain.
 
 ## Tests
 
-Classify tests by who decides the verdict:
+Classify tests according to the following scheme:
 
-| module | verdict source | requirement |
-|---|---|---|
-| `ub_tests` | sanitizer, Miri, or compiler | safe public API does not reach UB |
-| `equiv_tests` | direct C reference execution | Rust matches C-observable behaviour |
-| `unit_tests` | Rust assertion, or internal/unsafe access | wrapper behaviour or implementation plumbing |
-
+- `ub_safe` ensure the safe public API does not reach UB, mainly by not triggering sanitizer/Miri crashes, or by failing
+  to pass the compiler for a given illegal path; `ub_unsafe` targets UB bugs on the unsafe public API, while honoring the
+  stated safety contract; 
+- `equiv` ensure the safe public API matches the C-observable behavior, mainly by passing equivalence assertions;
+- `unit` ensure the internal API routines behave correctly, mainly by passing Rust assertions.
 
 ### UB tests
 
-Prefer a Cargo integration test in `#[cfg(test)] #[forbid(unsafe_code)] mod ub_tests` so
-crate privacy enforces the public-API boundary and call public safe wrapper APIs only.
+Emit tests to ensure the public API of your workset is free of UB.
+
+Home UB tests in `crustify/rust/<repo>/tests/` as Cargo integration tests so
+crate privacy enforces the public-API boundary. Place tests that call the
+safe public API under `tests/ub_safe/<the tested TU>.rs` and declare the
+tested TU as a module of `tests/ub_safe/main.rs`; place tests that excercise illegal
+safe paths that the compiler should catch in `tests/ub_safe/compile_fail`. Place tests
+that target the unsafe API under `tests/ub_unsafe/main.rs` using the same rules.
 
 Cover every instrument prepared by the campaign as a separate obligation:
 
 - ASan/UBSan: bounds errors, use-after-free, use-after-return, invalid free,
-  pointer/alignment UB, and integer/division/shift UB.
+  double free, leak, pointer/alignment UB, and integer/division/shift UB.
 - BSan: conflicting foreign writes and retained foreign pointers across Rust reborrows.
 - TSan: races reachable through safe APIs, including every asserted `Send` or `Sync`
   implementation and threaded callback.
@@ -271,19 +272,21 @@ Cover every instrument prepared by the campaign as a separate obligation:
 
 Exercise every owner and borrowed form, shared and mutable access path, lifecycle
 strategy, generic instance, and callback variant emitted by the batch. Attempt to outlive
-the owner, alias a reborrow, reenter a callback, and drop a parent first. Leak,
-double-free, and other lifecycle checks belong in `ub_tests` when the tested lifecycle is
-reached solely through the safe public API and the instrument supplies the verdict.
+the owner, alias a reborrow, reenter a callback, and drop a parent first.
 
 Use compile-fail doctests or `trybuild` when the type system should reject the program.
-Report these separately; compile-time evidence is stronger than one dynamic execution.
 
 
 ### Equivalence tests
 
-Emit equivalence tests as Cargo integration tests in the the `#[cfg(test)] mod
-equiv_tests` suite. Run the raw C implementation and public Rust API on equivalent,
-independently owned inputs. Compare:
+Emit functional equivalence tests that run the raw C implementation and public Rust API on
+equivalent, independently owned inputs. 
+
+Home equivalence tests in `crustify/rust/<target>/tests/equiv/<the tested TU>.rs` as Cargo
+integration tests so crate privacy enforces the public-API boundary; declare the
+tested TU as a module of `tests/equiv/main.rs`. 
+
+Compare:
 
 - return values and errors;
 - out-parameters and buffers;
@@ -304,21 +307,14 @@ tests for unaffected behaviour, and place the corrected-behaviour regression in
 ### Unit tests
 
 Use inline `#[cfg(test)] mod unit_tests` beside the translated unit when Rust assertions
-supply the verdict or the test exercises unsafe or internal facilities, including:
+supply the verdict or the test exercises internal facilities, including:
 
 - Rust-only `Iterator`, `Debug`, `Clone`, conversions, and builders;
 - input rejected by Rust before FFI, including the error and no panic;
 - deliberate correction of defective C behaviour;
-- raw C fixtures and direct FFI;
 - unsafe adoption through `from_raw`, `from_ptr`, or similar constructors;
-- private or `pub(crate)` constructors and internal destructor/drop plumbing;
-- unsafe public APIs whose caller must discharge a safety contract; and
+- private or `pub(crate)` constructors and internal destructor/drop plumbing; and
 - resource release exercised through any of those raw, unsafe, or internal paths.
-
-If a C call can supply the expected result, use an equivalence test. If a sanitizer
-supplies the verdict for behavior reached solely through the safe public API, use a UB
-test. Running an unsafe or internal unit test under a sanitizer provides auxiliary
-coverage; it does not reclassify that test as an `ub_test`.
 
 
 ### Coverage
@@ -335,9 +331,25 @@ intentionally nondeterministic.
 
 Proceed with the following steps for a `review` objective.
 
-### 1. Defects
+For homing reports and reproducers, use as your artifact dir the part of your working
+branch's name after `crustify/review-batches/`:
+`<campaign-id>/<link-unit>/<subsystem>/<wave>/<batch>`.
 
-#### Safe boundary
+Each reproducer is a standalone Cargo package: its `Cargo.toml` declares an
+empty `[workspace]` table and depends on the affected crate through a relative `path`
+under `[dependencies]`. Its `src/main.rs` runs one scenario, so that `cargo run` exits
+non-zero on the affected commit: a UB reproducer through the sanitizer it names in its report,
+an equivalence reproducer through a failed comparison.
+
+### 1. Lifecycle discovery
+
+For a workset that contains `type` or `raw-lifetime` kinds, verify that their existing
+lifetime primitives are complete and none were missed in the previous runs.
+
+Add any missing lifetime representations and file a report for each gap in
+`crustify/reviews/<artifact-dir>/lifecycle/<item-slug>` that describes your finding.
+
+### 2. Safe boundary
 
 Verify the public API of your workset for any remaining unsafe annotations and raw
 pointers that could be replaced with safe, idiomatic variants to facilitate API consumers
@@ -347,60 +359,56 @@ legitimately stay unsafe, verify that the safety obligation stated by their `///
 comment is correct and unambiguous.
 
 Fix the affected items and file a report for each defect in
-`<artifact-dir>/defects/unsafe/<defect-slug>` that describes your finding in less than 200
-words.
+`crustify/reviews/<artifact-dir>/unsafe/<defect-slug>` that describes your finding.
 
-#### UB
+### 3. UB
 
-Verify your workset's implementation for any UB defect in the safe public API that the
-`mod ub_tests` suite might have missed. Prove that a candidate is a true UB defect by
-emitting a reproducer that triggers one of the enabled sanitizers from safe Rust code
-compiled with `#[forbid(unsafe_code)]` against the affected revision. Place the reproducer
-in `<artifact-dir>/defects/ub/<defect-slug>` along with a report that describes your
-finding in under 200 words, including the affected SHA revision and a trace of the
-sanitizer crash.
+Verify your workset's implementation for any UB defect in the public API that the
+`ub_safe` or `ub_unsafe` suites might have missed. Prove that a candidate is a true UB defect by
+emitting a reproducer that triggers one of the enabled sanitizers from Rust code;
+annotate reproducers targettinng the safe public API with `#[forbid(unsafe_code)]`; reproducers 
+targeting the unsafe API should honor the safety requirement. Place them in 
+`crustify/reviews/<artifact-dir>/ub_<safe or unsafe>/<defect-slug>` along with a report that describes
+your finding, including a trace of the sanitizer crash.
 
 Emit a patch for every true UB defect that you found and turn its reproducer into a Cargo
-integration test in the `mod ub_tests` suite to catch future regressions. The regression
+integration test `tests/ub_safe` or `tests/ub_unsafe` suite to catch future regressions. The regression
 test should either compile and run without triggering a sanitizer crash, or fail to
 compile because the patch removed the safe path that reached the defect.
 
-#### Equivalence
+### 4. Equivalence
 
 Verify your workset's implementation for any functional equivalence defects in the public
-API that the `mod equiv_tests` suite might have missed. Prove that a candidate is a true
+API that the `tests/equiv` suite might have missed. Prove that a candidate is a true
 equivalence defect by emitting a reproducer that fails to pass at least one of the
 equivalence comparisons stated above while executing the raw C and the public Rust APIs.
-Place the reproducer in `<artifact-dir>/defects/equiv/<defect-slug>` along with a report
-that describes your finding in less than 200 words, including the affected SHA revision
-and a trace of the failing equivalence assertion.
+Place the reproducer in `crustify/reviews/<artifact-dir>/equiv/<defect-slug>` along with a
+report that describes your finding, including a trace of the failing equivalence
+assertion.
 
 Emit a patch for every true equivalence defect that you found and turn its reproducer into
-a Cargo integration test in the `mod equiv_tests` suite to catch future regressions.
+a Cargo integration test in the `tests/equiv` suite to catch future regressions.
 
-#### Internal
+### 5. Internal
 
 Verify your workset's private implementation for any remaining defects that the `mod
-unit_tests` suite might have missed. Prove that a candidate is a true internal defect by
-emitting an inline unit test reproducer in `mod unit_tests` that fails to pass the
-expected assertion. File a brief report that describes your finding in under 200 words and
-place it in `<artifact-dir>/defects/internal/<defect-slug>`, including the affected SHA
-revision and a trace of the failing internal assertion.
+unit_tests` suite might have missed. File a brief report that describes your finding and
+place it in `crustify/reviews/<artifact-dir>/internal/<defect-slug>`.
 
-Emit a patch for every true defect that you found and leave the unit test reproducer as an
-inline regression test in the `mod unit_tests` suite to catch future regressions.
+Emit a patch for every true defect that you found and add an inline regression test in the
+`mod unit_tests` suite to catch future regressions.
 
-#### Conventions
+### 6. Conventions
 
-Fix any deviation from our coding conventions and file a report describing it in less than
-200 words in `<artifact-dir>/defects/conventions/<defect-slug>`.
+Fix any deviation from our coding conventions and file a report describing it in
+`crustify/reviews/<artifact-dir>/conventions/<defect-slug>`.
 
-#### Misc
+### 7. Misc
 
-Fix any other miscellaneous defect that you find and file a report describing it in less
-than 200 words in `<artifact-dir>/defects/misc/<defect-slug>`.
+Fix any other miscellaneous defect that you find and file a report describing it
+in `crustify/reviews/<artifact-dir>/misc/<defect-slug>`.
 
-### 2. Coverage
+### 8. Coverage
 
 Identify any coverage gaps that the existing external or inline test suites might have
 missed for the C and Rust execution paths and add tests that fill those gaps for your
@@ -419,9 +427,6 @@ unsafe/raw sites that you might have missed:
 ```bash
 crustify <workdir> audit unsafe --name <batch names...> --json
 ```
-
-After fixing the illegal sites, rerun the scan once again and record its emitted output in
-your artifact dir; it will become tracked by git.
 
 Do NOT run `crustify audit ub`.
 
@@ -446,11 +451,14 @@ full C baseline.
 
 ### 3. Commit
 
-Check that the diff contains no unrelated work. Commit one changeset, regardless of
-objective.
+Check that the diff contains no unrelated work.
 
-Land it on the supplied unchecked-out wave branch through the local Git common directory
-with:
+For `review`, make two commits: first, the `crustify/reviews/` changes so one can easily
+checkout the affected commit and run reproducers, and then the Rust tree fixes. Otherwise,
+commit one changeset.
+
+Land your commits on the supplied unchecked-out wave branch through the local Git common
+directory with:
 
 ```bash
 git push "$(git rev-parse --git-common-dir)" HEAD:refs/heads/{git_base}
@@ -476,8 +484,6 @@ Follow these coding conventions where applicable throughout your workflow:
 <!-- CODING CONVENTIONS -->
 
 ---
-
-## Skills
 
 Reach for the skills advertised by the headers in the following skill index and leverage
 them to conduct your workflow:

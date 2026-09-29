@@ -87,8 +87,14 @@ resolves through `link_units`.
 |---|---|
 | `link_unit` | destination `link_units[*].name` |
 | `subsystem` | destination subsystem's `name` within that link unit |
-| `nr_edges` | dependency edges aggregated into this relation |
+| `outgoing_edges` | dependency edges from this subsystem to the destination |
+| `incoming_edges` | dependency edges from the destination back to this subsystem |
 | `counters` | distinct entities consumed from that destination, by kind |
+
+`outgoing_edges` is what this subsystem needs from the destination; `incoming_edges` is
+what the destination needs from it, and is non-zero exactly when the two form a cycle. The
+pair is mirrored: the destination's own record for this subsystem carries the same two
+numbers swapped.
 
 | `out_of_tree[*]` field | meaning |
 |---|---|
@@ -104,7 +110,10 @@ The in-tree graph may contain cycles, and this artifact records them. It describ
 decomposition as it is; it is not a schedule, and dropping an edge to make it a DAG would
 falsify the dependency it documents and hide the cycle from everything downstream.
 
-The orchestrator cuts cycles when it schedules, not here. Within a cyclic region, a
-subsystem with more incoming consumer edges has greater producer weight and should
-preferentially remain the producer; `nr_edges` refines that weight when choosing where to
-cut. A cut is implied by the schedule's order rather than recorded in it.
+The orchestrator cuts cycles when it schedules, not here. Within each strongly connected
+component, schedule first the member that the most other members depend on. Break a tie
+by the edges between the tied members: the one the others need more, by their summed
+`incoming_edges` from each other, goes first. A cut is implied by the schedule's order
+rather than recorded in it: every record whose destination is scheduled after its
+consumer, leaving `outgoing_edges` raw seams in that consumer until the destination
+lands.

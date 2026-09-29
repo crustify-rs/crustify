@@ -42,7 +42,7 @@ the campaign repository before approval.
 Install any dependency required by the steps of this workflow, the enabled skills, and the
 task's target repo.
 
-### 2. Artifact tree scaffolding
+#### 2. Artifact tree scaffolding
 
 This campaign's `<campaign-id>` is `{campaign_id}`. The harness has already created its
 artifact dir, `<repo>/crustify/campaigns/<campaign_id>/`, and writes your log there. If
@@ -60,7 +60,7 @@ git -C <repo> checkout -b crustify/campaigns/<campaign-id>
 ```
 
 
-### 3. Prebuilds and test baselines
+#### 3. Prebuilds and test baselines
 
 Create immutable builds of the target so that translator agents can reuse them:
 
@@ -80,7 +80,7 @@ parallel builds. Disable unstable baseline tests as needed, record pass/total an
 disabled test in the campaign results. Post-campaign results must match this baseline.
 
 
-### 4. Subsystem decomposition
+#### 4. Subsystem decomposition
 
 Create `crustify/subsystems.json` from `specs/subsystems.json`; see
 `docs/translate/schemas/subsystems.md`.
@@ -106,13 +106,14 @@ descending order of fit. Before leaning on one, verify its semantics, platform s
 performance and licensing.
 
 Aggregate each consumer-to-producer relation into one `imported_deps` record with its
-`nr_edges` and the item kinds consumed across them, splitting in-tree destinations from
-out-of-tree libraries. Record the graph as it is, cycles included.
+`outgoing_edges`, its `incoming_edges` and the item kinds consumed across them, splitting
+in-tree destinations from out-of-tree libraries. Record the graph as it is, cycles
+included.
 
 
-### 5. Planning
+#### 5. Planning
 
-#### Sub-campaigns
+##### Sub-campaigns
 
 Emit a campaign-wide `crustify/campaigns/<campaign-id>/schedule.json` from
 `specs/schedule.json`; read `docs/translate/schemas/schedule.md` for its field meaning. It
@@ -123,17 +124,20 @@ Plan only link units and subsystems included in the campaign scope established b
 user.
 
 Each ordinary sub-campaign translates one subsystem of one link unit from
-`subsystems.json`. Raw-lifetime discovery is the only synthetic sub-campaign.
+`subsystems.json`. Raw-lifetime discovery for void and string are the only two
+synthetic sub-campaigns.
 
 Turn the graph of link units and subsystems into a DAG by cutting its cycles as
-`docs/translate/schemas/subsystems.md` describes: within a cyclic region, the subsystem
-with more incoming consumer edges stays the producer, and `nr_edges` refines that choice.
+`docs/translate/schemas/subsystems.md` describes: within each strongly connected
+component, the member that the most other members depend on is scheduled first, and the
+edges between tied members break ties.
 Raw lifetime sub-campaigns are campaign leaves and they run first.
 
-Skip link units or subsystems that a resuming or a previous campaign already completed them.
+Skip link units or subsystems that this campaign, before it was resumed, or a previous
+campaign already completed.
 
 
-#### Waves and batches
+##### Waves and batches
 
 Plan waves and batches per sub-campaign and record them in `schedule.json`. Waves execute
 sequentially, bottom-up, producers before consumers; batches execute in parallel according
@@ -157,11 +161,19 @@ Home each batch's set of items using the established coding conventions below; s
 them lazily on disk before launch.
 
 
-### 6. Rust tree scaffolding
+#### 6. Rust tree scaffolding
 
 Scaffold the top-level manifest, raw `-sys` and safe crates according to our coding
 conventions. Do this only for the link units included in the scope established by the
 user. Scaffold source files and modules lazily before spawning translator agents.
+
+Create test crates where translators can emit Cargo integration tests for the public
+API:
+- `rust/<target>/tests/ub_safe/main.rs` tagged with `#![forbid(unsafe_code)]` for UB tests that
+  target the safe public API; also create `ub_safe/compile_fail/` for tests that are supposed to
+  fail to compile;
+- `rust/<target>/tests/ub_unsafe/main.rs` for UB tests that target the unsafe public API;
+- `rust/<target>/tests/equiv/main.rs` for functional equivalence tests that target the public API. 
 
 For each `-sys` package, author the build scripts required by bindgen so that translator
 agents can reuse them; each  `-sys` crate needs `Cargo.toml`, `src/lib.rs`, `build.rs`,
@@ -170,11 +182,10 @@ and bindgen input. Bindgen allowlists are populated by translators lazily.
 Commit the initial Rust tree on the campaign branch.
 
 
+### Phase 2: translation
 
-## Phase 2: translation
 
-
-### 1. Preflight smoke runs
+#### 1. Preflight smoke runs
 
 Before launching translation or review waves:
 
@@ -186,9 +197,9 @@ Before launching translation or review waves:
 6. compare unit, wave, and batch counts with the approved schedule.
 
 
-### 2. Launch preparations
+#### 2. Launch preparations
 
-#### Sub-campaigns
+##### Sub-campaigns
 
 Pick the next sub-campaign from this campaign's `schedule.json`.
 
@@ -199,7 +210,7 @@ Scaffold the Rust subsystem root on disk according to our coding conventions. Em
 header modules lazily before scheduling their first units. Commit the canonical tip as the
 sub-campaign's base. Promote completed sub-campaigns in the canonical campaign integration branch.
 
-#### Waves and batches
+##### Waves and batches
 
 Pick the next wave from the live sub-campaign's `schedule.json` record and:
 
@@ -219,13 +230,12 @@ For each scheduled batch:
   `crustify/batches/<campaign-id>/<link-unit>/<subsystem>/wave-<index>/batch-<index>`;
 - fork a worktree at `crustify/.worktrees/<same-as-branch>`
 - symlink any gitignored state from the main checkout that is shared and required for a
-  complete crustify tree: `crustify/.providers`, `crustify/campaigns/.../batch-<index>/`,
-  etc.
+  complete crustify tree: `crustify/.providers`, etc.
 
 Translators are responsible for removing their worktrees once successfully landing their changesets.
 
 
-### 3. Launch and monitoring
+#### 3. Launch and monitoring
 
 Run one CLI process per batch, concurrently up to approved parallelism, passing its batch
 worktree as the workdir, its `batch.json`, its batch directory as `--output`, and its
@@ -238,10 +248,8 @@ Failed translators retain their branches and worktrees: the harness neither crea
 purges them, so a failed batch's tree stays for inspection until you remove it. The
 orchestrator must not translate the failed worklist or discard a competing landing.
 
-Promote a batch's branch on its integration branch.
 
-
-### 4. Review waves
+#### 4. Review waves
 
 Every translated wave may be followed by agentic adversarial review before a consumer
 starts.
@@ -266,18 +274,18 @@ After review lands, promote the reviewed wave tip to the canonical sub-campaign
 integration branch.
 
 
-### 5. Accounting
+#### 5. Accounting
 
-#### Static safety scan
+##### Static safety scan
 
-After each wave, including review, run the static safety scan with the exact scheduled
+After each batch, including review, run the static safety scan with the exact scheduled
 workset names:
 
 ```bash
-crustify <workdir> audit unsafe --name <wave names...> --json
+crustify <workdir> audit unsafe --name <batch names...> --json
 ```
 
-Record it in the wave's artifact dir; it becomes tracked by git.
+Record it in its respective artifact dir; it becomes tracked by git.
 
 At wave, campaign, and sub-campaign end, record an unseeded scan for unsafe metrics:
 
@@ -285,9 +293,9 @@ At wave, campaign, and sub-campaign end, record an unseeded scan for unsafe metr
 crustify <workdir> audit unsafe --json
 ```
 
-Record them in their respective workdirs; they become tracked by git.
+Record them in their respective workdirs.
 
-#### Cost
+##### Cost
 
 After each batch, both translation and review, run `crustify ... cost` over the batch
 directories' `translator.usage.json` files. Use its computed cost and token counts, not
@@ -310,8 +318,6 @@ Follow these coding conventions where applicable throughout your workflow:
 <!-- CODING CONVENTIONS -->
 
 ---
-
-## Skills
 
 Reach for the skills advertised by the headers in the following skill index and leverage
 them to conduct your workflow:

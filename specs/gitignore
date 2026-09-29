@@ -13,6 +13,9 @@ campaigns/**/translator.usage.json
 campaigns/*/orchestrator-*.log
 campaigns/*/orchestrator-*.usage.json
 
+# Review reproducers are tracked; the cargo trees their builds leave are not.
+reviews/**/target
+
 # The UB auditor's working area, and the cargo trees under its reproducers --
 # typically ~99% of the directory's bytes. Advisories, their reproducer
 # sources and the logs are the deliverable and stay tracked.
