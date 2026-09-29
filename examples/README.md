@@ -119,6 +119,5 @@ names. Historical aggregate measurements for the libgit2 and OpenSSL campaigns
 are preserved in
 [`crustify/libgit2-openssl-results.md`](crustify/libgit2-openssl-results.md).
 
-The Dockerfile header documents the rest: what each mount buys, why the base
-image is pinned by digest, and why the sanitizer self-tests fail the build
-rather than warn.
+The Dockerfile header documents the rest: what each mount buys and why the base
+image is pinned by digest.
