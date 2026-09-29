@@ -1,6 +1,6 @@
 # TODO
 
-Deferred decisions and follow-up work on the crustify contracts and playbooks.
+Deferred decisions and follow-up work on the crustify contracts and prompts.
 
 ## Side campaigns for out-of-tree dependencies
 
@@ -11,8 +11,7 @@ built on the campaign's output still reaches foreign code through raw bindings.
 
 A side campaign would translate one of those dependencies in **its own** repository,
 producing a wrapper crate the main campaign depends on rather than one it vendors. The
-orchestrator prompt reserves a step for it (`Phase 1 / Side campaigns`) with nothing
-behind it yet.
+orchestrator prompt has no step for it yet.
 
 The input already exists. `subsystems.json` records `imported_deps.out_of_tree[*]` as
 `{library, counters}`, so the orchestrator can already see which external libraries a span
@@ -53,7 +52,7 @@ the fix would lose them the same way.
 
 Create `docs/idiomaticity.md` for Rust API-shaping hints and good practices. Keep
 mandatory mechanical rules in `coding-conventions.md`. Make the guide available through an
-optional prompt skill so experiments can ablate it without changing the playbooks.
+optional prompt skill so experiments can ablate it without changing the prompts.
 
 ## Emit type-implementing symbols as inherent methods
 
@@ -86,7 +85,7 @@ Two findings decide whether this is worth doing:
 So the case rests on ergonomics, not on lifetime elision. If adopted, the rule belongs in
 the translator prompt under "Functions and globals", with the `&self`-on-a-borrowed-handle
 hazard stated explicitly, and the free-function clause in `coding-conventions.md` relaxed
-to defer the shape to the playbook.
+to defer the shape to the translator prompt.
 
 Also open: whether existing waves get retrofitted, or the crate carries two generations of
 shape side by side.

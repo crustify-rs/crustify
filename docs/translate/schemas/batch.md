@@ -1,7 +1,8 @@
 # Thin batch schema
 
 Field meaning for the JSON the orchestrator passes to `crustify <workdir> translate
-<batch.json>`. One batch is one agent's entire worklist.
+<batch.json> --base-branch <wave branch> --output <batch dir>`. One batch is one agent's
+entire worklist.
 
 The orchestrator plans it as one batch entry of `docs/translate/schemas/schedule.md` and
 writes it out verbatim.
@@ -19,7 +20,7 @@ path or dependency: everything about where the batch sits is the directory it si
       "defined_in": "libavutil/frame.h",
       "kind": "type",
       "field_anchors": ["data", "linesize"],
-      "home": "crustify/rust/libavutil/src/frame.rs"
+      "home": "crustify/rust/ffmpeg/libavutil/frame.rs"
     }
   ]
 }

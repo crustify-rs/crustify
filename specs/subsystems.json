@@ -63,15 +63,15 @@
             ],
             "out_of_tree": [
               {
-                "library": "libc",
+                "library": "libz",
                 "counters": {
-                  "structs": 2,
-                  "functions": 7,
+                  "structs": 1,
+                  "functions": 4,
                   "global_variables": 0,
-                  "enums": 4,
-                  "unions": 9,
-                  "callbacks": 0,
-                  "macros": 5
+                  "enums": 0,
+                  "unions": 0,
+                  "callbacks": 2,
+                  "macros": 3
                 }
               }
             ]

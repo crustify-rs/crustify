@@ -225,7 +225,7 @@ expose the primitive as an ordinary safe function.
 ### 4. Porting symbols
 
 For `port`, translate the implementation to safe idiomatic Rust and preserve observable
-behaviour. Re-export it to C through according to our coding conventions while C consumers
+behaviour. Re-export it to C according to our coding conventions while C consumers
 remain.
 
 - The raw gateway reconstructs safe wrappers and calls the native function.
