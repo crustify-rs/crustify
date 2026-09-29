@@ -42,7 +42,7 @@ Translate:
 ```sh
 docker exec -it crustify-libgit2 \
     crustify --model anthropic/claude-opus-5 --billing api \
-    /target orchestrate translate --task /campaign/TASK.md
+    /target orchestrate-translation /campaign/TASK.md
 ```
 
 Audit, in a container started the same way with an audit task and a `/work`
@@ -51,7 +51,7 @@ volume:
 ```sh
 docker exec -it audit-zstd \
     crustify --model anthropic/claude-opus-5 --billing api \
-    /target orchestrate audit --task /campaign/TASK.md
+    /target orchestrate-audit /campaign/TASK.md
 ```
 
 Add `--task-only` to either for the ablation control: the task file becomes the
@@ -106,7 +106,7 @@ Set with `--build-arg` on `docker build`.
 | path | mode | used by | lifetime |
 |---|---|---|---|
 | `/target` | read-write, required | both | existing target checkout; its partial campaign, CodeQL data, branches and logs stay on the host |
-| `/campaign/TASK.md` | read-only, conventional | both | the campaign task passed to `--task`; any path works |
+| `/campaign/TASK.md` | read-only, conventional | both | the campaign task passed to the orchestrate command; any path works |
 | `/opt/crustify` | read-write, optional | both | baked into the image; mount a checkout to run live harness sources |
 | `/opt/venv/share/wavefront` | read-write, optional | translate | replaces the build-time clone, which is installed editable |
 | `/opt/venv/share/ffibox` | read-write, optional | translate | replaces the build-time clone used by generated Cargo manifests |

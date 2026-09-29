@@ -270,8 +270,10 @@ item projection from its `batch.json` with `objective: review`:
   `crustify/review-batches/<campaign-id>/<link-unit>/<subsystem>/wave-<index>/batch-<index>`;
 - worktree: `crustify/.worktrees/<same-as-branch>`.
 
-After review lands, promote the reviewed wave tip to the canonical sub-campaign
-integration branch.
+After review lands:
+- assess the legitimacy of the reproducers added in `crustify/reviews/` by reruning them and judging
+  whether they address real bugs; record the rejected ones and revert the fix;
+- promote the reviewed wave tip to the canonical sub-campaign integration branch.
 
 
 #### 5. Accounting
