@@ -40,63 +40,60 @@ Thin batches with `"objective": "review"`, LLM-as-a-Judge over each landed wave.
 `rv`-prefixed columns below carry the review pass; the unprefixed ones remain
 the campaign's.
 
-## UB pass
-
-`crustify-audit ub`, an agentic hunt for undefined behaviour reachable from the
-crate's SAFE APIs.
-
-- **agent backend** — `<codex | claude>`
-- **model** — `<provider>/<model>`
-- **`--billing`** — `<api | subscription>`
-- **`--timeout`** — `<n>` min — a wall BUDGET, not a kill switch: agents are
-  spawned one after another until it is reached and each finishes on its own,
-  so the run overshoots by however long the last one takes. `0` runs exactly
-  one agent
-- **subject** — `<sub-campaign>` at `<sha>`
-- **agents** — `<n>`, `<n>h<n>m<n>s` wall, `$<n>`
-- **advisories** — `<n>` at `crustify/audit/advisories/`
-- **patch** — `<branch>` at `<sha>`; `<merged | left unpromoted — reason>`
-
-`ub`-prefixed columns carry this pass.
-
 ## Legend
 
 - `objective` — what the batch's agents were told to do: `wrap`, `port`, or
-  `raw lifetime`; the Overview also carries `review` for a judged wave, `ub` for
-  the UB pass, and `orchestration` for the driving agent. The type tables are
-  split by it, so it appears as a column only in `Batches — symbols`, which
-  mixes the two
+  `raw lifetime`. The Types tables are split by it, so it appears as a column
+  only in the Symbols `Batches` table, which mixes the two
 - `wave` / `batch` — the batch's position in its sub-campaign's plan: the index
   of its wave in `waves` and of the batch within that wave's `batches`, so a
-  batch row joins to `waves.json`, to the agent that landed it, and to its
+  batch row joins to `schedule.json`, to the agent that landed it, and to its
   Overview sub-campaign row. Schema-v2 plans carry `steps` and `plan_items`
   rather than indexed waves and batches, so historical rows leave both blank
 - `types` / `symbols` — scheduler units in the batch. Callbacks are scheduled
   in symbol batches and counted there
 - `fields` — in-scope fields: the field accessors the oracle assigned to that
   type batch, not the type's full declared field count
-- `lifecycle prims` — deleters, disposers and cloners the ownership store binds
-  to that batch's types; raw-tier primitives that belong to no type are counted
-  in `Raw lifetime discovery` instead
+- `strategies emitted` — in `Raw lifetime discovery`, the release and clone
+  strategies that tier's batch emitted for its `void` or string primitives
 - `$` / `wall` / `loc` — that agent's computed cost, its elapsed time, and the
   `.rs` insertions of its landing commit. `wall` is `ended_at − started_at` from
   the agent's own `usage.json`, so it INCLUDES the per-worktree C rebuild
 - `$/type` / `$/symbol` / `$/field` / `$/loc` — that row's `$` over its units,
   its in-scope fields, or its `loc`
+- `sub-campaign` — the Overview row's `<link-unit>/<subsystem>`, or
+  `raw-lifetime-void` / `raw-lifetime-string`
+- `sub-campaign wall` — from its first batch launch through its final review
+  and regression gate
+- `batch` / `review` — in the Overview, the computed cost of the sub-campaign's
+  translation batches and of its review batches; `—` where it ran none
+- `total` — `batch` + `review`; for the orchestrator, its own cost
 - `$/type` / `$/sym` — in the Overview, a sub-campaign's cost over the types or
   symbols it was scheduled for; `—` where it was scheduled for none
-- `+LoC` — the landed sub-campaign's Rust-source insertions/deletions relative
-  to its parent campaign state
-- `+UB tests` / `+equiv tests` / `+unit tests` — tests added by that landed
-  sub-campaign; each parenthesized pair is its C/Rust line-coverage change in
-  percentage points. Negative coverage deltas are valid when the landed source
-  adds more executable lines than the new tests cover
+- `+LoC` — the landed batch's Rust-source insertions/deletions relative to its
+  wave's base
+- `+UB safe tests` / `+UB unsafe tests` / `+equiv tests` / `+unit tests` — tests
+  added by that landed batch; each parenthesized pair is its C/Rust
+  line-coverage change in percentage points. Negative coverage deltas are valid
+  when the landed source adds more executable lines than the new tests cover
+- `+lifecycle` … `+misc` — in a `Batches — review: PoC + reports` table, the
+  defect reports that review batch filed under
+  `crustify/reviews/<artifact-dir>/<category>/`, one per defect it reported;
+  `+UB safe` / `+UB unsafe` are its `ub_safe` and `ub_unsafe` categories.
+  `+lifecycle` covers type and raw-lifetime items only, so it reads `—` for
+  symbols. `total` is the row's sum
+- `+rejected PoCs` — the `ub_safe`, `ub_unsafe` and `equiv` PoCs that review
+  batch filed which the orchestrator rejected after rerunning them: they did not
+  reproduce, or did not show a real bug, and their fixes were reverted. They
+  stay counted in their categories; `total` minus this column is the confirmed
+  defects
+- `+unsafe fn smell` / `+raw-ptr smell` — the change the landed batch made to the
+  `unsafe fn` smell and the raw-pointer smell (total − seam) of the static scan
+  over its names, against its wave's base; a review batch's fixes show as
+  negative values
 - `rv $` / `rv wall` / `rv loc` — the REVIEW agent's cost, elapsed time, and net
   `.rs` line delta (`+ins/-del`) of its landing commit. Under subscription
   billing `rv $` is an API-equivalent comparison value, not a charged amount
-- the UB pass is a row, not a pair of columns: `crustify-audit ub` schedules no
-  types or symbols and lands no tests, so it fills only `wave wall` and
-  `total`, and the row is omitted entirely where the optional pass did not run
 - `UB tests` / `Equiv tests` / `Unit tests` — counts of `#[test]`
   functions under `mod ub_tests` / `mod equiv_tests` / `mod units_tests`. Each
   coverage pair comes from running only that workload, against the
@@ -120,7 +117,8 @@ in Notes.
 
 - **Rust LoC, non-test** — `<n>`
 - **Rust LoC, tests** — `<n>`
-- **UB tests** — `<count of #[test]>` (`<n>`% C LoC coverage, `<n>`% Rust LoC coverage)
+- **UB safe tests** — `<count of #[test]>` (`<n>`% C LoC coverage, `<n>`% Rust LoC coverage)
+- **UB unsafe tests** — `<count of #[test]>` (`<n>`% C LoC coverage, `<n>`% Rust LoC coverage)
 - **Equiv tests** — `<count of #[test]>` (`<n>`% C LoC coverage, `<n>`% Rust LoC coverage)
 - **Unit tests** — `<count of #[test]>` (`<n>`% C LoC coverage, `<n>`% Rust LoC coverage)
 - **Total tests** — `<sum of the three counts>` (`<n>`% C LoC coverage, `<n>`% Rust LoC coverage)
@@ -131,152 +129,160 @@ in Notes.
 - **wrapped symbols** — `<n>`
 
 Implementation `<provider>/<model>` via `<backend>`; review
-`<provider>/<model>` via `<backend>`. Each row names the model that produced
-it.
+`<provider>/<model>` via `<backend>`.
 
-| sub-campaign | objective | nr types | nr symbols | +LoC | +UB tests (+C/+Rust pp) | +equiv tests (+C/+Rust pp) | +unit tests (+C/+Rust pp) | wave wall | total | $/type | $/sym |
-|---|---|---:|---:|---:|---:|---:|---:|---|---:|---:|---:|
-| `<waves>-<name>` | raw lifetime | `0` | `<n>` | `+<n>/-<n>` | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) | `<n>m<n>s` | `$<n>` (`<model>`) | — | `$<n>` |
-| `<waves>-<name>` | wrap | `<n>` | `<n>` | `+<n>/-<n>` | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) | `<n>h<n>m<n>s` | `$<n>` (`<model>`) | `$<n>` | `$<n>` |
-| `<waves>-<name>` | review | `<n>` | `<n>` | `+<n>/-<n>` | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) | `<n>h<n>m<n>s` | `$<n>` (`<model>`) | `$<n>` | `$<n>` |
-| `<waves>-<name>` | port | `<n>` | `<n>` | `+<n>/-<n>` | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) | `<n>h<n>m<n>s` | `$<n>` (`<model>`) | `$<n>` | `$<n>` |
-| `<subject>` UB pass | ub | — | — | — | — | — | — | `<n>h<n>m<n>s` | `$<n>` (`<model>`) | — | — |
-| orchestrator | orchestration | `<n>` | `<n>` | — | — | — | — | — | `$<n>`+ (`<model>`) | — | — |
-| **Σ recorded agents** |  | **`<n>`** | **`<n>`** | **`+<n>/-<n>`** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`<n>h<n>m`** | **`$<n>`** | **`$<n>`** | **`$<n>`** |
+| sub-campaign | nr types | nr symbols | sub-campaign wall | batch | review | total | $/type | $/sym |
+|---|---:|---:|---|---:|---:|---:|---:|---:|
+| `raw-lifetime-void` | `0` | `<n>` | `<n>m<n>s` | `$<n>` | `$<n>` | `$<n>` | — | `$<n>` |
+| `raw-lifetime-string` | `0` | `<n>` | `<n>m<n>s` | `$<n>` | `$<n>` | `$<n>` | — | `$<n>` |
+| `<link-unit>/<subsystem>` | `<n>` | `<n>` | `<n>h<n>m<n>s` | `$<n>` | `$<n>` | `$<n>` | `$<n>` | `$<n>` |
+| orchestrator | `<n>` | `<n>` | — | — | — | `$<n>`+ | — | — |
+| **Σ recorded agents** | **`<n>`** | **`<n>`** | **`<n>h<n>m`** | **`$<n>`** | **`$<n>`** | **`$<n>`** | **`$<n>`** | **`$<n>`** |
 
 ## Raw lifetime discovery
 
 `<provider>/<model>` via `<backend>`.
 
-| tier | symbols submitted | strategies | CDropped | CCloned | CLenDropped | CLenCloned | $ | wall |
-|---|---|---|---|---|---|---|---|---|
-| void | `<n>` | `<n>` | `<n>` | `<n>` | `<n>` | `<n>` | `$<n>` | `<n>m<n>s` |
-| string | `<n>` | `<n>` | `<n>` | `<n>` | `<n>` | `<n>` | `$<n>` | `<n>m<n>s` |
-| **Σ** | **`<n>`** | **`<n>`** | **`<n>`** | **`<n>`** | **`<n>`** | **`<n>`** | **`$<n>`** | **`<n>m<n>s`** |
+| tier | strategies emitted | $ | wall |
+|---|---|---|---|
+| void | `<n>` | `$<n>` | `<n>m<n>s` |
+| string | `<n>` | `$<n>` | `<n>m<n>s` |
+| **Σ** | **`<n>`** | **`$<n>`** | **`<n>m<n>s`** |
 
-### Review, in-model
-
-`<provider>/<model>` via `<backend>`.
-
-| tier | symbols | batches | $ | wall |
-|---|---|---|---|---|
-| void | `<n>` | `<n>` | `$<n>` | `<n>h<n>m` |
-| string | `<n>` | `<n>` | `$<n>` | `<n>h<n>m` |
-| **Σ** | **`<n>`** | **`<n>`** | **`$<n>`** | **`<n>h<n>m`** |
-
-### Review, independent
+### Review
 
 `<provider>/<model>` via `<backend>`.
 
-| symbols | rv loc | rv $ | rv wall | rv $/symbol |
-|---|---|---|---|---|
-| `<n>` | `+<n>/-<n>` | `$<n>` | `<n>m<n>s` | `$<n>` |
-| **Σ `<n>`** | **`+<n>/-<n>`** | **`$<n>`** | — | **`$<n>`** |
+| tier | rv loc | rv $ | rv wall |
+|---|---|---|---|
+| void | `+<n>/-<n>` | `$<n>` | `<n>m<n>s` |
+| string | `+<n>/-<n>` | `$<n>` | `<n>m<n>s` |
+| **Σ** | **`+<n>/-<n>`** | **`$<n>`** | **`<n>m<n>s`** |
 
-## Target set
+## Types
 
-### Batches — types, wrap
-
-`<provider>/<model>` via `<backend>`.
-
-| wave | batch | types | fields | lifecycle prims | +LoC | +UB tests (+C/+Rust pp) | +equiv tests (+C/+Rust pp) | +unit tests (+C/+Rust pp) | $ | wall | $/type | $/field |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|
-|`<n>`|`<n>`| `<n>` | `<n>` | `<n>` |`+<n>/-<n>`|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)| `$<n>` | `<n>m<n>s` | `$<n>` | `$<n>` |
-|`<n>`|`<n>`| **Σ `<n>`** | **`<n>`** | **`<n>`** |`+<n>/-<n>`|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)| **`$<n>`** | — | **`$<n>`** | **`$<n>`** |
-
-### Batches — types, port
+### Batches — wrap
 
 `<provider>/<model>` via `<backend>`.
 
-| wave | batch | types | fields | lifecycle prims | +LoC | +UB tests (+C/+Rust pp) | +equiv tests (+C/+Rust pp) | +unit tests (+C/+Rust pp) | $ | wall | $/type | $/field |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|
-|`<n>`|`<n>`| `<n>` | `<n>` | `<n>` |`+<n>/-<n>`|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)| `$<n>` | `<n>m<n>s` | `$<n>` | `$<n>` |
-|`<n>`|`<n>`| **Σ `<n>`** | **`<n>`** | **`<n>`** |`+<n>/-<n>`|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)| **`$<n>`** | — | **`$<n>`** | **`$<n>`** |
+| wave | batch | types | fields | +LoC | +UB safe tests (+C/+Rust pp) | +UB unsafe tests (+C/+Rust pp) | +equiv tests (+C/+Rust pp) | +unit tests (+C/+Rust pp) | +unsafe fn smell | +raw-ptr smell | $ | wall | $/type | $/field |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+|`<n>`|`<n>`| `<n>` | `<n>` |`+<n>/-<n>`|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)| `±<n>` | `±<n>` | `$<n>` | `<n>m<n>s` | `$<n>` | `$<n>` |
+| **Σ** |  | **`<n>`** | **`<n>`** | **`+<n>/-<n>`** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`±<n>`** | **`±<n>`** | **`$<n>`** | — | **`$<n>`** | **`$<n>`** |
 
-### Batches — review types
-
-`<provider>/<model>` via `<backend>`.
-
-| wave | batch | types | +LoC | +UB tests (+C/+Rust pp) | +equiv tests (+C/+Rust pp) | +unit tests (+C/+Rust pp) | rv loc | rv $ | rv wall | rv $/type |
-|---|---|---|---|---|---|---|---|---|---|---|
-|`<n>`|`<n>`| `<n>` |`+<n>/-<n>`|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)| `+<n>/-<n>` | `$<n>` | `<n>m<n>s` | `$<n>` |
-|`<n>`|`<n>`| **Σ `<n>`** |`+<n>/-<n>`|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)| **`+<n>/-<n>`** | **`$<n>`** | — | **`$<n>`** |
-
-### Batches — symbols
+### Batches — port
 
 `<provider>/<model>` via `<backend>`.
 
-| wave | batch | objective | symbols | loc | +LoC | +UB tests (+C/+Rust pp) | +equiv tests (+C/+Rust pp) | +unit tests (+C/+Rust pp) | $ | wall | $/symbol | $/loc |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|
-|`<n>`|`<n>`| wrap | `<n>` | `<n>` |`+<n>/-<n>`|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)| `$<n>` | `<n>m<n>s` | `$<n>` | `$<n>` |
-|`<n>`|`<n>`| port | `<n>` | `<n>` |`+<n>/-<n>`|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)| `$<n>` | `<n>m<n>s` | `$<n>` | `$<n>` |
-|`<n>`|`<n>`| **Σ** | **`<n>`** | **`<n>`** |`+<n>/-<n>`|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)| **`$<n>`** | | **`$<n>`** | **`$<n>`** |
+| wave | batch | types | fields | +LoC | +UB safe tests (+C/+Rust pp) | +UB unsafe tests (+C/+Rust pp) | +equiv tests (+C/+Rust pp) | +unit tests (+C/+Rust pp) | +unsafe fn smell | +raw-ptr smell | $ | wall | $/type | $/field |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+|`<n>`|`<n>`| `<n>` | `<n>` |`+<n>/-<n>`|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)| `±<n>` | `±<n>` | `$<n>` | `<n>m<n>s` | `$<n>` | `$<n>` |
+| **Σ** |  | **`<n>`** | **`<n>`** | **`+<n>/-<n>`** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`±<n>`** | **`±<n>`** | **`$<n>`** | — | **`$<n>`** | **`$<n>`** |
 
-### Batches — review symbols
+### Batches — review
 
 `<provider>/<model>` via `<backend>`.
 
-| wave | batch | symbols | +LoC | +UB tests (+C/+Rust pp) | +equiv tests (+C/+Rust pp) | +unit tests (+C/+Rust pp) | rv loc | rv $ | rv wall | rv $/symbol |
-|---|---|---|---|---|---|---|---|---|---|---|
-|`<n>`|`<n>`| `<n>` |`+<n>/-<n>`|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)| `+<n>/-<n>` | `$<n>` | `<n>m<n>s` | `$<n>` |
-|`<n>`|`<n>`| **Σ `<n>`** |`+<n>/-<n>`|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)| **`+<n>/-<n>`** | **`$<n>`** | — | **`$<n>`** |
+| wave | batch | types | +LoC | +UB safe tests (+C/+Rust pp) | +UB unsafe tests (+C/+Rust pp) | +equiv tests (+C/+Rust pp) | +unit tests (+C/+Rust pp) | +unsafe fn smell | +raw-ptr smell | rv loc | rv $ | rv wall | rv $/type |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+|`<n>`|`<n>`| `<n>` |`+<n>/-<n>`|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)| `±<n>` | `±<n>` | `+<n>/-<n>` | `$<n>` | `<n>m<n>s` | `$<n>` |
+| **Σ** |  | **`<n>`** | **`+<n>/-<n>`** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`±<n>`** | **`±<n>`** | **`+<n>/-<n>`** | **`$<n>`** | — | **`$<n>`** |
+
+### Batches — review: PoC + reports
+
+`<provider>/<model>` via `<backend>`.
+
+| wave | batch | +lifecycle | +unsafe | +UB safe | +UB unsafe | +equiv | +internal | +conventions | +misc | total | +rejected PoCs |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `<n>` | `<n>` | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `<n>` | `<n>` |
+| **Σ** |  | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`<n>`** | **`<n>`** |
+
+## Symbols
+
+### Batches
+
+`<provider>/<model>` via `<backend>`.
+
+| wave | batch | objective | symbols | loc | +LoC | +UB safe tests (+C/+Rust pp) | +UB unsafe tests (+C/+Rust pp) | +equiv tests (+C/+Rust pp) | +unit tests (+C/+Rust pp) | +unsafe fn smell | +raw-ptr smell | $ | wall | $/symbol | $/loc |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+|`<n>`|`<n>`| wrap | `<n>` | `<n>` |`+<n>/-<n>`|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)| `±<n>` | `±<n>` | `$<n>` | `<n>m<n>s` | `$<n>` | `$<n>` |
+|`<n>`|`<n>`| port | `<n>` | `<n>` |`+<n>/-<n>`|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)| `±<n>` | `±<n>` | `$<n>` | `<n>m<n>s` | `$<n>` | `$<n>` |
+| **Σ** |  |  | **`<n>`** | **`<n>`** | **`+<n>/-<n>`** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`±<n>`** | **`±<n>`** | **`$<n>`** | — | **`$<n>`** | **`$<n>`** |
+
+### Batches — review
+
+`<provider>/<model>` via `<backend>`.
+
+| wave | batch | symbols | +LoC | +UB safe tests (+C/+Rust pp) | +UB unsafe tests (+C/+Rust pp) | +equiv tests (+C/+Rust pp) | +unit tests (+C/+Rust pp) | +unsafe fn smell | +raw-ptr smell | rv loc | rv $ | rv wall | rv $/symbol |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+|`<n>`|`<n>`| `<n>` |`+<n>/-<n>`|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)| `±<n>` | `±<n>` | `+<n>/-<n>` | `$<n>` | `<n>m<n>s` | `$<n>` |
+| **Σ** |  | **`<n>`** | **`+<n>/-<n>`** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`±<n>`** | **`±<n>`** | **`+<n>/-<n>`** | **`$<n>`** | — | **`$<n>`** |
+
+### Batches — review: PoC + reports
+
+`<provider>/<model>` via `<backend>`.
+
+| wave | batch | +lifecycle | +unsafe | +UB safe | +UB unsafe | +equiv | +internal | +conventions | +misc | total | +rejected PoCs |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `<n>` | `<n>` | — | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `<n>` | `<n>` |
+| **Σ** |  | — | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`<n>`** | **`<n>`** |
 
 ## Safety audit
 
-Deterministic `crustify-audit unsafe`; no model.
+Deterministic `crustify <workdir> audit unsafe`; no model.
 
-### Snapshots
+### Final tally overview
 
-| | before review (`<sha>`) | after review (`<sha>`) |
-|---|---|---|
-| unsafe loc | `<n>` | `<n>` |
-| % of loc | `<n>`% | `<n>`% |
-| blocks | `<n>` | `<n>` |
-| % in `impl T` | `<n>`% | `<n>`% |
-| `unsafe fn` | `<n>` | `<n>` |
-| ...of which not sanctioned | `<n>` | `<n>` |
-| raw-ptr smell | `<n>` | `<n>` |
-| void-ptr smell | `<n>` | `<n>` |
-| FFI calls | `<n>` | `<n>` |
-| `&`/`&mut` on a wrapper | `<n>` | `<n>` |
-| field proj outside an accessor | `<n>` | `<n>` |
+| | final (`<sha>`) |
+|---|---|
+| unsafe loc | `<n>` |
+| % of loc | `<n>`% |
+| blocks | `<n>` |
+| % in `impl T` | `<n>`% |
+| `unsafe fn` | `<n>` |
+| ...of which not sanctioned | `<n>` |
+| raw-ptr smell | `<n>` |
+| void-ptr smell | `<n>` |
+| FFI calls | `<n>` |
+| `&`/`&mut` on a wrapper | `<n>` |
+| field proj outside an accessor | `<n>` |
 
 ### All metrics
 
-| metric | before | after | Δ | reading |
-|---|---|---|---|---|
-| `code_lines` | `<n>` | `<n>` | `<n>` | union of HIR definition spans (denominator); `cfg`-disabled items excluded |
-| `total_stmts` | `<n>` | `<n>` | `<n>` | statements |
-| `unsafe_blocks` | `<n>` | `<n>` | `<n>` | count of `unsafe { }` blocks, macro-expanded included |
-| `unsafe_block_stmts` | `<n>` | `<n>` | `<n>` | statements inside them |
-| `unsafe_block_lines` | `<n>` | `<n>` | `<n>` | their lines, every outermost block |
-| `unsafe_block_code_lines` | `<n>` | `<n>` | `<n>` | **`<n>`% → `<n>`%** |
-| `unsafe_blocks_wrapper_impl` | `<n>` | `<n>` | `<n>` | inside `impl <wrapper T>` |
-| `unsafe_blocks_ffi_export` | `<n>` | `<n>` | `<n>` | inside the C-ABI gateway |
-| `unsafe_fns` | `<n>` | `<n>` | `<n>` | `unsafe fn` declarations, post-expansion |
-| `unsafe_fns_seam` | `<n>` | `<n>` | `<n>` | ...the sanctioned subset |
-| **`unsafe fn` smell** | **`<n>`** | **`<n>`** | **`<n>`** | the remainder — read each and accept or fix it |
-| `unsafe_fns_pub` | `<n>` | `<n>` | `<n>` | ...of `unsafe_fns`, exported from the crate |
-| `unsafe_impls` / `unsafe_traits` | `<n>` / `<n>` | `<n>` / `<n>` | `<n>` | lifecycle contracts asserted once per type |
-| `ffi_calls` | `<n>` | `<n>` | `<n>` | calls to a foreign item — the unsafe-FFI-call surface |
-| `wrapper_newtypes` | `<n>` | `<n>` | `<n>` | LAYOUT newtypes — `repr(transparent)` over a `repr(C)` type by value, detected structurally |
-| `wrapper_newtypes_declared` | `<n>` | `<n>` | `<n>` | the `CCell`-declared count, for comparison |
-| `wrapper_declared_nonconformant` | `<n>` | `<n>` | `<n>` | declared but failing the structural test — **target 0** |
-| `wrapper_newtypes_undeclared` | `<n>` | `<n>` | `<n>` | structural but undeclared — a hand-written layout newtype |
-| `raw_ptr_args` | `<n>` | `<n>` | `<n>` | raw-ptr positions in arguments |
-| `raw_ptr_rets` | `<n>` | `<n>` | `<n>` | raw-ptr positions in returns |
-| **total positions** | **`<n>`** | **`<n>`** | `<n>` | args + rets; disjoint, so this is the surface |
-| `raw_ptr_seam` | `<n>` | `<n>` | `<n>` | sanctioned: seam fn / `mod ffi_export` / `extern "C"` / ptr-to-own-`Self` |
-| **smell (total − seam)** | **`<n>`** | **`<n>`** | `<n>` | the non-seam remainder |
-| `raw_ptr_wrapped` | `<n>` | `<n>` | `<n>` | **of the smell**: pointee is a C type that HAS a wrapper — the actionable defect |
-| `raw_ptr_in_wrapper` | `<n>` | `<n>` | `<n>` | **of the smell**: inside a wrapper impl — the least excusable placement |
-| `raw_ptr_derefs` | `<n>` | `<n>` | `<n>` | `*p` on a raw pointer (volume) |
-| `ref_to_type_wrapper` | `<n>` | `<n>` | `<n>` | `&`/`&mut` on a layout newtype — **target 0** |
-| `field_proj_wrapped` | `<n>` | `<n>` | `<n>` | projection VOLUME — shares one HIR shape with `addr_of!`, not a violation |
-| `field_proj_outside_impl` | `<n>` | `<n>` | `<n>` | projections outside any accessor — **target 0** |
-| `field_ref_wrapped` | `<n>` | `<n>` | `<n>` | `&(*p).field` — forbidden by the translator playbook — **target 0** |
-| `void_ptr_sanctioned` | `<n>` | `<n>` | `<n>` | `*c_void` in a seam / `ffi_export` / `extern "C"` signature |
-| `void_ptr_smell` | `<n>` | `<n>` | `<n>` | `*c_void` elsewhere; `void_ptr_sites` names each one |
+| metric | final (`<sha>`) | `<link-unit>/<subsystem>` (`<sha>`) | … |
+|---|---|---|---|
+| `code_lines` | `<n>` | `<n>` | … |
+| `total_stmts` | `<n>` | `<n>` | … |
+| `unsafe_blocks` | `<n>` | `<n>` | … |
+| `unsafe_block_stmts` | `<n>` | `<n>` | … |
+| `unsafe_block_lines` | `<n>` | `<n>` | … |
+| `unsafe_block_code_lines` | `<n>` | `<n>` | … |
+| `unsafe_blocks_wrapper_impl` | `<n>` | `<n>` | … |
+| `unsafe_blocks_ffi_export` | `<n>` | `<n>` | … |
+| `unsafe_fns` | `<n>` | `<n>` | … |
+| `unsafe_fns_seam` | `<n>` | `<n>` | … |
+| **`unsafe fn` smell** | **`<n>`** | `<n>` | … |
+| `unsafe_fns_pub` | `<n>` | `<n>` | … |
+| `unsafe_impls` / `unsafe_traits` | `<n>` / `<n>` | `<n>` / `<n>` | … |
+| `ffi_calls` | `<n>` | `<n>` | … |
+| `wrapper_newtypes` | `<n>` | `<n>` | … |
+| `wrapper_newtypes_declared` | `<n>` | `<n>` | … |
+| `wrapper_declared_nonconformant` | `<n>` | `<n>` | … |
+| `wrapper_newtypes_undeclared` | `<n>` | `<n>` | … |
+| `raw_ptr_args` | `<n>` | `<n>` | … |
+| `raw_ptr_rets` | `<n>` | `<n>` | … |
+| **total positions** | **`<n>`** | `<n>` | … |
+| `raw_ptr_seam` | `<n>` | `<n>` | … |
+| **smell (total − seam)** | **`<n>`** | `<n>` | … |
+| `raw_ptr_wrapped` | `<n>` | `<n>` | … |
+| `raw_ptr_in_wrapper` | `<n>` | `<n>` | … |
+| `raw_ptr_derefs` | `<n>` | `<n>` | … |
+| `ref_to_type_wrapper` | `<n>` | `<n>` | … |
+| `field_proj_wrapped` | `<n>` | `<n>` | … |
+| `field_proj_outside_impl` | `<n>` | `<n>` | … |
+| `field_ref_wrapped` | `<n>` | `<n>` | … |
+| `void_ptr_sanctioned` | `<n>` | `<n>` | … |
+| `void_ptr_smell` | `<n>` | `<n>` | … |
 
 ## Notes
 

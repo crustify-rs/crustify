@@ -86,32 +86,38 @@ def main() -> None:
     from crustify_audit.cli import add_stages as _add_audit_stages
     _add_audit_stages(audit_p.add_subparsers(dest="audit_command", required=True))
 
-    # -- orchestrate (spawn the campaign supervisor) ---------------------
-    _orch_blurb = (
-        "Start a campaign orchestrator. It reads the campaign task, plans the "
-        "sub-campaigns and waves, and spawns the stage agents itself. The "
-        "kind selects which orchestrator prompt it runs under; there is no "
-        "default, because a wrong guess starts the wrong campaign and spends "
-        "a budget before anyone reads the transcript.")
-    orch_p = sub.add_parser(
-        "orchestrate", help=_orch_blurb, description=_orch_blurb,
-    )
-    orch_p.add_argument(
-        "kind", choices=["translate", "audit"],
-        help="Which campaign to supervise.")
-    orch_p.add_argument(
-        "--task-only", action="store_true",
-        help="Ablation control: the task file is the entire prompt and the "
-             "harness contributes nothing -- no conventions, no skill index, "
-             "no stage prompt.")
-    orch_p.add_argument(
-        "--campaign", metavar="ID",
-        help="Resume the translate campaign crustify/campaigns/<ID>/ instead "
-             "of starting a new one. Its directory must exist.")
-    orch_p.add_argument(
-        "--task", required=True, type=Path, metavar="PATH",
-        help="Campaign TASK.md. Required: the campaign's decisions are an "
-             "input, not something the orchestrator interviews for.")
+    # -- orchestrate-translation / orchestrate-audit (campaign supervisor) --
+    # One command per campaign kind, so the name says which orchestrator
+    # prompt runs; a wrong guess would start the wrong campaign and spend a
+    # budget before anyone reads the transcript.
+    _orch_blurbs = {
+        "translate": (
+            "orchestrate-translation",
+            "Start a translation campaign's orchestrator. It reads the "
+            "campaign task, plans the sub-campaigns and waves, and spawns the "
+            "translator agents itself."),
+        "audit": (
+            "orchestrate-audit",
+            "Start an audit campaign's orchestrator. It reads the campaign "
+            "task and spawns the audit agents itself."),
+    }
+    for kind, (command, blurb) in _orch_blurbs.items():
+        orch_p = sub.add_parser(command, help=blurb, description=blurb)
+        orch_p.set_defaults(kind=kind)
+        orch_p.add_argument(
+            "task", type=Path, metavar="TASK",
+            help="Campaign TASK.md: the campaign's decisions are an input, "
+                 "not something the orchestrator interviews for.")
+        orch_p.add_argument(
+            "--task-only", action="store_true",
+            help="Ablation control: the task file is the entire prompt and "
+                 "the harness contributes nothing -- no conventions, no skill "
+                 "index, no stage prompt.")
+        if kind == "translate":
+            orch_p.add_argument(
+                "--campaign", metavar="ID",
+                help="Resume the campaign crustify/campaigns/<ID>/ instead of "
+                     "starting a new one. Its directory must exist.")
 
     # -- translate (one agent over one orchestrator-projected batch) -----
     _translate_blurb = (
@@ -147,7 +153,8 @@ def main() -> None:
         sys.exit(1)
     # An orchestrator starts a campaign, so it may be the first thing to run
     # in a checkout; every other command works inside one it set up.
-    if args.command != "orchestrate" and not (workdir / "crustify").is_dir():
+    orchestrating = args.command in ("orchestrate-translation", "orchestrate-audit")
+    if not orchestrating and not (workdir / "crustify").is_dir():
         print(f"error: no crustify/ under workdir: {workdir}", file=sys.stderr)
         sys.exit(1)
 
@@ -166,7 +173,7 @@ def main() -> None:
     if args.command == "translate":
         _handle_translate(args)
 
-    elif args.command == "orchestrate":
+    elif orchestrating:
         _handle_orchestrate(args)
 
     elif args.command == "audit":
@@ -208,9 +215,7 @@ def _handle_orchestrate(args: argparse.Namespace) -> None:
     campaigns = workdir / "crustify" / "campaigns"
     run_start = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
     campaign = {}
-    if args.campaign is not None:
-        if args.kind != "translate":
-            raise SystemExit("--campaign resumes a translate campaign only")
+    if getattr(args, "campaign", None) is not None:
         campaign_dir = campaigns / args.campaign
         if Path(args.campaign).name != args.campaign or not campaign_dir.is_dir():
             raise SystemExit(f"no campaign to resume at {campaign_dir}")
@@ -223,7 +228,7 @@ def _handle_orchestrate(args: argparse.Namespace) -> None:
         campaign_dir = campaigns / campaign_id
         campaign_dir.mkdir(parents=True, exist_ok=False)
     if args.kind == "translate":
-        print(f"[crustify orchestrate] campaign: {campaign_dir}")
+        print(f"[crustify orchestrate-translation] campaign: {campaign_dir}")
         # One log per run, so resuming never overwrites an earlier session's.
         campaign = {"campaign_id": campaign_id, "artifact_dir": campaign_dir,
                     "log_stem": f"orchestrator-{run_start}"}

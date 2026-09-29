@@ -21,9 +21,9 @@
 #       crustify
 #   docker exec -it crustify-libgit2 \
 #       crustify --model openrouter/anthropic/claude-opus-5 --billing api \
-#       /target orchestrate translate --task /campaign/TASK.md
+#       /target orchestrate-translation /campaign/TASK.md
 #
-# `orchestrate audit` starts an audit campaign instead, and `--task-only` makes
+# `orchestrate-audit` starts an audit campaign instead, and `--task-only` makes
 # the task file the entire prompt (the ablation control). The deterministic
 # scan needs no agent and no auth: `docker exec <name> crustify /target audit
 # unsafe`. Every choice is a `crustify` flag; see `crustify --help`.
@@ -35,9 +35,9 @@
 #                      CodeQL data, partial translation and logs are used in
 #                      place and remain on the host. The orchestrator must not
 #                      clone, reset or replace it.
-#   /campaign/TASK.md  The campaign task, read-only, by convention: `--task`
-#                      takes any path. Edit on the host and the next run picks
-#                      it up.
+#   /campaign/TASK.md  The campaign task, read-only, by convention: the
+#                      orchestrate command takes any path. Edit on the host
+#                      and the next run picks it up.
 #   /opt/crustify      The harness, baked into the image. Mount a checkout here
 #                      to test live harness changes. Both packages live in one
 #                      distribution, so this single tree serves both roles.
@@ -256,6 +256,7 @@ RUN git config --system --add safe.directory '*'
 # orchestrator's unambiguous working repository.
 WORKDIR /target
 # Idle by default so the container is an environment, not one run: a campaign
-# started with `docker exec <name> crustify ... orchestrate ...` survives its
-# own crash, and a shell beside it can read the worktrees and caches it left.
+# started with `docker exec <name> crustify ... orchestrate-translation ...`
+# survives its own crash, and a shell beside it can read the worktrees and caches
+# it left.
 CMD ["sleep", "infinity"]
