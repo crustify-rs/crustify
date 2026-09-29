@@ -1,71 +1,69 @@
----
+# Mandatory questions
 
-# Campaign questions
+## Campaign
 
-1. **Which repository and revision should this campaign use?**
-   - Answer: `https://github.com/openssl/openssl.git`, `0ffaa24c6148514fa77f76a48ae48852df7be9e7`
-2. **Should this campaign port the C implementation to Rust, or create safe Rust wrappers?**
-   - Answer: port the C implementation to Rust
-3. **Where should this campaign start: one or two subsystems, a named subset of functions or types, or the whole target? Should sub-campaigns be defined now or brainstormed during the live session?**
-   - Answer: a named subset of libssl types and functions; define the `libssl-selected-surface` sub-campaign now
+1. **Which repository and revision should this campaign use?** (`id: source`)
+   - Answer: `https://github.com/openssl/openssl.git`,
+     `0ffaa24c6148514fa77f76a48ae48852df7be9e7`
 
-# Sub-campaign questions
+2. **Should this campaign port the C implementation to Rust, or create safe
+   Rust wrappers?** (`id: objective`)
+   - Answer: `port`
 
-## `libssl-selected-surface`
+3. **What should this campaign target: a named subset of subsystems, or a named
+   subset of functions and types, or the whole target repo? You can define them
+   now or we can brainstorm them during the live session. You can also let the
+   orchestrator decide.** (`id: scope`)
+   - Answer: named libssl types and functions: the imported type closure, the
+     imported symbols required by target layers L0 through L2, and the three god
+     objects listed under Selection below. Implementation paths are `ssl/` plus the
+     headers outside it that libssl implements; derive the public headers from the
+     wavefront configuration.
 
-4. **Which implementation paths belong to this subsystem?**
-   - Answer: `ssl/` plus headers outside it that libssl implements
-5. **Which headers define its public API?**
-   - Answer: derive from `wavefront-config.json`
-6. **Should it cover the whole subsystem or only named types and functions?**
-   - Answer: the imported type closure, imported symbols required by target layers L0 through L2, and the three god objects listed below
-7. **Which backend and model should translate this sub-campaign?**
-   - Answer: ask the user, showing available backends and models
+4. **Which model and billing should do the translation work?**
+   (`id: translate-agent`)
+   - Answer: ask me, showing the supported providers and models; `subscription`
+     billing
 
-# Campaign execution questions
+5. **Do you want agentic review after translated work lands? If so, which
+   model and billing should perform each review?** (`id: review-agent`)
+   - Answer: `no`
 
-8. **Use default workload settings, or customize them?**
+6. **Should I run fully autonomously end to end?** (`id: autonomy`)
+   - Answer: `yes`, once the campaign brief is approved
+
+# Optional questions
+
+Unanswered optional questions use their defaults.
+
+## Campaign execution
+
+7. **Should the campaign use the default batching and parallelism settings, or
+   customize them?** (`id: workload`)
    - Answer: defaults except `max-types: 1`; parallelism is orchestrator's choice
-9. **Do you want agentic review? At which milestones and with which model?**
-   - Answer: no
-10. **What batch caps should review agents use? We recommend 3x the translation caps.**
-    - Answer: not applicable
-11. **Run the optional agentic UB pass? If so, with which model?**
-    - Answer: no
 
-# Autonomy questions
-
-A1. **Should I run fully autonomously end to end?**
-    - Answer: yes, after the campaign parameters are approved
-A2. **If no, should I wait for your approval before starting the setup phase?**
-    - Answer: not applicable
-A3. **Should I wait for your approval before starting the translation phase?**
-    - Answer: no
-A4. **Should I wait for your approval in between sub-campaigns?**
-    - Answer: no
-A5. **Should I wait for your approval before starting review passes?**
-    - Answer: not applicable
-A6. **Should I wait for your approval before starting UB audit passes?**
-    - Answer: not applicable
+8. **What batch caps should review agents use? We recommend the same caps as
+   translation by default.** (`id: review-workload`)
+   - Answer: not applicable
 
 # Benchmark recording questions
 
-12. **Which billing mode should agentic stages use?**
-    - Answer: `subscription`
-13. **Where and in what format should results be recorded?**
+13. **Where and in what format should results be recorded?** (`id: results`)
     - Answer: `/target/crustify/results.md`, standard template
 
-# Setup notes
+# Additional instructions
 
-Run Phase 1 end to end. The pre-authored `build.json`, `wavefront-config.json`, and
-`crates.json` may be copied from `/campaign/`; emit `subsystems.json` after the
-campaign-wide oracle target is populated. Skip toolchain installation when the
-required tools are already installed.
+## Setup
+
+Run Phase 1 end to end. Pre-authored `build.json` and `wavefront-config.json` sit beside
+this task in `/opt/crustify/examples/crustify/openssl/libssl-port/` and may be copied
+from there. Emit `subsystems.json` after the campaign-wide oracle target is populated.
+Skip toolchain installation when the required tools are already installed.
 
 Raw `void` and `string` lifetime discovery is required preparation owned by the
 orchestrator. It is not a user-facing sub-campaign.
 
-# Selection notes
+## Selection
 
 The imported type closure contains these established selections:
 
@@ -108,8 +106,8 @@ The imported symbol selection required by target layers L0 through L2 is:
 The god-object selection is `record_layer_st`, `quic_stream_st`, and
 `ssl_session_st`, including their transitive closure.
 
-# Recording notes
+## Recording
 
 The orchestrator derives internal waves and schedule files from these selections.
-Record token-derived cost, the session-branch diff, and the deterministic
-unsafe/raw-pointer scan after the sub-campaign completes.
+Record token-derived cost, the sub-campaign branch's diff, and the deterministic
+`crustify <workdir> audit unsafe` scan after the sub-campaign completes.

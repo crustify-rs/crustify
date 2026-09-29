@@ -6,11 +6,15 @@
     "subsystems.json and as the campaign directory -- and the total order is",
     "that nesting read depth-first. The batches within one wave run in",
     "parallel. A batch entry is exactly the object `crustify translate`",
-    "accepts, so writing it out to batch-<index>.json is a copy.",
+    "accepts, so writing it out to batch-<n>/batch.json is a copy.",
     "Every index also addresses the filesystem, so no path is recorded.",
     "libbase precedes libwidget because libwidget depends on it: a subsystem's",
     "dependencies in another link unit must belong to an earlier link unit.",
-    "Raw-lifetime discovery runs first and has no subsystem of its own."
+    "Raw-lifetime discovery runs first, as the synthetic subsystems",
+    "raw-lifetime-void and raw-lifetime-string of the first link unit.",
+    "Homes follow the coding conventions: crustify/rust/<repo>/<link-unit>/,",
+    "here for a repo named widgets. An independent illustration: it is not",
+    "the schedule for specs/subsystems.json."
   ],
   "schema_version": 1,
   "link_units": [
@@ -33,7 +37,7 @@
                       "defined_in": null,
                       "kind": "raw-lifetime",
                       "field_anchors": [],
-                      "home": "crustify/rust/libbase/src/raw.rs"
+                      "home": "crustify/rust/widgets/libbase/raw.rs"
                     }
                   ]
                 }
@@ -43,6 +47,29 @@
         },
         {
           "index": 1,
+          "name": "raw-lifetime-string",
+          "waves": [
+            {
+              "index": 0,
+              "batches": [
+                {
+                  "objective": "wrap",
+                  "items": [
+                    {
+                      "name": "string",
+                      "defined_in": null,
+                      "kind": "raw-lifetime",
+                      "field_anchors": [],
+                      "home": "crustify/rust/widgets/libbase/raw.rs"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 2,
           "name": "alloc",
           "waves": [
             {
@@ -56,7 +83,7 @@
                       "defined_in": "include/base/alloc.h",
                       "kind": "type",
                       "field_anchors": ["used", "cap"],
-                      "home": "crustify/rust/libbase/src/alloc.rs"
+                      "home": "crustify/rust/widgets/libbase/alloc.rs"
                     }
                   ]
                 }
@@ -85,7 +112,7 @@
                       "defined_in": "include/widget/core.h",
                       "kind": "type",
                       "field_anchors": ["refcount", "flags"],
-                      "home": "crustify/rust/libwidget/src/core.rs"
+                      "home": "crustify/rust/widgets/libwidget/core.rs"
                     }
                   ]
                 },
@@ -97,7 +124,7 @@
                       "defined_in": "include/widget/core.h",
                       "kind": "type",
                       "field_anchors": [],
-                      "home": "crustify/rust/libwidget/src/core.rs"
+                      "home": "crustify/rust/widgets/libwidget/core.rs"
                     }
                   ]
                 }
@@ -114,7 +141,7 @@
                       "defined_in": "src/core.c",
                       "kind": "symbol",
                       "field_anchors": [],
-                      "home": "crustify/rust/libwidget/src/core.rs"
+                      "home": "crustify/rust/widgets/libwidget/core.rs"
                     }
                   ]
                 }

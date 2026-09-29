@@ -1,5 +1,5 @@
 {
-  "_comment": "Example `<repo_root>/crustify/build.json` (REPO-ROOT tier), hand-authored. It fixes the exact configure, build, and test commands used for the campaign. Increment `version` whenever any command changes; derived artifacts such as subsystems.json record that version as provenance.",
+  "_comment": "Example `<workdir>/crustify/build.json` (REPO-ROOT tier), hand-authored. It fixes the exact configure, build, and test commands used for the campaign. Increment `version` whenever any command changes; a translator reuses a prebuilt library only when its build.json version still matches.",
   "version": 1,
   "build_commands": {
     "configure": "./Configure no-deprecated --strict-warnings",

@@ -1,61 +1,66 @@
----
+# Mandatory questions
 
-# Campaign questions
+## Campaign
 
-1. **Which repository and revision should this campaign use?**
-   - Answer: `https://github.com/openssl/openssl`, `2924476b5591e691e904c4baf57894c526c4b8de`
-2. **Should this campaign port the C implementation to Rust, or create safe Rust wrappers?**
-   - Answer: create safe Rust wrappers
-3. **Where should this campaign start: one or two subsystems, a named subset of functions or types, or the whole target? Should sub-campaigns be defined now or brainstormed during the live session?**
-   - Answer: a named subset of the libcrypto public API; define the `libcrypto-public-api` sub-campaign now
+1. **Which repository and revision should this campaign use?** (`id: source`)
+   - Answer: `https://github.com/openssl/openssl`,
+     `2924476b5591e691e904c4baf57894c526c4b8de`
 
-# Sub-campaign questions
+2. **Should this campaign port the C implementation to Rust, or create safe
+   Rust wrappers?** (`id: objective`)
+   - Answer: `wrap`
 
-## `libcrypto-public-api`
+3. **What should this campaign target: a named subset of subsystems, or a named
+   subset of functions and types, or the whole target repo? You can define them
+   now or we can brainstorm them during the live session. You can also let the
+   orchestrator decide.** (`id: scope`)
+   - Answer: a subset of the libcrypto public API that I select during the live
+     session; derive implementation paths from the libcrypto build definition and
+     headers from its public headers; exclude libssl
 
-4. **Which implementation paths belong to this subsystem?**
-   - Answer: derive from the libcrypto build definition
-5. **Which headers define its public API?**
-   - Answer: derive from the libcrypto public headers
-6. **Should it cover the whole subsystem or only named types and functions?**
-   - Answer: a user-selected subset; exclude libssl
-7. **Which backend and model should translate this sub-campaign?**
-   - Answer: `codex`, `gpt-5.6-sol`
+4. **Which model and billing should do the translation work?**
+   (`id: translate-agent`)
+   - Answer: `openai/gpt-5.6-sol, api`
 
-# Campaign execution questions
+5. **Do you want agentic review after translated work lands? If so, which
+   model and billing should perform each review?** (`id: review-agent`)
+   - Answer: ask me for the model and at which milestones
 
-8. **Use default workload settings, or customize them?**
+6. **Should I run fully autonomously end to end?** (`id: autonomy`)
+   - Answer: ask me
+
+# Optional questions
+
+Unanswered optional questions use their defaults.
+
+## Campaign execution
+
+7. **Should the campaign use the default batching and parallelism settings, or
+   customize them?** (`id: workload`)
    - Answer: defaults except `max-types: 2`; parallelism is orchestrator's choice
-9. **Do you want agentic review? At which milestones and with which model?**
-   - Answer: ask the user for both milestones and model
-10. **What batch caps should review agents use? We recommend 3x the translation caps.**
-    - Answer: ask the user; recommend 3x
-11. **Run the optional agentic UB pass? If so, with which model?**
-    - Answer: only with explicit user approval; ask for the model if enabled
 
-# Autonomy questions
+8. **What batch caps should review agents use? We recommend the same caps as
+   translation by default.** (`id: review-workload`)
+   - Answer: ask me; recommend 3x the translation caps
 
-A1. **Should I run fully autonomously end to end?**
-    - Answer: ask the user
-A2. **If no, should I wait for your approval before starting the setup phase?**
-    - Answer: ask the user if autonomy is declined
-A3. **Should I wait for your approval before starting the translation phase?**
-    - Answer: ask the user
-A4. **Should I wait for your approval in between sub-campaigns?**
-    - Answer: ask the user
-A5. **Should I wait for your approval before starting review passes?**
-    - Answer: ask the user if review is enabled
-A6. **Should I wait for your approval before starting UB audit passes?**
-    - Answer: yes, if the UB audit is enabled
+## Autonomy (if question 6 is answered `no`)
+
+9. **Should I wait for your approval before starting the setup phase?** (`id: gates.setup`)
+   - Answer: ask me if autonomy is declined
+10. **Should I wait for your approval before starting the translation phase?**
+    (`id: gates.translation`)
+    - Answer: ask me
+11. **Should I wait for your approval between sub-campaigns?** (`id: gates.sub-campaign`)
+    - Answer: ask me
+12. **Should I wait for your approval before starting review passes?** (`id: gates.review`)
+    - Answer: ask me if review is enabled
 
 # Benchmark recording questions
 
-12. **Which billing mode should agentic stages use?**
-    - Answer: `api`
-13. **Where and in what format should results be recorded?**
+13. **Where and in what format should results be recorded?** (`id: results`)
     - Answer: `<repo-checkout>/crustify/results.md`, standard template
 
-# Notes
+# Additional instructions
 
-The normal deterministic `crustify-audit unsafe` checks remain enabled
-independently of agentic review.
+The deterministic `crustify <workdir> audit unsafe` checks remain enabled independently
+of agentic review.

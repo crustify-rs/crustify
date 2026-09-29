@@ -1,96 +1,84 @@
----
+# Mandatory questions
 
-# Campaign questions
+## Campaign
 
-1. **Which repository and revision should this campaign use?**
-   - Answer: `https://github.com/libgit2/libgit2.git`, `ddf3b5c85d86a389330b1d1dd90f08f60ae05fe4`
-2. **Should this campaign port the C implementation to Rust, or create safe Rust wrappers?**
-   - Answer: create safe Rust wrappers
-3. **Where should this campaign start: one or two subsystems, a named subset of functions or types, or the whole target? Should sub-campaigns be defined now or brainstormed during the live session?**
-   - Answer: the named types and functions below; define the `import-type-closure`, `import-symbols-l0-l2`, and `god-objects` sub-campaigns now
+1. **Which repository and revision should this campaign use?** (`id: source`)
+   - Answer: `https://github.com/libgit2/libgit2.git`,
+     `ddf3b5c85d86a389330b1d1dd90f08f60ae05fe4`
 
-# Sub-campaign questions
+2. **Should this campaign port the C implementation to Rust, or create safe
+   Rust wrappers?** (`id: objective`)
+   - Answer: `wrap`
 
-## `import-type-closure`
+3. **What should this campaign target: a named subset of subsystems, or a named
+   subset of functions and types, or the whole target repo? You can define them
+   now or we can brainstorm them during the live session. You can also let the
+   orchestrator decide.** (`id: scope`)
+   - Answer: named functions and types, as three sub-campaigns run in this order:
+     - `import-type-closure`: the whole imported type and callback closure of `src/`,
+       in dependency order;
+     - `import-symbols-l0-l2`: the imported functions and globals reached by target
+       layers L0 through L2 of `src/`;
+     - `god-objects`: `git_indexer`, `git_packbuilder` and `git_repository` in
+       `src/`, including their transitive closure.
 
-4. **Which implementation paths belong to this subsystem?**
-   - Answer: derive from the oracle's imported section for `src/`
-5. **Which headers define its public API?**
-   - Answer: derive from the imported declarations
-6. **Should it cover the whole subsystem or only named types and functions?**
-   - Answer: the whole imported type and callback closure, in dependency order
-7. **Which backend and model should translate this sub-campaign?**
-   - Answer: ask the user, showing available backends and models
+4. **Which model and billing should do the translation work?**
+   (`id: translate-agent`)
+   - Answer: ask me, showing the supported providers and models; `api` billing
 
-## `import-symbols-l0-l2`
+5. **Do you want agentic review after translated work lands? If so, which
+   model and billing should perform each review?** (`id: review-agent`)
+   - Answer: `no`
 
-4. **Which implementation paths belong to this subsystem?**
-   - Answer: derive from the oracle's imported section for `src/`
-5. **Which headers define its public API?**
-   - Answer: derive from the imported declarations
-6. **Should it cover the whole subsystem or only named types and functions?**
-   - Answer: the imported functions and globals reached by target layers L0 through L2
-7. **Which backend and model should translate this sub-campaign?**
-   - Answer: ask the user, showing available backends and models
+6. **Should I run fully autonomously end to end?** (`id: autonomy`)
+   - Answer: `no`
 
-## `god-objects`
+# Optional questions
 
-4. **Which implementation paths belong to this subsystem?**
-   - Answer: `src/`
-5. **Which headers define its public API?**
-   - Answer: derive from the selected declarations
-6. **Should it cover the whole subsystem or only named types and functions?**
-   - Answer: `git_indexer`, `git_packbuilder`, and `git_repository`, including their transitive closure
-7. **Which backend and model should translate this sub-campaign?**
-   - Answer: ask the user, showing available backends and models
+Unanswered optional questions use their defaults.
 
-# Campaign execution questions
+## Campaign execution
 
-8. **Use default workload settings, or customize them?**
+7. **Should the campaign use the default batching and parallelism settings, or
+   customize them?** (`id: workload`)
    - Answer: defaults except `max-types: 1`; parallelism is orchestrator's choice
-9. **Do you want agentic review? At which milestones and with which model?**
-   - Answer: no
-10. **What batch caps should review agents use? We recommend 3x the translation caps.**
-    - Answer: not applicable
-11. **Run the optional agentic UB pass? If so, with which model?**
-    - Answer: no
 
-# Autonomy questions
+8. **What batch caps should review agents use? We recommend the same caps as
+   translation by default.** (`id: review-workload`)
+   - Answer: not applicable
 
-A1. **Should I run fully autonomously end to end?**
-    - Answer: no
-A2. **If no, should I wait for your approval before starting the setup phase?**
-    - Answer: no; Phase 1 is pre-approved
-A3. **Should I wait for your approval before starting the translation phase?**
-    - Answer: no
-A4. **Should I wait for your approval in between sub-campaigns?**
-    - Answer: yes, before promoting each session branch
-A5. **Should I wait for your approval before starting review passes?**
-    - Answer: not applicable
-A6. **Should I wait for your approval before starting UB audit passes?**
-    - Answer: not applicable
+## Autonomy (if question 6 is answered `no`)
+
+9. **Should I wait for your approval before starting the setup phase?** (`id: gates.setup`)
+   - Answer: `no`; Phase 1 is pre-approved
+10. **Should I wait for your approval before starting the translation phase?**
+    (`id: gates.translation`)
+    - Answer: `no`
+11. **Should I wait for your approval between sub-campaigns?** (`id: gates.sub-campaign`)
+    - Answer: `yes`, before promoting each sub-campaign branch
+12. **Should I wait for your approval before starting review passes?** (`id: gates.review`)
+    - Answer: `not applicable`
 
 # Benchmark recording questions
 
-12. **Which billing mode should agentic stages use?**
-    - Answer: `api`
-13. **Where and in what format should results be recorded?**
+13. **Where and in what format should results be recorded?** (`id: results`)
     - Answer: `/target/crustify/results.md`, standard template
 
-# Setup notes
+# Additional instructions
 
-Run Phase 1 end to end. The pre-authored `build.json`, `wavefront-config.json`, and
-`crates.json` may be copied from `/campaign/`; emit `subsystems.json` after the
-campaign-wide oracle target is populated. Skip toolchain installation when the
-required tools are already installed.
+## Setup
 
-# Selection and recording notes
+Run Phase 1 end to end. Pre-authored `build.json` and `wavefront-config.json` sit beside
+this task in `/opt/crustify/examples/crustify/libgit2/` and may be copied from there.
+Emit `subsystems.json` after the campaign-wide oracle target is populated. Skip
+toolchain installation when the required tools are already installed.
 
-Execute the sub-campaigns in their listed order. The orchestrator chooses the
-internal waves and schedule filenames, reports each dry-run plan, and waits for
+## Selection and recording
+
+The orchestrator chooses the internal waves, reports each dry-run plan, and waits for
 approval before spending on or promoting the next sub-campaign.
 
-After each sub-campaign, record cost from the per-agent `<stage>.usage.json`,
-measure the session-branch diff, and run `crustify-audit unsafe --name ...
---json` over the selected names. Derive cost from token counts, never from
-provider-reported dollars.
+After each sub-campaign, price the batches' `translator.usage.json` records with
+`crustify ... cost`, measure the sub-campaign branch's diff, and run
+`crustify <workdir> audit unsafe --name ... --json` over the selected names. Derive cost
+from token counts, never from provider-reported dollars.

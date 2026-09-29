@@ -8,8 +8,7 @@
     "in the `imported` section, derived.",
     "",
     "The repo root is not in this file. Pass this file explicitly to Wavefront",
-    "with `--config`; Crustify retains its separate `<repo_root> <target>`",
-    "positionals for translation and campaign layout."
+    "with `--config`."
   ],
   "_comment_files": [
     "`impl_files` is the whole ssl/ tree PLUS the internal headers that",
@@ -27,8 +26,8 @@
     "ssl/, or the aggregate types it defines have their lifecycle implemented",
     "under ssl/. A header whose types are merely USED by ssl/ reaches the",
     "imported section on its own and must not be named; naming one would",
-    "claim bodies this campaign does not own. See the playbook, 'Scope a",
-    "target'.",
+    "claim bodies this campaign does not own. See the wavefront skill's",
+    "selection rules.",
     "",
     "INCLUDED in `api_headers` - public libssl API surface",
     "  (include/openssl/): ssl.h (generated from ssl.h.in at configure",

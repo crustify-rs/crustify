@@ -29,7 +29,8 @@ a name index without losing the authored order.
 | `subsystems` | ordered list of the link unit's covered subsystems |
 
 A system link unit may contain imported, header-derived subsystems whose
-`implementation_files` list is empty and whose counters are zero. It may have an empty
+`implementation_files` list is empty and whose `impl_files` and `loc` counters are zero;
+their entity counters count the declarations the campaign imports from them. It may have an empty
 `subsystems` list when no entity from that link unit enters the campaign closure.
 
 ## link_units[*].subsystems[*]

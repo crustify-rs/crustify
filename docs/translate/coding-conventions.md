@@ -1,7 +1,7 @@
 # Crustify coding conventions
 
-These are the shared, mechanical contracts between the orchestrator, scheduler and
-translator. The playbooks contain the decisions and procedures.
+These are the shared, mechanical contracts between the orchestrator and the translator.
+Their prompts contain the decisions and procedures.
 
 ## Rust baseline
 
@@ -35,8 +35,7 @@ The Rust tree mirrors the following layout, all relative to `<repo>/crustify/rus
 
 The Rust tree mirrors the subsystem decomposition in `subsystems.json`, and the filesystem
 is the source of truth for an entity's home: a batch names the `.rs` file each of its
-items belongs in. Each library wrapper crate has a companion `<lib>-sys` crate for raw
-bindings.
+items belongs in, as `crustify/rust/<repo>/<link-unit>/…/<file>.rs`.
 
 There is one `.rs` home per C translation unit, or per header group when no translation
 unit owns the entity. Entities sharing a definition site co-home. A home is shared across
