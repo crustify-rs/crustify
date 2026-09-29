@@ -26,8 +26,8 @@ When the user answers "orchestrator's choice", it leaves that question's decisio
 you.
 
 Present one consolidated campaign brief, including its sub-campaigns, assumptions, models,
-review policy, execution policy and audit policy, then ask for approval. Do not begin
-Phase 1 or mutate the campaign repository before approval.
+review policy and execution policy, then ask for approval. Do not begin Phase 1 or mutate
+the campaign repository before approval.
 
 <!-- TASK -->
 
@@ -44,15 +44,14 @@ task's target repo.
 
 ### 2. Artifact tree scaffolding
 
-```bash
-mkdir -p <repo>/crustify
-cp specs/gitignore <repo>/crustify/.gitignore
-mkdir -p <repo>/crustify/campaigns/<campaign-id>
-```
+This campaign's `<campaign-id>` is `{campaign_id}`. The harness has already created its
+artifact dir, `<repo>/crustify/campaigns/<campaign_id>/`, and writes your log there. If
+that dir already holds the campaign's earlier artifacts, you are resuming it: continue
+from them and its existing branches instead of starting over.
 
-Use the following format for `campaign-id`: `<scope-slug>-<timestamp>`, where
-`<scope-slug>` is based on the user-defined scope from the task definition: it can be a
-subset of link units, subsystems, files, types/symbols, or the whole repo.
+```bash
+cp specs/gitignore <repo>/crustify/.gitignore
+```
 
 If you're working in a git repo, create the campaign branch:
 
@@ -65,8 +64,12 @@ git -C <repo> checkout -b crustify/campaigns/<campaign-id>
 
 Create immutable builds of the target so that translator agents can reuse them:
 
-- plain build for the functional baseline; - coverage-instrumented build for campaign
-  measurements.
+- **plain** build for the functional baseline;
+- **coverage-instrumented** build for campaign measurements;
+- **ASan + UBSan** — the general build. FFI and lifecycle tests use it;
+- **TSan** — a separate build, for race tests. Do not combine it with ASan:
+  the two instrument the same memory operations and their runtimes conflict;
+- **BSan** — a third build, when BorrowSanitizer is available.
 
 A Rust- or bindgen-only change may reuse a matching build. A change to the compiled target
 requires a private build; refresh shared builds after that change lands.
@@ -88,9 +91,10 @@ headers may be shared by multiple subsystems.
 
 Assign one of the following objectives to each subsystem using these rules:
 
-- `port`: project-specific behaviour or invariants to implement in Rust; - `wrap`: generic
-  facilities kept behind a safe Rust API over the C; and - split mixed subsystems so
-  project-specific code and generic facilities carry separate objectives.
+- `port`: project-specific behaviour or invariants to implement in Rust;
+- `wrap`: generic facilities kept behind a safe Rust API over the C; and
+- split mixed subsystems so project-specific code and generic facilities carry separate
+  objectives.
 
 For a wrap campaign, all subsystems carry the wrap objective. For a port campaign, the
 subsystems that are project-specific carry the port objective, while those that have
@@ -121,13 +125,12 @@ user.
 Each ordinary sub-campaign translates one subsystem of one link unit from
 `subsystems.json`. Raw-lifetime discovery is the only synthetic sub-campaign.
 
-Turn the tree of link units and subsystems into a DAG, removing its cyclic edges; use
-`subsystemA.imported_deps.subsystemB.nr_edges` as the descriminator for determining
-producer->consumer ordering, a smaller value making the left-hand side a producer for the
-right-hand side consumer. Raw lifetime sub-campaigns are campaign leaves and they run
-first.
+Turn the graph of link units and subsystems into a DAG by cutting its cycles as
+`docs/translate/schemas/subsystems.md` describes: within a cyclic region, the subsystem
+with more incoming consumer edges stays the producer, and `nr_edges` refines that choice.
+Raw lifetime sub-campaigns are campaign leaves and they run first.
 
-Skip link units or subsystems when resuming a campaign that already completed them.
+Skip link units or subsystems that a resuming or a previous campaign already completed them.
 
 
 #### Waves and batches
@@ -140,10 +143,12 @@ For a `wrap` campaign, every batch uses `objective: wrap`.
 
 For a `port` campaign:
 
-- a selected symbol uses `port` immediately; - a selected type uses `wrap` while C reads
-  its fields, then `port` after those readers are removed; - a dependency outside the
-  selected migration set uses `wrap`; and - a filled anchor may be revisited only when
-  escalating that item to `port` or running `review`.
+- a selected symbol uses `port` immediately;
+- a selected type uses `wrap` while C reads its fields, then `port` after those readers
+  are removed;
+- a dependency outside the selected migration set uses `wrap`; and
+- a filled anchor may be revisited only when escalating that item to `port` or running
+  `review`.
 
 See `docs/translate/schemas/batch.md` for schema format, field meaning, routing and the
 raw-lifetime rule. Every field shown is required.
@@ -173,11 +178,12 @@ Commit the initial Rust tree on the campaign branch.
 
 Before launching translation or review waves:
 
-1. resolve the selected model to its provider and backend; 2. verify the backend
-   executable on the stage process's `PATH` and run `--version`; 3. verify required
-   credential variables without printing their values; 4. reject unsupported provider and
-   billing combinations; 5. dry-run a dummy batch to verify things are ready for launch;
-   and 6. compare unit, wave, and batch counts with the approved schedule.
+1. resolve the selected model to its provider and backend;
+2. verify the backend executable on the stage process's `PATH` and run `--version`;
+3. verify required credential variables without printing their values;
+4. reject unsupported provider and billing combinations;
+5. dry-run a dummy batch to verify things are ready for launch; and
+6. compare unit, wave, and batch counts with the approved schedule.
 
 
 ### 2. Launch preparations
@@ -186,51 +192,51 @@ Before launching translation or review waves:
 
 Pick the next sub-campaign from this campaign's `schedule.json`.
 
-Create the sub-campaign branch at `crustify/subcampaigns/<link-unit>/<subsystem>` and
+Create the sub-campaign branch at `crustify/subcampaigns/<campaign-id>/<link-unit>/<subsystem>` and
 artifact dir in its campaign sub-dir at `.../<campaign-id>/<link-unit>/<subsystem>`.
 
 Scaffold the Rust subsystem root on disk according to our coding conventions. Emit TU and
 header modules lazily before scheduling their first units. Commit the canonical tip as the
-sub-campaign's base.
+sub-campaign's base. Promote completed sub-campaigns in the canonical campaign integration branch.
 
 #### Waves and batches
 
 Pick the next wave from the live sub-campaign's `schedule.json` record and:
 
 - create the unchecked-out wave integration branch
-  `crustify/waves/<campaign-id>/<link-unit>/<subsystem>/wave-<index>`; - create the wave's
-  artifact dir in its subsystem sub-dir `.../<subsystem>/wave-<index>` - record the
-  canonical tip as the wave's base.
+  `crustify/waves/<campaign-id>/<link-unit>/<subsystem>/wave-<index>`;
+- create the wave's artifact dir in its subsystem sub-dir `.../<subsystem>/wave-<index>`
+- record the canonical tip as the wave's base.
 
-A wave branch that is missing, or checked out in some worktree, fails at the agent's
-landing push — after the batch has been paid for.
+Create the wave branch before launching its batches and never check it out: a landing
+push to a checked-out branch fails after the batch has been paid for, and one to a missing
+branch silently creates it.
 
-For each scheduled batch: - create its artifact sub-dir in its wave sub-dir at
-`.../wave-<index>/batch-<index>`, and write its `schedule.json` entry out verbatim as
-`batch.json` inside it; - create its batch branch at
-`crustify/batches/<campaign-id>/<link-unit>/<subsystem>/wave-<index>/batch-<index>`; -
-fork a worktree at `crustify/.worktrees/<same-as-branch>` - symlink any gitignored state
-from the main checkout that is shared and required for a complete crustify tree:
-`crustify/.providers`, etc.
+For each scheduled batch:
+- create its artifact sub-dir in its wave sub-dir at `.../wave-<index>/batch-<index>`, and
+  write its `schedule.json` entry out verbatim as `batch.json` inside it;
+- create its batch branch at
+  `crustify/batches/<campaign-id>/<link-unit>/<subsystem>/wave-<index>/batch-<index>`;
+- fork a worktree at `crustify/.worktrees/<same-as-branch>`
+- symlink any gitignored state from the main checkout that is shared and required for a
+  complete crustify tree: `crustify/.providers`, `crustify/campaigns/.../batch-<index>/`,
+  etc.
 
-Branch and directory carry the same `(link_unit, subsystem)` pair, so a wave's branch, its
-batches and its logs are addressable from its `schedule.json` entry alone.
-
-Promote completed sub-campaigns in the canonical campaign integration branch.
+Translators are responsible for removing their worktrees once successfully landing their changesets.
 
 
 ### 3. Launch and monitoring
 
 Run one CLI process per batch, concurrently up to approved parallelism, passing its batch
-worktree as the workdir and its batch directory as `--output`. The harness validates the
+worktree as the workdir, its `batch.json`, its batch directory as `--output`, and its
+wave integration branch (the review branch, for a review batch) as `--base-branch`. The harness validates the
 batch, starts the backend, and writes `translator.log` and `translator.usage.json` there.
 
 The translator commits its changes and atomically fast-forwards the wave branch. On
 rejection, it rebases its own branch onto the current wave tip, revalidates, and retries.
 Failed translators retain their branches and worktrees: the harness neither creates nor
-purges them, so a failed batch's tree stays for inspection until you remove it. Purge a
-worktree only after its batch lands. The orchestrator must not translate the failed
-worklist or discard a competing landing.
+purges them, so a failed batch's tree stays for inspection until you remove it. The
+orchestrator must not translate the failed worklist or discard a competing landing.
 
 Promote a batch's branch on its integration branch.
 
@@ -244,12 +250,17 @@ Reviewers inspect the merged wave for ownership, lifetime, thread-safety, error-
 and C-equivalence failures; add focused regressions; fix the findings; and land through
 the same branch flow.
 
-Create a review wave's artifact dir and integration branch similarly to a translation's: -
-artifact dir: `.../<link-unit>/<subsystem>/review-wave-<index>/`; - integration branch:
-`crustify/reviews/<campaign-id>/<link-unit>/<subsystem>/wave-<index>`
+Create a review wave's artifact dir and integration branch similarly to a translation's:
+- artifact dir: `.../<link-unit>/<subsystem>/review-wave-<index>/`;
+- integration branch:
+  `crustify/reviews/<campaign-id>/<link-unit>/<subsystem>/wave-<index>`
 
-Prepare an artifact dir, branch, and worktree for each batch in that wave and use the same
-item projection from its `batch.json` with `objective: review`.
+Prepare an artifact dir, branch, and worktree for each batch in that wave, and use the same
+item projection from its `batch.json` with `objective: review`:
+- artifact dir: `.../review-wave-<index>/batch-<index>`;
+- batch branch:
+  `crustify/review-batches/<campaign-id>/<link-unit>/<subsystem>/wave-<index>/batch-<index>`;
+- worktree: `crustify/.worktrees/<same-as-branch>`.
 
 After review lands, promote the reviewed wave tip to the canonical sub-campaign
 integration branch.

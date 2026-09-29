@@ -34,34 +34,20 @@ counted and reported under ``no-price`` instead.
 
 Both tables are fetched once and cached to ``--price-cache``.
 
-Two views:
-  * per agent KIND  (port / wrap / merge / setup) — kind from
-    the usage record's stage (or historical log filename prefix); wall-clock =
-    the record's ``duration_ms``,
-    counted under ``no-wall`` when the record predates that stamp.
-  * per WAVE        — the campaign's ``<sub-campaign>/wave-<index>/logs``
-    directories; cost split by agent kind. Historical session directories are
-    still mapped to their following wave commit.
+One row per usage record named on the command line, bucketed by agent kind
+(``wrap-type``, ``review-symbol``, ...) taken from the record's stage, or from a
+historical log filename prefix. Wall-clock is the record's ``duration_ms``,
+shown as ``—`` when the record predates that stamp.
 
 Usage:  crustify <workdir> cost USAGE_JSON... [--offline]
 """
 import argparse
-import glob
 import json
 import os
-import re
-import subprocess
 import sys
-import urllib.request
-from collections import defaultdict
-from pathlib import Path
 
-from crustify.layout import Layout
-
-from crustify.core.pricing import (  # noqa: F401 - re-exported
+from crustify.core.pricing import (
     DEFAULT_PRICE_CACHE,
-    LITELLM_PRICES,
-    OPENROUTER_MODELS,
     load_prices,
     price_usage,
 )
@@ -116,15 +102,6 @@ def usage_stage(path: str) -> str:
     except (OSError, ValueError, AttributeError):
         stage = None
     return stage if isinstance(stage, str) and stage else os.path.basename(path)
-
-
-def stat(path, fmt):  # %W birth, %Y mtime
-    out = subprocess.run(["stat", "-f" if sys.platform == "darwin" else "-c",
-                          fmt, path], capture_output=True, text=True).stdout
-    try:
-        return int(out.strip())
-    except ValueError:
-        return 0
 
 
 def wall_seconds(usage_path):
@@ -205,18 +182,3 @@ def report(paths, *, offline: bool = False,
             print(f"  {unpriced} record(s) had no priceable model",
                   file=sys.stderr)
     return 1 if missing else 0
-
-
-def main():
-    ap = argparse.ArgumentParser(
-        description=__doc__,
-        formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("usage", nargs="+", help="Per-agent .usage.json records.")
-    add_flags(ap)
-    args = ap.parse_args()
-    return report(args.usage, offline=args.offline,
-                  price_cache=args.price_cache)
-
-
-if __name__ == "__main__":
-    sys.exit(main())

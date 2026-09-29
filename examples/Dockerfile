@@ -1,41 +1,32 @@
-# Bootstraps a crustify ORCHESTRATOR, in either role. Nothing here is
-# target-specific.
+# The environment a crustify campaign runs in, for either kind of campaign.
+# Nothing here is target-specific, and nothing here starts a campaign: the image
+# is a machine, and `crustify` is run inside it.
 #
-# One image serves both because they want the same machine. The translator
+# One image serves both kinds because they want the same machine. The translator
 # needs the sanitizers to check what it emitted; the auditor needs a C
 # toolchain to build what it audits. Two images meant the translate side had
 # no miri, no BorrowSanitizer and no MemorySanitizer -- the instruments its
-# own playbook asks for -- while the audit side had no CodeQL and no bindgen.
+# own prompt asks for -- while the audit side had no CodeQL and no bindgen.
 #
 #   docker build -t crustify -f examples/Dockerfile .
 #
-# The two campaigns differ in one thing only -- which orchestrator prompt they
-# load -- and CRUSTIFY_COMMAND selects it. It has NO default: a wrong guess
-# starts the wrong agent and spends a budget before anyone reads the transcript.
+# Start the container idle, then run the orchestrator in it:
 #
-#   # translate
-#   docker run -it --name crustify-libgit2 \
-#       -e CRUSTIFY_COMMAND=translate \
-#       -e OPENROUTER_API_KEY -e CRUSTIFY_MODEL=openrouter/anthropic/claude-opus-5 \
+#   docker run -d --name crustify-libgit2 \
+#       -e OPENROUTER_API_KEY \
 #       -v "$(dirname "$PWD")/wavefront:/opt/venv/share/wavefront" \
 #       -v "$(dirname "$PWD")/ffibox:/opt/venv/share/ffibox" \
 #       -v /absolute/path/to/your/target-fork:/target \
 #       -v "$PWD/examples/crustify/libgit2/src-port/TASK.md:/campaign/TASK.md:ro" \
 #       crustify
+#   docker exec -it crustify-libgit2 \
+#       crustify --model openrouter/anthropic/claude-opus-5 --billing api \
+#       /target orchestrate translate --task /campaign/TASK.md
 #
-#   # audit
-#   docker run --rm -it --name audit-ippcp \
-#       -e CRUSTIFY_COMMAND=audit \
-#       -e OPENROUTER_API_KEY -e CRUSTIFY_MODEL=openrouter/anthropic/claude-opus-5 \
-#       -v /path/to/target-repo:/target \
-#       -v /host/campaign/TASK.md:/campaign/TASK.md:ro \
-#       -v audit-ippcp-work:/work \
-#       crustify
-#
-# The deterministic scan needs no agent and no auth, so it bypasses the
-# orchestrator entirely: `docker run ... crustify crustify /target audit unsafe`.
-# CRUSTIFY_BARE=1 makes the mounted TASK.md the entire prompt, for either
-# command -- the ablation control, and the only other way in.
+# `orchestrate audit` starts an audit campaign instead, and `--task-only` makes
+# the task file the entire prompt (the ablation control). The deterministic
+# scan needs no agent and no auth: `docker exec <name> crustify /target audit
+# unsafe`. Every choice is a `crustify` flag; see `crustify --help`.
 #
 # Mounts:
 #
@@ -44,23 +35,20 @@
 #                      CodeQL data, partial translation and logs are used in
 #                      place and remain on the host. The orchestrator must not
 #                      clone, reset or replace it.
-#   /campaign/TASK.md  The campaign task, read-only, and REQUIRED: the
-#                      campaign's decisions are an input, not an interview.
-#                      Edit on the host and the next run picks it up. An
-#                      unanswered optional decision takes its documented
-#                      default; an unanswered mandatory one is an error.
+#   /campaign/TASK.md  The campaign task, read-only, by convention: `--task`
+#                      takes any path. Edit on the host and the next run picks
+#                      it up.
 #   /opt/crustify      The harness, baked into the image. Mount a checkout here
 #                      to test live harness changes. Both packages live in one
 #                      distribution, so this single tree serves both roles.
 #   /opt/venv/share/{wavefront,ffibox}
-#                      Optional read-write host checkouts, used by a translate
-#                      run and untouched by an audit. This is where crustify
-#                      LOOKS for them -- `<prefix>/share/<name>` for the
-#                      environment it is installed in -- so nothing configures
-#                      a path. A mount always wins; when one is absent the
-#                      entrypoint clones main into it and says so on stderr,
-#                      because a silent clone is how a run comes to differ
-#                      from the checkout it was believed to test.
+#                      Optional read-write host checkouts. This is where
+#                      crustify LOOKS for them -- `<prefix>/share/<name>` for
+#                      the environment it is installed in -- so nothing
+#                      configures a path. The image carries a clone of each
+#                      from build time; a mount replaces it, so a campaign runs
+#                      against the trees under development. An audit touches
+#                      neither.
 #   /work              Named volume, and `HOME`: the C library the agent
 #                      builds, the cargo registry. Not the artifacts -- those
 #                      land in the target checkout.
@@ -69,14 +57,13 @@
 # examples/crustify/results-template.md from the checkout and writes the filled
 # table where the campaign task says. Nothing is seeded into /target.
 #
-# One container name per campaign: `docker attach` reaches a detached run,
-# `docker exec -it <name> bash` opens a shell beside the orchestrator, and
-# `docker start -ai <name>` resumes a stopped run with post-boot installs
-# intact in the container's writable layer. Removing the container removes that
-# state; bake generally useful packages into the image.
+# One container name per campaign: `docker exec -it <name> bash` opens a shell
+# beside the orchestrator, and `docker start <name>` brings a stopped container
+# back with post-boot installs intact in its writable layer. Removing the
+# container removes that state; bake generally useful packages into the image.
 #
-# `-it` because both prompts are built around approval gates. Detach with `-d`
-# and attach later, or run tmux inside.
+# `-it` on `docker exec` because both prompts are built around approval gates.
+# Run tmux inside to detach from a long campaign.
 
 
 # Pinned by DIGEST, not `:latest`. This image's whole premise is that rustc,
@@ -251,8 +238,8 @@ RUN cargo install bindgen-cli --locked \
 # CodeQL CLI, for wavefront's extraction queries. GitHub publishes this bundle
 # for x86-64 Linux but not native Linux ARM64, so an ARM image ships without it
 # and an ARM campaign consumes T1/T2 tables extracted on an x86-64 machine.
-# Whether either is usable is the orchestrator's call, not the entrypoint's: it
-# reads the target's existing tables during Bootstrap and installs the cpp pack
+# Whether either is usable is the orchestrator's call, not the image's: it
+# reads the target's existing tables during setup and installs the cpp pack
 # from wavefront's qlpack itself when the CLI is here.
 RUN arch="$(dpkg --print-architecture)"; \
     if [ "$arch" = amd64 ]; then \
@@ -282,69 +269,33 @@ RUN if [ "${INSTALL_CLAUDE}" = "1" ]; then \
     && { [ "${INSTALL_CLAUDE}" = "1" ] && claude --version || true; } \
     && { [ "${INSTALL_CODEX}" = "1" ] && codex --version || true; }
 
+# The two capability checkouts a translate campaign uses, cloned where crustify
+# looks for them: `<prefix>/share/<name>`. wavefront is a Python distribution
+# and is installed editable, so a checkout mounted over the clone is what runs;
+# ffibox is a path dependency the emitted crates point at, so a checkout is all
+# it needs. Docker caches this layer by instruction text, so bump DEPS_REFRESH
+# to re-clone `main`: `--build-arg DEPS_REFRESH=$(date +%s)`.
+ARG DEPS_REFRESH=0
+RUN echo "DEPS_REFRESH=${DEPS_REFRESH}" \
+    && git clone --depth 1 https://github.com/crustify-rs/wavefront.git /opt/venv/share/wavefront \
+    && git clone --depth 1 https://github.com/crustify-rs/ffibox.git /opt/venv/share/ffibox \
+    && uv pip install --python /opt/venv/bin/python -e /opt/venv/share/wavefront \
+    && wavefront --help >/dev/null
+
 # Bake in a runnable harness -- the WHOLE repository, not just `src`. One
-# distribution ships both packages (`crustify-audit` is a console script of
-# `crustify`), and the orchestrators are told to read templates out of
-# `examples/`, so a partial copy works only until something reaches past it.
-# Nothing expensive follows this layer, so a cache miss here costs seconds.
+# distribution ships both packages, and the orchestrators are told to read
+# templates out of `examples/`, so a partial copy works only until something
+# reaches past it. Nothing expensive follows this layer, so a cache miss here
+# costs seconds.
 #
 # A bind mount at this path replaces these sources. The install is editable and
 # PYTHONPATH points at the same tree, so a mounted checkout wins twice over.
-# `dependencies = []`, so this needs no network and the entrypoint can refresh
-# it offline against whatever is mounted.
 COPY . /opt/crustify
 RUN uv pip install --python /opt/venv/bin/python -e /opt/crustify \
     && crustify --help >/dev/null \
     && crustify . audit --help >/dev/null \
     && crustify . orchestrate --help >/dev/null
 ENV PYTHONPATH=/opt/crustify/src
-
-# Which campaign the container starts. The two differ in one thing only --
-# which orchestrator prompt they load -- but that one thing decides the whole
-# run, so there is NO default: a wrong guess starts the wrong agent and spends
-# a budget before anyone reads the transcript.
-ENV CRUSTIFY_COMMAND=
-# No dependency or binary paths are set here. crustify derives both from the
-# environment it is running in: executables from its own bin/, checkouts from
-# `<prefix>/share/<name>`. Seven variables and a machine-local config file
-# used to spell this out, which meant an agent could not render its own prompt
-# until someone had transcribed paths correctly, and a stale entry produced a
-# silently different prompt rather than an error.
-
-# The model used by the ORCHESTRATOR, whichever role runs. One qualified route
-# rather than a backend/provider/model triple the entrypoint recombined: the
-# provider is the first segment, it selects the billing rate table, and
-# resolve() derives the CLI from it. The agents an orchestrator spawns get
-# theirs per wave from `crustify --model`, or per auditor from the
-# orchestrator's own `--model`.
-ENV CRUSTIFY_MODEL=anthropic/claude-opus-5
-
-# Interactive by default: translate asks what to port before Phase 1 and
-# reports a wave's --dry-run plan before spending on it; audit asks for
-# mandatory TASK answers still missing. Headless answers neither, so set 1 only
-# when the task description pre-answers everything.
-ENV CRUSTIFY_HEADLESS=0
-
-# ABLATION SWITCH, audit only. With CRUSTIFY_BARE=1 the harness contributes
-# NOTHING to the prompt -- the TASK file is the whole prompt.
-ENV CRUSTIFY_BARE=0
-
-# Reasoning effort for a codex orchestrator. codex infers none and falls back
-# to low, which suits neither planning a wave nor reading a build system. Empty
-# leaves codex its default. Ignored by the claude backend.
-ENV CRUSTIFY_EFFORT=high
-
-# How the ORCHESTRATOR authenticates, the container's echo of crustify's
-# `--billing`. Neither CLI switches to API-key auth on the key alone -- claude
-# keeps sending its stored OAuth token unless `--bare`, and codex's built-in
-# openai provider reads auth.json and 401s on OPENAI_API_KEY unless the
-# provider is redeclared with an env_key -- so a key in the environment does
-# nothing until this says to use it. `api` (the default, since a fresh image
-# holds no login) or `subscription` for a run with credentials mounted in.
-ENV CRUSTIFY_BILLING=api
-
-# Minutes per auditor. Audit only.
-ENV CRUSTIFY_TIMEOUT=60
 
 # HOME is the volume, so what the agent fetches or builds survives `--rm`.
 # RUSTUP_HOME is pinned back out of it: rustup resolves from HOME, and against
@@ -358,84 +309,11 @@ RUN mkdir -p /work /target
 
 # /target is a bind mount owned by the HOST user while the container runs as
 # root, so git rejects it for "dubious ownership" -- which breaks recording the
-# audited revision and every worktree the patch objective creates. --system,
+# audited revision and every worktree a campaign creates. --system,
 # not --global: HOME is the named volume, and a gitconfig written under it at
 # build time is masked whenever that volume already exists.
 RUN git config --system --add safe.directory '*'
 
-
-
-
-# The one orchestrator. CRUSTIFY_COMMAND selects the prompt; everything else
-# below is shared.
-RUN printf '%s\n' \
-      '#!/usr/bin/env bash' \
-      'set -euo pipefail' \
-      '# The two campaigns differ in one thing only: which orchestrator prompt they' \
-      '# load. Everything else -- preflight, agent settings, task handling, exec -- is' \
-      '# the same job, and was two scripts long enough for the translate path to lose' \
-      '# --model and openrouter support without anyone noticing.' \
-      'case "${CRUSTIFY_COMMAND:-}" in' \
-      '    translate|audit) ;;' \
-      '    "") echo "CRUSTIFY_COMMAND is unset: pass -e CRUSTIFY_COMMAND=translate or =audit" >&2' \
-      '        exit 2 ;;' \
-      '    *)  echo "bad CRUSTIFY_COMMAND: ${CRUSTIFY_COMMAND} (translate|audit)" >&2' \
-      '        exit 2 ;;' \
-      'esac' \
-      '# The harness is baked into the image, so /opt/crustify is a mount only when' \
-      '# testing live harness changes.' \
-      '[ -f /opt/crustify/pyproject.toml ] || {' \
-      '    echo "no crustify harness at /opt/crustify" >&2; exit 2; }' \
-      '[ -e /target/.git ] || {' \
-      '    echo "missing target checkout mount: bind an existing Git checkout at /target" >&2; exit 2; }' \
-      'uv pip install --python /opt/venv -e /opt/crustify' \
-      'if [ "$CRUSTIFY_COMMAND" = translate ]; then' \
-      '    # The capability checkouts a translate run needs, and only it: an audit' \
-      '    # touches neither. A mounted tree always wins, so a campaign runs against' \
-      '    # whatever is under development; main is cloned only to fill a gap, and the' \
-      '    # line says so, because a silent clone is how a run comes to differ from' \
-      '    # the checkout it was believed to be testing.' \
-      '    ensure_checkout() {' \
-      '        path="$1"; marker="$2"; url="$3"' \
-      '        if [ ! -f "$path/$marker" ]; then' \
-      '            echo "no checkout at $path; cloning $url" >&2' \
-      '            git clone --depth 1 "$url" "$path"' \
-      '        fi' \
-      '        [ -f "$path/$marker" ] || {' \
-      '            echo "invalid checkout at $path: missing $marker" >&2; exit 2; }' \
-      '    }' \
-      '    ensure_checkout /opt/venv/share/wavefront pyproject.toml https://github.com/crustify-rs/wavefront.git' \
-      '    ensure_checkout /opt/venv/share/ffibox Cargo.toml https://github.com/crustify-rs/ffibox.git' \
-      '    # wavefront is a Python distribution and has to be installed to put its CLI' \
-      '    # on PATH; ffibox is a path dependency the emitted crates point at, so a' \
-      '    # checkout is all it needs.' \
-      '    uv pip install --python /opt/venv -e /opt/venv/share/wavefront' \
-      'fi' \
-      '# Append a task only when the conventional external mount is present.' \
-      'task=' \
-      'if [ -f /campaign/TASK.md ]; then' \
-      '    task=/campaign/TASK.md' \
-      'fi' \
-      '# ABLATION SWITCH. With CRUSTIFY_BARE=1 the harness contributes NOTHING to' \
-      '# the prompt: no orchestrator role, no conventions, no skill index. The TASK' \
-      '# file IS the whole prompt. That is the point -- it measures what the bare' \
-      '# model finds on its own, against a full crustify run on the same target and' \
-      '# budget. The CLI implements it, so the ablation and the real run differ in' \
-      '# one flag rather than in which program composed the prompt.' \
-      'bare=' \
-      '[ "${CRUSTIFY_BARE:-0}" = 1 ] && bare=--task-only' \
-      '# The prompt is composed by the CLI now, not here: it reads its own prompt' \
-      '# file, skill index, conventions and the campaign task, and puts them in a' \
-      '# system slot this shell had no way to reach. What is left is the one thing' \
-      '# only the container knows -- where the checkout is mounted.' \
-      '[ -n "$task" ] || {' \
-      '    echo "no /campaign/TASK.md: mount one, it is the campaign input" >&2' \
-      '    exit 2; }' \
-      'echo "[crustify] task $task"' \
-      'exec crustify --model "$provider/$CRUSTIFY_MODEL" --billing "$CRUSTIFY_BILLING" \' \
-      '    /target orchestrate "$CRUSTIFY_COMMAND" --task "$task" $bare "$@"' \
-      > /usr/local/bin/crustify-orchestrator \
-    && chmod +x /usr/local/bin/crustify-orchestrator
 
 # The required target bind mount shadows this empty image directory. Starting
 # in it makes the existing checkout -- and any partial campaign -- the
@@ -444,6 +322,4 @@ WORKDIR /target
 # Idle by default so the container is an environment, not one run: a campaign
 # started with `docker exec <name> crustify ... orchestrate ...` survives its
 # own crash, and a shell beside it can read the worktrees and caches it left.
-# The one-shot form still works, because CMD is only a default:
-# `docker run ... crustify crustify-orchestrator`.
 CMD ["sleep", "infinity"]

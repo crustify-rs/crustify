@@ -3,8 +3,7 @@
 Field meaning for `<workdir>/crustify/subsystems.json`, the orchestrator's campaign
 decomposition. Layout example: [`specs/subsystems.json`](../../specs/subsystems.json).
 
-The orchestrator emits this repo-tier artifact after it has authored the campaign-wide
-Wavefront config and populated its CodeQL inventory. It describes the subsystem span
+The orchestrator emits this repo-tier artifact. It describes the subsystem span
 selected by the user and every imported subsystem in that span's producer closure.
 
 It is also the shape the Rust tree mirrors. There is no second placement document: a
@@ -64,9 +63,6 @@ one.
 by itself change the objective. A generic facility with a strong candidate is the usual
 reason to leave a subsystem wrapped during a partial migration rather than port it.
 
-Changing the target selection or the objective requires regenerating this artifact from
-the campaign-wide Wavefront config.
-
 ## link_units[*].subsystems[*].counters
 
 | field | meaning |
@@ -81,27 +77,6 @@ the campaign-wide Wavefront config.
 | `callbacks` | function-pointer types the subsystem defines |
 | `macros` | object- and function-like macro definitions |
 
-Derive these by grouping the oracle's own records — `wavefront ... query types` and `query
-symbols` return each entity's resolved kind — not by reading C. A second count that
-disagrees is indistinguishable from a decomposition that has drifted.
-
-The oracle's kinds map onto these counters as:
-
-| counter | oracle kind |
-|---|---|
-| `structs` | type `struct` |
-| `unions` | type `union` |
-| `enums` | type `enum` |
-| `callbacks` | `callback` |
-| `macros` | `macro` |
-| `functions` | symbol `function_exported`, `function_inline_header` |
-| `global_variables` | symbol `global_extern` |
-
-A typedef is reported under the kind it resolves to, so a typedef of a struct counts as a
-struct and a function-pointer typedef counts as a callback. There is no typedef counter:
-the oracle resolves them away deliberately, and one would either duplicate a count already
-made or stay zero.
-
 ## link_units[*].subsystems[*].imported_deps
 
 Every record is directed from this subsystem, the consumer, to something it depends on.
@@ -112,7 +87,7 @@ resolves through `link_units`.
 |---|---|
 | `link_unit` | destination `link_units[*].name` |
 | `subsystem` | destination subsystem's `name` within that link unit |
-| `nr_edges` | oracle dependency edges aggregated into this relation |
+| `nr_edges` | dependency edges aggregated into this relation |
 | `counters` | distinct entities consumed from that destination, by kind |
 
 | `out_of_tree[*]` field | meaning |
@@ -132,4 +107,4 @@ falsify the dependency it documents and hide the cycle from everything downstrea
 The orchestrator cuts cycles when it schedules, not here. Within a cyclic region, a
 subsystem with more incoming consumer edges has greater producer weight and should
 preferentially remain the producer; `nr_edges` refines that weight when choosing where to
-cut. A cut belongs to the wave plan that made it, which records it as an explicit SCC cut.
+cut. A cut is implied by the schedule's order rather than recorded in it.

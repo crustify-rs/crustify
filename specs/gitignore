@@ -10,6 +10,8 @@ rust.bak
 # stream and usage record a batch produces are not.
 campaigns/**/translator.log
 campaigns/**/translator.usage.json
+campaigns/*/orchestrator-*.log
+campaigns/*/orchestrator-*.usage.json
 
 # The UB auditor's working area, and the cargo trees under its reproducers --
 # typically ~99% of the directory's bytes. Advisories, their reproducer

@@ -11,8 +11,11 @@ Your git entity: `crustify`
 
 ## Inputs
 
-- repository: `{workdir}` - worklist: `{worklist}` - task objective: `{task_objective}` -
-  artifact dir: `{artifact_dir}` - unchecked-out wave integration branch: `{git_base}`
+- repository: `{workdir}`
+- worklist: `{worklist}`
+- task objective: `{task_objective}`
+- artifact dir: `{artifact_dir}`
+- unchecked-out wave integration branch: `{git_base}`
 
 ## Routes and objectives
 
@@ -29,10 +32,11 @@ Verify the route before editing. Type-generating macros use `type`; callback typ
 
 The worklist objective is authoritative:
 
-- `wrap`: preserve the C ABI and implementation; add a safe Rust API. - `port`: implement
-  the selected behaviour in safe Rust; preserve required C interoperability and observable
-  behaviour. - `review`: verify existing findings and code, add regression evidence, fix
-  defects, land the fixes, and file an advisory for every defect fixed.
+- `wrap`: preserve the C ABI and implementation; add a safe Rust API.
+- `port`: implement the selected behaviour in safe Rust; preserve required C
+  interoperability and observable behaviour.
+- `review`: verify existing code, add regression evidence, fix defects, land the fixes,
+  and file reports for every defect fixed.
 
 A targeted dependency outside a partial port's selected migration set may use `wrap`.
 
@@ -48,9 +52,13 @@ and return, inspect all code paths that store, transfer, clone, retain, or free 
 
 Establish:
 
-- ownership and transfer direction; - shared or mutable access; - nullability; - scalar,
-  array, or other cardinality; - type erasure and known element types; - borrow and
-  keepalive relationships; and - construction, clone, and destruction paths.
+- ownership and transfer direction;
+- shared or mutable access;
+- nullability;
+- scalar, array, or other cardinality;
+- type erasure and known element types;
+- borrow and keepalive relationships; and
+- construction, clone, and destruction paths.
 
 Observed behaviour overrides names and comments. Preserve known distinctions in Rust
 instead of copying an ambiguous C signature. Leverage these findings later when emitting
@@ -66,9 +74,11 @@ Use filled anchors as context. Revisit one only when the objective permits it.
 
 When a binding is missing:
 
-1. extend only the affected `-sys` crate's agent-owned allowlist; 2. add only required FFI
-   items; 3. add a minimal shim only for a real bindgen limitation; 4. regenerate
-   bindings; 5. build and test the affected `-sys` crate.
+1. extend only the affected `-sys` crate's agent-owned allowlist;
+2. add only required FFI items;
+3. add a minimal shim only for a real bindgen limitation;
+4. regenerate bindings;
+5. build and test the affected `-sys` crate.
 
 Before rebuilding C, check for the orchestrator's reusable build and runner. Reuse it only
 when the C revision, the version in `crustify/build.json`, the compiler and the
@@ -82,10 +92,11 @@ library.
 
 Do not publish a C macro as an independent Rust API.
 
-- Symbol alias: bind and call the underlying symbol's safe wrapper. - Function-like macro:
-  use an existing shim or add the smallest required shim, then bind and wrap it. -
-  Constant macro: use the generated binding. - Type-generating macro: follow the type
-  route.
+- Symbol alias: bind and call the underlying symbol's safe wrapper.
+- Function-like macro: use an existing shim or add the smallest required shim, then bind
+  and wrap it.
+- Constant macro: use the generated binding.
+- Type-generating macro: follow the type route.
 
 ### 4. Safe boundary throughout
 
@@ -94,8 +105,9 @@ storage becomes Rust-owned only after no C path accesses, allocates, or frees it
 
 Rust consumers use safe APIs. Restrict raw operations to:
 
-- wrapped-layout projection; - wrapped FFI calls; - operations whose caller obligation
-  cannot be represented in Rust types.
+- wrapped-layout projection;
+- wrapped FFI calls;
+- operations whose caller obligation cannot be represented in Rust types.
 
 Keep SCC cuts and unavailable higher-layer dependencies as narrow documented raw seams.
 Replace them when a safe dependency becomes available. Every unsafe block requires the
@@ -119,9 +131,9 @@ our coding conventions.
 
 For a synthetic type generator:
 
-- use a generic wrapper for a homogeneous family converging on the generator; - alias a
-  dominant concrete instance to the generator with its element wrapper; and - specialize
-  only behaviour that differs from the generic surface.
+- use a generic wrapper for a homogeneous family converging on the generator;
+- alias a dominant concrete instance to the generator with its element wrapper; and
+- specialize only behaviour that differs from the generic surface.
 
 ### 3. Lifecycle
 
@@ -146,15 +158,18 @@ Project fields with `addr_of!`, `addr_of_mut!`, `&raw const`, or `&raw mut`. Nev
 Accessor requirements:
 
 - Owned-reference field: replacement setter that drops the old owner, owning getter that
-  leaves the field valid, and shared borrowed getter. - By-value wrapped field: shared or
-  mutable handle over the projected place. - Stored borrow without an expressible
-  lifetime: unsafe setter with the referent-lifetime obligation in its caller contract. -
-  Statically known owned and borrowed cases: distinct wrapper forms with a shared trait
-  where useful. - Runtime ownership flag: separately checked owned and borrowed
-  operations. - Union and discriminator: tagged Rust enum when the mapping is valid. -
-  Scalar and array variants: separate typed forms. - Type-erased field: generic element
-  type when known; otherwise the discovered untyped lifetime strategy. - `Send` or `Sync`:
-  add only with a specific synchronization or immutability proof.
+  leaves the field valid, and shared borrowed getter.
+- By-value wrapped field: shared or mutable handle over the projected place.
+- Stored borrow without an expressible lifetime: unsafe setter with the referent-lifetime
+  obligation in its caller contract.
+- Statically known owned and borrowed cases: distinct wrapper forms with a shared trait
+  where useful.
+- Runtime ownership flag: separately checked owned and borrowed operations.
+- Union and discriminator: tagged Rust enum when the mapping is valid.
+- Scalar and array variants: separate typed forms.
+- Type-erased field: generic element type when known; otherwise the discovered untyped
+  lifetime strategy.
+- `Send` or `Sync`: add only with a specific synchronization or immutability proof.
 
 Use safe wrappers for translated dependent types and callbacks. Find real release
 strategies for strings, arrays, and erased owners. Replace lower-layer temporary raw
@@ -217,12 +232,14 @@ For `port`, translate the implementation to safe idiomatic Rust and preserve obs
 behaviour. Re-export it to C through according to our coding conventions while C consumers
 remain.
 
-- The raw gateway reconstructs safe wrappers and calls the native function. - Remove a
-  TU-local export after its last C consumer is removed. - Guard only replaced C bodies
-  with the path-derived per-file guard. - Group adjacent guarded bodies when useful; do
-  not guard the whole file. - In the C fallback branch, declare Rust exports and redirect
-  TU-local names to collision-safe exports. - Wire the file flag and Rust static library
-  through the actual build system; do not assume link mechanics.
+- The raw gateway reconstructs safe wrappers and calls the native function.
+- Remove a TU-local export after its last C consumer is removed.
+- Guard only replaced C bodies with the path-derived per-file guard.
+- Group adjacent guarded bodies when useful; do not guard the whole file.
+- In the C fallback branch, declare Rust exports and redirect TU-local names to
+  collision-safe exports.
+- Wire the file flag and Rust static library through the actual build system; do not
+  assume link mechanics.
 
 ---
 
@@ -245,11 +262,12 @@ crate privacy enforces the public-API boundary and call public safe wrapper APIs
 Cover every instrument prepared by the campaign as a separate obligation:
 
 - ASan/UBSan: bounds errors, use-after-free, use-after-return, invalid free,
-  pointer/alignment UB, and integer/division/shift UB. - BSan: conflicting foreign writes
-  and retained foreign pointers across Rust reborrows. - TSan: races reachable through
-  safe APIs, including every asserted `Send` or `Sync` implementation and threaded
-  callback. - Miri: Rust-side lifetime, bounds, initialization, validity, alignment,
-  intrinsic, and `repr` assumptions. Miri cannot call the foreign library.
+  pointer/alignment UB, and integer/division/shift UB.
+- BSan: conflicting foreign writes and retained foreign pointers across Rust reborrows.
+- TSan: races reachable through safe APIs, including every asserted `Send` or `Sync`
+  implementation and threaded callback.
+- Miri: Rust-side lifetime, bounds, initialization, validity, alignment, intrinsic, and
+  `repr` assumptions. Miri cannot call the foreign library.
 
 Exercise every owner and borrowed form, shared and mutable access path, lifecycle
 strategy, generic instance, and callback variant emitted by the batch. Attempt to outlive
@@ -267,8 +285,11 @@ Emit equivalence tests as Cargo integration tests in the the `#[cfg(test)] mod
 equiv_tests` suite. Run the raw C implementation and public Rust API on equivalent,
 independently owned inputs. Compare:
 
-- return values and errors; - out-parameters and buffers; - callbacks; - state
-  transitions; and - lifecycle effects.
+- return values and errors;
+- out-parameters and buffers;
+- callbacks;
+- state transitions; and
+- lifecycle effects.
 
 Use multi-call sequences and compare after each step. Single calls are only a baseline.
 
@@ -285,13 +306,14 @@ tests for unaffected behaviour, and place the corrected-behaviour regression in
 Use inline `#[cfg(test)] mod unit_tests` beside the translated unit when Rust assertions
 supply the verdict or the test exercises unsafe or internal facilities, including:
 
-- Rust-only `Iterator`, `Debug`, `Clone`, conversions, and builders; - input rejected by
-  Rust before FFI, including the error and no panic; - deliberate correction of defective
-  C behaviour; and - raw C fixtures and direct FFI; - unsafe adoption through `from_raw`,
-  `from_ptr`, or similar constructors; - private or `pub(crate)` constructors and internal
-  destructor/drop plumbing; - unsafe public APIs whose caller must discharge a safety
-  contract; and - resource release exercised through any of those raw, unsafe, or internal
-  paths.
+- Rust-only `Iterator`, `Debug`, `Clone`, conversions, and builders;
+- input rejected by Rust before FFI, including the error and no panic;
+- deliberate correction of defective C behaviour;
+- raw C fixtures and direct FFI;
+- unsafe adoption through `from_raw`, `from_ptr`, or similar constructors;
+- private or `pub(crate)` constructors and internal destructor/drop plumbing;
+- unsafe public APIs whose caller must discharge a safety contract; and
+- resource release exercised through any of those raw, unsafe, or internal paths.
 
 If a C call can supply the expected result, use an equivalence test. If a sanitizer
 supplies the verdict for behavior reached solely through the safe public API, use a UB
@@ -362,8 +384,8 @@ Verify your workset's private implementation for any remaining defects that the 
 unit_tests` suite might have missed. Prove that a candidate is a true internal defect by
 emitting an inline unit test reproducer in `mod unit_tests` that fails to pass the
 expected assertion. File a brief report that describes your finding in under 200 words and
-place it in `<artifact-dir>/defects/equiv/<defect-slug>`, including the affected SHA
-revision and a trace of the failing equivalence assertion.
+place it in `<artifact-dir>/defects/internal/<defect-slug>`, including the affected SHA
+revision and a trace of the failing internal assertion.
 
 Emit a patch for every true defect that you found and leave the unit test reproducer as an
 inline regression test in the `mod unit_tests` suite to catch future regressions.
@@ -440,8 +462,9 @@ descends from the expected old commit.
 
 On a non-fast-forward rejection:
 
-1. rebase only the agent branch onto the current wave branch; 2. rerun validation; and 3.
-   retry the atomic fast-forward.
+1. rebase only the agent branch onto the current wave branch;
+2. rerun validation; and
+3. retry the atomic fast-forward.
 
 Never reset, force-update, move the wave branch backward, or push to a remote. Remove the
 worktree only after landing succeeds.

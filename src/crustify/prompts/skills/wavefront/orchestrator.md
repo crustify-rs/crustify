@@ -37,16 +37,19 @@ After subsystem decomposition, emit campaign-wide and per-subsystem
 
 Selection rules:
 
-- `impl_files` and `api_headers` seed the implementation graph. - An entity is targeted
-  when its definition is in a named file. For an entity without a body, all declarations
-  must be in named files. - Headers outside the implementation tree must be named when
-  they define target types. - Add a header to `api_headers` only when its implementors are
-  in `impl_files`. - Dependencies merely used by the target enter the imported closure. -
-  `--api-headers-only` selects declarations published by `api_headers` and does not walk
-  bodies. - A struct defined in `api_headers` retains field layout. A forward declaration
-  remains opaque. - `targeted` and `imported` describe ownership; `api` describes
-  publication. These sets intersect. - `out_of_scope.paths` changes selection.
-  `out_of_scope.features` is documentation only.
+- `impl_files` and `api_headers` seed the implementation graph.
+- An entity is targeted when its definition is in a named file. For an entity without a
+  body, all declarations must be in named files.
+- Headers outside the implementation tree must be named when they define target types.
+- Add a header to `api_headers` only when its implementors are in `impl_files`.
+- Dependencies merely used by the target enter the imported closure.
+- `--api-headers-only` selects declarations published by `api_headers` and does not walk
+  bodies.
+- A struct defined in `api_headers` retains field layout. A forward declaration remains
+  opaque.
+- `targeted` and `imported` describe ownership; `api` describes publication. These sets
+  intersect.
+- `out_of_scope.paths` changes selection. `out_of_scope.features` is documentation only.
 
 ###### Campaign-wide
 

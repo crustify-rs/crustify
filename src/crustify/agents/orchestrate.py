@@ -39,13 +39,6 @@ _SKILLS = (
         "wavefront", "SKILL.md", capability="wavefront",
         role_header="skills/wavefront/orchestrator.md",
     ),
-    #: Self-contained: no external checkout and no generic skill to wrap, so
-    #: the per-role file is the skill. Its own path is what a deletion removes.
-    SkillSpec(
-        "crustify",
-        "src/crustify/prompts/skills/sanitizers/orchestrator.md",
-        capability="sanitizers",
-    ),
 )
 
 
@@ -54,19 +47,27 @@ class OrchestrateAgent(CrustifyAgent):
 
     name = "orchestrator"
     stage = "orchestrate"
-    #: Its artifacts belong to the checkout, not to one oracle target.
-    tier = "workdir"
     prompt_in_system_slot = True
     SKILLS = _SKILLS
 
     def __init__(self, workdir: Path, *, kind: str, task: Path,
-                 model: str, task_only: bool = False, **kwargs) -> None:
+                 model: str, task_only: bool = False,
+                 campaign_id: str = "", **kwargs) -> None:
         self.kind = kind
         self.task = Path(task)
         self.model = model
         self.task_only = task_only
+        #: Minted by the CLI for a new translate campaign, or named by
+        #: `--campaign` to resume one. Either way `crustify/campaigns/<id>/`
+        #: exists and is this agent's artifact dir, so the orchestrator's log
+        #: sits with the campaign it runs. Empty for an audit campaign, which
+        #: has no campaign tree.
+        self.campaign_id = campaign_id
         self.stage_suffix = kind
         super().__init__(workdir, **kwargs)
+
+    def _arguments(self) -> dict:
+        return {**super()._arguments(), "campaign_id": self.campaign_id}
 
     def _task_text(self) -> str:
         text = self.task.read_text().strip()

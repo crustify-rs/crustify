@@ -28,9 +28,10 @@ switch keep their C-derived spelling.
 
 The Rust tree mirrors the following layout, all relative to `<repo>/crustify/rust/`:
 
-- `Cargo.toml` - top-level virtual manifest. - `<link-unit>-sys/` - raw bindings package,
-  one per link unit. - `<repo>/` - safe repo package, one for the whole repo. -
-  `<repo>/<link-unit>/` - one sub-dir per link unit, `cfg`-gated module in `lib.rs`.
+- `Cargo.toml` - top-level virtual manifest.
+- `<link-unit>-sys/` - raw bindings package, one per link unit.
+- `<repo>/` - safe repo package, one for the whole repo.
+- `<repo>/<link-unit>/` - one sub-dir per link unit, `cfg`-gated module in `lib.rs`.
 
 The Rust tree mirrors the subsystem decomposition in `subsystems.json`, and the filesystem
 is the source of truth for an entity's home: a batch names the `.rs` file each of its
@@ -41,13 +42,14 @@ There is one `.rs` home per C translation unit, or per header group when no tran
 unit owns the entity. Entities sharing a definition site co-home. A home is shared across
 waves; completed items remain in place.
 
-Rust has no headers, they are homed using the following rules: - for a wrap campaign: each
-public header gets its own `mod` and `.rs`. - for a port campaign: - a subsystem's headers
-and translation units share one sub-dir and module rooted at
+Rust has no headers, they are homed using the following rules:
+- for a wrap campaign: each public header gets its own `mod` and `.rs`.
+- for a port campaign:
+  - a subsystem's headers and translation units share one sub-dir and module rooted at
     `rust/<repo>/<link-unit>/<subsystem>/<subsystem>.rs`;
-  - a TU and its companion header share a sub-module within their subsystem; - headers
-    that export implementation (e.g. `static inline` functions) which logically do not
-    belong to any TU get their own `_h.rs` sub-module; headers shared by multiple
+  - a TU and its companion header share a sub-module within their subsystem;
+  - headers that export implementation (e.g. `static inline` functions) which logically do
+    not belong to any TU get their own `_h.rs` sub-module; headers shared by multiple
     subsystems become sub-modules for each subsystem;
 
 ## Wrapped types

@@ -60,23 +60,25 @@ crustify WORKDIR audit ub [--objective audit|audit+patch|patch|revisit]
                        [--timeout MINUTES]
 ```
 
-- `unsafe --json` prints the document on stdout; redirect it to keep it. - `unsafe --name` adds
-  source sites for selected C types or symbols. - `ub --workset` confines an auditor to
-  specified work items. For audit objectives these are source files; omit it for the whole
-  crate. Under `--objective patch` it carries advisory directories under
-  `crustify/audit/advisories/` instead of source files; omit it to repair every advisory.
-  Under `--objective revisit` it carries lead notes under `crustify/audit/leads/` instead
-  of source files. - `ub --instruments` constrains the hunt and advisory evidence; omit it
-  to select every one. Before spending, the command prints the exact selected instruments,
-  their bug classes, and their reach limitations. `equivalence` is the odd one out: it
-  decides by comparing against the C reference rather than by instrumentation, so it needs
-  no sanitizer build and its advisories carry a failing assertion instead of a crash. -
-  `ub --timeout` is a wall-clock budget, not a kill deadline. The current agent finishes
-  even when that overshoots the budget; `0` runs one agent. - `audit` never edits target
-  source. `audit+patch` and `patch` develop repairs in Git worktrees. `revisit` hunts
-  nothing new: it re-investigates leads an earlier campaign left open, appends a dated
-  verdict to each, and promotes one to an advisory if it now reproduces. Use it after
-  adding an instrument that can settle a hypothesis the earlier run had to leave standing.
+- `unsafe --json` prints the document on stdout; redirect it to keep it.
+- `unsafe --name` adds source sites for selected C types or symbols.
+- `ub --workset` confines an auditor to specified work items. For audit objectives these
+  are source files; omit it for the whole crate. Under `--objective patch` it carries
+  advisory directories under `crustify/audit/advisories/` instead of source files; omit it
+  to repair every advisory. Under `--objective revisit` it carries lead notes under
+  `crustify/audit/leads/` instead of source files.
+- `ub --instruments` constrains the hunt and advisory evidence; omit it to select every
+  one. Before spending, the command prints the exact selected instruments, their bug
+  classes, and their reach limitations. `equivalence` is the odd one out: it decides by
+  comparing against the C reference rather than by instrumentation, so it needs no
+  sanitizer build and its advisories carry a failing assertion instead of a crash.
+- `ub --timeout` is a wall-clock budget, not a kill deadline. The current agent finishes
+  even when that overshoots the budget; `0` runs one agent.
+- `audit` never edits target source. `audit+patch` and `patch` develop repairs in Git
+  worktrees. `revisit` hunts nothing new: it re-investigates leads an earlier campaign
+  left open, appends a dated verdict to each, and promotes one to an advisory if it now
+  reproduces. Use it after adding an instrument that can settle a hypothesis the earlier
+  run had to leave standing.
 
 Run `crustify WORKDIR audit --help` or a subcommand's `--help` for complete flag
 semantics.
@@ -173,8 +175,8 @@ audit unsafe`.
 
 ## Reference
 
-- [Deterministic output and named-site semantics](unsafe-output.md) - [Task
-  questionnaire](examples/crustify_audit/TASK.md.template) - [Example results and report
-  format](examples/crustify_audit/results.md) - [`ub` auditor
-  prompt](src/crustify_audit/prompts/ub.md) - [Orchestrator
-  prompt](src/crustify_audit/prompts/orchestrator.md)
+- [Deterministic output and named-site semantics](unsafe-output.md)
+- [Task questionnaire](examples/crustify_audit/TASK.md.template)
+- [Example results and report format](examples/crustify_audit/results.md)
+- [`ub` auditor prompt](src/crustify_audit/prompts/ub.md)
+- [Orchestrator prompt](src/crustify_audit/prompts/orchestrator.md)

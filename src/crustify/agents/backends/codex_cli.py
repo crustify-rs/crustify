@@ -19,7 +19,6 @@ name.
 from __future__ import annotations
 
 import hashlib
-import json
 import os
 import re
 import shutil
@@ -131,18 +130,17 @@ _REASONING_EFFORT = {
 #                                 writes, cargo's `target/`
 #   * the MAIN checkout         — a worktree's `.git` is a file pointing at
 #                                 `<main>/.git/worktrees/<slug>`, so commits and
-#                                 the landing push write there; and
-#                                 `worktree.link_shared` symlinks analysis /
-#                                 targets / .providers / tmp / the repo-tier
-#                                 JSON stores back to it, which is where record
-#                                 submissions and codex's session rollout land.
+#                                 the landing push write there; and the
+#                                 orchestrator symlinks gitignored shared state
+#                                 (.providers and the like) back to it, which is
+#                                 where codex's session rollout lands.
 #                                 Derived via `--git-common-dir`, whose parent is
 #                                 the right root from a worktree or a plain
 #                                 checkout alike.
 #   * CARGO_HOME                — cargo's registry cache and lockfiles
 #
 # Naming the main checkout was NOT redundant with the worktree: seatbelt
-# canonicalizes before matching, so a write *through* a `link_shared` symlink to
+# canonicalizes before matching, so a write *through* a shared-state symlink to
 # a target outside the granted dir failed `Operation not permitted` (verified).
 
 
@@ -184,15 +182,15 @@ class CodexCliBackend:
         # submit a record. It was widened by hand to three roots: the worktree;
         # the MAIN checkout (a worktree's `.git` is a *file* pointing at
         # `<main>/.git/worktrees/<slug>`, so every commit and the landing push
-        # write there, and `worktree.link_shared` symlinks analysis / targets /
-        # .providers / the repo-tier JSON stores back to it); and CARGO_HOME.
+        # write there, and the orchestrator symlinks shared gitignored state
+        # such as .providers back to it); and CARGO_HOME.
         # Enumerating write roots still left the agent unable to navigate the
         # workspace freely, so the mode is now global.
         #
         # This REMOVES the sandbox rather than widening it: the agent can write
         # anywhere the invoking user can — outside the repo, and into a
-        # concurrent run's worktree or suffixed manifests, which is the
-        # isolation an `--out-suffix` model comparison otherwise relies on.
+        # concurrent run's worktree, which is the isolation parallel batches
+        # otherwise rely on.
         cmd = [exe, "exec", "--skip-git-repo-check",
                "-C", str(wd),
                "-s", "danger-full-access",

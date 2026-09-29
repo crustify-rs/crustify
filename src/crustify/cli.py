@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 import argparse
 
@@ -104,6 +105,10 @@ def main() -> None:
              "harness contributes nothing -- no conventions, no skill index, "
              "no stage prompt.")
     orch_p.add_argument(
+        "--campaign", metavar="ID",
+        help="Resume the translate campaign crustify/campaigns/<ID>/ instead "
+             "of starting a new one. Its directory must exist.")
+    orch_p.add_argument(
         "--task", required=True, type=Path, metavar="PATH",
         help="Campaign TASK.md. Required: the campaign's decisions are an "
              "input, not something the orchestrator interviews for.")
@@ -122,7 +127,7 @@ def main() -> None:
         help="Thin batch JSON containing objective and scheduled items.")
     wrap_p.add_argument(
         "--base-branch", required=True, metavar="BRANCH",
-        help="Unchecked-out wave integration branch to fork from and land on.")
+        help="Unchecked-out wave integration branch the batch lands on.")
     wrap_p.add_argument(
         "--output", required=True, type=Path, metavar="DIR",
         help="Existing directory for this batch's artifacts. The agent writes "
@@ -135,14 +140,14 @@ def main() -> None:
     args = parser.parse_args()
 
     # workdir is explicit: crustify never walks the filesystem to find it.
-    from crustify.layout import set_workdir
     workdir = Path(args.workdir).resolve()
-    set_workdir(workdir)
 
     if not workdir.exists():
         print(f"error: workdir does not exist: {workdir}", file=sys.stderr)
         sys.exit(1)
-    if not (workdir / "crustify").is_dir():
+    # An orchestrator starts a campaign, so it may be the first thing to run
+    # in a checkout; every other command works inside one it set up.
+    if args.command != "orchestrate" and not (workdir / "crustify").is_dir():
         print(f"error: no crustify/ under workdir: {workdir}", file=sys.stderr)
         sys.exit(1)
 
@@ -172,7 +177,7 @@ def main() -> None:
 
 
 
-# -- analyze dispatch -----------------------------------------------------
+# -- dispatch -------------------------------------------------------------
 
 def _handle_cost(args: argparse.Namespace) -> None:
     """Report agent cost and wall time for this checkout."""
@@ -199,8 +204,31 @@ def _handle_orchestrate(args: argparse.Namespace) -> None:
     if not args.task.is_file():
         raise SystemExit(f"no campaign task at {args.task}")
     model = _cfg.MODEL_OVERRIDE or "anthropic/claude-opus-5"
-    OrchestrateAgent(Path(args.workdir), kind=args.kind, task=args.task,
-                     model=model, task_only=args.task_only).run()
+    workdir = Path(args.workdir).resolve()
+    campaigns = workdir / "crustify" / "campaigns"
+    run_start = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
+    campaign = {}
+    if args.campaign is not None:
+        if args.kind != "translate":
+            raise SystemExit("--campaign resumes a translate campaign only")
+        campaign_dir = campaigns / args.campaign
+        if Path(args.campaign).name != args.campaign or not campaign_dir.is_dir():
+            raise SystemExit(f"no campaign to resume at {campaign_dir}")
+        campaign_id = args.campaign
+    elif args.kind == "translate":
+        # A new campaign is named by when it started. Minted here, not by the
+        # agent, so the orchestrator's log and usage record land in the
+        # campaign directory from its first turn.
+        campaign_id = run_start
+        campaign_dir = campaigns / campaign_id
+        campaign_dir.mkdir(parents=True, exist_ok=False)
+    if args.kind == "translate":
+        print(f"[crustify orchestrate] campaign: {campaign_dir}")
+        # One log per run, so resuming never overwrites an earlier session's.
+        campaign = {"campaign_id": campaign_id, "artifact_dir": campaign_dir,
+                    "log_stem": f"orchestrator-{run_start}"}
+    OrchestrateAgent(workdir, kind=args.kind, task=args.task, model=model,
+                     task_only=args.task_only, **campaign).run()
 
 
 def _handle_translate(args: argparse.Namespace) -> None:

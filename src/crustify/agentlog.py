@@ -26,9 +26,9 @@ bodies and command output, so a port wave's raw streams would outweigh
 every other artifact crustify writes - and everything worth keeping from
 them is already in one of the two files above.
 
-The console receives the same text as ``<stage>.log``. Translation harnesses
-pass an explicit wave-local output directory and generated batch id; other
-agent callers use their campaign-local fallback directory.
+The console receives the same text as ``<stage>.log``. A translation batch
+passes its own output directory and the fixed stem ``translator``; the
+orchestrator logs under ``crustify/logs``.
 """
 
 from __future__ import annotations
