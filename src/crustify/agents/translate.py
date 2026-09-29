@@ -86,9 +86,9 @@ class TranslateAgent(CrustifyAgent):
             # before the agent issues a request.
             **super()._arguments(),
             "task_objective": self._objective,
-            # This batch's own directory: its log and usage record, and the
-            # reproducers and reports a review batch is told to file there.
-            "artifact_dir": str(self.artifact_dir),
+            # No `artifact_dir`: the batch directory holds only the log and
+            # usage record the harness writes. A reviewer files its reports in
+            # its worktree, under a path derived from its branch.
             # NOTE: no `conventions` key. The conventions doc and skill index are
             # no longer a `.format` slot — they go to the backend's system slot
             # via `system_preamble()`, out of reach of context compaction.

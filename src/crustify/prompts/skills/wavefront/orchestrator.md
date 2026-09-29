@@ -83,9 +83,9 @@ Selection rules:
 
 ### For Phase 2: Translation
 
-### 2. Launch preparations
+#### 2. Launch preparations
 
-#### Waves and batches
+##### Waves and batches
 
 Additionally symlink the CodeQL DB files from `crustify/wavefront/codeql/` and wavefront
 `.cache` after forking the worktree for a batch.

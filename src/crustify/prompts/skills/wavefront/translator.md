@@ -46,6 +46,6 @@ primitives for void and string and submit your findings through the CLI's `--upd
 Verify Wavefront's analysis and lifecycle findings submitted by an earlier run
 for your workset. If you find any analysis defect or missing property/lifecycle
 primitive, resubmit with a corrected set of findings. File a report describing each
-discovered defect in less than 200 words in
-`<artifact-dir>/defects/wavefront/<defect-slug>`,
+discovered defect in
+`crustify/reviews/<artifact-dir>/wavefront/<defect-slug>`,
 including evidence that proves the previous finding was wrong/incomplete. 

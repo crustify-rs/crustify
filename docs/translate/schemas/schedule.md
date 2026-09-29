@@ -43,9 +43,9 @@ destination is scheduled after its consumer.
 
 ## link_units[*].subsystems[*].waves[*]
 
-Entry *n* runs only after entry *n-1* has landed, been reviewed and passed its regression
-gate — and the last wave of a subsystem before the first wave of the next, which is what
-makes the whole nesting a total order rather than independent sequences.
+Entry *n* runs only after entry *n-1* has landed, and the last wave of a subsystem runs before the
+first wave of the next, which is what makes the whole nesting a total order rather than
+independent sequences.
 
 | field | meaning |
 |---|---|
@@ -55,7 +55,7 @@ makes the whole nesting a total order rather than independent sequences.
 ## …waves[*].batches[*]
 
 A batch entry is a thin batch: the exact object `crustify translate` accepts, documented
-in `docs/translate/schemas/batch.md`. It carries `objective` and `items` and nothing else.
+in `docs/translate/schemas/batch.md`.
 
 `objective` is per batch, not per wave. A port campaign wraps a type while C still reads
 its fields and ports it afterwards, so one wave holds batches of differing objectives.
