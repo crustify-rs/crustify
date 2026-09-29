@@ -150,8 +150,7 @@ class GitHarnessTests(unittest.TestCase):
             def run(self):
                 pass
 
-        with (mock.patch("crustify.layout._REPO_ROOT", self.repo),
-              mock.patch("crustify.agents.translate.TranslateAgent", FakeAgent)):
+        with mock.patch("crustify.agents.translate.TranslateAgent", FakeAgent):
             translate.execute(tree, self.batch, base_branch="wave-0",
                               output=self.output)
         self.assertEqual(calls, [tree])
@@ -168,11 +167,10 @@ class GitHarnessTests(unittest.TestCase):
     def test_dry_run_does_not_create_refs_or_worktrees(self) -> None:
         before_refs = self.git("for-each-ref", "--format=%(refname)", "refs/heads").stdout
         before_trees = self.git("worktree", "list", "--porcelain").stdout
-        with mock.patch("crustify.layout._REPO_ROOT", self.repo):
-            translate.execute(
-                self.repo, self.batch, base_branch="wave-0",
-                output=self.output, dry_run=True,
-            )
+        translate.execute(
+            self.repo, self.batch, base_branch="wave-0",
+            output=self.output, dry_run=True,
+        )
         self.assertEqual(
             self.git("for-each-ref", "--format=%(refname)", "refs/heads").stdout,
             before_refs,
@@ -182,8 +180,7 @@ class GitHarnessTests(unittest.TestCase):
 
     def test_output_directory_must_already_exist(self) -> None:
         missing = Path(self.tmp.name) / "missing-logs"
-        with (mock.patch("crustify.layout._REPO_ROOT", self.repo),
-              self.assertRaisesRegex(SystemExit, "existing directory")):
+        with self.assertRaisesRegex(SystemExit, "existing directory"):
             translate.execute(
                 self.repo, self.batch, base_branch="wave-0",
                 output=missing, dry_run=True,
@@ -231,8 +228,7 @@ class GitHarnessTests(unittest.TestCase):
                     log.line("fake translator")
                     log.usage({"provider": "test", "model": "test", "requests": []})
 
-        with (mock.patch("crustify.layout._REPO_ROOT", self.repo),
-              mock.patch("crustify.agents.translate.TranslateAgent", FakeAgent)):
+        with mock.patch("crustify.agents.translate.TranslateAgent", FakeAgent):
             translate.execute(
                 tree, self.batch, base_branch="wave-0", output=self.output)
 
@@ -248,7 +244,6 @@ class GitHarnessTests(unittest.TestCase):
         # authored home the batch names is present in it.
         home = call["workdir"] / "crustify/rust/demo/src/lib.rs"
         self.assertTrue(home.is_file())
-        self.assertNotIn("crustify:todo", home.read_text())
 
     def test_agent_failure_leaves_the_worktree_alone(self) -> None:
         """The harness neither creates nor purges the tree, so a failed batch
@@ -262,8 +257,7 @@ class GitHarnessTests(unittest.TestCase):
             def run(self):
                 raise RuntimeError("agent failed")
 
-        with (mock.patch("crustify.layout._REPO_ROOT", self.repo),
-              mock.patch("crustify.agents.translate.TranslateAgent", FailingAgent),
+        with (mock.patch("crustify.agents.translate.TranslateAgent", FailingAgent),
               self.assertRaisesRegex(RuntimeError, "agent failed")):
             translate.execute(tree, self.batch, base_branch="wave-0",
                               output=self.output)

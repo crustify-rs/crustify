@@ -24,13 +24,15 @@ Open questions:
 
 - **When to skip.** A dependency with a maintained safe crate should use it rather than be
   re-wrapped. Deciding that is a judgement the campaign task may want to answer rather
-  than the orchestrator. - **Scope.** A side campaign covers what the parent consumes, not
-  the whole dependency, so its scope is a closure over `out_of_tree` counters rather than
-  a subsystem span. - **Ordering.** A side campaign is a producer of the parent's link
-  units, so it precedes them — but it lives in another repository with its own branches,
-  build baseline and results, which the current `schedule.json` nesting (`link_unit` →
-  `subsystem` → `wave`) cannot express. - **Results and accounting.** Whether a side
-  campaign reports into the parent's results table or its own.
+  than the orchestrator.
+- **Scope.** A side campaign covers what the parent consumes, not the whole dependency, so
+  its scope is a closure over `out_of_tree` counters rather than a subsystem span.
+- **Ordering.** A side campaign is a producer of the parent's link units, so it precedes
+  them — but it lives in another repository with its own branches, build baseline and
+  results, which the current `schedule.json` nesting (`link_unit` → `subsystem` → `wave`)
+  cannot express.
+- **Results and accounting.** Whether a side campaign reports into the parent's results
+  table or its own.
 
 ## Ship `docs/` so a non-editable install keeps its conventions
 
@@ -74,11 +76,12 @@ Two findings decide whether this is worth doing:
 
 - The elision win barely exists here. Rule 3 needs `&self`/`&mut self`, and only 8 of 629
   take an owned handle. The other 621 take copyable `FooRef`/`FooMut`, where a by-value
-  `self` receiver does not elide at all (`E0106`). - Taking `&self` on a borrowed handle
-  to obtain elision is wrong: the returned reference binds to the handle's own storage
-  rather than the C object, so it cannot outlive the caller's local (`E0515`). The 10
-  functions that take `&mut FooMut<'_>` *and* return a reference are the trap — as `&mut
-  self` methods they compile at the definition and fail at the call site.
+  `self` receiver does not elide at all (`E0106`).
+- Taking `&self` on a borrowed handle to obtain elision is wrong: the returned reference
+  binds to the handle's own storage rather than the C object, so it cannot outlive the
+  caller's local (`E0515`). The 10 functions that take `&mut FooMut<'_>` *and* return a
+  reference are the trap — as `&mut self` methods they compile at the definition and fail
+  at the call site.
 
 So the case rests on ergonomics, not on lifetime elision. If adopted, the rule belongs in
 the translator prompt under "Functions and globals", with the `&self`-on-a-borrowed-handle

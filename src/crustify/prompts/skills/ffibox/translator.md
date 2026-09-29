@@ -1,16 +1,8 @@
 <!-- SKILL -->
 
-For a Crustify translation, apply the worklist's established ownership,
-lifetime, mutability, nullability and cardinality facts before choosing an
-ffibox representation. Prefer its layout newtype and borrowed handles, and
-never form a Rust reference to the wrapped C object. Use stateless ownership
-when possible; carry runtime drop state only when the contract requires it.
+Read each primitive provided by ffibox and use them where applicable to
+implement safe bindings for your worklist's types and symbols that need
+to stay interoperable with C/C++. 
+
 Hand-write a representation when ffibox cannot express the proven contract,
 while preserving the same seam and safety-comment discipline.
-
-
-## Moved from playbook
-
-
-Use the enabled ffibox capability when it expresses the proven contract.
-Otherwise hand-write an equivalent layout newtype and borrowed handles.

@@ -7,7 +7,6 @@ from pathlib import Path
 
 from crustify import deps
 from crustify.agentlog import AgentLog, open_agent_log
-from crustify.artifact_store import ArtifactStore
 from crustify.layout import Layout
 
 # Package root — used to locate prompts/.
@@ -41,7 +40,7 @@ class SkillSpec:
     ``dep`` names the checkout the skill file belongs to and ``path`` locates
     it inside that checkout; :func:`crustify.deps.dep_root` turns the pair into
     an absolute path. ``capability`` is set when the skill is optional — the
-    name a run logs it under; a core role skill leaves it None.
+    name a run logs it under.
 
     ``role_header`` is ``skills/<skill>/<role>.md``: one directory per skill,
     one file per role that carries it. Both named files are load-bearing for
@@ -72,8 +71,8 @@ def _skill_meta(path: Path) -> tuple[str, str, str | None, Path | None]:
     a scalar ``bin:``. Plain markdown: ``- Skill name:`` / ``- Bin path:`` /
     ``- Doc path:`` / ``- Description:``. Either way the description's wrapped
     continuation lines are collapsed to one line, ``bin`` is the LOGICAL tool
-    name (resolved to an absolute path by the caller via the repo config's
-    ``bins`` map), and ``doc`` is resolved here against the skill file's own
+    name (resolved to an absolute path by the caller via
+    :func:`crustify.deps.resolve_bin`), and ``doc`` is resolved here against the skill file's own
     directory."""
     text = path.read_text()
     if not text.startswith("---"):
@@ -124,43 +123,28 @@ class CrustifyAgent:
 
     Each agent runs against a *workdir*: the checkout it reads and writes.
     For an isolated wave agent that is its own worktree, which is why every
-    path the prompt hands it resolves there rather than in the pinned main
+    path the prompt hands it resolves there rather than in the main
     repo.
 
-    The ``tier`` class attribute decides which directory this agent's
-    ``output`` artifact lives in:
-
-      - ``tier = "campaign"`` (default) — `crustify/campaigns/<output>`.
-      - ``tier = "workdir"`` — `crustify/<output>`. Used by agents whose
-        artifact is project-wide.
-
-    Batch agents write to the explicit harness output directory. Other agents
-    use the campaign tier as a fallback because logs are scoped to an
-    invocation, not to a generated artifact.
+    A batch agent writes its log and usage record into the explicit
+    ``artifact_dir`` it is given; an agent without one logs under
+    ``crustify/logs``.
     """
 
     name: str         # subclasses set this
     model: str        # subclasses set this
-    stage: str        # label used in skip messages + log filename
-    prompt_dir: str | None = None  # optional subdir under prompts/ (e.g. "wrapper");
-                                    # the prompt file is prompts/<prompt_dir>/<stage>.md
+    stage: str        # label recorded in the usage record + log filename
     # Every skill this role can carry, in prompt order. Which of them it
     # ACTUALLY carries is decided by discovery, not by configuration: a skill
     # whose files are on disk is rendered, and one whose files are not is
     # silently absent. See :meth:`skill_specs`.
     SKILLS: tuple[SkillSpec, ...] = ()
-    output: str | None = None  # path under .crustify/; when set, artifact existence
-                               # is the agent-level done signal (skip on re-run).
-                               # When None the agent always runs — the orchestrator
-                               # is responsible for gating invocation.
     #: Where this agent's stage prompt goes. False puts it in the user turn,
     #: which is right when it carries per-agent data: a wave's translators
     #: would otherwise each have a different system prefix to cache. True puts
     #: the whole body in the system slot, out of reach of compaction, and
     #: leaves the user turn a kickoff.
     prompt_in_system_slot: bool = False
-    tier: str = "campaign"     # "campaign" | "workdir"; selects which tier
-                               # owns this agent's output artifact.
     # Set per-instance (not class) when an agent is one of many running
     # in parallel — disambiguates log filenames so concurrent agents
     # don't clobber each other's logs. None on instances that don't
@@ -177,7 +161,7 @@ class CrustifyAgent:
     ) -> None:
         # An isolated-wave agent is constructed with its WORKTREE, so every
         # `crustify <workdir> …` the prompt runs — and every artifact path
-        # (rust/, logs) — resolves to the worktree, not the pinned main repo.
+        # (rust/, logs) — resolves to the worktree, not the main checkout.
         # Without it, parallel agents' Rust-tree writes and commits leak into
         # the shared main checkout.
         self.layout = Layout(workdir)
@@ -188,19 +172,8 @@ class CrustifyAgent:
         # else the agent is told to write there.
         self.artifact_dir = artifact_dir
         self.log_stem = log_stem
-        # Campaign-tier store: crustify/campaigns/.
-        self.campaign_store = ArtifactStore(self.layout.campaigns)
-        # Repo-root-tier store: crustify/ (analysis, build.json,
-        # subsystems.json).
-        self.root_store = ArtifactStore(self.layout.root)
-        # Convenience alias for the tier this agent's output belongs to.
-        self.store = self.root_store if self.tier == "workdir" else self.campaign_store
 
     def run(self) -> None:
-        if self._is_done():
-            print(f"[crustify] {self.stage}: output already on disk, skipping.")
-            return
-
         prompt = self._prompt()
         system_preamble = self.system_preamble()
         arguments = self._arguments()
@@ -259,29 +232,15 @@ class CrustifyAgent:
     def _make_log(self) -> AgentLog:
         """Open this agent's output sinks (see :mod:`crustify.agentlog`).
 
-        A batch harness injects its explicit output directory and generated
-        batch id. The fallback remains for non-batch callers.
+        A batch harness injects its explicit output directory and fixed log
+        stem. An agent without one, the orchestrator, logs under
+        ``crustify/logs``.
         """
         return open_agent_log(
-            self.artifact_dir or self.store.root / "logs",
+            self.artifact_dir or self.layout.root / "logs",
             self.log_stem or self._log_stem(),
             stage=self.stage,
         )
-
-    def _is_done(self) -> bool:
-        """Check whether this agent's output artifact already exists.
-
-        When ``output`` is ``None`` the agent has no single on-disk
-        artifact to check and always returns ``False``; the agent runs
-        every time and is responsible for its own per-entry skip logic
-        (e.g. wrapper agents walk their manifests and skip already-
-        annotated entries). Stage completion is purely data-driven —
-        there is no ``state.json``; the artifact's presence on disk
-        IS the signal.
-        """
-        if self.output is not None:
-            return self.store.artifact_exists(self.output)
-        return False
 
     # ------------------------------------------------------------------
     # Helpers
@@ -297,19 +256,17 @@ class CrustifyAgent:
         return KICKOFF if self.prompt_in_system_slot else self._body()
 
     def _body(self) -> str:
-        """This stage's prompt template, before argument substitution."""
-        base = _PKG_ROOT / "prompts"
-        prompt_file = (
-            base / self.prompt_dir / f"{self.stage}.md"
-            if self.prompt_dir else base / f"{self.stage}.md"
-        )
-        # No substitution beyond the caller's `.format(**arguments)`. The
-        # `<!-- CODING CONVENTIONS -->` and `<!-- SKILLS -->` markers a stage prompt
-        # carries are inert: they record where each part of the system preamble
-        # sits relative to the task, and are deliberately NOT sentinels — a
-        # marker that silently expanded would put the text back in the user
-        # turn, which is the compaction path this design exists to leave.
-        return prompt_file.read_text()
+        """This stage's prompt template, before argument substitution.
+
+        No substitution beyond the caller's `.format(**arguments)`. The
+        `<!-- CODING CONVENTIONS -->` and `<!-- SKILLS -->` markers a stage
+        prompt carries are inert: they record where each part of the system
+        preamble sits relative to the task, and are deliberately NOT
+        sentinels — a marker that silently expanded would put the text back in
+        the user turn, which is the compaction path this design exists to
+        leave.
+        """
+        raise NotImplementedError
 
     def _arguments(self) -> dict:
         # `workdir` is the full path every `crustify <workdir> …` invocation

@@ -30,6 +30,9 @@ Link units run to completion in turn, so a subsystem's dependencies in another l
 must belong to an earlier one. Order link units by their dependency graph and this holds;
 it is what the nesting assumes.
 
+A cycle cut is implied by the order: any `imported_deps` record in `subsystems.json` whose
+destination is scheduled after its consumer.
+
 ## link_units[*].subsystems[*]
 
 | field | meaning |
@@ -76,4 +79,7 @@ A batch's directory holds everything about that batch: its input, and both artif
 agent writing it produced. That directory is what `--output` names.
 
 The integration branch `crustify/waves/<campaign-id>/<link_unit>/<subsystem>/wave-<index>`
-carries the same coordinates.
+carries the same coordinates, and so does each batch branch
+`crustify/batches/<campaign-id>/<link_unit>/<subsystem>/wave-<index>/batch-<n>`. A review
+wave mirrors all three under `review-wave-<index>/`, `crustify/reviews/` and
+`crustify/review-batches/`.

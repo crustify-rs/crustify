@@ -29,13 +29,6 @@ _SKILLS = (
         "ffibox", "SKILL.md", capability="ffibox",
         role_header="skills/ffibox/translator.md",
     ),
-    #: Self-contained: no external checkout and no generic skill to wrap, so
-    #: the per-role file is the skill. Its own path is what a deletion removes.
-    SkillSpec(
-        "crustify",
-        "src/crustify/prompts/skills/sanitizers/translator.md",
-        capability="sanitizers",
-    ),
 )
 
 
@@ -44,7 +37,6 @@ class TranslateAgent(CrustifyAgent):
 
     name = "TranslateAgent"
     model = "anthropic/claude-opus-5"
-    output = None  # scheduler gates via the per-item todo; agent runs when called.
     #: The body carries this agent's worklist, so each translator of a wave
     #: gets its own system prefix rather than the shared one. Chosen
     #: deliberately: compaction reaching the procedure costs more than the
@@ -73,11 +65,11 @@ class TranslateAgent(CrustifyAgent):
 
     @property
     def stage(self) -> str:  # type: ignore[override]
-        """The per-agent log stem: ``<objective>-<kind>_<key>``, e.g.
-        ``port-type_git_delta_index`` / ``wrap-symbol_access``.
+        """The stage recorded in this agent's usage record:
+        ``<objective>-<route>_<key>``, e.g. ``port-type_git_delta_index`` /
+        ``wrap-symbol_access``. ``crustify ... cost`` buckets by its prefix.
 
-        This fallback is used outside the batch harness; normal translation
-        logs use the harness-generated batch id."""
+        The log file itself takes the harness's fixed stem, ``translator``."""
         key = self._items[0]["name"] if self._items else "batch"
         unit = self._route
         return (f"{self._objective}-{unit}_"

@@ -39,16 +39,6 @@ class DeclaredPathTests(unittest.TestCase):
                 with self.subTest(role=cls.name, path=spec.path):
                     self.assertTrue((deps.CHECKOUT / spec.path).is_file())
 
-    def test_a_role_skill_comes_first_and_is_not_a_capability(self) -> None:
-        """A role skill is what makes the agent that role, so it carries no
-        capability name and nothing selects it. An agent may have none — the
-        orchestrator's was its playbook, which is now its prompt."""
-        for cls in _ROLES:
-            with self.subTest(role=cls.name):
-                plain = [i for i, s in enumerate(cls.SKILLS)
-                         if s.capability is None]
-                self.assertIn(plain, ([], [0]))
-
     def test_role_headers_follow_the_directory_layout(self) -> None:
         """`skills/<skill>/<role>.md`, one directory per skill and one file
         per role. The layout is what gives an ablation two grains, so a spec
@@ -122,27 +112,34 @@ class DeclaredPathTests(unittest.TestCase):
 class DiscoveryTests(unittest.TestCase):
     def setUp(self) -> None:
         self.repo = Path(__file__).resolve().parent
-        self.agent = OrchestrateAgent(
+        # A stand-in wavefront checkout: a metadata-only SKILL.md is all
+        # discovery needs from it.
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        checkout = Path(self.tmp.name)
+        (checkout / "SKILL.md").write_text(
+            "- Skill name: wavefront\n- Description: the oracle\n")
+        patcher = mock.patch.object(deps, "dep_root", return_value=checkout)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def _agent(self) -> OrchestrateAgent:
+        return OrchestrateAgent(
             self.repo, kind="translate", task=Path(__file__),
             model="anthropic/claude-opus-5")
 
     def test_a_present_skill_is_carried(self) -> None:
-        self.assertIn("sanitizers", self.agent.prompt_capabilities())
+        self.assertIn("wavefront", self._agent().prompt_capabilities())
 
-    def test_deleting_a_skills_file_ablates_it(self) -> None:
-        """For a self-contained skill the file IS the skill, so its own path
-        is what decides presence; a wrapped one is decided by its role header
-        instead. Both are one file under prompts/skills/."""
-        real = Path.exists
-        skill = (deps.CHECKOUT
-                 / "src/crustify/prompts/skills/sanitizers/orchestrator.md")
+    def test_deleting_a_role_header_ablates_it(self) -> None:
+        """The role header is one file under prompts/skills/, and deleting it
+        removes the skill from that role even with its checkout installed."""
+        real = Path.is_file
+        header = _PKG_ROOT / "prompts" / "skills/wavefront/orchestrator.md"
         with mock.patch.object(
-                Path, "exists",
-                lambda p: False if p == skill else real(p)):
-            agent = OrchestrateAgent(
-                self.repo, kind="translate", task=Path(__file__),
-                model="anthropic/claude-opus-5")
-            self.assertNotIn("sanitizers", agent.prompt_capabilities())
+                Path, "is_file",
+                lambda p: False if p == header else real(p)):
+            self.assertNotIn("wavefront", self._agent().prompt_capabilities())
 
     def test_an_uninstalled_dependency_ablates_its_skill(self) -> None:
         """The other half of the same rule: a generic skill lives in a
@@ -228,7 +225,8 @@ class PromptArgumentTests(unittest.TestCase):
         task = self.repo / "TASK.md"
         task.write_text("- Answer: none")
         agent = OrchestrateAgent(self.repo, kind="translate", task=task,
-                                 model="anthropic/claude-opus-5")
+                                 model="anthropic/claude-opus-5",
+                                 campaign_id="20260928-000000")
         self._check(agent)
 
 
