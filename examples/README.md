@@ -29,6 +29,7 @@ Start a container per campaign, idle:
 
 ```sh
 docker run -d --name crustify-libgit2 \
+    --security-opt seccomp=unconfined \
     -e ANTHROPIC_API_KEY \
     -v "$(dirname "$PWD")/wavefront:/opt/venv/share/wavefront" \
     -v "$(dirname "$PWD")/ffibox:/opt/venv/share/ffibox" \
@@ -64,6 +65,12 @@ orchestrator entirely and is just another command:
 ```sh
 docker exec crustify-libgit2 crustify scan-unsafe /target
 ```
+
+`--security-opt seccomp=unconfined` is what lets the TSan and BSan builds run.
+Both runtimes call `personality(ADDR_NO_RANDOMIZE)` at startup, which Docker's
+default seccomp profile rejects, so every instrumented binary would die before
+`main`. The alternative is lowering the host's `vm.mmap_rnd_bits` to 28, which
+needs root on the host.
 
 `/target` must be an existing Git checkout mounted read-write. The orchestrator
 uses its checked-out revision and existing `crustify/` state directly, which is
