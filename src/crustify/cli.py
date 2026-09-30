@@ -11,32 +11,30 @@ def main() -> None:
         prog="crustify",
         description="Multi-agent C-to-Rust translation pipeline.",
     )
-    parser.add_argument(
-        "workdir",
-        help="Full path to the checkout this run works in; its artifacts live "
-             "under <workdir>/crustify/. A batch's workdir is the worktree "
-             "the orchestrator forked for it, which is why this is not called "
-             "a repository root. Required and explicit — crustify never walks "
-             "the filesystem to find it.",
-    )
-    parser.add_argument(
+    sub = parser.add_subparsers(dest="command", required=True, metavar="COMMAND")
+
+    # Options of every command that starts a crustify agent. A parent parser
+    # rather than options on `crustify` itself, so they follow the command
+    # like any other option: `crustify translate <wd> <TASK> --model ...`.
+    agent_opts = argparse.ArgumentParser(add_help=False)
+    agent_opts.add_argument(
         "--no-console",
         action="store_true",
         default=False,
         help="Suppress live console output from agents.",
     )
-    parser.add_argument(
+    agent_opts.add_argument(
         "--model",
         default=None,
         metavar="NAME",
-        help="Override every agent's model. Named <provider>/<model>, "
+        help="Override the agent's model. Named <provider>/<model>, "
              "e.g. anthropic/claude-opus-4-8, openai/gpt-5.6, "
              "openrouter/anthropic/claude-opus-5. The provider selects "
              "billing; an OpenRouter anthropic/* model uses Claude Code, "
-             "while other OpenRouter models use Codex. Default: each agent's "
+             "while other OpenRouter models use Codex. Default: the agent's "
              "hard-coded model.",
     )
-    parser.add_argument(
+    agent_opts.add_argument(
         "--billing",
         default=None,
         choices=["subscription", "api"],
@@ -44,7 +42,7 @@ def main() -> None:
              "logged-in account) or api (an API key from the environment). "
              "Default: config.BILLING.",
     )
-    parser.add_argument(
+    agent_opts.add_argument(
         "--override-base-prompt",
         action=argparse.BooleanOptionalAction,
         default=None,
@@ -53,57 +51,38 @@ def main() -> None:
              "instructions stay underneath crustify's stage prompt. Replacing "
              "them is cheaper per invocation but measurably worse output.",
     )
-    sub = parser.add_subparsers(dest="command", required=True)
 
+    def add_workdir(p: argparse.ArgumentParser, what: str) -> None:
+        p.add_argument(
+            "workdir",
+            help=f"Full path to {what}. Required and explicit — crustify "
+                 "never walks the filesystem to find it.",
+        )
 
-    # Each stage binds ONE blurb and passes it to both `help=` (which renders in
-    # the parent's subcommand listing) and `description=` (which renders on the
-    # stage's own --help). Without the second, `crustify … <stage> --help`
-    # prints a usage line and a flag list and never says what the stage does.
-    # -- cost (accounting over the usage records) ------------------------
-    _cost_blurb = (
-        "Price the per-agent usage.json records named on the command line. "
-        "It reads the files it is given and assumes nothing about where they "
-        "live: a caller that knows which batch it is asking about says so, "
-        "and one that wants a wave passes the wave's records.")
-    cost_p = sub.add_parser(
-        "cost", help=_cost_blurb, description=_cost_blurb,
-    )
-    cost_p.add_argument(
-        "usage", nargs="+", type=Path, metavar="USAGE_JSON",
-        help="One or more per-agent .usage.json records.")
-    from crustify.log_cost import add_flags as _add_cost_flags
-    _add_cost_flags(cost_p)
+    # Each command binds ONE blurb and passes it to both `help=` (which renders
+    # in `crustify --help`) and `description=` (which renders on the command's
+    # own --help). Without the second, `crustify <command> --help` prints a
+    # usage line and a flag list and never says what the command does.
 
-    # -- audit (the safety passes, formerly a second entry point) --------
-    _audit_blurb = (
-        "Find soundness bugs and safety trade-offs in Rust that wraps C. "
-        "`unsafe` is deterministic and needs no model, no key and no network; "
-        "`ub` drives an agent over its output and costs money.")
-    audit_p = sub.add_parser(
-        "audit", help=_audit_blurb, description=_audit_blurb,
-    )
-    from crustify_audit.cli import add_stages as _add_audit_stages
-    _add_audit_stages(audit_p.add_subparsers(dest="audit_command", required=True))
-
-    # -- orchestrate-translation / orchestrate-audit (campaign supervisor) --
+    # -- translate / audit (campaign orchestrators) ----------------------
     # One command per campaign kind, so the name says which orchestrator
     # prompt runs; a wrong guess would start the wrong campaign and spend a
     # budget before anyone reads the transcript.
     _orch_blurbs = {
         "translate": (
-            "orchestrate-translation",
             "Start a translation campaign's orchestrator. It reads the "
             "campaign task, plans the sub-campaigns and waves, and spawns the "
-            "translator agents itself."),
+            "translators itself."),
         "audit": (
-            "orchestrate-audit",
             "Start an audit campaign's orchestrator. It reads the campaign "
-            "task and spawns the audit agents itself."),
+            "task and spawns the auditors itself."),
     }
-    for kind, (command, blurb) in _orch_blurbs.items():
-        orch_p = sub.add_parser(command, help=blurb, description=blurb)
-        orch_p.set_defaults(kind=kind)
+    for kind, blurb in _orch_blurbs.items():
+        orch_p = sub.add_parser(kind, parents=[agent_opts],
+                                help=blurb, description=blurb)
+        orch_p.set_defaults(kind=kind, handler=_handle_orchestrate)
+        add_workdir(orch_p, "the checkout the campaign works in; its "
+                            "artifacts live under <workdir>/crustify/")
         orch_p.add_argument(
             "task", type=Path, metavar="TASK",
             help="Campaign TASK.md: the campaign's decisions are an input, "
@@ -119,15 +98,18 @@ def main() -> None:
                 help="Resume the campaign crustify/campaigns/<ID>/ instead of "
                      "starting a new one. Its directory must exist.")
 
-    # -- translate (one agent over one orchestrator-projected batch) -----
-    _translate_blurb = (
-        "Run one agent over one thin batch. The workdir is the isolated "
+    # -- spawn-translator (one agent over one orchestrator-projected batch) --
+    _spawn_translator_blurb = (
+        "Run one translator over one thin batch. The workdir is the isolated "
         "worktree the orchestrator forked for it; the harness neither creates "
         "nor purges that tree. The batch is the whole input: which items, "
         "which objective, and the Rust home each item belongs in.")
     wrap_p = sub.add_parser(
-        "translate", help=_translate_blurb, description=_translate_blurb,
+        "spawn-translator", parents=[agent_opts],
+        help=_spawn_translator_blurb, description=_spawn_translator_blurb,
     )
+    wrap_p.set_defaults(handler=_handle_spawn_translator)
+    add_workdir(wrap_p, "the batch's worktree, forked by the orchestrator")
     wrap_p.add_argument(
         "batch", type=Path,
         help="Thin batch JSON containing objective and scheduled items.")
@@ -143,64 +125,83 @@ def main() -> None:
         "--dry-run", action="store_true",
         help="Validate and summarize the batch without spawning an agent.")
 
+    # -- scan-unsafe / spawn-auditor (the audit stages) -------------------
+    # Both work on any repository, crustify campaign or not; the auditor
+    # carries its own model and billing options.
+    from crustify_audit.cli import add_stages as _add_audit_stages
+    _add_audit_stages(
+        sub, unsafe_name="scan-unsafe", ub_name="spawn-auditor",
+        before=lambda p: (
+            p.set_defaults(handler=_handle_audit_stage),
+            add_workdir(p, "the repository to audit"),
+        ),
+    )
+
+    # -- cost (accounting over the usage records) ------------------------
+    _cost_blurb = (
+        "Price the per-agent usage.json records named on the command line. "
+        "It reads the files it is given and assumes nothing about where they "
+        "live: a caller that knows which batch it is asking about says so, "
+        "and one that wants a wave passes the wave's records.")
+    cost_p = sub.add_parser(
+        "cost", help=_cost_blurb, description=_cost_blurb,
+    )
+    cost_p.set_defaults(handler=_handle_cost)
+    cost_p.add_argument(
+        "usage", nargs="+", type=Path, metavar="USAGE_JSON",
+        help="One or more per-agent .usage.json records.")
+    from crustify.log_cost import add_flags as _add_cost_flags
+    _add_cost_flags(cost_p)
+
     args = parser.parse_args()
 
-    # workdir is explicit: crustify never walks the filesystem to find it.
-    workdir = Path(args.workdir).resolve()
+    if hasattr(args, "workdir"):
+        # workdir is explicit: crustify never walks the filesystem to find it.
+        workdir = Path(args.workdir).resolve()
+        if not workdir.exists():
+            print(f"error: workdir does not exist: {workdir}", file=sys.stderr)
+            sys.exit(1)
+        # A translator works inside a campaign the orchestrator set up; an
+        # orchestrator may be the first thing to run in a checkout, and the
+        # audit stages take any repository.
+        if args.command == "spawn-translator" \
+                and not (workdir / "crustify").is_dir():
+            print(f"error: no crustify/ under workdir: {workdir}",
+                  file=sys.stderr)
+            sys.exit(1)
 
-    if not workdir.exists():
-        print(f"error: workdir does not exist: {workdir}", file=sys.stderr)
-        sys.exit(1)
-    # An orchestrator starts a campaign, so it may be the first thing to run
-    # in a checkout; every other command works inside one it set up.
-    orchestrating = args.command in ("orchestrate-translation", "orchestrate-audit")
-    if not orchestrating and not (workdir / "crustify").is_dir():
-        print(f"error: no crustify/ under workdir: {workdir}", file=sys.stderr)
-        sys.exit(1)
-
-    # -- Apply logging flags ----------------------------------------------
+    # -- Apply the agent options ------------------------------------------
     from crustify import config as crustify_config
 
-    if args.no_console:
+    if getattr(args, "no_console", False):
         crustify_config.LOG_TO_CONSOLE = False
-    if getattr(args, "model", None):
+    if getattr(args, "model", None) and args.command != "spawn-auditor":
         crustify_config.MODEL_OVERRIDE = args.model
-    if getattr(args, "billing", None):
+    if getattr(args, "billing", None) and args.command != "spawn-auditor":
         crustify_config.BILLING = args.billing
     if getattr(args, "override_base_prompt", None) is not None:
         crustify_config.OVERRIDE_BASE_PROMPT = args.override_base_prompt
 
-    if args.command == "translate":
-        _handle_translate(args)
-
-    elif orchestrating:
-        _handle_orchestrate(args)
-
-    elif args.command == "audit":
-        _handle_audit(args)
-
-    elif args.command == "cost":
-        _handle_cost(args)
-
+    args.handler(args)
 
 
 # -- dispatch -------------------------------------------------------------
 
 def _handle_cost(args: argparse.Namespace) -> None:
-    """Report agent cost and wall time for this checkout."""
+    """Report agent cost and wall time for the usage records given."""
     from crustify.log_cost import report
 
     raise SystemExit(report(args.usage, offline=args.offline,
                             price_cache=args.price_cache))
 
 
-def _handle_audit(args: argparse.Namespace) -> None:
-    """Run one audit stage against this checkout."""
+def _handle_audit_stage(args: argparse.Namespace) -> None:
+    """Run one audit stage against this repository."""
     from crustify_audit.cli import dispatch
     from crustify_audit.layout import Layout as AuditLayout
 
     raise SystemExit(dispatch(AuditLayout(Path(args.workdir)), args,
-                              args.audit_command))
+                              args.audit_stage))
 
 
 def _handle_orchestrate(args: argparse.Namespace) -> None:
@@ -228,7 +229,7 @@ def _handle_orchestrate(args: argparse.Namespace) -> None:
         campaign_dir = campaigns / campaign_id
         campaign_dir.mkdir(parents=True, exist_ok=False)
     if args.kind == "translate":
-        print(f"[crustify orchestrate-translation] campaign: {campaign_dir}")
+        print(f"[crustify translate] campaign: {campaign_dir}")
         # One log per run, so resuming never overwrites an earlier session's.
         campaign = {"campaign_id": campaign_id, "artifact_dir": campaign_dir,
                     "log_stem": f"orchestrator-{run_start}"}
@@ -240,7 +241,7 @@ def _handle_orchestrate(args: argparse.Namespace) -> None:
                      **campaign).run()
 
 
-def _handle_translate(args: argparse.Namespace) -> None:
+def _handle_spawn_translator(args: argparse.Namespace) -> None:
     """Execute one orchestrator-projected batch."""
     from crustify.translate import execute
     execute(Path(args.workdir), args.batch, base_branch=args.base_branch,

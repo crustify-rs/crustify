@@ -1,9 +1,9 @@
-"""cli.py — `crustify-audit`.
+"""cli.py — the audit stages behind `crustify scan-unsafe` and
+`crustify spawn-auditor`.
 
-    crustify-audit <workspace> unsafe [--json] [--name NAME ...]
-    crustify-audit <workspace> ub     [--model M] [--billing B] [--effort E]
-                                      [--timeout MIN]
-                                      [--instruments I ...]
+    crustify scan-unsafe   <workdir> [--json] [--name NAME ...]
+    crustify spawn-auditor <workdir> [--model M] [--billing B] [--effort E]
+                                     [--timeout MIN] [--instruments I ...]
 
 TWO VERBS, AND THE SPLIT IS THE POINT.
 
@@ -22,10 +22,9 @@ There is no `report` verb. Writing the advisory is the agent's job, not a
 formatter's -- a template the harness fills in would flatten exactly the
 judgement the agent is there to exercise.
 
-WHY A SEPARATE BINARY FROM crustify. Both crustify binaries mandate
-``<repo_root> <target>`` and refuse to run without a ``crustify/`` directory.
-This tool's most valuable use is auditing a crate that has never heard of
-crustify. That is a different CLI contract, not a new subcommand.
+Neither stage needs a ``crustify/`` directory in the repository it is given:
+this tool's most valuable use is auditing a crate that has never heard of
+crustify.
 """
 from __future__ import annotations
 
@@ -38,14 +37,18 @@ from pathlib import Path
 from crustify_audit.layout import Layout
 
 
-#: Shared by the `crustify-audit` entry point and by `crustify ... audit`, so
-#: the two surfaces cannot drift: one set of stages, one set of flags, one set
-#: of help texts. The distribution has already paid once for maintaining the
-#: same job in two places.
-def add_stages(sub: "argparse._SubParsersAction") -> None:
+#: Shared by the standalone parser below and by `crustify`, so the two surfaces
+#: cannot drift: one set of stages, one set of flags, one set of help texts. The
+#: distribution has already paid once for maintaining the same job in two
+#: places. `crustify` names the stages `scan-unsafe` and `spawn-auditor` and
+#: passes `before` to add its workdir positional ahead of each stage's own
+#: arguments; the stage a parser runs is recorded as `audit_stage`.
+def add_stages(sub: "argparse._SubParsersAction", *,
+               unsafe_name: str = "unsafe", ub_name: str = "ub",
+               before=None) -> None:
     """Register the `unsafe` and `ub` stages on an existing subparsers object."""
     m = sub.add_parser(
-        "unsafe",
+        unsafe_name,
         help="DETERMINISTIC unsafe metrics. No LLM.",
         description="Measure the crate's unsafe surface with a rustc driver "
                     "over HIR and typeck. This is the canonical deterministic "
@@ -54,6 +57,9 @@ def add_stages(sub: "argparse._SubParsersAction") -> None:
                     "compile; when it does not, there are no counts rather than "
                     "approximate ones. It says HOW MUCH unsafety is there, never "
                     "which of it is wrong.")
+    m.set_defaults(audit_stage="unsafe")
+    if before is not None:
+        before(m)
     m.add_argument("--json", action="store_true",
                    help="Print the document on stdout instead of a summary. "
                         "Redirect it to keep it; the scan writes no file.")
@@ -64,11 +70,11 @@ def add_stages(sub: "argparse._SubParsersAction") -> None:
              "workspace crate. Raw-pointer matching does not require a wrapper.")
 
     h = sub.add_parser(
-        "ub",
+        ub_name,
         help="AGENTIC hunt for undefined behaviour. Costs money.",
         description="Drive ONE agent hunting UB reachable from safe code. It "
                     "reads the crate itself to find what is worth looking at, "
-                    "and can run `unsafe` for the numbers. The agent builds its own "
+                    "and can run the unsafe scan for the numbers. The agent builds its own "
                     "reproductions, checks them with the selected instruments, and writes the "
                     "advisory itself — the harness supplies a workspace and a "
                     "scratch directory and nothing else. It never writes to the "
@@ -79,6 +85,9 @@ def add_stages(sub: "argparse._SubParsersAction") -> None:
                     "crashed. Runs ACCUMULATE: there is no skip, and the agent "
                     "reads what earlier runs left before starting, so a second "
                     "run extends the record instead of re-deriving it.")
+    h.set_defaults(audit_stage="ub")
+    if before is not None:
+        before(h)
     h.add_argument("--objective",
                    choices=("audit", "audit+patch", "patch", "revisit"),
                    default="audit",
@@ -183,8 +192,8 @@ def _cmd_unsafe(layout: Layout, args) -> int:
         print(json.dumps(doc, indent=2))
     else:
         print(M.summarize(doc))
-        print(f"\n  Counts, not judgement. Next: crustify "
-              f"{layout.repo} audit ub")
+        print(f"\n  Counts, not judgement. Next: crustify spawn-auditor "
+              f"{layout.repo}")
     return 0
 
 
@@ -231,7 +240,7 @@ def main() -> None:
     if not ws.is_dir():
         print(f"error: workspace does not exist: {ws}", file=sys.stderr)
         raise SystemExit(2)
-    raise SystemExit(dispatch(Layout(ws), args, args.command))
+    raise SystemExit(dispatch(Layout(ws), args, args.audit_stage))
 
 
 if __name__ == "__main__":

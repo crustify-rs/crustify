@@ -21,13 +21,14 @@
 #       -v crustify-libgit2-work:/work \
 #       crustify
 #   docker exec -it crustify-libgit2 \
-#       crustify --model openrouter/anthropic/claude-opus-5 --billing api \
-#       /target orchestrate-translation /campaign/TASK.md
+#       crustify translate /target /campaign/TASK.md \
+#       --model openrouter/anthropic/claude-opus-5 --billing api
 #
-# `orchestrate-audit` starts an audit campaign instead, and `--task-only` makes
+# `crustify audit` starts an audit campaign instead, and `--task-only` makes
 # the task file the entire prompt (the ablation control). The deterministic
-# scan needs no agent and no auth: `docker exec <name> crustify /target audit
-# unsafe`. Every choice is a `crustify` flag; see `crustify --help`.
+# scan needs no agent and no auth: `docker exec <name> crustify scan-unsafe
+# /target`. Every other choice is an option of the command; see
+# `crustify <command> --help`.
 #
 # Mounts:
 #
@@ -259,7 +260,7 @@ RUN git config --system --add safe.directory '*'
 # orchestrator's unambiguous working repository.
 WORKDIR /target
 # Idle by default so the container is an environment, not one run: a campaign
-# started with `docker exec <name> crustify ... orchestrate-translation ...`
+# started with `docker exec <name> crustify translate ...`
 # survives its own crash, and a shell beside it can read the worktrees and caches
 # it left.
 CMD ["sleep", "infinity"]

@@ -39,7 +39,7 @@ One row per usage record named on the command line, bucketed by agent kind
 historical log filename prefix. Wall-clock is the record's ``duration_ms``,
 shown as ``—`` when the record predates that stamp.
 
-Usage:  crustify <workdir> cost USAGE_JSON... [--offline]
+Usage:  crustify cost USAGE_JSON... [--offline]
 """
 import argparse
 import json

@@ -240,10 +240,18 @@ Translators are responsible for removing their worktrees once successfully landi
 
 #### 3. Launch and monitoring
 
-Run one CLI process per batch, concurrently up to approved parallelism, passing its batch
-worktree as the workdir, its `batch.json`, its batch directory as `--output`, and its
-wave integration branch (the review branch, for a review batch) as `--base-branch`. The harness validates the
-batch, starts the backend, and writes `translator.log` and `translator.usage.json` there.
+Run one translator per batch, concurrently up to approved parallelism, passing its batch
+worktree as the workdir, its `batch.json`, its batch directory as `--output`, its wave
+integration branch (the review branch, for a review batch) as `--base-branch`, and the
+approved translation or review model and billing:
+
+```bash
+crustify spawn-translator <batch worktree> <batch dir>/batch.json \
+    --base-branch <wave branch> --output <batch dir> --model <model> --billing <billing>
+```
+
+The harness validates the batch, starts the backend, and writes `translator.log` and
+`translator.usage.json` there.
 
 The translator commits its changes and atomically fast-forwards the wave branch. On
 rejection, it rebases its own branch onto the current wave tip, revalidates, and retries.
@@ -287,7 +295,7 @@ After each batch, including review, run the static safety scan with the exact sc
 workset names:
 
 ```bash
-crustify <workdir> audit unsafe --name <batch names...> --json
+crustify scan-unsafe <workdir> --name <batch names...> --json
 ```
 
 Record it in its respective artifact dir; it becomes tracked by git.
@@ -295,14 +303,14 @@ Record it in its respective artifact dir; it becomes tracked by git.
 At wave, campaign, and sub-campaign end, record an unseeded scan for unsafe metrics:
 
 ```bash
-crustify <workdir> audit unsafe --json
+crustify scan-unsafe <workdir> --json
 ```
 
 Record them in their respective workdirs.
 
 ##### Cost
 
-After each batch, both translation and review, run `crustify ... cost` over the batch
+After each batch, both translation and review, run `crustify cost` over the batch
 directories' `translator.usage.json` files. Use its computed cost and token counts, not
 provider-reported dollar totals. Record agent wall times from usage files. Record wave
 wall time from first batch launch through final review and regression completion. Fill the

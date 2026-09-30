@@ -229,7 +229,7 @@ Implementation `<provider>/<model>` via `<backend>`; review
 
 ## Safety audit
 
-Deterministic `crustify <workdir> audit unsafe`; no model.
+Deterministic `crustify scan-unsafe <workdir>`; no model.
 
 ### Final tally overview
 
