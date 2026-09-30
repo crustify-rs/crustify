@@ -13,6 +13,7 @@
 # Start the container idle, then run the orchestrator in it:
 #
 #   docker run -d --name crustify-libgit2 \
+#       --security-opt seccomp=unconfined \
 #       -e OPENROUTER_API_KEY \
 #       -v "$(dirname "$PWD")/wavefront:/opt/venv/share/wavefront" \
 #       -v "$(dirname "$PWD")/ffibox:/opt/venv/share/ffibox" \
@@ -29,6 +30,11 @@
 # scan needs no agent and no auth: `docker exec <name> crustify scan-unsafe
 # /target`. Every other choice is an option of the command; see
 # `crustify <command> --help`.
+#
+# `--security-opt seccomp=unconfined` lets the TSan and BSan runtimes call
+# personality(ADDR_NO_RANDOMIZE) at startup; Docker's default profile rejects it
+# and every instrumented binary dies before main. Lowering the host's
+# vm.mmap_rnd_bits to 28 also works, but needs root on the host.
 #
 # Mounts:
 #
