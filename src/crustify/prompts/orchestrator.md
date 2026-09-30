@@ -69,13 +69,15 @@ Create immutable builds of the target so that translator agents can reuse them:
 - **ASan + UBSan** — the general build. FFI and lifecycle tests use it;
 - **TSan** — a separate build, for race tests. Do not combine it with ASan:
   the two instrument the same memory operations and their runtimes conflict;
-- **BSan** — a third build, when BorrowSanitizer is available.
+- **BSan** — when `cargo bsan --version` succeeds (BorrowSanitizer's bsan rustup toolchain);
+  it instruments the C through its own matched clang.
 
 A Rust- or bindgen-only change may reuse a matching build. A change to the compiled target
 requires a private build; refresh shared builds after that change lands.
 
-Create `crustify/build.json` from `specs/build.json`. Increment `version` whenever any
-command changes. Disable deprecated features unless otherwise instructed by the user. Use
+Create `crustify/build.json` from `specs/build.json`. Record each prebuild above as one
+of its `variants`: an out-of-tree `dir` plus the `configure` and `build` commands run
+from it. Increment `version` whenever any command changes. Disable deprecated features unless otherwise instructed by the user. Use
 parallel builds. Disable unstable baseline tests as needed, record pass/total and every
 disabled test in the campaign results. Post-campaign results must match this baseline.
 

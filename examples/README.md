@@ -34,6 +34,7 @@ docker run -d --name crustify-libgit2 \
     -v "$(dirname "$PWD")/ffibox:/opt/venv/share/ffibox" \
     -v /absolute/path/to/your/target-fork:/target \
     -v "$PWD/examples/crustify/libgit2/src-port/TASK.md:/campaign/TASK.md:ro" \
+    -v crustify-libgit2-work:/work \
     crustify
 ```
 
@@ -45,7 +46,7 @@ docker exec -it crustify-libgit2 \
     /target orchestrate-translation /campaign/TASK.md
 ```
 
-Audit, in a container started the same way with an audit task and a `/work`
+Audit, in a container started the same way with an audit task and its own `/work`
 volume:
 
 ```sh
@@ -110,7 +111,7 @@ Set with `--build-arg` on `docker build`.
 | `/opt/crustify` | read-write, optional | both | baked into the image; mount a checkout to run live harness sources |
 | `/opt/venv/share/wavefront` | read-write, optional | translate | replaces the build-time clone, which is installed editable |
 | `/opt/venv/share/ffibox` | read-write, optional | translate | replaces the build-time clone used by generated Cargo manifests |
-| `/work` | named volume, optional | both | `HOME`: the C library the agent builds, the cargo registry. Not the artifacts — those land in the target checkout |
+| `/work` | named volume, optional | both | `HOME`: the agents' session transcripts, the C libraries they build, the cargo registry. Outlives `docker rm`, so a re-created container keeps them. Not the artifacts — those land in the target checkout |
 
 ## Results
 

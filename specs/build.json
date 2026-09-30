@@ -1,9 +1,36 @@
 {
-  "_comment": "Example `<workdir>/crustify/build.json` (REPO-ROOT tier), hand-authored. It fixes the exact configure, build, and test commands used for the campaign. Increment `version` whenever any command changes; a translator reuses a prebuilt library only when its build.json version still matches.",
+  "_comment": "Example `<workdir>/crustify/build.json` (REPO-ROOT tier), hand-authored. `build_commands` fixes the exact configure, build, and test commands of the functional baseline. `variants` names every prebuilt the campaign keeps: each is an out-of-tree build under `dir` (gitignored), configured and built by running its commands from that directory. A variant carries no test command: tests run against a variant, they do not define it. Increment `version` whenever any command changes; a translator reuses a prebuilt variant only when its build.json version still matches.",
   "version": 1,
   "build_commands": {
     "configure": "./Configure no-deprecated --strict-warnings",
     "build": "make -j8",
     "test": "make test"
+  },
+  "variants": {
+    "plain": {
+      "dir": "crustify/builds/plain",
+      "configure": "../../../Configure no-deprecated --strict-warnings",
+      "build": "make -j8"
+    },
+    "coverage": {
+      "dir": "crustify/builds/coverage",
+      "configure": "CFLAGS=--coverage LDFLAGS=--coverage ../../../Configure no-deprecated --strict-warnings",
+      "build": "make -j8"
+    },
+    "asan-ubsan": {
+      "dir": "crustify/builds/asan-ubsan",
+      "configure": "../../../Configure no-deprecated --strict-warnings enable-asan enable-ubsan",
+      "build": "make -j8"
+    },
+    "tsan": {
+      "dir": "crustify/builds/tsan",
+      "configure": "CFLAGS=-fsanitize=thread LDFLAGS=-fsanitize=thread ../../../Configure no-deprecated --strict-warnings",
+      "build": "make -j8"
+    },
+    "bsan": {
+      "dir": "crustify/builds/bsan",
+      "configure": "CC=/root/.rustup/toolchains/bsan/bin/clang CFLAGS='-fpass-plugin=/root/.rustup/toolchains/bsan/lib/libbsan_plugin.so -fno-omit-frame-pointer' LDFLAGS='-Wl,--whole-archive /root/.rustup/toolchains/bsan/lib/libclang_rt.bsan-x86_64.a -Wl,--no-whole-archive' LDLIBS='/root/.rustup/toolchains/bsan/lib/libbsan_rt.a -lgcc_s -lm -lpthread -ldl' ../../../Configure no-deprecated --strict-warnings",
+      "build": "make -j8"
+    }
   }
 }
