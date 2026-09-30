@@ -28,7 +28,7 @@ docker build -f examples/Dockerfile -t crustify .
 Start a container per campaign, idle:
 
 ```sh
-docker run -d --name crustify-libgit2 \
+docker run -d --init --name crustify-libgit2 \
     --security-opt seccomp=unconfined \
     -e ANTHROPIC_API_KEY \
     -v "$(dirname "$PWD")/wavefront:/opt/venv/share/wavefront" \
@@ -65,6 +65,10 @@ orchestrator entirely and is just another command:
 ```sh
 docker exec crustify-libgit2 crustify scan-unsafe /target
 ```
+
+`--init` runs a small init process as the container's first process, so the
+processes the agents leave behind are reaped instead of piling up as zombies
+under `sleep infinity`.
 
 `--security-opt seccomp=unconfined` is what lets the TSan and BSan builds run.
 Both runtimes call `personality(ADDR_NO_RANDOMIZE)` at startup, which Docker's

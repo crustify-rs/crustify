@@ -12,7 +12,7 @@
 #
 # Start the container idle, then run the orchestrator in it:
 #
-#   docker run -d --name crustify-libgit2 \
+#   docker run -d --init --name crustify-libgit2 \
 #       --security-opt seccomp=unconfined \
 #       -e OPENROUTER_API_KEY \
 #       -v "$(dirname "$PWD")/wavefront:/opt/venv/share/wavefront" \
@@ -265,6 +265,8 @@ RUN git config --system --add safe.directory '*'
 # in it makes the existing checkout -- and any partial campaign -- the
 # orchestrator's unambiguous working repository.
 WORKDIR /target
+# Run it with `--init`, so the processes a campaign leaves behind are reaped
+# rather than collecting as zombies under this idle process.
 # Idle by default so the container is an environment, not one run: a campaign
 # started with `docker exec <name> crustify translate ...`
 # survives its own crash, and a shell beside it can read the worktrees and caches
