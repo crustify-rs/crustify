@@ -3,6 +3,8 @@
 .providers
 tmp
 .worktrees
+# Prebuilt variants of the target (see build.json).
+builds
 rust/target
 rust.bak
 

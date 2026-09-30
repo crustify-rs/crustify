@@ -18,6 +18,7 @@
 #       -v "$(dirname "$PWD")/ffibox:/opt/venv/share/ffibox" \
 #       -v /absolute/path/to/your/target-fork:/target \
 #       -v "$PWD/examples/crustify/libgit2/src-port/TASK.md:/campaign/TASK.md:ro" \
+#       -v crustify-libgit2-work:/work \
 #       crustify
 #   docker exec -it crustify-libgit2 \
 #       crustify --model openrouter/anthropic/claude-opus-5 --billing api \
@@ -49,9 +50,11 @@
 #                      from build time; a mount replaces it, so a campaign runs
 #                      against the trees under development. An audit touches
 #                      neither.
-#   /work              Named volume, and `HOME`: the C library the agent
-#                      builds, the cargo registry. Not the artifacts -- those
-#                      land in the target checkout.
+#   /work              Named volume, and `HOME`: the agents' session
+#                      transcripts, the C libraries they build, the cargo
+#                      registry. It outlives `docker rm`, so a container
+#                      re-created to change its mounts keeps them. Not the
+#                      artifacts -- those land in the target checkout.
 #
 # The results template rides the /opt/crustify mount: the orchestrator reads
 # examples/crustify/results-template.md from the checkout and writes the filled
