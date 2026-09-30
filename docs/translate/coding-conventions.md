@@ -49,7 +49,7 @@ Rust has no headers, they are homed using the following rules:
   - a TU and its companion header share a sub-module within their subsystem;
   - headers that export implementation (e.g. `static inline` functions) which logically do
     not belong to any TU get their own `_h.rs` sub-module; headers shared by multiple
-    subsystems become sub-modules for each subsystem;
+    subsystems become sub-modules for each subsystem homing the units belonging to that subsystem;
 
 ## Wrapped types
 

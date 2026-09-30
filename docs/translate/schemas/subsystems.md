@@ -25,13 +25,8 @@ a name index without losing the authored order.
 |---|---|
 | `name` | unique link-unit identifier, normally the linked artifact's filename stem |
 | `kind` | `library` or `executable` |
-| `linkage` | `shared`, `static`, or `system` for a library; `null` for an executable |
+| `linkage` | `shared` or `static` for a library; `null` for an executable |
 | `subsystems` | ordered list of the link unit's covered subsystems |
-
-A system link unit may contain imported, header-derived subsystems whose
-`implementation_files` list is empty and whose `impl_files` and `loc` counters are zero;
-their entity counters count the declarations the campaign imports from them. It may have an empty
-`subsystems` list when no entity from that link unit enters the campaign closure.
 
 ## link_units[*].subsystems[*]
 
@@ -41,13 +36,21 @@ addressable identity is therefore `(link_unit.name, subsystem.name)`.
 | field | meaning |
 |---|---|
 | `name` | subsystem identifier, unique within the link unit |
-| `implementation_files` | repo-relative files homed in the subsystem: translation units and headers alike |
+| `implementation_files` | repo-relative translation units and private headers homed in the subsystem |
+| `api_headers` | repo-relative public headers the subsystem publishes: those the build installs |
 | `objective` | the translation intent recorded for this subsystem |
 | `counters` | what the subsystem contains |
 | `imported_deps` | what it depends on, in tree and out |
 
-The orchestrator must home every covered file in exactly one subsystem. This is an
-authoring instruction, not a separate validation gate.
+TUs must be homed in exactly one subsystem; headers generally too, although there
+might be cases when a header is shared by multiple subsystems. A header appears in one
+list only: `api_headers` when the build installs it, `implementation_files` otherwise.
+A public header belongs to the subsystem that implements what it declares.
+
+A shared header is listed by every subsystem that shares it, but each entity it defines
+is owned by exactly one of them: the one scheduled first. The owner counts, homes and
+translates the entity; the other subsystems reach it through an ordinary `imported_deps`
+record.
 
 ## link_units[*].subsystems[*].objective
 
@@ -66,9 +69,14 @@ reason to leave a subsystem wrapped during a partial migration rather than port 
 
 ## link_units[*].subsystems[*].counters
 
-| field | meaning |
+Two blocks with the same fields: `implementation` counts what the subsystem's
+`implementation_files` define, and `api` counts what its `api_headers` publish. Only
+entities the subsystem owns are counted, so a shared header's entities count once across
+the decomposition.
+
+| `implementation` field | meaning |
 |---|---|
-| `impl_files` | number of entries in `implementation_files` |
+| `files` | number of entries in `implementation_files` |
 | `loc` | physical nonblank, noncomment lines across them |
 | `structs` | struct definitions |
 | `functions` | function definitions |
@@ -78,6 +86,21 @@ reason to leave a subsystem wrapped during a partial migration rather than port 
 | `callbacks` | function-pointer types the subsystem defines |
 | `macros` | object- and function-like macro definitions |
 
+| `api` field | meaning |
+|---|---|
+| `files` | number of entries in `api_headers` |
+| `loc` | physical nonblank, noncomment lines across them |
+| `structs` | structs whose body the API headers publish |
+| `opaque_structs` | structs the API headers only forward-declare |
+| `functions` | functions the API headers declare, prototypes and `static inline` alike |
+| `global_variables` | variables the API headers declare |
+| `enums` | enums the API headers define |
+| `unions` | unions the API headers define |
+| `callbacks` | function-pointer types the API headers define |
+| `macros` | object- and function-like macros the API headers define |
+
+The blocks overlap: a function defined in a translation unit and declared in an API
+header counts in both, once as a definition and once as published. Never add them.
 ## link_units[*].subsystems[*].imported_deps
 
 Every record is directed from this subsystem, the consumer, to something it depends on.
@@ -104,17 +127,7 @@ numbers swapped.
 
 A dependency's `counters` carries the same item kinds a subsystem's own does — `structs`,
 `functions`, `global_variables`, `enums`, `unions`, `callbacks`, `macros` — counting what
-this subsystem consumes, not what the destination contains. It has no `impl_files` or
-`loc`: those describe a subsystem's own files, and a consumer imports entities, not files.
+this subsystem consumes, not what the destination contains. It has no `files` or `loc`:
+those describe a subsystem's own files, and a consumer imports entities, not files.
 
-The in-tree graph may contain cycles, and this artifact records them. It describes the
-decomposition as it is; it is not a schedule, and dropping an edge to make it a DAG would
-falsify the dependency it documents and hide the cycle from everything downstream.
-
-The orchestrator cuts cycles when it schedules, not here. Within each strongly connected
-component, schedule first the member that the most other members depend on. Break a tie
-by the edges between the tied members: the one the others need more, by their summed
-`incoming_edges` from each other, goes first. A cut is implied by the schedule's order
-rather than recorded in it: every record whose destination is scheduled after its
-consumer, leaving `outgoing_edges` raw seams in that consumer until the destination
-lands.
+The in-tree graph may contain cycles, and this artifact records them.

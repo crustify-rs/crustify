@@ -17,16 +17,31 @@
             "ssl/record/rec_layer_s3.c",
             "ssl/record/methods/tls_common.c"
           ],
+          "api_headers": [],
           "counters": {
-            "impl_files": 2,
-            "loc": 4821,
-            "structs": 17,
-            "functions": 143,
-            "global_variables": 0,
-            "enums": 0,
-            "unions": 0,
-            "callbacks": 0,
-            "macros": 0
+            "implementation": {
+              "files": 2,
+              "loc": 4821,
+              "structs": 17,
+              "functions": 143,
+              "global_variables": 0,
+              "enums": 0,
+              "unions": 0,
+              "callbacks": 0,
+              "macros": 0
+            },
+            "api": {
+              "files": 0,
+              "loc": 0,
+              "structs": 0,
+              "opaque_structs": 0,
+              "functions": 0,
+              "global_variables": 0,
+              "enums": 0,
+              "unions": 0,
+              "callbacks": 0,
+              "macros": 0
+            }
           },
           "imported_deps": {
             "in_tree": [
@@ -87,16 +102,33 @@
             "ssl/statem/statem.c",
             "ssl/statem/statem_lib.c"
           ],
+          "api_headers": [
+            "include/openssl/ssl.h"
+          ],
           "counters": {
-            "impl_files": 2,
-            "loc": 2390,
-            "structs": 9,
-            "functions": 76,
-            "global_variables": 0,
-            "enums": 0,
-            "unions": 0,
-            "callbacks": 0,
-            "macros": 0
+            "implementation": {
+              "files": 2,
+              "loc": 2390,
+              "structs": 9,
+              "functions": 76,
+              "global_variables": 0,
+              "enums": 0,
+              "unions": 0,
+              "callbacks": 0,
+              "macros": 0
+            },
+            "api": {
+              "files": 1,
+              "loc": 1873,
+              "structs": 2,
+              "opaque_structs": 6,
+              "functions": 41,
+              "global_variables": 0,
+              "enums": 1,
+              "unions": 0,
+              "callbacks": 3,
+              "macros": 58
+            }
           },
           "imported_deps": {
             "in_tree": [
@@ -114,12 +146,11 @@
                   "callbacks": 7,
                   "macros": 4
                 }
-              },
+              }
+            ],
+            "out_of_tree": [
               {
-                "link_unit": "libc",
-                "subsystem": "memory",
-                "outgoing_edges": 7,
-                "incoming_edges": 0,
+                "library": "libc",
                 "counters": {
                   "structs": 9,
                   "functions": 0,
@@ -130,8 +161,7 @@
                   "macros": 0
                 }
               }
-            ],
-            "out_of_tree": []
+            ]
           }
         }
       ]
@@ -150,46 +180,33 @@
           "implementation_files": [
             "crypto/bio/bio_lib.c"
           ],
+          "api_headers": [
+            "include/openssl/bio.h"
+          ],
           "counters": {
-            "impl_files": 1,
-            "loc": 1320,
-            "structs": 8,
-            "functions": 61,
-            "global_variables": 0,
-            "enums": 0,
-            "unions": 0,
-            "callbacks": 0,
-            "macros": 0
-          },
-          "imported_deps": {
-            "in_tree": [],
-            "out_of_tree": []
-          }
-        }
-      ]
-    },
-    {
-      "name": "libc",
-      "kind": "library",
-      "linkage": "system",
-      "subsystems": [
-        {
-          "name": "memory",
-          "objective": {
-            "objective": "wrap",
-            "rust_native_equivalent": []
-          },
-          "implementation_files": [],
-          "counters": {
-            "impl_files": 0,
-            "loc": 0,
-            "structs": 1,
-            "functions": 4,
-            "global_variables": 0,
-            "enums": 0,
-            "unions": 0,
-            "callbacks": 0,
-            "macros": 0
+            "implementation": {
+              "files": 1,
+              "loc": 1320,
+              "structs": 8,
+              "functions": 61,
+              "global_variables": 0,
+              "enums": 0,
+              "unions": 0,
+              "callbacks": 0,
+              "macros": 0
+            },
+            "api": {
+              "files": 1,
+              "loc": 702,
+              "structs": 1,
+              "opaque_structs": 4,
+              "functions": 38,
+              "global_variables": 0,
+              "enums": 0,
+              "unions": 0,
+              "callbacks": 2,
+              "macros": 47
+            }
           },
           "imported_deps": {
             "in_tree": [],
