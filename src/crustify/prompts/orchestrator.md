@@ -87,7 +87,8 @@ Create `crustify/subsystems.json` from `specs/subsystems.json`; see
 
 Use actual linker outputs to identify link units. Cover the selected target and its
 complete imported producer closure. Assign every translation unit to one subsystem;
-headers may be shared by multiple subsystems.
+headers may be shared by multiple subsystems. List the headers the build installs as each
+subsystem's `api_headers`, with the subsystem that implements them.
 
 Assign one of the following objectives to each subsystem using these rules:
 

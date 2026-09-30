@@ -62,7 +62,8 @@ Selection rules:
   `crustify/wavefront/configs/<link-unit>/<subsystem>/wavefront-config.json`.
 
 - Its `impl_files` and `api_headers` must be exact subsets of the campaign-wide
-  configuration, and must mirror the subsystem's assigned sources in `subsystems.json`.
+  configuration, and must mirror the subsystem's `implementation_files` and `api_headers`
+  in `subsystems.json`.
 
 - Verify the authored configurations against wavefront's CLI.
 
