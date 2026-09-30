@@ -1,7 +1,7 @@
 # Thin batch schema
 
-Field meaning for the JSON the orchestrator passes to `crustify <workdir> translate
-<batch.json> --base-branch <wave branch> --output <batch dir>`. One batch is one agent's
+Field meaning for the JSON the orchestrator passes to `crustify spawn-translator
+<workdir> <batch.json> --base-branch <wave branch> --output <batch dir>`. One batch is one agent's
 entire worklist.
 
 The orchestrator plans it as one batch entry of `docs/translate/schemas/schedule.md` and

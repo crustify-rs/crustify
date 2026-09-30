@@ -421,14 +421,14 @@ be demonstrated by measuring the coverage itself.
 
 ### 1. Static safety scan
 
-Run the static safety scan of `crustify audit` with your workset names and fix any illegal
+Run the static safety scan `crustify scan-unsafe` with your workset names and fix any illegal
 unsafe/raw sites that you might have missed:
 
 ```bash
-crustify <workdir> audit unsafe --name <batch names...> --json
+crustify scan-unsafe <workdir> --name <batch names...> --json
 ```
 
-Do NOT run `crustify audit ub`.
+Do NOT run `crustify spawn-auditor`.
 
 
 ### 2. Regressions

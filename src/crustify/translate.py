@@ -178,9 +178,9 @@ def execute(
     # Fixed names: `output` is this batch's own directory, so there is nothing
     # to disambiguate. The orchestrator decides what a batch is called by
     # deciding where its artifacts go.
-    print(f"[crustify translate] workdir: {workdir}")
-    print(f"[crustify translate] landing on: {base_branch}")
-    print(f"[crustify translate] log: {output / f'{_LOG_STEM}.log'}")
+    print(f"[crustify spawn-translator] workdir: {workdir}")
+    print(f"[crustify spawn-translator] landing on: {base_branch}")
+    print(f"[crustify spawn-translator] log: {output / f'{_LOG_STEM}.log'}")
 
     from crustify.agents.translate import TranslateAgent
 
@@ -193,4 +193,4 @@ def execute(
         artifact_dir=output,
         log_stem=_LOG_STEM,
     ).run()
-    print("[crustify translate] batch completed.")
+    print("[crustify spawn-translator] batch completed.")

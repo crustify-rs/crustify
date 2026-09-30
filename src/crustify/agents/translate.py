@@ -67,7 +67,7 @@ class TranslateAgent(CrustifyAgent):
     def stage(self) -> str:  # type: ignore[override]
         """The stage recorded in this agent's usage record:
         ``<objective>-<route>_<key>``, e.g. ``port-type_git_delta_index`` /
-        ``wrap-symbol_access``. ``crustify ... cost`` buckets by its prefix.
+        ``wrap-symbol_access``. ``crustify cost`` buckets by its prefix.
 
         The log file itself takes the harness's fixed stem, ``translator``."""
         key = self._items[0]["name"] if self._items else "batch"

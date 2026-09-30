@@ -79,6 +79,6 @@ The orchestrator chooses the internal waves, reports each dry-run plan, and wait
 approval before spending on or promoting the next sub-campaign.
 
 After each sub-campaign, price the batches' `translator.usage.json` records with
-`crustify ... cost`, measure the sub-campaign branch's diff, and run
-`crustify <workdir> audit unsafe --name ... --json` over the selected names. Derive cost
+`crustify cost`, measure the sub-campaign branch's diff, and run
+`crustify scan-unsafe <workdir> --name ... --json` over the selected names. Derive cost
 from token counts, never from provider-reported dollars.

@@ -104,4 +104,4 @@ spending.
 Record coverage using safe functions in call position with documentation
 comments stripped, so it remains comparable to the 113/1,649 baseline. After
 each sub-campaign, record token-derived cost, the sub-campaign branch's diff, and the
-deterministic `crustify <workdir> audit unsafe` scan over the selected names.
+deterministic `crustify scan-unsafe <workdir>` scan over the selected names.

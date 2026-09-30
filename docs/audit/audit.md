@@ -15,8 +15,8 @@ Requires Python 3.13 or newer:
 ```sh
 pip install -e .
 
-crustify /path/to/repo audit unsafe
-crustify /path/to/repo audit ub --model anthropic/claude-opus-5
+crustify scan-unsafe /path/to/repo
+crustify spawn-auditor /path/to/repo --model anthropic/claude-opus-5
 ```
 
 Pass the repository root. The audited Cargo workspace is the root when it has a
@@ -51,8 +51,8 @@ runs extend the record instead of repeating completed investigations.
 ## CLI
 
 ```text
-crustify WORKDIR audit unsafe [--json] [--name NAME ...]
-crustify WORKDIR audit ub [--objective audit|audit+patch|patch|revisit]
+crustify scan-unsafe WORKDIR [--json] [--name NAME ...]
+crustify spawn-auditor WORKDIR [--objective audit|audit+patch|patch|revisit]
                        [--workset PATH ...]
                        [--instruments miri|asan/ubsan|bsan|msan|tsan|equivalence ...]
                        [--model PROVIDER/MODEL]
@@ -168,8 +168,8 @@ provider. OpenRouter requires `api`; `subscription` uses Claude or Codex credent
 under `/work`, which is also the persistent Cargo/build cache. An
 `openrouter/anthropic/<model>` route uses Claude Code with `OPENROUTER_API_KEY`; other
 OpenRouter model IDs use Codex. The deterministic scan needs no agent and no
-authentication, so it is just another command: `docker run ... crustify crustify /target
-audit unsafe`.
+authentication, so it is just another command: `docker exec <name> crustify
+scan-unsafe /target`.
 
 `CRUSTIFY_BARE=1` still makes the mounted `TASK.md` the entire prompt, for either command.
 

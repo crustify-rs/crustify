@@ -14,8 +14,8 @@ committed by hand. Copy a task template to start a request; the campaign
 directories hold filled instances.
 
 [`Dockerfile`](Dockerfile) builds the environment either campaign runs in. It
-starts nothing: the container idles, and `crustify` is run inside it, with every
-choice (campaign kind, model, billing, ablation) a `crustify` flag.
+starts nothing: the container idles, and `crustify` is run inside it: the command
+picks the campaign kind, and its options pick the model, billing and ablation.
 
 ## Running one
 
@@ -42,8 +42,8 @@ Translate:
 
 ```sh
 docker exec -it crustify-libgit2 \
-    crustify --model anthropic/claude-opus-5 --billing api \
-    /target orchestrate-translation /campaign/TASK.md
+    crustify translate /target /campaign/TASK.md \
+    --model anthropic/claude-opus-5 --billing api
 ```
 
 Audit, in a container started the same way with an audit task and its own `/work`
@@ -51,8 +51,8 @@ volume:
 
 ```sh
 docker exec -it audit-zstd \
-    crustify --model anthropic/claude-opus-5 --billing api \
-    /target orchestrate-audit /campaign/TASK.md
+    crustify audit /target /campaign/TASK.md \
+    --model anthropic/claude-opus-5 --billing api
 ```
 
 Add `--task-only` to either for the ablation control: the task file becomes the
@@ -62,7 +62,7 @@ The deterministic scan needs no agent and no authentication, so it bypasses the
 orchestrator entirely and is just another command:
 
 ```sh
-docker exec crustify-libgit2 crustify /target audit unsafe
+docker exec crustify-libgit2 crustify scan-unsafe /target
 ```
 
 `/target` must be an existing Git checkout mounted read-write. The orchestrator
@@ -87,7 +87,7 @@ container loses those, so generally useful packages belong in the Dockerfile.
 
 Set with `-e` on `docker run`: only the credentials the chosen provider and
 billing need (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY` or `OPENROUTER_API_KEY`).
-Everything else is a `crustify` flag; see `crustify --help`.
+Everything else is an option of the `crustify` command; see `crustify <command> --help`.
 
 ## Build environment
 

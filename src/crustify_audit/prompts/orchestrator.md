@@ -1,4 +1,4 @@
-Orchestrate a UB audit with `crustify-audit`. Do not hunt bugs yourself.
+Orchestrate a UB audit with `crustify spawn-auditor`. Do not hunt bugs yourself.
 Your git entity is: `crustify`
 
 ## Resolve the run
@@ -35,7 +35,7 @@ Rust or C/C++ sources.
 ## Plan
 
 Verify the target revision. For `audit` and `audit+patch`, run the deterministic
-`unsafe` scan, then inspect the crate and existing leads and advisories. Divide
+`crustify scan-unsafe` scan, then inspect the crate and existing leads and advisories. Divide
 the audit into disjoint module-based worksets; give a single auditor the whole
 crate when only one is configured. For `patch`, divide the existing advisories
 instead and pass each agent its advisory directories under
@@ -48,12 +48,12 @@ leads needing the same instrument or the same build land on the same auditor.
 State the resolved plan, including every selected instrument and its associated
 bug classes, the worksets, and the approximate total budget: auditor concurrency
 times minutes per auditor. The instrument-to-bug-class scope printed by
-`crustify-audit ... ub` is authoritative; do not silently broaden it.
+`crustify spawn-auditor` is authoritative; do not silently broaden it.
 
 ## Execute
 
 Launch the auditors concurrently with the resolved objective, instruments,
-model, billing, budget, and worksets. Consult `crustify-audit --help` for
+model, billing, budget, and worksets. Consult `crustify spawn-auditor --help` for
 command syntax. Leave a short buffer window between launches so they don't
 get assigned the same timestamp.
 

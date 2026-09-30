@@ -62,5 +62,5 @@ Unanswered optional questions use their defaults.
 
 # Additional instructions
 
-The deterministic `crustify <workdir> audit unsafe` checks remain enabled independently
+The deterministic `crustify scan-unsafe <workdir>` checks remain enabled independently
 of agentic review.

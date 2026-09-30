@@ -110,4 +110,4 @@ The god-object selection is `record_layer_st`, `quic_stream_st`, and
 
 The orchestrator derives internal waves and schedule files from these selections.
 Record token-derived cost, the sub-campaign branch's diff, and the deterministic
-`crustify <workdir> audit unsafe` scan after the sub-campaign completes.
+`crustify scan-unsafe <workdir>` scan after the sub-campaign completes.

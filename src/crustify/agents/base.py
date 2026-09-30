@@ -164,7 +164,7 @@ class CrustifyAgent:
         log_stem: str | None = None,
     ) -> None:
         # An isolated-wave agent is constructed with its WORKTREE, so every
-        # `crustify <workdir> …` the prompt runs — and every artifact path
+        # `crustify <command> <workdir> …` the prompt runs — and every artifact path
         # (rust/, logs) — resolves to the worktree, not the main checkout.
         # Without it, parallel agents' Rust-tree writes and commits leak into
         # the shared main checkout.
@@ -274,7 +274,7 @@ class CrustifyAgent:
         raise NotImplementedError
 
     def _arguments(self) -> dict:
-        # `workdir` is the full path every `crustify <workdir> …` invocation
+        # `workdir` is the full path every `crustify <command> <workdir> …` invocation
         # in a prompt needs. `git_base` is the unchecked-out wave
         # integration branch supplied by the orchestrator. Supplied to every
         # agent: `str.format` ignores a key the template does not reference, and
