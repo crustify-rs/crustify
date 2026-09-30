@@ -232,8 +232,12 @@ def _handle_orchestrate(args: argparse.Namespace) -> None:
         # One log per run, so resuming never overwrites an earlier session's.
         campaign = {"campaign_id": campaign_id, "artifact_dir": campaign_dir,
                     "log_stem": f"orchestrator-{run_start}"}
+    # Interactive whenever a person is at the terminal: the orchestrator asks
+    # for approval and waits, which a headless run cannot do.
+    interactive = sys.stdin.isatty() and sys.stdout.isatty()
     OrchestrateAgent(workdir, kind=args.kind, task=args.task, model=model,
-                     task_only=args.task_only, **campaign).run()
+                     task_only=args.task_only, interactive=interactive,
+                     **campaign).run()
 
 
 def _handle_translate(args: argparse.Namespace) -> None:

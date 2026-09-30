@@ -52,7 +52,8 @@ class OrchestrateAgent(CrustifyAgent):
 
     def __init__(self, workdir: Path, *, kind: str, task: Path,
                  model: str, task_only: bool = False,
-                 campaign_id: str = "", **kwargs) -> None:
+                 campaign_id: str = "", interactive: bool = False,
+                 **kwargs) -> None:
         self.kind = kind
         self.task = Path(task)
         self.model = model
@@ -63,6 +64,9 @@ class OrchestrateAgent(CrustifyAgent):
         #: sits with the campaign it runs. Empty for an audit campaign, which
         #: has no campaign tree.
         self.campaign_id = campaign_id
+        #: The orchestrator presents a brief and waits at approval gates, so
+        #: with a person at the terminal it runs in the CLI's own interface.
+        self.interactive = interactive
         self.stage_suffix = kind
         super().__init__(workdir, **kwargs)
 

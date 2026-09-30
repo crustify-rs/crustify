@@ -145,6 +145,10 @@ class CrustifyAgent:
     #: the whole body in the system slot, out of reach of compaction, and
     #: leaves the user turn a kickoff.
     prompt_in_system_slot: bool = False
+    #: Hand the terminal to the provider CLI's own interface rather than run
+    #: it headless. Only an agent a person supervises live sets it: a
+    #: headless run cannot stop to ask a question and wait for the answer.
+    interactive: bool = False
     # Set per-instance (not class) when an agent is one of many running
     # in parallel — disambiguates log filenames so concurrent agents
     # don't clobber each other's logs. None on instances that don't
@@ -210,6 +214,7 @@ class CrustifyAgent:
                 billing=_cfg.BILLING,
                 override_base_prompt=_cfg.OVERRIDE_BASE_PROMPT,
                 provider_home=provider_home,
+                interactive=self.interactive,
             )
 
     def _log_stem(self) -> str:

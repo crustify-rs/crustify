@@ -122,6 +122,7 @@ class ClaudeCliBackend:
         effort: str | None = None,
         override_base_prompt: bool = False,
         provider_home: Path | None = None,
+        interactive: bool = False,
     ) -> None:
         exe = shutil.which("claude")
         if exe is None:
@@ -132,19 +133,22 @@ class ClaudeCliBackend:
         wd = Path(work_dir).resolve()
         session_id = str(uuid.uuid4())
 
-        cmd = [
+        # The prompt goes first: `--tools` and `--add-dir` take variadic
+        # values, so a trailing positional would be read as one of them.
+        cmd = [exe, prompt] if interactive else [
             exe, "-p", prompt,
             # Stream each turn as it happens; `--verbose` is what the CLI
             # requires to emit the per-turn events in print mode rather than
             # only the final result.
             "--output-format", "stream-json",
             "--verbose",
+        ]
+        cmd += [
             "--model", route.model,
             "--session-id", session_id,
             # One tool. `--tools` is an allowlist, so anything the CLI gains
             # in a later version stays excluded by default.
             "--tools", "Bash",
-            "--disable-slash-commands",
             # Hermeticity: ignore the operator's settings files and every MCP
             # server not passed explicitly here.
             "--setting-sources", "",
@@ -152,6 +156,11 @@ class ClaudeCliBackend:
             "--permission-mode", "bypassPermissions",
             "--add-dir", str(wd),
         ]
+        # Slash commands (and the skills they expose) stay off in a headless
+        # run, where nobody types them. An interactive session keeps them:
+        # the person at the terminal drives `/model`, `/compact` and the rest.
+        if not interactive:
+            cmd.append("--disable-slash-commands")
         # Role-owned system text is unconditional. The option decides only
         # whether Claude's own base prompt survives underneath it.
         cmd += (["--system-prompt", system_preamble]
@@ -196,6 +205,36 @@ class ClaudeCliBackend:
             provider_home.mkdir(parents=True, exist_ok=True)
             env["ANTHROPIC_CONFIG_DIR"] = str(provider_home.resolve())
 
+        if interactive:
+            # The terminal is the CLI's: nothing is captured, so the session
+            # transcript is the record of what was said.
+            log.line(f"[crustify] {name}: interactive session {session_id}")
+            rc = subprocess.run(cmd, cwd=str(wd), env=env).returncode
+        else:
+            rc = self._stream(cmd, wd, env, log)
+
+        transcript = _transcript_path(session_id, wd)
+        if transcript is not None:
+            log.line(f"[crustify] transcript: {transcript}")
+            requests, transcript_model = _read_usage(transcript)
+            log.usage({
+                "provider": route.provider,
+                "model": transcript_model or route.model,
+                "requests": requests,
+            })
+        else:
+            log.line(f"[crustify] {name}: no session transcript for "
+                     f"{session_id}; this run is unaccounted.")
+
+        if rc != 0:
+            raise SystemExit(
+                f"claude_cli backend: `claude` exited {rc} for {name}. "
+                f"See the agent log for its output."
+            )
+
+    @staticmethod
+    def _stream(cmd: list[str], wd: Path, env: dict, log: AgentLog) -> int:
+        """Run headless and render the stream-json events into ``log``."""
         proc = subprocess.Popen(
             cmd, cwd=str(wd), env=env,
             stdin=subprocess.DEVNULL,
@@ -223,21 +262,4 @@ class ClaudeCliBackend:
                 log.line(out)
         rc = proc.wait()
         err_thread.join(timeout=5)
-
-        transcript = _transcript_path(session_id, wd)
-        if transcript is not None:
-            requests, transcript_model = _read_usage(transcript)
-            log.usage({
-                "provider": route.provider,
-                "model": transcript_model or route.model,
-                "requests": requests,
-            })
-        else:
-            log.line(f"[crustify] {name}: no session transcript for "
-                     f"{session_id}; this run is unaccounted.")
-
-        if rc != 0:
-            raise SystemExit(
-                f"claude_cli backend: `claude` exited {rc} for {name}. "
-                f"See the agent log for its output."
-            )
+        return rc
