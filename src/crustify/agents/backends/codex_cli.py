@@ -25,6 +25,7 @@ import shutil
 import subprocess
 import tempfile
 import threading
+import time
 from pathlib import Path
 
 from crustify.core.agentlog import AgentLog
@@ -151,6 +152,14 @@ from crustify.core.usage import (  # noqa: F401 - re-exported
 
 
 
+def _newest_rollout(codex_home: Path, since: float) -> Path | None:
+    """The most recent rollout written after ``since``, for a session whose
+    id was never seen because the interactive CLI owned the terminal."""
+    hits = [p for p in codex_home.glob("sessions/*/*/*/rollout-*.jsonl")
+            if p.stat().st_mtime >= since]
+    return max(hits, key=lambda p: p.stat().st_mtime) if hits else None
+
+
 class CodexCliBackend:
     def run(
         self,
@@ -165,6 +174,7 @@ class CodexCliBackend:
         effort: str | None = None,
         override_base_prompt: bool = False,
         provider_home: Path | None = None,
+        interactive: bool = False,
     ) -> None:
         exe = shutil.which("codex")
         if exe is None:
@@ -191,12 +201,17 @@ class CodexCliBackend:
         # anywhere the invoking user can — outside the repo, and into a
         # concurrent run's worktree, which is the isolation parallel batches
         # otherwise rely on.
-        cmd = [exe, "exec", "--skip-git-repo-check",
-               "-C", str(wd),
-               "-s", "danger-full-access",
-               "-m", route.model,
-               "--ignore-user-config",
-               *_TOOL_OFF]
+        #
+        # The interactive CLI has neither `--skip-git-repo-check` nor
+        # `--ignore-user-config`, and asks before running commands unless
+        # told `-a never`. With an env-key provider CODEX_HOME is relocated
+        # below, so no operator config loads either way.
+        cmd = ([exe, "-a", "never"] if interactive
+               else [exe, "exec", "--skip-git-repo-check", "--ignore-user-config"])
+        cmd += ["-C", str(wd),
+                "-s", "danger-full-access",
+                "-m", route.model,
+                *_TOOL_OFF]
         selected_effort = effort or _REASONING_EFFORT.get(route.model)
         if selected_effort:
             cmd += ["-c", f'model_reasoning_effort="{selected_effort}"']
@@ -273,6 +288,41 @@ class CodexCliBackend:
 
         cmd.append(prompt)
 
+        if interactive:
+            # The terminal is the CLI's, so its session banner is never seen:
+            # the rollout is the newest one started after launch instead.
+            log.line(f"[crustify] {name}: interactive session")
+            started = time.time()
+            rc = subprocess.run(cmd, cwd=str(wd), env=env).returncode
+            rollout = _newest_rollout(codex_home, started)
+            session_id = ""
+        else:
+            rc, session_id = self._stream(cmd, wd, env, log)
+            rollout = (_rollout_path(codex_home, session_id)
+                       if session_id else None)
+
+        if rollout is not None:
+            log.line(f"[crustify] rollout: {rollout}")
+            log.usage({
+                "provider": route.provider,
+                "model": route.model,
+                "requests": _read_usage(rollout),
+            })
+        else:
+            log.line(f"[crustify] {name}: no session rollout found"
+                     f"{' for ' + session_id if session_id else ''}; "
+                     f"this run is unaccounted.")
+
+        if rc != 0:
+            raise SystemExit(
+                f"codex_cli backend: `codex` exited {rc} for {name}. "
+                f"See the agent log for its output."
+            )
+
+    @staticmethod
+    def _stream(cmd: list[str], wd: Path, env: dict,
+                log: AgentLog) -> tuple[int, str]:
+        """Run headless into ``log``; return the exit code and session id."""
         proc = subprocess.Popen(
             cmd, cwd=str(wd), env=env,
             stdin=subprocess.DEVNULL,
@@ -307,22 +357,4 @@ class CodexCliBackend:
             log.line(line)
         rc = proc.wait()
         err_thread.join(timeout=5)
-        session_id = found[0] if found else ""
-
-        rollout = _rollout_path(codex_home, session_id) if session_id else None
-        if rollout is not None:
-            log.usage({
-                "provider": route.provider,
-                "model": route.model,
-                "requests": _read_usage(rollout),
-            })
-        else:
-            log.line(f"[crustify] {name}: no session rollout found"
-                     f"{' for ' + session_id if session_id else ''}; "
-                     f"this run is unaccounted.")
-
-        if rc != 0:
-            raise SystemExit(
-                f"codex_cli backend: `codex` exited {rc} for {name}. "
-                f"See the agent log for its output."
-            )
+        return rc, (found[0] if found else "")

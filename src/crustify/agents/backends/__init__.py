@@ -39,6 +39,7 @@ class Backend(Protocol):
         effort: str | None = None,
         override_base_prompt: bool = False,
         provider_home: Path | None = None,
+        interactive: bool = False,
     ) -> None:
         """Drive one agent to completion.
 
@@ -52,6 +53,11 @@ class Backend(Protocol):
         The two CLIs offer different system slots -- Claude can append while
         Codex can only replace -- so each backend places the same role-owned
         string its own way; the content never diverges.
+
+        ``interactive`` hands the terminal to the CLI's own interface instead of
+        streaming a headless run into ``log``: the person at the terminal reads
+        the agent and answers it. The session transcript still yields the
+        usage record once the CLI exits.
         """
         ...
 

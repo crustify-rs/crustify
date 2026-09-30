@@ -184,3 +184,67 @@ class ProviderRoutingTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class InteractiveModeTests(unittest.TestCase):
+    """An interactive run hands the terminal to the CLI's own interface: no
+    print mode, no captured pipes, and the usage record still follows."""
+
+    def _run(self, backend, model: str, tmp: str) -> list[str]:
+        captured: dict = {}
+
+        def run(command, **kwargs):
+            captured["command"] = command
+            captured["kwargs"] = kwargs
+            return mock.Mock(returncode=0)
+
+        with (mock.patch.dict(
+                "os.environ", {"OPENROUTER_API_KEY": "test-key"}, clear=True),
+              mock.patch("shutil.which", return_value="/bin/cli"),
+              mock.patch("subprocess.run", side_effect=run),
+              mock.patch("subprocess.Popen",
+                         side_effect=AssertionError("headless path taken")),
+              mock.patch(
+                  "crustify.agents.backends.claude_cli._transcript_path",
+                  return_value=None)):
+            backend.run(
+                name="orchestrator",
+                route=resolve(model),
+                prompt="kickoff",
+                system_preamble="role",
+                work_dir=tmp,
+                log=AgentLog(None, "test", console=False),
+                billing="api",
+                provider_home=Path(tmp) / "home",
+                interactive=True,
+            )
+        # Inherited stdio: nothing is piped away from the terminal.
+        for stream in ("stdin", "stdout", "stderr"):
+            self.assertNotIn(stream, captured["kwargs"])
+        return captured["command"]
+
+    def test_claude_runs_its_interface_with_the_prompt_first(self) -> None:
+        from crustify.agents.backends.claude_cli import ClaudeCliBackend
+
+        with tempfile.TemporaryDirectory() as tmp:
+            command = self._run(ClaudeCliBackend(),
+                                "openrouter/anthropic/claude-opus-5", tmp)
+        self.assertEqual(command[1], "kickoff")
+        # Headless-only flags; slash commands such as /model stay available.
+        for flag in ("-p", "--output-format", "--verbose",
+                     "--disable-slash-commands"):
+            self.assertNotIn(flag, command)
+        self.assertIn("--append-system-prompt", command)
+        self.assertIn("--session-id", command)
+
+    def test_codex_runs_its_interface_without_exec_only_flags(self) -> None:
+        from crustify.agents.backends.codex_cli import CodexCliBackend
+
+        with tempfile.TemporaryDirectory() as tmp:
+            command = self._run(CodexCliBackend(),
+                                "openrouter/openai/gpt-5.6", tmp)
+        self.assertNotIn("exec", command)
+        for flag in ("--skip-git-repo-check", "--ignore-user-config"):
+            self.assertNotIn(flag, command)
+        self.assertEqual(command[command.index("-a") + 1], "never")
+        self.assertEqual(command[-1], "kickoff")
