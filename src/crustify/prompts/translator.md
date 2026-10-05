@@ -275,8 +275,9 @@ remain.
 Classify tests according to the following scheme:
 
 - `ub_safe` ensure the safe public API does not reach UB, mainly by not triggering sanitizer/Miri crashes, or by failing
-  to pass the compiler for a given illegal path; `ub_unsafe` targets UB bugs on the unsafe public API, while honoring the
-  stated safety contract; 
+  to pass the compiler for a given illegal path; `ub_unsafe` targets UB bugs on the unsafe public API: each public
+  `unsafe fn` or method of your workset, called within its stated `# Safety` contract, edge cases included. Raw `ffi::`
+  round-trips are not `ub_unsafe` tests; they belong in `unit` or `equiv`;
 - `equiv` ensure the safe public API matches the C-observable behavior, mainly by passing equivalence assertions;
 - `unit` ensure the internal API routines behave correctly, mainly by passing Rust assertions.
 
@@ -293,7 +294,10 @@ crate privacy enforces the public-API boundary. Place tests that call the
 safe public API under `tests/ub_safe/<the tested TU>.rs` and declare the
 tested TU as a module of `tests/ub_safe/main.rs`; place tests that excercise illegal
 safe paths that the compiler should catch in `tests/ub_safe/compile_fail`. Place tests
-that target the unsafe API under `tests/ub_unsafe/main.rs` using the same rules.
+that target the unsafe public API under `tests/ub_unsafe/<the tested TU>.rs` using the same rules:
+one suite per public unsafe function or method your workset adds, with its inputs built through
+the safe API wherever one exists. A workset that adds no public unsafe API adds no `ub_unsafe`
+tests.
 
 Cover every instrument prepared by the campaign as a separate obligation:
 
