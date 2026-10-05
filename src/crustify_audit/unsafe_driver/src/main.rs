@@ -40,28 +40,37 @@ use rustc_span::Span;
 use std::collections::{HashMap, HashSet};
 
 /// FFI-seam conversion routines: raw pointers in these signatures are the
-/// expected boundary, not a smell. Mirrors `ffibox`'s seam surface
-/// (`c_type.rs`, `CCell` + the owning handles) plus the names the ported trees
-/// add for callback wrappers.
+/// expected boundary, not a smell. Mirrors `ffibox`'s seam surface — the
+/// `define_ctype!` handles, the owners (`CBox`, `CStrBox`, `CVec`, `CArc`,
+/// `CGuardedArc`) and the run views — plus the names the ported trees add for
+/// callback wrappers.
 const SEAM_FNS: &[&str] = &[
-    // ffibox
+    // ffibox: outbound, Rust-side pointee or the C type (`as_c_ptr`)
     "as_ptr",
     "as_mut_ptr",
-    // the erasure trio: erase shared / erase exclusive / reconstitute
+    "as_c_ptr",
+    "as_non_null",
+    // the run views' plain-element pointers
+    "as_elem_ptr",
+    "as_mut_elem_ptr",
+    // the handles' erasure trio: erase shared / erase exclusive / reconstitute
     "as_void_ptr",
     "as_mut_void_ptr",
     "from_void_ptr",
+    // inbound: borrow (`from_ptr`) or adopt (`from_raw*`, `from_c*`)
     "from_ptr",
     "from_raw",
+    "from_raw_with",
     "from_raw_parts",
-    "from_raw_uninit",
-    // `CCell`'s adopt-a-raw-pointer pair: the same family as `from_raw`, named
-    // for the handle each yields (`c_type.rs`).
-    "ref_from_raw",
-    "mut_from_raw",
+    "from_raw_parts_with",
+    "from_c",
+    "from_c_with",
+    // surrender ownership
     "into_raw",
+    "into_raw_with",
     "into_raw_parts",
-    "into_raw_uninit",
+    "into_raw_parts_with",
+    "into_c",
     // ported trees: safe callback wrapper -> raw C fn pointer
     "to_raw",
 ];
@@ -78,21 +87,9 @@ fn is_phantom(tcx: TyCtxt<'_>, t: Ty<'_>) -> bool {
         if tcx.item_name(d.did()).as_str() == "PhantomData")
 }
 
-/// True if `t` is POINTER storage -- a raw pointer, or one of the pointer
-/// newtypes a handle is `#[repr(transparent)]` over.
-fn is_ptr_storage(tcx: TyCtxt<'_>, t: Ty<'_>) -> bool {
-    match t.kind() {
-        ty::TyKind::RawPtr(..) => true,
-        ty::TyKind::Adt(d, _) => matches!(
-            tcx.item_name(d.did()).as_str(),
-            "CPtr" | "NonNull" | "CBox" | "CBoxUninit" | "CVoidBox"
-        ),
-        _ => false,
-    }
-}
-
 /// True if `W` is a TYPE wrapper: a wrapper whose storage IS the C object's
-/// bytes (an inline `CType<ffi::T>`), as opposed to a POINTER to it.
+/// bytes (an inline `ffi::T`, as in a `define_ctype!` layout type), as opposed
+/// to a POINTER to it.
 ///
 /// This is the distinction that decides whether a reference is a hazard at all.
 /// `&W` over inline storage asserts `noalias` / `readonly` / validity over
@@ -101,7 +98,7 @@ fn is_ptr_storage(tcx: TyCtxt<'_>, t: Ty<'_>) -> bool {
 /// access goes through the borrowed handles, which hold the pointer by value.
 ///
 /// Membership is keyed on `CCell` rather than on the field shape, because
-/// `CCell` is what the framework itself treats as a wrapper (`CBox<W>`, the
+/// `CCell` is what the framework itself treats as a wrapper (`CBox<W, D>`, the
 /// `Ref`/`Mut` associated types) and because it resolves AFTER macro expansion,
 /// so `define_ctype!`-generated and hand-written wrappers are seen alike. The
 /// field shape then splits that set; a wrapper with no non-ZST field is counted
@@ -277,7 +274,7 @@ fn is_declared_wrapper(tcx: TyCtxt<'_>, did: DefId) -> bool {
 /// playbook permits them for lifetime-carrying and generic cases) and
 /// which ties the audit to ffibox. Every `CCell` wrapper satisfies the
 /// structural test by construction -- ffibox requires `#[repr(transparent)]`
-/// over `CType<Self::C>` -- so the structural set SUBSUMES the declared one,
+/// over `Self::C` -- so the structural set SUBSUMES the declared one,
 /// and a type that declares `CCell` while failing this test is a wrapper
 /// without the layout it claims: reported as `wrapper_declared_nonconformant`,
 /// never silently admitted.
@@ -322,8 +319,8 @@ fn is_zst_marker(tcx: TyCtxt<'_>, t: Ty<'_>) -> bool {
 }
 
 /// Peel transparent newtypes, then unwrap arrays/slices, to the ADT a field
-/// ultimately stores. `[git_oid; 4]` and `CType<ffi::git_oid>` both land on
-/// `git_oid`.
+/// ultimately stores. `[git_oid; 4]` and a layout type over `ffi::git_oid` both
+/// land on `git_oid`.
 fn field_adt<'tcx>(tcx: TyCtxt<'tcx>, t: Ty<'tcx>) -> Option<ty::AdtDef<'tcx>> {
     let mut cur = peel_transparent(tcx, t);
     for _ in 0..8 {
@@ -387,7 +384,7 @@ fn embedded_c(
 /// (pointer). `cs` are the C types it wraps, which the peel already reaches:
 ///
 ///   * HANDLE -- the POINTEE. `#[repr(transparent)]` over a raw pointer, or
-///     over `NonNull` / `CPtr` and friends, which peel to one.
+///     over `NonNull` / `CBorrowedPtr` and friends, which peel to one.
 ///   * LAYOUT -- every `#[repr(C)]` ADT reached by `embedded_c`. `W` itself
 ///     must be `#[repr(C)]` or `#[repr(transparent)]`; both give it C's bytes.
 ///     NOT gated on a single field: a struct carrying a C object beside Rust
@@ -765,22 +762,34 @@ impl<'a, 'tcx> Visitor<'tcx> for BodyVisitor<'a, 'tcx> {
     }
 }
 
-/// The `ffibox` macros, tallied by expansion site. The `define_*ctype!`
-/// family emits the wrapper newtype (one per representation); the `impl_*!`
-/// family binds a lifecycle contract or an ownership marker to it.
-const CRUSTIFY_MACROS: &[&str] = &[
+/// The `ffibox` macros, tallied by expansion site. `define_ctype!` emits the
+/// layout type and its handles; the `impl_*!` family binds a C lifecycle or
+/// lock routine to a policy (or, for `impl_cguarded!`, to the layout type).
+const FFIBOX_MACROS: &[&str] = &[
     "define_ctype",
-    "impl_dropped",
-    "impl_cloned",
-    "impl_cvalued",
+    "impl_cdrop",
+    "impl_cdrop_str",
+    "impl_cdrop_void",
+    "impl_cdupclone",
+    "impl_cdupclone_str",
+    "impl_crefclone",
+    "impl_clendrop",
+    "impl_clenclone",
+    "impl_cdispose",
+    "impl_cguarded",
 ];
 
-/// Recursively tally references to crustify-crate structs in a type.
+/// The crate whose primitives `UM_MODE=usage` profiles.
+fn is_ffibox_crate(tcx: TyCtxt<'_>, did: DefId) -> bool {
+    tcx.crate_name(did.krate).as_str() == "ffibox"
+}
+
+/// Recursively tally references to ffibox structs in a type.
 fn count_ty(tcx: TyCtxt<'_>, t: Ty<'_>, m: &mut std::collections::BTreeMap<String, u64>) {
     match t.kind() {
         ty::TyKind::Adt(def, args) => {
             let did = def.did();
-            if tcx.crate_name(did.krate).as_str() == "crustify" {
+            if is_ffibox_crate(tcx, did) {
                 *m.entry(tcx.item_name(did).to_string()).or_default() += 1;
             }
             for a in args.types() {
@@ -793,18 +802,18 @@ fn count_ty(tcx: TyCtxt<'_>, t: Ty<'_>, m: &mut std::collections::BTreeMap<Strin
     }
 }
 
-/// `UM_MODE=usage`: profile crustify-crate primitive usage.
-///  - `types`: references to the smart-pointer / cell structs in type positions
+/// `UM_MODE=usage`: profile ffibox primitive usage.
+///  - `types`: references to the owner / handle / view structs in type positions
 ///    (fn signatures, struct/enum/union fields, const/alias types)
-///  - `trait_impls`: `impl <crustify trait> for T` counts
-///  - `macros`: distinct invocations of the crustify `*!` macros
+///  - `trait_impls`: `impl <ffibox trait> for T` counts
+///  - `macros`: distinct invocations of the ffibox `*!` macros
 ///  - `ffi_calls`: per-`crate::symbol` count of every call to a foreign fn
 ///    (`tcx.is_foreign_item` — declared in an `extern` block), crate-agnostic
 ///    (bindgen `*-sys`, `libc`, local `extern "C"`). Calling one is unsafe, so
 ///    this is the crate-wide unsafe-FFI-call surface.
 ///  - `ffi_call_sites`: those calls grouped `{crate::symbol: {region: [{file,count,lines}]}}`
 ///    where region is `free_fn` / `inherent_impl` / `trait_impl:<Trait>` — so a
-///    `git__free` in `trait_impl:CDropped` (a sanctioned wrapper dtor) is separable
+///    `git__free` in `trait_impl:CDrop` (a sanctioned wrapper dtor) is separable
 ///    from one in a `free_fn` port body (actionable smell)
 fn usage_json(tcx: TyCtxt<'_>, krate: rustc_span::Symbol) -> String {
     use std::collections::BTreeMap;
@@ -821,7 +830,7 @@ fn usage_json(tcx: TyCtxt<'_>, krate: rustc_span::Symbol) -> String {
     let mut ffi_calls: BTreeMap<String, u64> = BTreeMap::new();
     // crate::symbol -> region ("free_fn" | "inherent_impl" | "trait_impl:<Trait>")
     // -> sites. The region separates wrapper-teardown chokepoints (a `git__free`
-    // in `trait_impl:CDropped` / `:CLenDropped`) from port-body smell (`free_fn` /
+    // in `trait_impl:CDrop` / `:CLenDrop`) from port-body smell (`free_fn` /
     // `inherent_impl`), so the actionable subset is a filter, not a judgement.
     let mut ffi_sites: BTreeMap<String, BTreeMap<String, Vec<(String, usize)>>> = BTreeMap::new();
     for owner in tcx.hir_body_owners() {
@@ -868,7 +877,7 @@ fn usage_json(tcx: TyCtxt<'_>, krate: rustc_span::Symbol) -> String {
             }
             DefKind::Impl { of_trait: true } => {
                 let tdid = tcx.impl_trait_ref(did).skip_binder().def_id;
-                if tcx.crate_name(tdid.krate).as_str() == "crustify" {
+                if is_ffibox_crate(tcx, tdid) {
                     *trait_impls
                         .entry(tcx.item_name(tdid).to_string())
                         .or_default() += 1;
@@ -880,7 +889,7 @@ fn usage_json(tcx: TyCtxt<'_>, krate: rustc_span::Symbol) -> String {
         let ctxt = tcx.def_span(did).ctxt();
         if let ExpnKind::Macro(MacroKind::Bang, name) = ctxt.outer_expn_data().kind {
             if let Some(last) = name.as_str().rsplit("::").next() {
-                if CRUSTIFY_MACROS.contains(&last) {
+                if FFIBOX_MACROS.contains(&last) {
                     macros
                         .entry(last.to_string())
                         .or_default()
@@ -948,7 +957,7 @@ fn enclosing_fn(tcx: TyCtxt<'_>, mut did: DefId) -> Option<rustc_hir::def_id::Lo
 
 /// Classify a body owner's enclosing region, for grouping ffi-call sites:
 /// `trait_impl:<Trait>` (a call inside `impl Trait for T` — e.g. the
-/// `CDropped` / `CLenDropped` wrapper-teardown chokepoints), `inherent_impl`
+/// `CDrop` / `CLenDrop` wrapper-teardown chokepoints), `inherent_impl`
 /// (a method in `impl T { .. }`), or `free_fn` (a free function or any
 /// other body not in an impl).
 fn call_region(tcx: TyCtxt<'_>, mut did: DefId) -> String {
@@ -1415,8 +1424,8 @@ fn seed_json(tcx: TyCtxt<'_>, krate: rustc_span::Symbol) -> String {
         .visit_body(tcx.hir_body_owned_by(owner));
     }
     let symbol_hits = collect_symbol_sites(tcx, &wanted, &mut raw_ptr, &mut raw_deref);
-    // ffibox itself intentionally implements Deref/DerefMut for its borrowed
-    // handles. Report only manual implementations in wrapper crates.
+    // Manual Deref/DerefMut on a wrapper is what this report hunts for, and only
+    // wrapper crates write wrappers; ffibox itself implements neither.
     if krate.as_str() != "ffibox" {
         for ld in tcx.hir_crate_items(()).definitions() {
             let did = ld.to_def_id();

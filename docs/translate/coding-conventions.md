@@ -24,7 +24,7 @@ Names that cross the language boundary are fixed and exempt: `ffi::<name>` raw b
 `mod ffi_export` exports, `crustify_<NAME>` macro shims and the `CRUSTIFY_<FILE>` build
 switch keep their C-derived spelling.
 
-## Crates and modules
+## Crates, modules, and TUs
 
 The Rust tree mirrors the following layout, all relative to `<repo>/crustify/rust/`:
 
@@ -33,13 +33,10 @@ The Rust tree mirrors the following layout, all relative to `<repo>/crustify/rus
 - `<repo>/` - safe repo package, one for the whole repo.
 - `<repo>/<link-unit>/` - one sub-dir per link unit, `cfg`-gated module in `lib.rs`.
 
-The Rust tree mirrors the subsystem decomposition in `subsystems.json`, and the filesystem
-is the source of truth for an entity's home: a batch names the `.rs` file each of its
-items belongs in, as `crustify/rust/<repo>/<link-unit>/…/<file>.rs`.
-
-There is one `.rs` home per C translation unit, or per header group when no translation
-unit owns the entity. Entities sharing a definition site co-home. A home is shared across
-waves; completed items remain in place.
+The Rust tree within `<repo>/` mirrors the subsystem decomposition in `subsystems.json`, and each item is homed
+in a `.rs` TU corresponding to its location on the original C/C++ filesystem; a batch names the `.rs` file each of its
+items belongs in, as `crustify/rust/<repo>/<link-unit>/…/<file>.rs`. Entities sharing a definition site co-home. A home
+may be shared across waves.
 
 Rust has no headers, they are homed using the following rules:
 - for a wrap campaign: each public header gets its own `mod` and `.rs`.
@@ -57,13 +54,20 @@ The canonical wrapped surface has three types:
 
 | type | role |
 |---|---|
-| `Foo` | layout-compatible newtype used for embedding and owned storage |
+| `Foo` | layout-compatible newtype named in every owner and handle, and held by value only in Rust-owned storage (a local, or embedded) |
 | `FooRef<'a>` | copyable shared borrowed handle with getters |
-| `FooMut<'a>` | exclusive borrowed handle with setters and shared reborrows |
+| `FooMut<'a>` | exclusive borrowed handle with setters, and shared and exclusive reborrows |
 
-Owning handles produce `FooRef` and `FooMut` through `as_ref()` and `as_mut()`; they do
-not dereference to `Foo`. Layout access starts from `FooRef::as_ptr()` or
-`FooMut::as_mut_ptr()`.
+Owners never dereference to `Foo`; they hand out handles. A sole owner, or a `Foo` value,
+produces `FooRef` and `FooMut` through `as_ref()` and `as_mut()`. A shared owner without a
+lock produces `FooRef` directly, and `FooMut` only when it can prove its reference is the
+only one, or after copying the object. A shared owner whose object carries its own lock
+produces both through read and write guards, which hold the lock while the handle lives.
+Layout access starts from `FooRef::as_ptr()` or `FooMut::as_mut_ptr()`.
+
+Getters that read `Foo`'s fields go on `FooRef` as methods in `impl FooRef` blocks taking `&self`,
+while setters that write its fields go on `FooMut` as methods in `impl FooMut` blocks taking
+`&self mut`. 
 
 Never form a Rust reference to the wrapped C object. Borrowed handles contain pointers and
 carry lifetimes; references to handles cover Rust-owned handle storage only. Keep raw
@@ -103,6 +107,11 @@ translated.
 
 `Field:` applies to a field only. It is what a field accessor emitted on a wrapped type
 carries, and campaign coverage counts distinct `type.field` paths that reached one.
+
+`Wraps` and `Replaces` apply to symbols and types. `Wraps: <name>{.<field>}` is for anonymous
+embedded structs. For release/clone strategies `<name>` takes the name of the lifecycle routine called by the
+strategy via FFI. Emit anchors for the raw/typed lifecycle routines when implementing the Drop/Clone
+that calls them.
 
 Duplicate a filled anchor only when several wrappers intentionally represent the same
 item. Existing filled anchors are completed work unless the current objective deliberately

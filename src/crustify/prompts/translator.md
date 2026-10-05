@@ -146,6 +146,16 @@ allocation and destruction, use native Rust lifecycle operations.
 Promoting construction-phase storage into an owner is unsafe. Isolate the operation and
 prove every required invariant before promotion.
 
+Wrap every discovered constructor with the type: an allocating constructor as a safe
+function returning the owner, whether C returns the object or stores it through an
+out-parameter, with a C status becoming a `Result`; an initializing one as a safe function
+returning the initialized value, taking storage only when C requires that memory (a
+parent's field, or an address C retains). Keep an argument whose type is not yet wrapped
+as a narrow documented raw seam, which the run wrapping that type replaces.
+
+Lifecycle routines are also scheduled as free symbols; the symbol route skips those a type
+run already emitted.
+
 ### 4. Field accessors
 
 Derive each accessor from ownership, mutability, nullability, cardinality, and lifetime
@@ -191,7 +201,7 @@ retain compatible storage and report the blocker.
 
 ## Workflow - symbol route
 
-### 1. Functions and globals
+### 1. Functions
 
 Emit `pub fn`; use `pub unsafe fn` only when no safe type-level contract can express the
 caller obligation. Use typed ownership wrappers for arguments and returns. Reconstruct raw
@@ -199,6 +209,9 @@ pointers at the FFI call only, in a small documented unsafe block.
 
 Separate moved, borrowed, mutable, nullable, scalar, array, and type-erased variants when
 one signature cannot express all valid contracts.
+
+Bind a method to the type that it implements by emiting it in a `impl T` block on the type;
+it takes `&self` or `&mut self` as its first argument. Keep free functions free.
 
 Use a standard-library operation directly when it is equivalent and no C-interoperability
 requirement remains. Prefer stateless ownership. Carry runtime state only when destruction
@@ -208,7 +221,25 @@ Use safe translated dependencies. Keep a documented raw pointer only for an unav
 higher-layer wrapper. Update lower-layer raw surfaces when the new safe contract replaces
 them.
 
-### 2. Callbacks
+Lifecycle primitives that are typed, type-erased or for strings might have been scheduled in your
+worklist, although they implement release/clone/construct strategies/policies emited in a previous
+run; if so do not emit wrappers for them again.
+
+### 2. Globals
+
+Wrap a global as a `'static` borrow, never as an owner. Derive its access discipline from every C access:
+
+- immutable after initialization: a shared handle;
+- synchronized by C: the matching safe synchronization (an atomic, or guards handing out
+  the shared or exclusive handle under the lock), never discarding a lock's status;
+- otherwise mutable: `unsafe` accessors that exclude concurrent access; report it;
+- thread-local: a handle borrowed for a closure on the current thread, neither `Send` nor
+  `Sync`.
+
+A lock counts only if every access takes it and it rejects same-thread re-entry. While C
+consumers reference the symbol, keep its C layout and synchronization protocol.
+
+### 3. Callbacks
 
 Inspect the typedef and all call sites. Emit a callable handle with safe argument and
 result wrappers. When call sites use different ownership distributions, emit a distinctly
@@ -216,13 +247,13 @@ named safe wrapper for each distribution over the shared C function-pointer type
 
 Wrap an inline function pointer when no ownership-compatible callable wrapper exists.
 
-### 3. Raw lifetime strategies
+### 4. Raw lifetime strategies
 
-For every discovered `void` or string releaser, disposer, or cloner, emit the strategy
-required by owned pointers. Home it with the primitive's translation unit. Do not also
-expose the primitive as an ordinary safe function.
+For every discovered type-erased releaser, disposer, or cloner for type-erased `void` or string handles, emit policies / strategies
+that call the FFI primitve so that owned string / type-erased handles can bind them to implement RAII.
+Home it with the primitive's translation unit. Do not also expose the primitive as an ordinary safe function.
 
-### 4. Porting symbols
+### 5. Porting symbols
 
 For `port`, translate the implementation to safe idiomatic Rust and preserve observable
 behaviour. Re-export it to C according to our coding conventions while C consumers
@@ -248,6 +279,10 @@ Classify tests according to the following scheme:
   stated safety contract; 
 - `equiv` ensure the safe public API matches the C-observable behavior, mainly by passing equivalence assertions;
 - `unit` ensure the internal API routines behave correctly, mainly by passing Rust assertions.
+
+Construct test objects through safe constructors. While a type has none, adopt the raw
+constructor's result in one documented unsafe fixture per type, and replace the fixture
+once the safe constructor exists.
 
 ### UB tests
 
@@ -474,8 +509,8 @@ On a non-fast-forward rejection:
 2. rerun validation; and
 3. retry the atomic fast-forward.
 
-Never reset, force-update, move the wave branch backward, or push to a remote. Remove the
-worktree only after landing succeeds.
+Never reset, force-update, move the wave branch backward, or push to a remote.
+Also, do not remove the worktree after landing; its the orchestrator job.
 
 ---
 

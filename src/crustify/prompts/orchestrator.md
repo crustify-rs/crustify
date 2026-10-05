@@ -144,7 +144,7 @@ campaign already completed.
 
 Plan waves and batches per sub-campaign and record them in `schedule.json`. Waves execute
 sequentially, bottom-up, producers before consumers; batches execute in parallel according
-to the configured parallelism setting.
+to the configured parallelism setting. 
 
 For a `wrap` campaign, every batch uses `objective: wrap`.
 
@@ -152,16 +152,18 @@ For a `port` campaign:
 
 - a selected symbol uses `port` immediately;
 - a selected type uses `wrap` while C reads its fields, then `port` after those readers
-  are removed;
-- a dependency outside the selected migration set uses `wrap`; and
-- a filled anchor may be revisited only when escalating that item to `port` or running
-  `review`.
+  are removed; and
+- a dependency outside the selected migration set uses `wrap`.
 
 See `docs/translate/schemas/batch.md` for schema format, field meaning, routing and the
 raw-lifetime rule. Every field shown is required.
 
-Home each batch's set of items using the established coding conventions below; scaffold
-them lazily on disk before launch.
+Home each batch's set of items using the established coding conventions; scaffold
+them lazily on disk only before launch.
+
+Note: although raw and typed lifecycle primitives are discovered on the fly during the raw sub-campaigns
+and type batches, respectively, leave them part of the original `schedule.json` so they schedule
+normally as free symbols. Translators will then be instructed to ignore them.
 
 
 #### 6. Rust tree scaffolding
@@ -235,7 +237,7 @@ For each scheduled batch:
 - symlink any gitignored state from the main checkout that is shared and required for a
   complete crustify tree: `crustify/.providers`, etc.
 
-Translators are responsible for removing their worktrees once successfully landing their changesets.
+You are responsible for removing batch worktrees once translators successfully land their changesets.
 
 
 #### 3. Launch and monitoring
