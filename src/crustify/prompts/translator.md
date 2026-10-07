@@ -137,26 +137,21 @@ For a synthetic type generator:
 ### 3. Lifecycle
 
 Implement every ownership variant supported by the analysis findings. Prefer stateless,
-layout-compatible, statically selected drop and clone strategies when state is recoverable
-from the object. Carry runtime state only when destruction or cloning needs external data.
+layout-compatible, statically selected lifecycle and clone strategies when state is recoverable
+from the object. Carry runtime state only when construction, destruction or cloning needs external
+data.
+
+Bind a type's constructor and init routines with its lifecycle policy so that it can be
+exported as a safe function that returns the fully-formed object, where possible. Keep an
+argument whose type is not yet wrapped as a narrow documented raw seam, which the run
+wrapping that type replaces.
 
 Keep C lifecycle primitives while C can allocate or free the storage. If Rust fully owns
 allocation and destruction, use native Rust lifecycle operations.
 
-Promoting construction-phase storage into an owner is unsafe. Isolate the operation and
-prove every required invariant before promotion.
-
-Wrap every discovered constructor with the type: an allocating constructor as a safe
-function returning the owner, whether C returns the object or stores it through an
-out-parameter, with a C status becoming a `Result`; an initializing one as a safe function
-returning the initialized value, taking storage only when C requires that memory (a
-parent's field, or an address C retains). Keep an argument whose type is not yet wrapped
-as a narrow documented raw seam, which the run wrapping that type replaces.
-
-When consumers allocate the object for C to take over and free, its public constructor takes
-the formed value; add a type-specific constructor only where C requires more (size fields,
-padding). A buffer C takes ownership of goes through a constructor that meets that API's
-requirements, never a bare buffer owner.
+Promoting construction-phase storage into an owner is unsafe; aim to encapsulate it in the
+type's safe constructor, so consumers of the public API don't have to call `assume_init`
+in unsafe blocks.
 
 Lifecycle routines are also scheduled as free symbols; the symbol route skips those a type
 run already emitted.
@@ -227,7 +222,7 @@ Use safe translated dependencies. Keep a documented raw pointer only for an unav
 higher-layer wrapper. Update lower-layer raw surfaces when the new safe contract replaces
 them.
 
-Lifecycle primitives that are typed, type-erased or for strings might have been scheduled in your
+Lifecycle primitives for typed, type-erased or string handles might have been scheduled in your
 worklist, although they implement release/clone/construct strategies/policies emited in a previous
 run; if so do not emit wrappers for them again.
 
@@ -255,17 +250,12 @@ Wrap an inline function pointer when no ownership-compatible callable wrapper ex
 
 ### 4. Raw lifetime strategies
 
-For every discovered type-erased releaser, disposer, or cloner for type-erased `void` or string handles, emit
-generic policies / strategies that call the primitive via FFI, so that owned string or generic array/singleton
-handles can bind them to implement RAII. Do not also expose the primitive as an ordinary safe function.
+When objective is `raw-lifetime` look for releaser, disposer, cloner, and allocator/constructor routines
+for type-erased `void` or string handles, and emit generic policies / strategies that call the primitive via FFI,
+so that owned string or generic array/singleton handles can bind them to implement RAII. Do not
+also expose the primitive as an ordinary safe function.
 
-Public allocation takes a value and returns it fully initialized: a generic constructor where
-the allocator can carry the value's whole lifecycle (its destructor, alignment and thread
-bounds), a typed one otherwise. Raw storage for a single object, uninitialized or type-erased,
-stays crate-private behind those constructors. Arrays are the exception: hand them out as
-uninitialized elements with a safe initializer, or initialized for plain data. A routine
-returning a NUL-terminated string yields a string owner; a raw byte allocator yields a byte
-buffer.
+Emit separate policies for singleton and array handles. 
 
 Home each with the primitive's translation unit.
 
@@ -399,14 +389,10 @@ an equivalence reproducer through a failed comparison.
 ### 1. Lifecycle discovery
 
 For a workset that contains `type` or `raw-lifetime` kinds, verify that their existing
-lifetime primitives are complete and none were missed in the previous runs.
+lifetime primitives are complete and none were missed by the previous runs.
 
 Add any missing lifetime representations and file a report for each gap in
 `crustify/reviews/<artifact-dir>/lifecycle/<item-slug>` that describes your finding.
-
-A primitive used crate-privately behind a typed or value-taking constructor is represented; do
-not expose raw single-object allocation to fill a gap, and report a public one as a defect
-under `unsafe/`.
 
 ### 2. Safe boundary
 
