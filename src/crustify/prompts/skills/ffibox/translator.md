@@ -13,19 +13,15 @@ while preserving the same seam and safety-comment discipline. Annotate a
 hand-written implementation with the `/// Handwritten` anchor so we can
 account it later.
 
-Use `CArc` only when a clone is the same pointer with a higher count (`CRefClone`); an API
-whose reference is a new allocation per holder (e.g. FFmpeg's `av_buffer_ref`) is `CBox` + `CDupClone`, with
-writability checked before any mutable view of the shared bytes.
-
 ---
 
 ## Workflow - symbols
 
 ### 3. Raw lifetime strategies
 
-`CBox` and `CArc` own only `CCell` layout types: a single C struct is a `CBox<Foo, P>` from a
-value constructor that writes a formed `Foo` (e.g. `Foo::default()` plus setters) into the
-allocation, never raw storage. Arrays are `CVec<MaybeUninit<T>, P>` with a safe initializer, or
+`CBox` and `CArc` own only `CCell` layout types: a single C struct is a `CBox<Foo, P>` with matching
+constructor / destructor pairs, which asserts the right validity claim based on the allocator (e.g. zeroed
+coupled with `CZeroable` vs. raw coupled with `MaybeUninit`). Arrays are `CVec<MaybeUninit<T>, P>` with a safe initializer, or
 `CVec<T, P>` for `CPlainElem`; copies into the allocator use `CVec::from_slice` /
 `CSlice::to_cvec`, and its `CLenClone` declares `ALIGN`. A Rust value whose release C drives (a
 refcounted user payload) gets a hand-written owner whose free callback runs the value's
