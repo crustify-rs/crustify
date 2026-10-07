@@ -153,6 +153,11 @@ returning the initialized value, taking storage only when C requires that memory
 parent's field, or an address C retains). Keep an argument whose type is not yet wrapped
 as a narrow documented raw seam, which the run wrapping that type replaces.
 
+When consumers allocate the object for C to take over and free, its public constructor takes
+the formed value; add a type-specific constructor only where C requires more (size fields,
+padding). A buffer C takes ownership of goes through a constructor that meets that API's
+requirements, never a bare buffer owner.
+
 Lifecycle routines are also scheduled as free symbols; the symbol route skips those a type
 run already emitted.
 
@@ -182,7 +187,7 @@ Accessor requirements:
 
 Use safe wrappers for translated dependent types and callbacks. Find real release
 strategies for strings, arrays, and erased owners. Replace lower-layer temporary raw
-references made obsolete by this wrapper. Keep a documented raw gap only for an
+references made obsolete by this wrapper (cut SCCs). Keep a documented raw gap only for an
 unavailable higher-layer dependency.
 
 If an inline function-pointer helper lacks an ownership-compatible wrapper, emit one with
@@ -208,7 +213,8 @@ caller obligation. Use typed ownership wrappers for arguments and returns. Recon
 pointers at the FFI call only, in a small documented unsafe block.
 
 Separate moved, borrowed, mutable, nullable, scalar, array, and type-erased variants when
-one signature cannot express all valid contracts.
+one signature cannot express all valid contracts. Prefer generics for methods that take/return
+type-erased arguments.
 
 Bind a method to the type that it implements by emiting it in a `impl T` block on the type;
 it takes `&self` or `&mut self` as its first argument. Keep free functions free.
@@ -249,9 +255,19 @@ Wrap an inline function pointer when no ownership-compatible callable wrapper ex
 
 ### 4. Raw lifetime strategies
 
-For every discovered type-erased releaser, disposer, or cloner for type-erased `void` or string handles, emit policies / strategies
-that call the FFI primitve so that owned string / type-erased handles can bind them to implement RAII.
-Home it with the primitive's translation unit. Do not also expose the primitive as an ordinary safe function.
+For every discovered type-erased releaser, disposer, or cloner for type-erased `void` or string handles, emit
+generic policies / strategies that call the primitive via FFI, so that owned string or generic array/singleton
+handles can bind them to implement RAII. Do not also expose the primitive as an ordinary safe function.
+
+Public allocation takes a value and returns it fully initialized: a generic constructor where
+the allocator can carry the value's whole lifecycle (its destructor, alignment and thread
+bounds), a typed one otherwise. Raw storage for a single object, uninitialized or type-erased,
+stays crate-private behind those constructors. Arrays are the exception: hand them out as
+uninitialized elements with a safe initializer, or initialized for plain data. A routine
+returning a NUL-terminated string yields a string owner; a raw byte allocator yields a byte
+buffer.
+
+Home each with the primitive's translation unit.
 
 ### 5. Porting symbols
 
@@ -388,6 +404,10 @@ lifetime primitives are complete and none were missed in the previous runs.
 Add any missing lifetime representations and file a report for each gap in
 `crustify/reviews/<artifact-dir>/lifecycle/<item-slug>` that describes your finding.
 
+A primitive used crate-privately behind a typed or value-taking constructor is represented; do
+not expose raw single-object allocation to fill a gap, and report a public one as a defect
+under `unsafe/`.
+
 ### 2. Safe boundary
 
 Verify the public API of your workset for any remaining unsafe annotations and raw
@@ -408,7 +428,9 @@ emitting a reproducer that triggers one of the enabled sanitizers from Rust code
 annotate reproducers targettinng the safe public API with `#[forbid(unsafe_code)]`; reproducers 
 targeting the unsafe API should honor the safety requirement. Place them in 
 `crustify/reviews/<artifact-dir>/ub_<safe or unsafe>/<defect-slug>` along with a report that describes
-your finding, including a trace of the sanitizer crash.
+your finding, including a trace of the sanitizer crash. The unsafe surface should only include
+API that the workset adds; if the workset did not include any API item that was made unsafe
+then there's nothing to evaluate.
 
 Emit a patch for every true UB defect that you found and turn its reproducer into a Cargo
 integration test `tests/ub_safe` or `tests/ub_unsafe` suite to catch future regressions. The regression
