@@ -20,6 +20,8 @@ import json
 import os
 import shutil
 import subprocess
+import sys
+import tomllib
 from pathlib import Path
 
 # INSIDE the package, not beside it. `parents[1]` used to reach a sibling of
@@ -27,6 +29,14 @@ from pathlib import Path
 # happen to resolve -- and a real `pip install` does not, because package data
 # cannot ship a sibling. The crate travels with the package now.
 _DRIVER_CRATE = Path(__file__).resolve().parent / "unsafe_driver"
+
+# The dated nightly the driver is written against. A `rustc_private` driver
+# compiles only against the compiler internals it was ported to, so a floating
+# `nightly` breaks the scan whenever the toolchain updates. Both the driver and
+# the measured workspace build use this channel; `cargo +nightly` would
+# override the crate's `rust-toolchain.toml` and defeat the pin.
+_TOOLCHAIN = tomllib.loads(
+    (_DRIVER_CRATE / "rust-toolchain.toml").read_text())["toolchain"]["channel"]
 
 # Count fields summed across the per-crate emissions, and site arrays
 # concatenated. The set the driver emits; kept explicit so a field added there
@@ -88,8 +98,8 @@ def _collect_emissions(stdout: str) -> tuple[dict, list[dict], int]:
 def _driver_bin() -> Path:
     """Build the driver if it is not current, and return its path.
 
-    Needs nightly with ``rustc-dev`` and ``llvm-tools`` — pinned by the crate's
-    own ``rust-toolchain.toml``.
+    Needs the dated nightly in the crate's own ``rust-toolchain.toml``, with
+    ``rustc-dev`` and ``llvm-tools``.
 
     ALWAYS asks cargo, rather than reusing whatever binary is on disk. A
     `rustc_private` driver links against the exact compiler it was built with,
@@ -109,8 +119,10 @@ def _driver_bin() -> Path:
         raise DriverUnavailable(
             "the driver is not built and `cargo` is not on PATH")
     if not bin_path.is_file():
-        print("[crustify-audit] building the HIR driver (first run only)…")
-    r = subprocess.run(["cargo", "+nightly", "build"], cwd=_DRIVER_CRATE,
+        # stderr: `scan-unsafe --json` owns stdout.
+        print("[crustify-audit] building the HIR driver (first run only)…",
+              file=sys.stderr)
+    r = subprocess.run(["cargo", f"+{_TOOLCHAIN}", "build"], cwd=_DRIVER_CRATE,
                        capture_output=True, text=True)
     if r.returncode != 0:
         raise DriverUnavailable(f"driver build failed:\n{r.stderr[-1500:]}")
@@ -149,10 +161,12 @@ def measure(ws: Path, names: list[str] | None = None) -> tuple[dict, list[dict]]
     crate. Entries therefore retain their crate name.
     """
     driver = _driver_bin()
-    sysroot = subprocess.run(["rustc", "+nightly", "--print", "sysroot"],
+    sysroot = subprocess.run(["rustc", f"+{_TOOLCHAIN}", "--print", "sysroot"],
                              capture_output=True, text=True).stdout.strip()
     if not sysroot:
-        raise DriverUnavailable("no nightly toolchain (`rustc +nightly`)")
+        raise DriverUnavailable(
+            f"no {_TOOLCHAIN} toolchain (`rustup toolchain install {_TOOLCHAIN} "
+            "--component rustc-dev --component llvm-tools`)")
     _bust_cache(ws)
 
     env = dict(os.environ)
@@ -164,7 +178,7 @@ def measure(ws: Path, names: list[str] | None = None) -> tuple[dict, list[dict]]
         env["UM_MODE"] = "seed"
         env["UM_SEED_NAME"] = " ".join(names)
 
-    r = subprocess.run(["cargo", "+nightly", "build"], cwd=ws, env=env,
+    r = subprocess.run(["cargo", f"+{_TOOLCHAIN}", "build"], cwd=ws, env=env,
                        capture_output=True, text=True)
     if r.returncode != 0:
         raise DriverUnavailable(
