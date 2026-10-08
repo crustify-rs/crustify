@@ -30,7 +30,7 @@ use rustc_abi::ExternAbi;
 use rustc_driver::{Callbacks, Compilation};
 use rustc_hir as hir;
 use rustc_hir::def::DefKind;
-use rustc_hir::intravisit::{self, Visitor, VisitorExt};
+use rustc_hir::intravisit::{self, Visitor};
 use rustc_middle::hir::nested_filter;
 use rustc_middle::middle::codegen_fn_attrs::CodegenFnAttrFlags;
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeckResults};
@@ -1053,14 +1053,14 @@ impl<'a, 'tcx> Visitor<'tcx> for RawPtrDeclVisitor<'a, 'tcx> {
     }
 
     fn visit_ty(&mut self, t: &'tcx hir::Ty<'tcx, hir::AmbigArg>) {
-        if let hir::TyKind::Ptr(p) = t.kind {
+        if let hir::TyKind::Ptr(pointee, _) = t.kind {
             let mut hits = HashSet::new();
             NamedPathVisitor {
                 tcx: self.tcx,
                 wanted: self.wanted,
                 hits: &mut hits,
             }
-            .visit_ty_unambig(p.ty);
+            .visit_ty_unambig(pointee);
             let site = span_site(self.tcx, t.span);
             for name in hits {
                 self.sites.entry(name).or_default().push(site.clone());
@@ -1129,7 +1129,7 @@ struct AnyRawPtrDeclVisitor<'a, 'tcx> {
 }
 impl<'a, 'tcx> Visitor<'tcx> for AnyRawPtrDeclVisitor<'a, 'tcx> {
     fn visit_ty(&mut self, t: &'tcx hir::Ty<'tcx, hir::AmbigArg>) {
-        if matches!(t.kind, hir::TyKind::Ptr(_)) {
+        if matches!(t.kind, hir::TyKind::Ptr(..)) {
             self.sites.push(span_site(self.tcx, t.span));
         }
         intravisit::walk_ty(self, t);
@@ -1319,12 +1319,12 @@ impl<'a, 'tcx> Visitor<'tcx> for WrapperSliceVisitor<'a, 'tcx> {
     }
 
     fn visit_ty(&mut self, t: &'tcx hir::Ty<'tcx, hir::AmbigArg>) {
-        if let hir::TyKind::Ref(_, borrowed) = t.kind {
-            if let hir::TyKind::Slice(element) = borrowed.ty.kind {
+        if let hir::TyKind::Ref(_, borrowed, mutbl) = t.kind {
+            if let hir::TyKind::Slice(element) = borrowed.kind {
                 if let Some(wrapper) = hir_adt_def(self.tcx, element) {
                     if let Some(names) = self.wrappers.get(&wrapper) {
                         let site = span_site(self.tcx, t.span);
-                        let sites = if borrowed.mutbl == hir::Mutability::Mut {
+                        let sites = if mutbl == hir::Mutability::Mut {
                             &mut self.mutable
                         } else {
                             &mut self.shared
@@ -1827,5 +1827,5 @@ fn main() {
         args.push("--sysroot".into());
         args.push(sysroot);
     }
-    rustc_driver::run_compiler(&args, &mut MetricsCallbacks);
+    rustc_driver::compiler_entrypoint(&args, &mut MetricsCallbacks);
 }
