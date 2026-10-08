@@ -100,7 +100,8 @@ _OPENAI_APIKEY = _provider_block(
 # API), so this table is the whitelist.
 #
 # `codex debug models` reports the accepted set per model; for the gpt-5.6
-# family it is low | medium | high | xhigh | max | ultra. Note that codex's
+# family it is low | medium | high | xhigh | max | ultra, and the gpt-6
+# family accepts at least low | medium | high | xhigh | max. Note that codex's
 # catalog names them `gpt-5.6-{sol,terra,luna}` — a bare `gpt-5.6` reaches the
 # API fine but warns "Model metadata not found. Defaulting to fallback
 # metadata", so its context window and auto-compact limits are guesses.
@@ -110,12 +111,20 @@ _REASONING_EFFORT = {
     "gpt-5.6-sol": "high",
     "gpt-5.6-terra": "high",
     "gpt-5.6-luna": "high",
+    "gpt-6-sol": "high",
+    "gpt-6-astra": "high",
+    "gpt-6-luna": "high",
+    "gpt-6.1-sol": "high",
     # OpenRouter's canonical OpenAI routes retain the vendor prefix after the
     # outer provider component is resolved.
     "openai/gpt-5.6": "high",
     "openai/gpt-5.6-sol": "high",
     "openai/gpt-5.6-terra": "high",
     "openai/gpt-5.6-luna": "high",
+    "openai/gpt-6-sol": "high",
+    "openai/gpt-6-astra": "high",
+    "openai/gpt-6-luna": "high",
+    "openai/gpt-6.1-sol": "high",
     # OpenRouter route. Not in codex's catalog either, so its fallback is
     # `none` — the worst case the comment above describes. `high` verified
     # accepted end to end against the OpenRouter responses API.

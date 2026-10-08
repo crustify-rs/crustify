@@ -114,6 +114,15 @@ class ProviderRoutingTests(unittest.TestCase):
 
         self.assertIn('model_reasoning_effort="high"', captured["command"])
 
+    def test_openrouter_gpt_6_models_get_high_reasoning_effort(self) -> None:
+        from crustify.agents.backends.codex_cli import _REASONING_EFFORT
+
+        for model in ("gpt-6-sol", "gpt-6-astra", "gpt-6-luna",
+                      "gpt-6.1-sol"):
+            route = resolve(f"openrouter/openai/{model}")
+            self.assertEqual(_REASONING_EFFORT.get(route.model), "high", model)
+            self.assertEqual(_REASONING_EFFORT.get(model), "high", model)
+
     def test_auditor_resolves_the_shared_backend_registry(self) -> None:
         from crustify_audit.agents.base import AuditAgent
         from crustify_audit.layout import Layout
