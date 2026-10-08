@@ -72,8 +72,13 @@ the campaign's.
   symbols it was scheduled for; `—` where it was scheduled for none
 - `+LoC` — the landed batch's Rust-source insertions/deletions relative to its
   wave's base
-- `+UB safe tests` / `+UB unsafe tests` / `+equiv tests` / `+unit tests` — tests
-  added by that landed batch; each parenthesized pair is its C/Rust
+- `cov (C/Rust)` — in a `Batches` table, the absolute line coverage right after
+  that batch landed, from ONE run of all four test workloads together (their
+  union): C over the sub-campaign link unit's TUs in the `coverage` prebuild,
+  Rust over the authored non-test sources. Its **Σ** cell is the coverage at the
+  table's last landing, not a sum
+- `+UB safe tests` / `+UB unsafe tests` / `+equiv tests` / `+unit tests` — in a
+  `Batches …: tests` table, the tests added by that landed batch; each parenthesized pair is its C/Rust
   line-coverage change in percentage points. Negative coverage deltas are valid
   when the landed source adds more executable lines than the new tests cover
 - `+lifecycle` … `+misc` — in a `Batches — review: PoC + reports` table, the
@@ -165,28 +170,55 @@ Implementation `<provider>/<model>` via `<backend>`; review
 
 `<provider>/<model>` via `<backend>`.
 
-| wave | batch | types | fields | +LoC | +UB safe tests (+C/+Rust pp) | +UB unsafe tests (+C/+Rust pp) | +equiv tests (+C/+Rust pp) | +unit tests (+C/+Rust pp) | +unsafe fn smell | +raw-ptr smell | $ | wall | $/type | $/field |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-|`<n>`|`<n>`| `<n>` | `<n>` |`+<n>/-<n>`|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)| `±<n>` | `±<n>` | `$<n>` | `<n>m<n>s` | `$<n>` | `$<n>` |
-| **Σ** |  | **`<n>`** | **`<n>`** | **`+<n>/-<n>`** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`±<n>`** | **`±<n>`** | **`$<n>`** | — | **`$<n>`** | **`$<n>`** |
+| wave | batch | types | fields | +LoC | cov (C/Rust) | +unsafe fn smell | +raw-ptr smell | $ | wall | $/type | $/field |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+|`<n>`|`<n>`| `<n>` | `<n>` |`+<n>/-<n>`| `<n>`% / `<n>`% | `±<n>` | `±<n>` | `$<n>` | `<n>m<n>s` | `$<n>` | `$<n>` |
+| **Σ** |  | **`<n>`** | **`<n>`** | **`+<n>/-<n>`** | **`<n>`% / `<n>`%** | **`±<n>`** | **`±<n>`** | **`$<n>`** | — | **`$<n>`** | **`$<n>`** |
+
+### Batches — wrap: tests
+
+`<provider>/<model>` via `<backend>`.
+
+| wave | batch | +UB safe tests (+C/+Rust pp) | +UB unsafe tests (+C/+Rust pp) | +equiv tests (+C/+Rust pp) | +unit tests (+C/+Rust pp) |
+|---|---|---|---|---|---|
+|`<n>`|`<n>`|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|
+| **Σ** |  | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** |
 
 ### Batches — port
 
 `<provider>/<model>` via `<backend>`.
 
-| wave | batch | types | fields | +LoC | +UB safe tests (+C/+Rust pp) | +UB unsafe tests (+C/+Rust pp) | +equiv tests (+C/+Rust pp) | +unit tests (+C/+Rust pp) | +unsafe fn smell | +raw-ptr smell | $ | wall | $/type | $/field |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-|`<n>`|`<n>`| `<n>` | `<n>` |`+<n>/-<n>`|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)| `±<n>` | `±<n>` | `$<n>` | `<n>m<n>s` | `$<n>` | `$<n>` |
-| **Σ** |  | **`<n>`** | **`<n>`** | **`+<n>/-<n>`** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`±<n>`** | **`±<n>`** | **`$<n>`** | — | **`$<n>`** | **`$<n>`** |
+| wave | batch | types | fields | +LoC | cov (C/Rust) | +unsafe fn smell | +raw-ptr smell | $ | wall | $/type | $/field |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+|`<n>`|`<n>`| `<n>` | `<n>` |`+<n>/-<n>`| `<n>`% / `<n>`% | `±<n>` | `±<n>` | `$<n>` | `<n>m<n>s` | `$<n>` | `$<n>` |
+| **Σ** |  | **`<n>`** | **`<n>`** | **`+<n>/-<n>`** | **`<n>`% / `<n>`%** | **`±<n>`** | **`±<n>`** | **`$<n>`** | — | **`$<n>`** | **`$<n>`** |
+
+### Batches — port: tests
+
+`<provider>/<model>` via `<backend>`.
+
+| wave | batch | +UB safe tests (+C/+Rust pp) | +UB unsafe tests (+C/+Rust pp) | +equiv tests (+C/+Rust pp) | +unit tests (+C/+Rust pp) |
+|---|---|---|---|---|---|
+|`<n>`|`<n>`|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|
+| **Σ** |  | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** |
 
 ### Batches — review
 
 `<provider>/<model>` via `<backend>`.
 
-| wave | batch | types | +LoC | +UB safe tests (+C/+Rust pp) | +UB unsafe tests (+C/+Rust pp) | +equiv tests (+C/+Rust pp) | +unit tests (+C/+Rust pp) | +unsafe fn smell | +raw-ptr smell | rv loc | rv $ | rv wall | rv $/type |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-|`<n>`|`<n>`| `<n>` |`+<n>/-<n>`|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)| `±<n>` | `±<n>` | `+<n>/-<n>` | `$<n>` | `<n>m<n>s` | `$<n>` |
-| **Σ** |  | **`<n>`** | **`+<n>/-<n>`** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`±<n>`** | **`±<n>`** | **`+<n>/-<n>`** | **`$<n>`** | — | **`$<n>`** |
+| wave | batch | types | +LoC | cov (C/Rust) | +unsafe fn smell | +raw-ptr smell | rv loc | rv $ | rv wall | rv $/type |
+|---|---|---|---|---|---|---|---|---|---|---|
+|`<n>`|`<n>`| `<n>` |`+<n>/-<n>`| `<n>`% / `<n>`% | `±<n>` | `±<n>` | `+<n>/-<n>` | `$<n>` | `<n>m<n>s` | `$<n>` |
+| **Σ** |  | **`<n>`** | **`+<n>/-<n>`** | **`<n>`% / `<n>`%** | **`±<n>`** | **`±<n>`** | **`+<n>/-<n>`** | **`$<n>`** | — | **`$<n>`** |
+
+### Batches — review: tests
+
+`<provider>/<model>` via `<backend>`.
+
+| wave | batch | +UB safe tests (+C/+Rust pp) | +UB unsafe tests (+C/+Rust pp) | +equiv tests (+C/+Rust pp) | +unit tests (+C/+Rust pp) |
+|---|---|---|---|---|---|
+|`<n>`|`<n>`|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|
+| **Σ** |  | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** |
 
 ### Batches — review: PoC + reports
 
@@ -203,20 +235,39 @@ Implementation `<provider>/<model>` via `<backend>`; review
 
 `<provider>/<model>` via `<backend>`.
 
-| wave | batch | objective | symbols | loc | +LoC | +UB safe tests (+C/+Rust pp) | +UB unsafe tests (+C/+Rust pp) | +equiv tests (+C/+Rust pp) | +unit tests (+C/+Rust pp) | +unsafe fn smell | +raw-ptr smell | $ | wall | $/symbol | $/loc |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-|`<n>`|`<n>`| wrap | `<n>` | `<n>` |`+<n>/-<n>`|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)| `±<n>` | `±<n>` | `$<n>` | `<n>m<n>s` | `$<n>` | `$<n>` |
-|`<n>`|`<n>`| port | `<n>` | `<n>` |`+<n>/-<n>`|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)| `±<n>` | `±<n>` | `$<n>` | `<n>m<n>s` | `$<n>` | `$<n>` |
-| **Σ** |  |  | **`<n>`** | **`<n>`** | **`+<n>/-<n>`** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`±<n>`** | **`±<n>`** | **`$<n>`** | — | **`$<n>`** | **`$<n>`** |
+| wave | batch | objective | symbols | loc | +LoC | cov (C/Rust) | +unsafe fn smell | +raw-ptr smell | $ | wall | $/symbol | $/loc |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+|`<n>`|`<n>`| wrap | `<n>` | `<n>` |`+<n>/-<n>`| `<n>`% / `<n>`% | `±<n>` | `±<n>` | `$<n>` | `<n>m<n>s` | `$<n>` | `$<n>` |
+|`<n>`|`<n>`| port | `<n>` | `<n>` |`+<n>/-<n>`| `<n>`% / `<n>`% | `±<n>` | `±<n>` | `$<n>` | `<n>m<n>s` | `$<n>` | `$<n>` |
+| **Σ** |  |  | **`<n>`** | **`<n>`** | **`+<n>/-<n>`** | **`<n>`% / `<n>`%** | **`±<n>`** | **`±<n>`** | **`$<n>`** | — | **`$<n>`** | **`$<n>`** |
+
+### Batches: tests
+
+`<provider>/<model>` via `<backend>`.
+
+| wave | batch | +UB safe tests (+C/+Rust pp) | +UB unsafe tests (+C/+Rust pp) | +equiv tests (+C/+Rust pp) | +unit tests (+C/+Rust pp) |
+|---|---|---|---|---|---|
+|`<n>`|`<n>`|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|
+|`<n>`|`<n>`|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|
+| **Σ** |  | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** |
 
 ### Batches — review
 
 `<provider>/<model>` via `<backend>`.
 
-| wave | batch | symbols | +LoC | +UB safe tests (+C/+Rust pp) | +UB unsafe tests (+C/+Rust pp) | +equiv tests (+C/+Rust pp) | +unit tests (+C/+Rust pp) | +unsafe fn smell | +raw-ptr smell | rv loc | rv $ | rv wall | rv $/symbol |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-|`<n>`|`<n>`| `<n>` |`+<n>/-<n>`|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)| `±<n>` | `±<n>` | `+<n>/-<n>` | `$<n>` | `<n>m<n>s` | `$<n>` |
-| **Σ** |  | **`<n>`** | **`+<n>/-<n>`** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`±<n>`** | **`±<n>`** | **`+<n>/-<n>`** | **`$<n>`** | — | **`$<n>`** |
+| wave | batch | symbols | +LoC | cov (C/Rust) | +unsafe fn smell | +raw-ptr smell | rv loc | rv $ | rv wall | rv $/symbol |
+|---|---|---|---|---|---|---|---|---|---|---|
+|`<n>`|`<n>`| `<n>` |`+<n>/-<n>`| `<n>`% / `<n>`% | `±<n>` | `±<n>` | `+<n>/-<n>` | `$<n>` | `<n>m<n>s` | `$<n>` |
+| **Σ** |  | **`<n>`** | **`+<n>/-<n>`** | **`<n>`% / `<n>`%** | **`±<n>`** | **`±<n>`** | **`+<n>/-<n>`** | **`$<n>`** | — | **`$<n>`** |
+
+### Batches — review: tests
+
+`<provider>/<model>` via `<backend>`.
+
+| wave | batch | +UB safe tests (+C/+Rust pp) | +UB unsafe tests (+C/+Rust pp) | +equiv tests (+C/+Rust pp) | +unit tests (+C/+Rust pp) |
+|---|---|---|---|---|---|
+|`<n>`|`<n>`|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|
+| **Σ** |  | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** |
 
 ### Batches — review: PoC + reports
 
