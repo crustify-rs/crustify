@@ -268,8 +268,8 @@ orchestrator must not translate the failed worklist or discard a competing landi
 
 #### 4. Review waves
 
-Every translated wave may be followed by agentic adversarial review before a consumer
-starts.
+When review is enabled, every translated wave is followed by its review wave before the next
+translation wave starts.
 
 Reviewers inspect the merged wave for ownership, lifetime, thread-safety, error-mapping,
 and C-equivalence failures; add focused regressions; fix the findings; and land through
@@ -280,12 +280,22 @@ Create a review wave's artifact dir and integration branch similarly to a transl
 - integration branch:
   `crustify/reviews/<campaign-id>/<link-unit>/<subsystem>/wave-<index>`
 
-Prepare an artifact dir, branch, and worktree for each batch in that wave, and use the same
-item projection from its `batch.json` with `objective: review`:
+A review wave holds at most two batches, whatever the number of translation batches: one
+with every type item the translated wave scheduled, and one with every symbol and callback
+item, each with `objective: review` and the items' `batch.json` projections unchanged, types
+first. A raw-lifetime wave's review batch mirrors its single batch. Review caps scale with the
+wave: a review batch holds its route's whole workset. Prepare an artifact dir, branch, and
+worktree for each:
 - artifact dir: `.../review-wave-<index>/batch-<index>`;
 - batch branch:
   `crustify/review-batches/<campaign-id>/<link-unit>/<subsystem>/wave-<index>/batch-<index>`;
 - worktree: `crustify/.worktrees/<same-as-branch>`.
+
+BSan runs at the orchestrator, not in translation batches. Gate every translated wave with
+the BSan variant over the workspace (in parallel, with the threshold the runner sets). If it
+fails, write its log to the review wave's artifact dir as `bsan-gate.log` before preparing
+the review batches, so the reviewers take its reports as UB candidates. Gate the reviewed
+wave under BSan again; a failure there blocks promotion until a reviewer resolves it.
 
 After review lands:
 - assess the legitimacy of the reproducers added in `crustify/reviews/` by reruning them and judging
