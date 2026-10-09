@@ -310,6 +310,10 @@ Cover every instrument prepared by the campaign as a separate obligation:
 - ASan/UBSan: bounds errors, use-after-free, use-after-return, invalid free,
   double free, leak, pointer/alignment UB, and integer/division/shift UB.
 - BSan: conflicting foreign writes and retained foreign pointers across Rust reborrows.
+  Write these tests like the others, but for a `wrap` or `port` objective do not run the
+  BSan variant: it is the slowest instrument, and the orchestrator runs the whole
+  workspace under it at every wave gate and hands its findings to that wave's review.
+  A `review` runs it.
 - TSan: races reachable through safe APIs, including every asserted `Send` or `Sync`
   implementation and threaded callback.
 - Miri: Rust-side lifetime, bounds, initialization, validity, alignment, intrinsic, and
@@ -375,6 +379,13 @@ intentionally nondeterministic.
 ## Review mode
 
 Proceed with the following steps for a `review` objective.
+
+A review batch carries one route's whole share of a translated wave: every type, or every
+symbol and callback, that the wave's batches landed, often from several translation batches.
+If the orchestrator's BSan gate on the translated wave failed, its log is
+`crustify/campaigns/<artifact-dir with the batch removed>/bsan-gate.log` (for example
+`crustify/campaigns/<campaign-id>/<link-unit>/<subsystem>/review-wave-<index>/bsan-gate.log`);
+treat every report in it that touches your items as a UB candidate.
 
 For homing reports and reproducers, use as your artifact dir the part of your working
 branch's name after `crustify/review-batches/`:
@@ -490,6 +501,9 @@ cargo test --workspace
 
 Every FFI, UB, and equivalence test must use the matching reusable sanitized C library or
 a private sanitized replacement.
+
+For `wrap` and `port`, validate under every prepared instrument except BSan; for `review`,
+include BSan.
 
 If C changed, run the configured C build and baseline with the Rust feature off. For
 `port`, repeat with the feature on. A wrap-only batch with no C change does not need the
