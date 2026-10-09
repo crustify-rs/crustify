@@ -49,12 +49,12 @@ _COUNTS = (
     "wrapper_newtypes", "wrapper_newtypes_declared",
     "wrapper_declared_nonconformant", "wrapper_newtypes_undeclared",
     "raw_ptr_args", "raw_ptr_rets", "raw_ptr_seam", "raw_ptr_wrapped",
-    "raw_ptr_in_wrapper", "ref_to_type_wrapper", "field_ref_wrapped",
+    "raw_ptr_smell", "ref_to_type_wrapper", "field_ref_wrapped",
     "field_proj_wrapped", "field_proj_outside_impl", "void_ptr_sanctioned",
     "void_ptr_smell", "raw_ptr_derefs", "raw_ptr_derefs_outside_impl",
     "total_stmts", "code_lines",
 )
-_SITES = ("raw_ptr_sites", "void_ptr_sites", "field_proj_sites",
+_SITES = ("raw_ptr_smell_sites", "void_ptr_sites", "field_proj_sites",
           "field_ref_sites", "raw_deref_sites")
 
 

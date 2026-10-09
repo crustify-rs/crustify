@@ -41,7 +41,9 @@ FFI seam:
 
 - `unsafe_fn_smell`: unsafe functions not classified as seam functions.
 - `raw_ptr_smell`: raw-pointer argument/return positions not classified as
-  seam positions.
+  seam positions. The driver counts it as `counts.raw_ptr_smell` and lists each
+  position in `counts.raw_ptr_smell_sites`; `counts.raw_ptr_wrapped` is the
+  subset whose pointee is a C type that already has a wrapper.
 - `unsafe_fn_pub_ratio`: fraction of unsafe functions exposed publicly.
 - `raw_ptr_seam_ratio`: fraction of raw-pointer positions at the seam.
 
