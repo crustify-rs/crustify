@@ -172,7 +172,8 @@ def _derive(doc: dict) -> dict:
     loc = c.get("code_lines") or 0
     ub = c.get("unsafe_blocks") or 0
     fns = c.get("unsafe_fns") or 0
-    positions = (c.get("raw_ptr_args") or 0) + (c.get("raw_ptr_rets") or 0)
+    positions = ((c.get("raw_ptr_args") or 0) + (c.get("raw_ptr_rets") or 0)
+                 + (c.get("raw_ptr_fields") or 0))
     seam = c.get("raw_ptr_seam") or 0
     return {
         # Categorical: an obligation pushed onto callers, and one the seam does
@@ -200,14 +201,16 @@ def summarize(doc: dict) -> str:
             f"   ({d.get('unsafe_loc_ratio')} of code lines — context, not a score)",
             f"  unsafe fn            {c.get('unsafe_fns')}"
             f"   ({c.get('unsafe_fns_seam')} seam, smell {c.get('unsafe_fns_pub_smell')} pub + {c.get('unsafe_fns_priv_smell')} private)",
-            f"  raw ptr positions    {(c.get('raw_ptr_args') or 0) + (c.get('raw_ptr_rets') or 0)}"
-            f"   ({c.get('raw_ptr_seam')} seam, smell {c.get('raw_ptr_pub_smell')} pub + {c.get('raw_ptr_priv_smell')} private)",
+            f"  raw ptr positions    {(c.get('raw_ptr_args') or 0) + (c.get('raw_ptr_rets') or 0) + (c.get('raw_ptr_fields') or 0)}"
+            f"   ({c.get('raw_ptr_args')} args, {c.get('raw_ptr_rets')} rets, {c.get('raw_ptr_fields')} fields;"
+            f" {c.get('raw_ptr_seam')} seam, smell {c.get('raw_ptr_pub_smell')} pub + {c.get('raw_ptr_priv_smell')} private)",
             f"  void ptr positions   {(c.get('void_ptr_seam') or 0) + (c.get('void_ptr_pub_smell') or 0) + (c.get('void_ptr_priv_smell') or 0)}"
             f"   ({c.get('void_ptr_seam')} seam, smell {c.get('void_ptr_pub_smell')} pub + {c.get('void_ptr_priv_smell')} private)",
             f"  ref to layout type   {(c.get('ref_to_type_wrapper_sanctioned') or 0) + (c.get('ref_to_type_wrapper_smell') or 0)}"
             f"   ({c.get('ref_to_type_wrapper_sanctioned')} sanctioned, smell {c.get('ref_to_type_wrapper_smell')}"
             f" — target 0) over {c.get('wrapper_newtypes')} layout newtypes",
             f"  ref formed in body   {c.get('ref_to_type_wrapper_body_smell')}   (target 0)",
+            f"  Deref on wrapper     {c.get('deref_impl_on_wrapper')}   (target 0)",
             f"  ffi calls            {c.get('ffi_calls')}",
         ]
     else:

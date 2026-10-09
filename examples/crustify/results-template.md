@@ -323,6 +323,7 @@ Deterministic `crustify scan-unsafe <workdir>`; no model.
 | `wrapper_newtypes_undeclared` | `<n>` | `<n>` | … |
 | `raw_ptr_args` | `<n>` | `<n>` | … |
 | `raw_ptr_rets` | `<n>` | `<n>` | … |
+| `raw_ptr_fields` | `<n>` | `<n>` | … |
 | **total positions** | **`<n>`** | `<n>` | … |
 | `raw_ptr_seam` | `<n>` | `<n>` | … |
 | `raw_ptr_pub_smell` | `<n>` | `<n>` | … |
@@ -333,6 +334,7 @@ Deterministic `crustify scan-unsafe <workdir>`; no model.
 | `ref_to_type_wrapper_sanctioned` | `<n>` | `<n>` | … |
 | `ref_to_type_wrapper_smell` | `<n>` | `<n>` | … |
 | `ref_to_type_wrapper_body_smell` | `<n>` | `<n>` | … |
+| `deref_impl_on_wrapper` | `<n>` | `<n>` | … |
 | `field_proj_wrapped` | `<n>` | `<n>` | … |
 | `field_proj_outside_impl` | `<n>` | `<n>` | … |
 | `field_ref_wrapped` | `<n>` | `<n>` | … |

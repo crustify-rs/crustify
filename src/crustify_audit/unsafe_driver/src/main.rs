@@ -184,6 +184,79 @@ fn contains_ref_to_type_wrapper(tcx: TyCtxt<'_>, t: Ty<'_>) -> bool {
     }
 }
 
+/// True when `span` comes from generated source compiled into the crate --
+/// bindings `include!`d from the build script's `OUT_DIR`, or a committed
+/// `bindings.rs` -- which nobody writes by hand and the audit does not judge.
+fn in_generated_file(tcx: TyCtxt<'_>, span: Span) -> bool {
+    let (file, _) = span_site(tcx, span.source_callsite());
+    // Cargo sets OUT_DIR for a crate with a build script; it is where bindgen
+    // output is written before `include!` pulls it in.
+    std::env::var("OUT_DIR").is_ok_and(|out| !out.is_empty() && file.starts_with(&out))
+        || file.ends_with("bindings.rs")
+}
+
+/// Raw-pointer positions in the fields of a struct or union the crate declares
+/// (nested ones included, as for signatures), counted into `raw_ptr_fields` and
+/// classified like a signature position: a handle stores its pointer by design,
+/// so its fields are seam; elsewhere a field is pub smell when it is reachable
+/// from outside the crate, else private smell. `c_void` and wrapped-pointee
+/// positions feed the same `void_ptr_*` and `raw_ptr_wrapped` counters.
+fn count_raw_ptr_fields(
+    tcx: TyCtxt<'_>,
+    did: DefId,
+    wrapped_c: &HashSet<DefId>,
+    c: &mut Counts,
+    sites: &mut Sites,
+) {
+    if in_generated_file(tcx, tcx.def_span(did)) {
+        return;
+    }
+    let handle = matches!(structural_wrapper(tcx, did), Some((false, _)));
+    for f in tcx.adt_def(did).all_fields() {
+        let ft = tcx.type_of(f.did).instantiate_identity().skip_norm_wip();
+        let mut pointees = Vec::new();
+        raw_pointees(tcx, ft, &mut pointees);
+        if pointees.is_empty() {
+            continue;
+        }
+        let site = counter_site(tcx, tcx.def_span(f.did));
+        let exported = f.did.as_local().is_some_and(|l| tcx.effective_visibilities(()).is_exported(l));
+        for p in pointees {
+            c.raw_ptr_fields += 1;
+            sites.add("raw_ptr_fields", site.clone());
+            let void = is_c_void(tcx, p);
+            if handle {
+                c.raw_ptr_seam += 1;
+                sites.add("raw_ptr_seam", site.clone());
+                if void {
+                    c.void_ptr_seam += 1;
+                    sites.add("void_ptr_seam", site.clone());
+                }
+                continue;
+            }
+            if exported {
+                c.raw_ptr_pub_smell += 1;
+                sites.add("raw_ptr_pub_smell", site.clone());
+                if void {
+                    c.void_ptr_pub_smell += 1;
+                    sites.add("void_ptr_pub_smell", site.clone());
+                }
+            } else {
+                c.raw_ptr_priv_smell += 1;
+                sites.add("raw_ptr_priv_smell", site.clone());
+                if void {
+                    c.void_ptr_priv_smell += 1;
+                    sites.add("void_ptr_priv_smell", site.clone());
+                }
+            }
+            if matches!(p.kind(), ty::TyKind::Adt(d, _) if wrapped_c.contains(&d.did())) {
+                c.raw_ptr_wrapped += 1;
+                sites.add("raw_ptr_wrapped", site.clone());
+            }
+        }
+    }
+}
+
 /// True if `t` is a raw pointer or a `NonNull`.
 fn is_raw_or_non_null(tcx: TyCtxt<'_>, t: Ty<'_>) -> bool {
     t.is_raw_ptr()
@@ -205,21 +278,24 @@ fn is_ref_to_type_wrapper(tcx: TyCtxt<'_>, t: Ty<'_>) -> bool {
 /// position whatever it points to (`*mut *mut T` counts once), and fn-pointer
 /// types are not entered: their parameters are the callback's interface, not
 /// data this signature passes.
-fn raw_pointees<'tcx>(t: Ty<'tcx>, out: &mut Vec<Ty<'tcx>>) {
+fn raw_pointees<'tcx>(tcx: TyCtxt<'tcx>, t: Ty<'tcx>, out: &mut Vec<Ty<'tcx>>) {
     match t.kind() {
         ty::TyKind::RawPtr(p, _) => out.push(*p),
-        ty::TyKind::Ref(_, inner, _) => raw_pointees(*inner, out),
+        ty::TyKind::Ref(_, inner, _) => raw_pointees(tcx, *inner, out),
+        // `PhantomData<*const T>` is a zero-sized marker (opting out of
+        // `Send`/`Sync`, say): it stores no pointer.
+        ty::TyKind::Adt(d, _) if tcx.item_name(d.did()).as_str() == "PhantomData" => {}
         ty::TyKind::Adt(_, args) => {
             for a in args.types() {
-                raw_pointees(a, out)
+                raw_pointees(tcx, a, out)
             }
         }
         ty::TyKind::Tuple(tys) => {
             for a in tys.iter() {
-                raw_pointees(a, out)
+                raw_pointees(tcx, a, out)
             }
         }
-        ty::TyKind::Array(e, _) | ty::TyKind::Slice(e) => raw_pointees(*e, out),
+        ty::TyKind::Array(e, _) | ty::TyKind::Slice(e) => raw_pointees(tcx, *e, out),
         _ => {}
     }
 }
@@ -660,6 +736,13 @@ struct Counts {
     // non-local call such as `p.as_ref()` / `NonNull::as_ref` /
     // `slice::from_raw_parts`. Never sanctioned: target 0.
     ref_to_type_wrapper_body_smell: u64,
+    // `impl Deref` / `impl DerefMut` (core) whose Self is a wrapper, layout or
+    // handle. Never sanctioned: target 0.
+    deref_impl_on_wrapper: u64,
+    // raw-pointer positions in the fields of structs/unions the crate declares
+    // (generated bindings excluded); classified into raw_ptr_seam / _pub_smell /
+    // _priv_smell with the signature positions
+    raw_ptr_fields: u64,
     // `(*p).field` where `p: *C` and `C` has a wrapper (bypasses the
     // accessor): total, and the subset outside any impl/trait (the smell).
     field_proj_wrapped: u64,
@@ -1761,6 +1844,9 @@ impl Callbacks for MetricsCallbacks {
         // trait never reaches it.
         for ld in tcx.hir_crate_items(()).definitions() {
             let did = ld.to_def_id();
+            if matches!(tcx.def_kind(did), DefKind::Struct | DefKind::Union) {
+                count_raw_ptr_fields(tcx, did, &wrapped_c, &mut c, &mut sites);
+            }
             match tcx.def_kind(did) {
                 DefKind::Struct => {
                     let is_layout = matches!(structural_wrapper(tcx, did), Some((true, _)));
@@ -1798,6 +1884,21 @@ impl Callbacks for MetricsCallbacks {
                     if !internal && tcx.impl_trait_header(did).safety.is_unsafe() {
                         c.unsafe_impls += 1;
                         sites.add("unsafe_impls", counter_site(tcx, tcx.def_span(did)));
+                    }
+                    // `Deref` / `DerefMut` on a wrapper (layout or handle) turns
+                    // every `*w` and auto-deref into a reference to whatever it
+                    // targets -- typically the C object -- outside the handles.
+                    let tr = tcx.impl_trait_ref(did).skip_binder().def_id;
+                    if tcx.crate_name(tr.krate).as_str() == "core"
+                        && matches!(tcx.item_name(tr).as_str(), "Deref" | "DerefMut")
+                    {
+                        let self_ty = tcx.type_of(did).instantiate_identity().skip_norm_wip();
+                        if let ty::TyKind::Adt(d, _) = self_ty.kind() {
+                            if is_wrapper(tcx, d.did()) {
+                                c.deref_impl_on_wrapper += 1;
+                                sites.add("deref_impl_on_wrapper", counter_site(tcx, tcx.def_span(did)));
+                            }
+                        }
                     }
                 }
                 DefKind::Trait => {
@@ -1867,7 +1968,7 @@ impl Callbacks for MetricsCallbacks {
                         }
                     }
                     let mut pointees = Vec::new();
-                    raw_pointees(t, &mut pointees);
+                    raw_pointees(tcx, t, &mut pointees);
                     for _ in pointees.iter().filter(|p| is_c_void(tcx, **p)) {
                         let site = counter_site(tcx, tcx.def_span(did));
                         if seam || in_ffi {
@@ -1949,13 +2050,13 @@ impl Callbacks for MetricsCallbacks {
                     };
                     for inp in sig.inputs() {
                         let mut pointees = Vec::new();
-                        raw_pointees(*inp, &mut pointees);
+                        raw_pointees(tcx, *inp, &mut pointees);
                         for p in pointees {
                             tally(p, false, &mut c);
                         }
                     }
                     let mut pointees = Vec::new();
-                    raw_pointees(sig.output(), &mut pointees);
+                    raw_pointees(tcx, sig.output(), &mut pointees);
                     for p in pointees {
                         tally(p, true, &mut c);
                     }
@@ -2049,8 +2150,8 @@ impl Callbacks for MetricsCallbacks {
             }
         }
         println!(
-            "{{\"crate\":\"{}\",\"unsafe_blocks\":{},\"unsafe_block_stmts\":{},\"unsafe_block_lines\":{},\"unsafe_block_code_lines\":{},\"unsafe_blocks_wrapper_impl\":{},\"unsafe_blocks_ffi_export\":{},\"unsafe_fns\":{},\"unsafe_fns_seam\":{},\"unsafe_fns_pub_smell\":{},\"unsafe_fns_priv_smell\":{},\"unsafe_impls\":{},\"unsafe_traits\":{},\"ffi_calls\":{},\"wrapper_newtypes\":{},\"wrapper_newtypes_declared\":{},\"wrapper_declared_nonconformant\":{},\"wrapper_newtypes_undeclared\":{},\"raw_ptr_args\":{},\"raw_ptr_rets\":{},\"raw_ptr_seam\":{},\"raw_ptr_wrapped\":{},\"raw_ptr_pub_smell\":{},\"raw_ptr_priv_smell\":{},\"ref_to_type_wrapper_sanctioned\":{},\"ref_to_type_wrapper_smell\":{},\"ref_to_type_wrapper_body_smell\":{},\"field_proj_wrapped\":{},\"field_proj_outside_impl\":{},\"field_ref_wrapped\":{},\"void_ptr_seam\":{},\"void_ptr_pub_smell\":{},\"void_ptr_priv_smell\":{},\"raw_ptr_derefs\":{},\"raw_ptr_derefs_outside_impl\":{},\"total_stmts\":{},\"code_lines\":{},\"sites\":{}}}",
-            krate, c.unsafe_blocks, c.unsafe_block_stmts, c.unsafe_block_lines, c.unsafe_block_code_lines, c.unsafe_blocks_wrapper_impl, c.unsafe_blocks_ffi_export, c.unsafe_fns, c.unsafe_fns_seam, c.unsafe_fns_pub_smell, c.unsafe_fns_priv_smell, c.unsafe_impls, c.unsafe_traits, c.ffi_calls, c.wrapper_newtypes, c.wrapper_newtypes_declared, c.wrapper_declared_nonconformant, c.wrapper_newtypes_undeclared, c.raw_ptr_args, c.raw_ptr_rets, c.raw_ptr_seam, c.raw_ptr_wrapped, c.raw_ptr_pub_smell, c.raw_ptr_priv_smell, c.ref_to_type_wrapper_sanctioned, c.ref_to_type_wrapper_smell, c.ref_to_type_wrapper_body_smell, c.field_proj_wrapped, c.field_proj_outside_impl, c.field_ref_wrapped, c.void_ptr_seam, c.void_ptr_pub_smell, c.void_ptr_priv_smell, c.raw_ptr_derefs, c.raw_ptr_derefs_outside_impl, c.total_stmts, c.code_lines,
+            "{{\"crate\":\"{}\",\"unsafe_blocks\":{},\"unsafe_block_stmts\":{},\"unsafe_block_lines\":{},\"unsafe_block_code_lines\":{},\"unsafe_blocks_wrapper_impl\":{},\"unsafe_blocks_ffi_export\":{},\"unsafe_fns\":{},\"unsafe_fns_seam\":{},\"unsafe_fns_pub_smell\":{},\"unsafe_fns_priv_smell\":{},\"unsafe_impls\":{},\"unsafe_traits\":{},\"ffi_calls\":{},\"wrapper_newtypes\":{},\"wrapper_newtypes_declared\":{},\"wrapper_declared_nonconformant\":{},\"wrapper_newtypes_undeclared\":{},\"raw_ptr_args\":{},\"raw_ptr_rets\":{},\"raw_ptr_seam\":{},\"raw_ptr_wrapped\":{},\"raw_ptr_pub_smell\":{},\"raw_ptr_priv_smell\":{},\"ref_to_type_wrapper_sanctioned\":{},\"ref_to_type_wrapper_smell\":{},\"ref_to_type_wrapper_body_smell\":{},\"deref_impl_on_wrapper\":{},\"raw_ptr_fields\":{},\"field_proj_wrapped\":{},\"field_proj_outside_impl\":{},\"field_ref_wrapped\":{},\"void_ptr_seam\":{},\"void_ptr_pub_smell\":{},\"void_ptr_priv_smell\":{},\"raw_ptr_derefs\":{},\"raw_ptr_derefs_outside_impl\":{},\"total_stmts\":{},\"code_lines\":{},\"sites\":{}}}",
+            krate, c.unsafe_blocks, c.unsafe_block_stmts, c.unsafe_block_lines, c.unsafe_block_code_lines, c.unsafe_blocks_wrapper_impl, c.unsafe_blocks_ffi_export, c.unsafe_fns, c.unsafe_fns_seam, c.unsafe_fns_pub_smell, c.unsafe_fns_priv_smell, c.unsafe_impls, c.unsafe_traits, c.ffi_calls, c.wrapper_newtypes, c.wrapper_newtypes_declared, c.wrapper_declared_nonconformant, c.wrapper_newtypes_undeclared, c.raw_ptr_args, c.raw_ptr_rets, c.raw_ptr_seam, c.raw_ptr_wrapped, c.raw_ptr_pub_smell, c.raw_ptr_priv_smell, c.ref_to_type_wrapper_sanctioned, c.ref_to_type_wrapper_smell, c.ref_to_type_wrapper_body_smell, c.deref_impl_on_wrapper, c.raw_ptr_fields, c.field_proj_wrapped, c.field_proj_outside_impl, c.field_ref_wrapped, c.void_ptr_seam, c.void_ptr_pub_smell, c.void_ptr_priv_smell, c.raw_ptr_derefs, c.raw_ptr_derefs_outside_impl, c.total_stmts, c.code_lines,
             sites.json()
         );
         Compilation::Continue

@@ -62,16 +62,25 @@ Three counter families partition this way:
 
 - `unsafe_fns` = `unsafe_fns_seam` + `unsafe_fns_pub_smell` +
   `unsafe_fns_priv_smell`.
-- `raw_ptr_args` + `raw_ptr_rets` = `raw_ptr_seam` + `raw_ptr_pub_smell` +
-  `raw_ptr_priv_smell`. `raw_ptr_wrapped` counts the smell positions whose
+- `raw_ptr_args` + `raw_ptr_rets` + `raw_ptr_fields` = `raw_ptr_seam` +
+  `raw_ptr_pub_smell` + `raw_ptr_priv_smell`. `raw_ptr_args` and
+  `raw_ptr_rets` are the positions in function signatures, `raw_ptr_fields`
+  those in the fields of structs and unions the crate declares. A field is seam
+  when its struct is a handle (storing the pointer is what a handle is for);
+  otherwise it is pub smell when it is reachable from outside the crate (a
+  `pub` field of an exported type), else private smell. Generated bindings
+  compiled into the crate are skipped: files under the build script's
+  `OUT_DIR` and files named `bindings.rs`; bindings in a `-sys` crate are
+  excluded with that crate. `raw_ptr_wrapped` counts the smell positions whose
   pointee is a C type that already has a wrapper.
 - `void_ptr_seam` + `void_ptr_pub_smell` + `void_ptr_priv_smell` are the
   `*const c_void` / `*mut c_void` positions, a subset of the raw-pointer ones.
 
-A position is every raw pointer in a parameter or return type, including
+A position is every raw pointer in a parameter, return or field type, including
 those nested in references, generic arguments (`Option<*const T>`), tuples,
-arrays and slices. A pointer to a pointer (`*mut *mut T`) is one position, and
-fn-pointer types are not entered. Type aliases are resolved, so
+arrays and slices. A pointer to a pointer (`*mut *mut T`) is one position,
+fn-pointer types are not entered, and `PhantomData<*const T>` is a zero-sized
+marker, not a position. Type aliases are resolved, so
 `type P = *const T` counts as a raw pointer.
 
 The derived fields:
@@ -118,6 +127,11 @@ may write. Access goes through the handles instead.
   `&(*p).field` / `&mut (*p).field` among them; raw borrows (`&raw const`,
   `addr_of!`) are not counted.
 
+- `deref_impl_on_wrapper` counts impls of `core::ops::Deref` or `DerefMut`
+  whose `Self` is a wrapper, layout newtype or handle. Such an impl turns every
+  `*w` and auto-deref into a reference to its target, typically the C object,
+  outside the handles. Nothing is sanctioned: target 0.
+
 Read these together with `wrapper_newtypes`; when there are no wrapper
 newtypes, zero is vacuous. The driver cannot tell a pointer to C memory from
 one to a Rust-owned value, so a site means "check where this pointer comes
@@ -146,10 +160,11 @@ and statement totals (`code_lines`, `total_stmts`, `unsafe_block_*lines`,
   counted; and a reference to the C type itself (`&*p` with
   `p: *const ffi::T`, or `NonNull<ffi::T>::as_ref`) is counted by no counter,
   since `ref_to_type_wrapper_*` only cover wrapper types. See `docs/TODO.md`.
-- **Signatures only for pointer positions.** Raw-pointer, `c_void` and
-  `ref_to_type_wrapper_*` signature counters read the parameter and return
-  types of functions with bodies. Raw pointers in locals, casts, closure
-  parameters, struct fields and statics are not positions, and a trait method
+- **Signatures and fields only for pointer positions.** Raw-pointer, `c_void`
+  and `ref_to_type_wrapper_*` signature counters read the parameter and return
+  types of functions with bodies; raw-pointer and `c_void` positions also
+  include struct and union fields. Raw pointers in locals, casts, closure parameters, enum variants and
+  statics are not positions, `NonNull` is never one, and a trait method
   declared without a default body is not counted.
 - **Seam by name.** A function is seam because of its name or ABI, not because
   of what it does: a hand-written `as_ptr` is sanctioned like a generated one.
