@@ -207,6 +207,7 @@ def summarize(doc: dict) -> str:
             f"  ref to layout type   {(c.get('ref_to_type_wrapper_sanctioned') or 0) + (c.get('ref_to_type_wrapper_smell') or 0)}"
             f"   ({c.get('ref_to_type_wrapper_sanctioned')} sanctioned, smell {c.get('ref_to_type_wrapper_smell')}"
             f" — target 0) over {c.get('wrapper_newtypes')} layout newtypes",
+            f"  ref formed in body   {c.get('ref_to_type_wrapper_body_smell')}   (target 0)",
             f"  ffi calls            {c.get('ffi_calls')}",
         ]
     else:
