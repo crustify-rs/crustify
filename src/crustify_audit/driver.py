@@ -75,11 +75,10 @@ class DriverUnavailable(Exception):
     """The driver could not measure this tree. Carries the reason to report."""
 
 
-def _collect_emissions(stdout: str) -> tuple[dict, dict, list[dict], int]:
-    """Merge driver JSON lines; return counts, sites, seed entries, crate count."""
+def _collect_emissions(stdout: str) -> tuple[dict, dict, int]:
+    """Merge driver JSON lines; return counts, sites, crate count."""
     out = {k: 0 for k in _COUNTS}
     sites: dict[str, list] = {k: [] for k in SITE_COUNTERS}
-    entries: list[dict] = []
     seen = 0
     for line in stdout.splitlines():
         line = line.strip()
@@ -92,11 +91,6 @@ def _collect_emissions(stdout: str) -> tuple[dict, dict, list[dict], int]:
         crate = d.get("crate", "")
         if crate.endswith("_sys"):
             continue
-        if "seeds" in d:
-            for seed in d["seeds"]:
-                seed["crate"] = crate
-                entries.append(seed)
-            continue
         if "unsafe_blocks" not in d:
             continue
         seen += 1
@@ -104,7 +98,7 @@ def _collect_emissions(stdout: str) -> tuple[dict, dict, list[dict], int]:
             out[k] += int(d.get(k, 0))
         for k, rows in d.get("sites", {}).items():
             sites.setdefault(k, []).extend(rows)
-    return out, sites, entries, seen
+    return out, sites, seen
 
 
 def _driver_bin() -> Path:
@@ -166,12 +160,8 @@ def _bust_cache(ws: Path) -> None:
                 root.touch()
 
 
-def measure(ws: Path, names: list[str] | None = None) -> tuple[dict, dict, list[dict]]:
-    """Return ``(tree-wide counts, sites per counter, named seed entries)`` for ``ws``.
-
-    Type and symbol names resolve independently inside each compiled workspace
-    crate. Entries therefore retain their crate name.
-    """
+def measure(ws: Path) -> tuple[dict, dict]:
+    """Return ``(tree-wide counts, sites per counter)`` for ``ws``."""
     driver = _driver_bin()
     sysroot = subprocess.run(["rustc", f"+{_TOOLCHAIN}", "--print", "sysroot"],
                              capture_output=True, text=True).stdout.strip()
@@ -186,9 +176,6 @@ def measure(ws: Path, names: list[str] | None = None) -> tuple[dict, dict, list[
     env["SYSROOT"] = sysroot
     ld = env.get("LD_LIBRARY_PATH", "")
     env["LD_LIBRARY_PATH"] = f"{sysroot}/lib" + (f":{ld}" if ld else "")
-    if names:
-        env["UM_MODE"] = "seed"
-        env["UM_SEED_NAME"] = " ".join(names)
 
     r = subprocess.run(["cargo", f"+{_TOOLCHAIN}", "build"], cwd=ws, env=env,
                        capture_output=True, text=True)
@@ -199,9 +186,9 @@ def measure(ws: Path, names: list[str] | None = None) -> tuple[dict, dict, list[
             f"{r.stderr[-1200:]}")
 
     # `-sys` crates are generated bindings, never the audit subject.
-    out, sites, entries, seen = _collect_emissions(r.stdout)
+    out, sites, seen = _collect_emissions(r.stdout)
     if not seen:
         raise DriverUnavailable(
             "no crate emitted metrics — the build was served from cache, so "
             "nothing was measured")
-    return out, sites, entries
+    return out, sites

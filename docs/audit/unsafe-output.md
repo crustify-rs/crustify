@@ -38,7 +38,6 @@ are not the wrapper being audited.
   `clippy::undocumented_unsafe_blocks`: a long comment above its lookback
   window, or a site inside a macro, can disagree with the lint.
 - `sites`: present when `--sites` names counters; see Counter sites.
-- `seed` and `entries`: present when `--name` requests named source sites.
 
 Unsafe-block totals provide context only. A C wrapper must contain unsafe code,
 and combining many small unsafe blocks into fewer large ones improves the count
@@ -171,30 +170,3 @@ and statement totals (`code_lines`, `total_stmts`, `unsafe_block_*lines`,
   of what it does: a hand-written `as_ptr` is sanctioned like a generated one.
 - **Pointer origin.** No counter can tell C-owned memory from Rust-owned memory
   behind a pointer.
-
-## Named sites
-
-Repeat `--name` to search for C type or symbol names:
-
-```sh
-crustify scan-unsafe WORKDIR --name SSL SSL_new --name SSL_free
-```
-
-Names resolve independently within each compiled workspace crate, and each
-entry retains its `crate` field.
-
-For types, entries may contain:
-
-- `raw_ptr_sites`: raw-pointer declarations in arguments, returns, fields, and
-  explicitly typed locals.
-- `raw_deref_sites`: dereference expressions for matching pointers.
-- `deref_impl_sites` and `deref_mut_impl_sites`: manual wrapper dereference
-  implementations.
-- `slice_ref_sites` and `slice_mut_sites`: wrapper slice types and expressions
-  that materialize them, including inferred `slice::from_raw_parts` calls.
-
-For symbols, matching uses the Rust item name or linked/exported C name.
-Signature/body pointer declarations and body dereferences are attributed to the
-symbol; calls to external C functions attribute the enclosing wrapper
-function's corresponding sites. Wrapper-specific dereference and slice fields
-remain type-only.
