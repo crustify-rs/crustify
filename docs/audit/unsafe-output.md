@@ -48,6 +48,9 @@ FFI seam:
   smell position is listed in `counts.raw_ptr_smell_sites`;
   `counts.raw_ptr_wrapped` is the subset whose pointee is a C type that already
   has a wrapper.
+- `void_ptr_seam`, `void_ptr_pub_smell`, `void_ptr_priv_smell` (counts): the
+  `*const c_void` / `*mut c_void` positions among the raw-pointer positions,
+  partitioned the same way; `counts.void_ptr_sites` lists the smell ones.
 
 "Pub" is rustc's effective visibility: callable from outside the crate. A
 trait-impl method reachable through a public trait and type is pub; a `pub`
