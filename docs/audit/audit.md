@@ -22,8 +22,9 @@ crustify spawn-auditor /path/to/repo --model anthropic/claude-opus-5
 Pass the repository root. The audited Cargo workspace is the root when it has a
 `Cargo.toml`; otherwise it is `crustify/rust/` for a Crustify campaign.
 
-`unsafe` requires a nightly toolchain with `rustc-dev` and `llvm-tools`, plus a workspace
-that compiles. `ub` requires the selected Claude or Codex CLI and the instrumentation
+`unsafe` requires the dated nightly pinned by its rustc driver
+(`src/crustify_audit/unsafe_driver/rust-toolchain.toml`) with `rustc-dev` and
+`llvm-tools`, plus a workspace that compiles. `ub` requires the selected Claude or Codex CLI and the instrumentation
 appropriate to each finding. It warns when Miri or BorrowSanitizer is unavailable.
 
 ## Output
@@ -51,7 +52,7 @@ runs extend the record instead of repeating completed investigations.
 ## CLI
 
 ```text
-crustify scan-unsafe WORKDIR [--json] [--name NAME ...]
+crustify scan-unsafe WORKDIR [--json] [--name NAME ...] [--sites COUNTER ... | all]
 crustify spawn-auditor WORKDIR [--objective audit|audit+patch|patch|revisit]
                        [--workset PATH ...]
                        [--instruments miri|asan/ubsan|bsan|msan|tsan|equivalence ...]
@@ -62,6 +63,8 @@ crustify spawn-auditor WORKDIR [--objective audit|audit+patch|patch|revisit]
 
 - `unsafe --json` prints the document on stdout; redirect it to keep it.
 - `unsafe --name` adds source sites for selected C types or symbols.
+- `unsafe --sites` adds where the named counters' increments are, as a `sites` record
+  beside `counts`; `all` selects every counter that counts source locations.
 - `ub --workset` confines an auditor to specified work items. For audit objectives these
   are source files; omit it for the whole crate. Under `--objective patch` it carries
   advisory directories under `crustify/audit/advisories/` instead of source files; omit it
@@ -80,8 +83,8 @@ crustify spawn-auditor WORKDIR [--objective audit|audit+patch|patch|revisit]
   reproduces. Use it after adding an instrument that can settle a hypothesis the earlier
   run had to leave standing.
 
-Run `crustify WORKDIR audit --help` or a subcommand's `--help` for complete flag
-semantics.
+Run `crustify scan-unsafe --help`, `crustify spawn-auditor --help` or `crustify audit
+--help` for complete flag semantics.
 
 ### Instrument scopes
 
@@ -148,7 +151,7 @@ OpenRouter must support the Responses API for the selected model. Model IDs are 
 verbatim to both CLIs.
 
 Before running, complete
-[`examples/crustify_audit/TASK.md.template`](examples/crustify_audit/TASK.md.template) and
+[`examples/crustify_audit/TASK.md.template`](../../examples/crustify_audit/TASK.md.template) and
 place it at the host path mounted as `/campaign/TASK.md` above. Without that mount, the
 orchestrator asks for mandatory decisions. A headless run therefore needs a complete task.
 
@@ -175,8 +178,8 @@ scan-unsafe /target`.
 
 ## Reference
 
-- [Deterministic output and named-site semantics](unsafe-output.md)
-- [Task questionnaire](examples/crustify_audit/TASK.md.template)
-- [Example results and report format](examples/crustify_audit/results.md)
-- [`ub` auditor prompt](src/crustify_audit/prompts/ub.md)
-- [Orchestrator prompt](src/crustify_audit/prompts/orchestrator.md)
+- [Deterministic output: counters, seam, sites and known limitations](unsafe-output.md)
+- [Task questionnaire](../../examples/crustify_audit/TASK.md.template)
+- [Example results and report format](../../examples/crustify_audit/results.md)
+- [`ub` auditor prompt](../../src/crustify_audit/prompts/ub.md)
+- [Orchestrator prompt](../../src/crustify_audit/prompts/orchestrator.md)
