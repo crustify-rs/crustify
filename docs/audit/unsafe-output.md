@@ -39,12 +39,24 @@ without improving the code.
 The more categorical derived fields describe obligations outside the expected
 FFI seam:
 
-- `unsafe_fn_smell`: unsafe functions not classified as seam functions.
+- `unsafe_fn_smell`: unsafe functions not classified as seam functions,
+  `counts.unsafe_fns_pub_smell + counts.unsafe_fns_priv_smell`. With
+  `counts.unsafe_fns_seam` they partition `counts.unsafe_fns`.
 - `raw_ptr_smell`: raw-pointer argument/return positions not classified as
-  seam positions. The driver counts it as `counts.raw_ptr_smell` and lists each
-  position in `counts.raw_ptr_smell_sites`; `counts.raw_ptr_wrapped` is the
-  subset whose pointee is a C type that already has a wrapper.
-- `unsafe_fn_pub_ratio`: fraction of unsafe functions exposed publicly.
+  seam positions, `counts.raw_ptr_pub_smell + counts.raw_ptr_priv_smell`. With
+  `counts.raw_ptr_seam` they partition `raw_ptr_args + raw_ptr_rets`. Each
+  smell position is listed in `counts.raw_ptr_smell_sites`;
+  `counts.raw_ptr_wrapped` is the subset whose pointee is a C type that already
+  has a wrapper.
+
+"Pub" is rustc's effective visibility: callable from outside the crate. A
+trait-impl method reachable through a public trait and type is pub; a `pub`
+item in a private module is not. Only top-level parameter and return types are
+positions: a raw pointer nested in a generic (`Option<*const T>`) is not
+counted. Type aliases are resolved, so `type P = *const T` counts as a raw
+pointer.
+- `unsafe_fn_pub_ratio`: fraction of unsafe functions that are public smell
+  (`unsafe_fns_pub_smell / unsafe_fns`).
 - `raw_ptr_seam_ratio`: fraction of raw-pointer positions at the seam.
 
 `ref_to_type_wrapper` counts references over layout-compatible wrapper types

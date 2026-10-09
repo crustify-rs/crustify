@@ -155,9 +155,9 @@ def _derive(doc: dict) -> dict:
     return {
         # Categorical: an obligation pushed onto callers, and one the seam does
         # not excuse.
-        "unsafe_fn_pub_ratio": round((c.get("unsafe_fns_pub") or 0) / fns, 4) if fns else None,
-        "unsafe_fn_smell": fns - (c.get("unsafe_fns_seam") or 0),
-        "raw_ptr_smell": c["raw_ptr_smell"] if "raw_ptr_smell" in c else positions - seam,
+        "unsafe_fn_pub_ratio": round((c.get("unsafe_fns_pub_smell") or 0) / fns, 4) if fns else None,
+        "unsafe_fn_smell": (c.get("unsafe_fns_pub_smell") or 0) + (c.get("unsafe_fns_priv_smell") or 0),
+        "raw_ptr_smell": (c.get("raw_ptr_pub_smell") or 0) + (c.get("raw_ptr_priv_smell") or 0),
         "raw_ptr_seam_ratio": round(seam / positions, 4) if positions else None,
         # Context, explicitly NOT a quality score. See the docstring.
         "unsafe_loc_ratio": round((c.get("unsafe_block_code_lines") or 0) / loc, 4) if loc else None,
@@ -177,9 +177,9 @@ def summarize(doc: dict) -> str:
             f"  unsafe blocks        {c.get('unsafe_blocks')}"
             f"   ({d.get('unsafe_loc_ratio')} of code lines — context, not a score)",
             f"  unsafe fn            {c.get('unsafe_fns')}"
-            f"   ({c.get('unsafe_fns_pub')} pub, {c.get('unsafe_fns_seam')} at the seam)",
+            f"   ({c.get('unsafe_fns_seam')} seam, smell {c.get('unsafe_fns_pub_smell')} pub + {c.get('unsafe_fns_priv_smell')} private)",
             f"  raw ptr positions    {(c.get('raw_ptr_args') or 0) + (c.get('raw_ptr_rets') or 0)}"
-            f"   ({c.get('raw_ptr_seam')} sanctioned, smell {d.get('raw_ptr_smell')})",
+            f"   ({c.get('raw_ptr_seam')} seam, smell {c.get('raw_ptr_pub_smell')} pub + {c.get('raw_ptr_priv_smell')} private)",
             f"  ref to layout type   {c.get('ref_to_type_wrapper')}"
             f"   of {c.get('wrapper_newtypes')} layout newtypes — target 0",
             f"  ffi calls            {c.get('ffi_calls')}",
