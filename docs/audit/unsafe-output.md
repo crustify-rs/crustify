@@ -54,10 +54,11 @@ FFI seam:
 
 "Pub" is rustc's effective visibility: callable from outside the crate. A
 trait-impl method reachable through a public trait and type is pub; a `pub`
-item in a private module is not. Only top-level parameter and return types are
-positions: a raw pointer nested in a generic (`Option<*const T>`) is not
-counted. Type aliases are resolved, so `type P = *const T` counts as a raw
-pointer.
+item in a private module is not. A position is every raw pointer in a parameter or
+return type, including those nested in references, generic arguments
+(`Option<*const T>`), tuples, arrays and slices. A pointer to a pointer
+(`*mut *mut T`) is one position, and fn-pointer types are not entered. Type
+aliases are resolved, so `type P = *const T` counts as a raw pointer.
 - `unsafe_fn_pub_ratio`: fraction of unsafe functions that are public smell
   (`unsafe_fns_pub_smell / unsafe_fns`).
 - `raw_ptr_seam_ratio`: fraction of raw-pointer positions at the seam.

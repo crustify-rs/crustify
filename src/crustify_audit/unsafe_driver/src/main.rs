@@ -148,23 +148,34 @@ fn is_ref_to_type_wrapper(tcx: TyCtxt<'_>, t: Ty<'_>) -> bool {
     false
 }
 
-/// True if `t` is `*const/*mut c_void` (`core::ffi::c_void`, the type-erased
-/// FFI pointer — same type via any alias path).
-fn is_void_ptr(tcx: TyCtxt<'_>, t: Ty<'_>) -> bool {
-    if let ty::TyKind::RawPtr(pointee, _) = t.kind() {
-        if let ty::TyKind::Adt(def, _) = pointee.kind() {
-            return tcx.item_name(def.did()).as_str() == "c_void";
+/// The pointees of every raw pointer position in `t`: `t` itself when it is a
+/// raw pointer, else those reached through references, generic arguments
+/// (`Option<*const T>`), tuples, arrays and slices. A raw pointer is one
+/// position whatever it points to (`*mut *mut T` counts once), and fn-pointer
+/// types are not entered: their parameters are the callback's interface, not
+/// data this signature passes.
+fn raw_pointees<'tcx>(t: Ty<'tcx>, out: &mut Vec<Ty<'tcx>>) {
+    match t.kind() {
+        ty::TyKind::RawPtr(p, _) => out.push(*p),
+        ty::TyKind::Ref(_, inner, _) => raw_pointees(*inner, out),
+        ty::TyKind::Adt(_, args) => {
+            for a in args.types() {
+                raw_pointees(a, out)
+            }
         }
+        ty::TyKind::Tuple(tys) => {
+            for a in tys.iter() {
+                raw_pointees(a, out)
+            }
+        }
+        ty::TyKind::Array(e, _) | ty::TyKind::Slice(e) => raw_pointees(*e, out),
+        _ => {}
     }
-    false
 }
 
-/// If `t` is a raw pointer `*const/*mut P`, return the pointee `P`.
-fn raw_pointee<'tcx>(t: Ty<'tcx>) -> Option<Ty<'tcx>> {
-    match t.kind() {
-        ty::TyKind::RawPtr(p, _) => Some(*p),
-        _ => None,
-    }
+/// True if `p` (a pointee) is `c_void`.
+fn is_c_void(tcx: TyCtxt<'_>, p: Ty<'_>) -> bool {
+    matches!(p.kind(), ty::TyKind::Adt(def, _) if tcx.item_name(def.did()).as_str() == "c_void")
 }
 
 /// True if the pointee `p` is a C type that has a wrapper
@@ -1661,7 +1672,9 @@ impl Callbacks for MetricsCallbacks {
                     if is_ref_to_type_wrapper(tcx, t) {
                         c.ref_to_type_wrapper += 1;
                     }
-                    if is_void_ptr(tcx, t) {
+                    let mut pointees = Vec::new();
+                    raw_pointees(t, &mut pointees);
+                    for _ in pointees.iter().filter(|p| is_c_void(tcx, **p)) {
                         if seam || in_ffi {
                             c.void_ptr_seam += 1;
                         } else {
@@ -1729,11 +1742,15 @@ impl Callbacks for MetricsCallbacks {
                         }
                     };
                     for inp in sig.inputs() {
-                        if let Some(p) = raw_pointee(*inp) {
+                        let mut pointees = Vec::new();
+                        raw_pointees(*inp, &mut pointees);
+                        for p in pointees {
                             tally(p, false, &mut c);
                         }
                     }
-                    if let Some(p) = raw_pointee(sig.output()) {
+                    let mut pointees = Vec::new();
+                    raw_pointees(sig.output(), &mut pointees);
+                    for p in pointees {
                         tally(p, true, &mut c);
                     }
                 }
