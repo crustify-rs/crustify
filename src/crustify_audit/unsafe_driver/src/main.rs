@@ -619,15 +619,57 @@ struct Counts {
     code_lines: u64, // crate-wide physical LoC: non-blank, non-`//`-comment source lines
 }
 
-/// Per-category source sites `(file, 1-based line)` — the actionable locations
-/// the audit consumer acts on, aggregated by `sites_json`.
+/// Source sites `(file, 1-based line)` per counter, keyed by the counter's
+/// output name: every increment of a location-counting counter records where it
+/// happened. Line and statement totals have none. Aggregated by `sites_json`.
 #[derive(Default)]
-struct Sites {
-    raw_ptr_smell: Vec<(String, usize)>, // non-seam raw ptr position in a signature
-    void_ptr: Vec<(String, usize)>, // `*c_void` smell
-    field_proj: Vec<(String, usize)>, // `(*p).field` bypassing the accessor
-    field_ref: Vec<(String, usize)>, // `&(*p).field` -- a reference INTO the C object
-    raw_deref: Vec<(String, usize)>, // `*p` (raw ptr) outside any impl/trait body
+struct Sites(std::collections::BTreeMap<&'static str, Vec<(String, usize)>>);
+
+impl Sites {
+    fn add(&mut self, counter: &'static str, site: (String, usize)) {
+        self.0.entry(counter).or_default().push(site);
+    }
+
+    /// `{"<counter>": [{"file":..,"count":N,"lines":[..]}], ..}`, where `count`
+    /// is the number of increments in the file (so a counter's per-file counts
+    /// sum to the counter) and `lines` the distinct lines they fell on.
+    fn json(&self) -> String {
+        use std::collections::BTreeMap;
+        let rows: Vec<String> = self
+            .0
+            .iter()
+            .map(|(k, v)| {
+                let mut by_file: BTreeMap<&str, Vec<usize>> = BTreeMap::new();
+                for (f, l) in v {
+                    by_file.entry(f.as_str()).or_default().push(*l);
+                }
+                let files: Vec<String> = by_file
+                    .iter()
+                    .map(|(f, ls)| {
+                        let mut u = ls.clone();
+                        u.sort_unstable();
+                        u.dedup();
+                        let arr: Vec<String> = u.iter().map(|l| l.to_string()).collect();
+                        format!(
+                            "{{\"file\":\"{}\",\"count\":{},\"lines\":[{}]}}",
+                            f,
+                            ls.len(),
+                            arr.join(",")
+                        )
+                    })
+                    .collect();
+                format!("\"{}\":[{}]", k, files.join(","))
+            })
+            .collect();
+        format!("{{{}}}", rows.join(","))
+    }
+}
+
+/// `span_site` for a counter site: a span produced by a macro (`define_ctype!`,
+/// a `#[derive]`) is mapped to the invocation in this crate, so the site names
+/// the line the author wrote rather than a line of the macro's own source.
+fn counter_site(tcx: TyCtxt<'_>, span: Span) -> (String, usize) {
+    span_site(tcx, span.source_callsite())
 }
 
 /// `(file, 1-based line)` for a span, local-path filename.
@@ -696,14 +738,17 @@ impl<'a, 'tcx> Visitor<'tcx> for BodyVisitor<'a, 'tcx> {
                 if matches!(b.rules, hir::BlockCheckMode::UnsafeBlock(_)) =>
             {
                 self.c.unsafe_blocks += 1;
+                self.sites.add("unsafe_blocks", counter_site(self.tcx, e.span));
                 if self.in_wrapper {
                     // Region attribution only. Where the block's TEXT came from
                     // does not change what it is: an unsafe block in a wrapper
                     // impl is an unsafe block in a wrapper impl.
                     self.c.unsafe_blocks_wrapper_impl += 1;
+                    self.sites.add("unsafe_blocks_wrapper_impl", counter_site(self.tcx, e.span));
                 }
                 if self.in_ffi {
                     self.c.unsafe_blocks_ffi_export += 1;
+                    self.sites.add("unsafe_blocks_ffi_export", counter_site(self.tcx, e.span));
                 }
                 // Line metrics: outermost blocks only (nested ones would
                 // double-count). EVERY outermost block counts, macro-expanded
@@ -746,12 +791,13 @@ impl<'a, 'tcx> Visitor<'tcx> for BodyVisitor<'a, 'tcx> {
             hir::ExprKind::Unary(hir::UnOp::Deref, inner) => {
                 if self.typeck.expr_ty(inner).is_raw_ptr() {
                     self.c.raw_ptr_derefs += 1;
+                    self.sites.add("raw_ptr_derefs", counter_site(self.tcx, e.span));
                     // The actionable split: derefs in wrapper accessor / seam
                     // bodies (inside an impl) are the sanctioned centralisation;
                     // those outside any impl are port-body raw access.
                     if !self.in_impl {
                         self.c.raw_ptr_derefs_outside_impl += 1;
-                        self.sites.raw_deref.push(span_site(self.tcx, e.span));
+                        self.sites.add("raw_ptr_derefs_outside_impl", counter_site(self.tcx, e.span));
                     }
                 }
             }
@@ -762,9 +808,10 @@ impl<'a, 'tcx> Visitor<'tcx> for BodyVisitor<'a, 'tcx> {
                     if let ty::TyKind::RawPtr(pointee, _) = self.typeck.expr_ty(inner).kind() {
                         if pointee_has_wrapper(self.tcx, *pointee, self.wrapped_c) {
                             self.c.field_proj_wrapped += 1;
+                            self.sites.add("field_proj_wrapped", counter_site(self.tcx, e.span));
                             if !self.in_impl {
                                 self.c.field_proj_outside_impl += 1;
-                                self.sites.field_proj.push(span_site(self.tcx, e.span));
+                                self.sites.add("field_proj_outside_impl", counter_site(self.tcx, e.span));
                             }
                         }
                     }
@@ -781,7 +828,7 @@ impl<'a, 'tcx> Visitor<'tcx> for BodyVisitor<'a, 'tcx> {
                         if let ty::TyKind::RawPtr(pointee, _) = self.typeck.expr_ty(inner).kind() {
                             if pointee_has_wrapper(self.tcx, *pointee, self.wrapped_c) {
                                 self.c.field_ref_wrapped += 1;
-                                self.sites.field_ref.push(span_site(self.tcx, e.span));
+                                self.sites.add("field_ref_wrapped", counter_site(self.tcx, e.span));
                             }
                         }
                     }
@@ -1478,7 +1525,7 @@ fn seed_json(tcx: TyCtxt<'_>, krate: rustc_span::Symbol) -> String {
             let Some(wrapper_names) = wrappers.get(&wrapper) else {
                 continue;
             };
-            let site = span_site(tcx, tcx.def_span(did));
+            let site = counter_site(tcx, tcx.def_span(did));
             let sites = if trait_name == "DerefMut" {
                 &mut deref_mut_impl
             } else {
@@ -1591,14 +1638,18 @@ impl Callbacks for MetricsCallbacks {
                     // exists to keep at 0.
                     if is_layout {
                         c.wrapper_newtypes += 1;
+                        sites.add("wrapper_newtypes", counter_site(tcx, tcx.def_span(did)));
                         if !declared {
-                            c.wrapper_newtypes_undeclared += 1
+                            c.wrapper_newtypes_undeclared += 1;
+                            sites.add("wrapper_newtypes_undeclared", counter_site(tcx, tcx.def_span(did)));
                         }
                     }
                     if declared {
                         c.wrapper_newtypes_declared += 1;
+                        sites.add("wrapper_newtypes_declared", counter_site(tcx, tcx.def_span(did)));
                         if !is_layout {
-                            c.wrapper_declared_nonconformant += 1
+                            c.wrapper_declared_nonconformant += 1;
+                            sites.add("wrapper_declared_nonconformant", counter_site(tcx, tcx.def_span(did)));
                         }
                     }
                 }
@@ -1612,11 +1663,13 @@ impl Callbacks for MetricsCallbacks {
                         == "TrivialClone";
                     if !internal && tcx.impl_trait_header(did).safety.is_unsafe() {
                         c.unsafe_impls += 1;
+                        sites.add("unsafe_impls", counter_site(tcx, tcx.def_span(did)));
                     }
                 }
                 DefKind::Trait => {
                     if tcx.trait_def(did).safety.is_unsafe() {
                         c.unsafe_traits += 1;
+                        sites.add("unsafe_traits", counter_site(tcx, tcx.def_span(did)));
                     }
                 }
                 _ => {}
@@ -1633,10 +1686,10 @@ impl Callbacks for MetricsCallbacks {
                     out: &mut callees,
                 }
                 .visit_body(tcx.hir_body_owned_by(owner));
-                c.ffi_calls += callees
-                    .iter()
-                    .filter(|(d, _)| tcx.is_foreign_item(*d))
-                    .count() as u64;
+                for (_, span) in callees.iter().filter(|(d, _)| tcx.is_foreign_item(*d)) {
+                    c.ffi_calls += 1;
+                    sites.add("ffi_calls", counter_site(tcx, *span));
+                }
             }
             let in_wrapper = in_wrapper_impl(tcx, did);
             let in_ffi = in_ffi_export(tcx, did);
@@ -1671,19 +1724,21 @@ impl Callbacks for MetricsCallbacks {
                 {
                     if is_ref_to_type_wrapper(tcx, t) {
                         c.ref_to_type_wrapper += 1;
+                        sites.add("ref_to_type_wrapper", counter_site(tcx, tcx.def_span(did)));
                     }
                     let mut pointees = Vec::new();
                     raw_pointees(t, &mut pointees);
                     for _ in pointees.iter().filter(|p| is_c_void(tcx, **p)) {
+                        let site = counter_site(tcx, tcx.def_span(did));
                         if seam || in_ffi {
                             c.void_ptr_seam += 1;
+                            sites.add("void_ptr_seam", site);
+                        } else if exported {
+                            c.void_ptr_pub_smell += 1;
+                            sites.add("void_ptr_pub_smell", site);
                         } else {
-                            if exported {
-                                c.void_ptr_pub_smell += 1
-                            } else {
-                                c.void_ptr_priv_smell += 1
-                            }
-                            sites.void_ptr.push(span_site(tcx, tcx.def_span(did)));
+                            c.void_ptr_priv_smell += 1;
+                            sites.add("void_ptr_priv_smell", site);
                         }
                     }
                 }
@@ -1692,13 +1747,18 @@ impl Callbacks for MetricsCallbacks {
                 // `from_void_ptr`) and the C-ABI gateway are expected to be
                 // unsafe; anything else is exporting an obligation.
                 if sig.safety().is_unsafe() {
+                    let site = counter_site(tcx, tcx.def_span(did));
                     c.unsafe_fns += 1;
+                    sites.add("unsafe_fns", site.clone());
                     if seam || in_ffi {
-                        c.unsafe_fns_seam += 1
+                        c.unsafe_fns_seam += 1;
+                        sites.add("unsafe_fns_seam", site);
                     } else if exported {
-                        c.unsafe_fns_pub_smell += 1
+                        c.unsafe_fns_pub_smell += 1;
+                        sites.add("unsafe_fns_pub_smell", site);
                     } else {
-                        c.unsafe_fns_priv_smell += 1
+                        c.unsafe_fns_priv_smell += 1;
+                        sites.add("unsafe_fns_priv_smell", site);
                     }
                 }
                 // Raw-pointer args/rets: count EVERY position, then name the
@@ -1711,10 +1771,13 @@ impl Callbacks for MetricsCallbacks {
                 let own_self = enclosing_impl_self(tcx, did);
                 {
                     let mut tally = |p: Ty<'_>, is_ret: bool, c: &mut Counts| {
+                        let site = counter_site(tcx, tcx.def_span(did));
                         if is_ret {
-                            c.raw_ptr_rets += 1
+                            c.raw_ptr_rets += 1;
+                            sites.add("raw_ptr_rets", site.clone());
                         } else {
-                            c.raw_ptr_args += 1
+                            c.raw_ptr_args += 1;
+                            sites.add("raw_ptr_args", site.clone());
                         }
                         // A raw ptr to the method's OWN wrapper type (`*mut Self`
                         // in `free`/`dup`) is the type's raw-form lifecycle seam —
@@ -1724,21 +1787,24 @@ impl Callbacks for MetricsCallbacks {
                             own_self.is_some_and(|s| p.ty_adt_def().map(|d| d.did()) == Some(s));
                         if sanctioned || is_own {
                             c.raw_ptr_seam += 1;
+                            sites.add("raw_ptr_seam", site);
                             return;
                         }
                         // Every unsanctioned position is smell, and listed.
                         if exported {
-                            c.raw_ptr_pub_smell += 1
+                            c.raw_ptr_pub_smell += 1;
+                            sites.add("raw_ptr_pub_smell", site.clone());
                         } else {
-                            c.raw_ptr_priv_smell += 1
+                            c.raw_ptr_priv_smell += 1;
+                            sites.add("raw_ptr_priv_smell", site.clone());
                         }
-                        sites.raw_ptr_smell.push(span_site(tcx, tcx.def_span(did)));
                         // Of those, the most actionable: a raw ptr to the *C type* when
                         // a wrapper exists (`*mut ffi::git_oid` → should be GitOid).
                         if matches!(p.kind(),
                             ty::TyKind::Adt(def, _) if wrapped_c.contains(&def.did()))
                         {
-                            c.raw_ptr_wrapped += 1
+                            c.raw_ptr_wrapped += 1;
+                            sites.add("raw_ptr_wrapped", site);
                         }
                     };
                     for inp in sig.inputs() {
@@ -1843,9 +1909,9 @@ impl Callbacks for MetricsCallbacks {
             }
         }
         println!(
-            "{{\"crate\":\"{}\",\"unsafe_blocks\":{},\"unsafe_block_stmts\":{},\"unsafe_block_lines\":{},\"unsafe_block_code_lines\":{},\"unsafe_blocks_wrapper_impl\":{},\"unsafe_blocks_ffi_export\":{},\"unsafe_fns\":{},\"unsafe_fns_seam\":{},\"unsafe_fns_pub_smell\":{},\"unsafe_fns_priv_smell\":{},\"unsafe_impls\":{},\"unsafe_traits\":{},\"ffi_calls\":{},\"wrapper_newtypes\":{},\"wrapper_newtypes_declared\":{},\"wrapper_declared_nonconformant\":{},\"wrapper_newtypes_undeclared\":{},\"raw_ptr_args\":{},\"raw_ptr_rets\":{},\"raw_ptr_seam\":{},\"raw_ptr_wrapped\":{},\"raw_ptr_pub_smell\":{},\"raw_ptr_priv_smell\":{},\"ref_to_type_wrapper\":{},\"field_proj_wrapped\":{},\"field_proj_outside_impl\":{},\"field_ref_wrapped\":{},\"void_ptr_seam\":{},\"void_ptr_pub_smell\":{},\"void_ptr_priv_smell\":{},\"raw_ptr_derefs\":{},\"raw_ptr_derefs_outside_impl\":{},\"total_stmts\":{},\"code_lines\":{},\"raw_ptr_smell_sites\":{},\"void_ptr_sites\":{},\"field_proj_sites\":{},\"field_ref_sites\":{},\"raw_deref_sites\":{}}}",
+            "{{\"crate\":\"{}\",\"unsafe_blocks\":{},\"unsafe_block_stmts\":{},\"unsafe_block_lines\":{},\"unsafe_block_code_lines\":{},\"unsafe_blocks_wrapper_impl\":{},\"unsafe_blocks_ffi_export\":{},\"unsafe_fns\":{},\"unsafe_fns_seam\":{},\"unsafe_fns_pub_smell\":{},\"unsafe_fns_priv_smell\":{},\"unsafe_impls\":{},\"unsafe_traits\":{},\"ffi_calls\":{},\"wrapper_newtypes\":{},\"wrapper_newtypes_declared\":{},\"wrapper_declared_nonconformant\":{},\"wrapper_newtypes_undeclared\":{},\"raw_ptr_args\":{},\"raw_ptr_rets\":{},\"raw_ptr_seam\":{},\"raw_ptr_wrapped\":{},\"raw_ptr_pub_smell\":{},\"raw_ptr_priv_smell\":{},\"ref_to_type_wrapper\":{},\"field_proj_wrapped\":{},\"field_proj_outside_impl\":{},\"field_ref_wrapped\":{},\"void_ptr_seam\":{},\"void_ptr_pub_smell\":{},\"void_ptr_priv_smell\":{},\"raw_ptr_derefs\":{},\"raw_ptr_derefs_outside_impl\":{},\"total_stmts\":{},\"code_lines\":{},\"sites\":{}}}",
             krate, c.unsafe_blocks, c.unsafe_block_stmts, c.unsafe_block_lines, c.unsafe_block_code_lines, c.unsafe_blocks_wrapper_impl, c.unsafe_blocks_ffi_export, c.unsafe_fns, c.unsafe_fns_seam, c.unsafe_fns_pub_smell, c.unsafe_fns_priv_smell, c.unsafe_impls, c.unsafe_traits, c.ffi_calls, c.wrapper_newtypes, c.wrapper_newtypes_declared, c.wrapper_declared_nonconformant, c.wrapper_newtypes_undeclared, c.raw_ptr_args, c.raw_ptr_rets, c.raw_ptr_seam, c.raw_ptr_wrapped, c.raw_ptr_pub_smell, c.raw_ptr_priv_smell, c.ref_to_type_wrapper, c.field_proj_wrapped, c.field_proj_outside_impl, c.field_ref_wrapped, c.void_ptr_seam, c.void_ptr_pub_smell, c.void_ptr_priv_smell, c.raw_ptr_derefs, c.raw_ptr_derefs_outside_impl, c.total_stmts, c.code_lines,
-            sites_json(&sites.raw_ptr_smell), sites_json(&sites.void_ptr), sites_json(&sites.field_proj), sites_json(&sites.field_ref), sites_json(&sites.raw_deref)
+            sites.json()
         );
         Compilation::Continue
     }
