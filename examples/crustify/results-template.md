@@ -335,7 +335,8 @@ Deterministic `crustify scan-unsafe <workdir>`; no model.
 | `field_proj_outside_impl` | `<n>` | `<n>` | … |
 | `field_ref_wrapped` | `<n>` | `<n>` | … |
 | `void_ptr_seam` | `<n>` | `<n>` | … |
-| `void_ptr_smell` | `<n>` | `<n>` | … |
+| `void_ptr_pub_smell` | `<n>` | `<n>` | … |
+| `void_ptr_priv_smell` | `<n>` | `<n>` | … |
 
 ## Notes
 

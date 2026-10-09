@@ -51,7 +51,7 @@ _COUNTS = (
     "raw_ptr_args", "raw_ptr_rets", "raw_ptr_seam", "raw_ptr_wrapped",
     "raw_ptr_pub_smell", "raw_ptr_priv_smell", "ref_to_type_wrapper", "field_ref_wrapped",
     "field_proj_wrapped", "field_proj_outside_impl", "void_ptr_seam",
-    "void_ptr_smell", "raw_ptr_derefs", "raw_ptr_derefs_outside_impl",
+    "void_ptr_pub_smell", "void_ptr_priv_smell", "raw_ptr_derefs", "raw_ptr_derefs_outside_impl",
     "total_stmts", "code_lines",
 )
 _SITES = ("raw_ptr_smell_sites", "void_ptr_sites", "field_proj_sites",
