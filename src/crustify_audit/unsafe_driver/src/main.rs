@@ -73,6 +73,18 @@ const SEAM_FNS: &[&str] = &[
     "into_c",
     // ported trees: safe callback wrapper -> raw C fn pointer
     "to_raw",
+    // unsafe lifecycle trait methods: release, clone, share, lock and dispose
+    // hooks whose `unsafe fn` signature the trait fixes, so an implementation
+    // cannot be safe
+    "c_drop",
+    "c_drop_len",
+    "c_dup",
+    "c_clone_len",
+    "c_up_ref",
+    "c_is_sole_owner",
+    "c_lock",
+    "c_unlock",
+    "c_dispose",
 ];
 
 fn is_seam_fn(tcx: TyCtxt<'_>, did: DefId) -> bool {
