@@ -204,8 +204,9 @@ def summarize(doc: dict) -> str:
             f"   ({c.get('raw_ptr_seam')} seam, smell {c.get('raw_ptr_pub_smell')} pub + {c.get('raw_ptr_priv_smell')} private)",
             f"  void ptr positions   {(c.get('void_ptr_seam') or 0) + (c.get('void_ptr_pub_smell') or 0) + (c.get('void_ptr_priv_smell') or 0)}"
             f"   ({c.get('void_ptr_seam')} seam, smell {c.get('void_ptr_pub_smell')} pub + {c.get('void_ptr_priv_smell')} private)",
-            f"  ref to layout type   {c.get('ref_to_type_wrapper')}"
-            f"   of {c.get('wrapper_newtypes')} layout newtypes — target 0",
+            f"  ref to layout type   {(c.get('ref_to_type_wrapper_sanctioned') or 0) + (c.get('ref_to_type_wrapper_smell') or 0)}"
+            f"   ({c.get('ref_to_type_wrapper_sanctioned')} sanctioned, smell {c.get('ref_to_type_wrapper_smell')}"
+            f" — target 0) over {c.get('wrapper_newtypes')} layout newtypes",
             f"  ffi calls            {c.get('ffi_calls')}",
         ]
     else:

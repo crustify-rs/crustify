@@ -330,7 +330,8 @@ Deterministic `crustify scan-unsafe <workdir>`; no model.
 | **smell (total − seam)** | **`<n>`** | `<n>` | … |
 | `raw_ptr_wrapped` | `<n>` | `<n>` | … |
 | `raw_ptr_derefs` | `<n>` | `<n>` | … |
-| `ref_to_type_wrapper` | `<n>` | `<n>` | … |
+| `ref_to_type_wrapper_sanctioned` | `<n>` | `<n>` | … |
+| `ref_to_type_wrapper_smell` | `<n>` | `<n>` | … |
 | `field_proj_wrapped` | `<n>` | `<n>` | … |
 | `field_proj_outside_impl` | `<n>` | `<n>` | … |
 | `field_ref_wrapped` | `<n>` | `<n>` | … |
