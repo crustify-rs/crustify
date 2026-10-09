@@ -67,7 +67,10 @@ def undocumented_unsafe(root: Path) -> dict:
     per_file: dict[str, int] = {}
     total = documented = 0
     for path in sorted(root.rglob("*.rs")):
-        if any(part in _SKIP_DIRS for part in path.parts):
+        # Judge the skip list below the workspace root: a workspace that itself
+        # lives under a skipped name (crustify keeps its crates in
+        # `<repo>/crustify/rust`) must not drop every file.
+        if any(part in _SKIP_DIRS for part in path.relative_to(root).parts):
             continue
         try:
             text = path.read_text(encoding="utf-8", errors="replace")
