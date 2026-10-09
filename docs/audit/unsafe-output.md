@@ -63,9 +63,14 @@ aliases are resolved, so `type P = *const T` counts as a raw pointer.
   (`unsafe_fns_pub_smell / unsafe_fns`).
 - `raw_ptr_seam_ratio`: fraction of raw-pointer positions at the seam.
 
-`ref_to_type_wrapper` counts references over layout-compatible wrapper types
-whose underlying memory C may mutate. Read it together with
-`wrapper_newtypes`; when there are no wrapper newtypes, zero is vacuous.
+`ref_to_type_wrapper_sanctioned` and `ref_to_type_wrapper_smell` partition the
+`&W` / `&mut W` positions in function signatures (the receiver included) where
+`W` is a layout-compatible wrapper type, whose memory C may mutate when it is
+reached through a C pointer. Sanctioned are the accessors `as_ref` / `as_mut`
+that hand out borrowed handles over a Rust-owned value, and methods of impls of
+the standard value traits `Clone`, `PartialEq`, `Eq`, `PartialOrd`, `Ord`,
+`Hash` and `Debug`, derived or not. The smell should be 0. Read both together
+with `wrapper_newtypes`; when there are no wrapper newtypes, zero is vacuous.
 
 ## Counter sites
 
@@ -73,7 +78,7 @@ whose underlying memory C may mutate. Read it together with
 `counts`, with one list per named counter: where that counter's increments are
 in the source, as `[{"file": .., "count": N, "lines": [..]}]` per file, lines
 sorted and deduplicated, so `count` is the number of distinct lines. A
-signature position (raw/void pointer, `unsafe fn`, `ref_to_type_wrapper`) is
+signature position (raw/void pointer, `unsafe fn`, `ref_to_type_wrapper_*`) is
 sited at its function's signature line; a block, dereference, projection or
 call at the expression. Only counters that count source locations take
 `--sites`: the line and statement totals (`code_lines`, `total_stmts`,
