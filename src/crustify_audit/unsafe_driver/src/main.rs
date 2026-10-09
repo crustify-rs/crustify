@@ -580,9 +580,7 @@ struct Counts {
     raw_ptr_rets: u64,
     raw_ptr_seam: u64,       // seam fn / C-ABI boundary / ptr-to-own-Self
     raw_ptr_wrapped: u64,    // of the NON-seam remainder, pointee is a wrapped C type
-    raw_ptr_in_wrapper: u64, // of the NON-seam remainder, inside `impl <wrapper T>`
-    //   — kept because a raw ptr in the very type meant to
-    //   hide it is worse than one in a ported free fn
+    raw_ptr_smell: u64,      // the NON-seam remainder: args + rets - seam
     ref_to_type_wrapper: u64, // `&W` / `&mut W` (incl. the receiver), W a TYPE wrapper
     // `(*p).field` where `p: *C` and `C` has a wrapper (bypasses the
     // accessor): total, and the subset outside any impl/trait (the smell).
@@ -604,7 +602,7 @@ struct Counts {
 /// the audit consumer acts on, aggregated by `sites_json`.
 #[derive(Default)]
 struct Sites {
-    raw_ptr: Vec<(String, usize)>, // raw ptr to a wrapped C type in a signature
+    raw_ptr_smell: Vec<(String, usize)>, // non-seam raw ptr position in a signature
     void_ptr: Vec<(String, usize)>, // `*c_void` smell
     field_proj: Vec<(String, usize)>, // `(*p).field` bypassing the accessor
     field_ref: Vec<(String, usize)>, // `&(*p).field` -- a reference INTO the C object
@@ -1699,21 +1697,15 @@ impl Callbacks for MetricsCallbacks {
                             c.raw_ptr_seam += 1;
                             return;
                         }
-                        // The actionable smell is a raw ptr to the *C type* when a
-                        // wrapper exists (`*mut ffi::git_oid` → should be GitOid).
-                        // A raw ptr to the *wrapper itself* (`*mut GitOid`) already
-                        // uses the wrapper — kept raw deliberately (stored back-ptr
-                        // / array boundary), not a smell. So count only the C case.
-                        let w = matches!(p.kind(),
-                            ty::TyKind::Adt(def, _) if wrapped_c.contains(&def.did()));
-                        if w {
+                        // Every unsanctioned position is smell, and listed.
+                        c.raw_ptr_smell += 1;
+                        sites.raw_ptr_smell.push(span_site(tcx, tcx.def_span(did)));
+                        // Of those, the most actionable: a raw ptr to the *C type* when
+                        // a wrapper exists (`*mut ffi::git_oid` → should be GitOid).
+                        if matches!(p.kind(),
+                            ty::TyKind::Adt(def, _) if wrapped_c.contains(&def.did()))
+                        {
                             c.raw_ptr_wrapped += 1
-                        }
-                        if in_wrapper {
-                            c.raw_ptr_in_wrapper += 1
-                        }
-                        if w {
-                            sites.raw_ptr.push(span_site(tcx, tcx.def_span(did)));
                         }
                     };
                     for inp in sig.inputs() {
@@ -1814,9 +1806,9 @@ impl Callbacks for MetricsCallbacks {
             }
         }
         println!(
-            "{{\"crate\":\"{}\",\"unsafe_blocks\":{},\"unsafe_block_stmts\":{},\"unsafe_block_lines\":{},\"unsafe_block_code_lines\":{},\"unsafe_blocks_wrapper_impl\":{},\"unsafe_blocks_ffi_export\":{},\"unsafe_fns\":{},\"unsafe_fns_seam\":{},\"unsafe_fns_pub\":{},\"unsafe_impls\":{},\"unsafe_traits\":{},\"ffi_calls\":{},\"wrapper_newtypes\":{},\"wrapper_newtypes_declared\":{},\"wrapper_declared_nonconformant\":{},\"wrapper_newtypes_undeclared\":{},\"raw_ptr_args\":{},\"raw_ptr_rets\":{},\"raw_ptr_seam\":{},\"raw_ptr_wrapped\":{},\"raw_ptr_in_wrapper\":{},\"ref_to_type_wrapper\":{},\"field_proj_wrapped\":{},\"field_proj_outside_impl\":{},\"field_ref_wrapped\":{},\"void_ptr_sanctioned\":{},\"void_ptr_smell\":{},\"raw_ptr_derefs\":{},\"raw_ptr_derefs_outside_impl\":{},\"total_stmts\":{},\"code_lines\":{},\"raw_ptr_sites\":{},\"void_ptr_sites\":{},\"field_proj_sites\":{},\"field_ref_sites\":{},\"raw_deref_sites\":{}}}",
-            krate, c.unsafe_blocks, c.unsafe_block_stmts, c.unsafe_block_lines, c.unsafe_block_code_lines, c.unsafe_blocks_wrapper_impl, c.unsafe_blocks_ffi_export, c.unsafe_fns, c.unsafe_fns_seam, c.unsafe_fns_pub, c.unsafe_impls, c.unsafe_traits, c.ffi_calls, c.wrapper_newtypes, c.wrapper_newtypes_declared, c.wrapper_declared_nonconformant, c.wrapper_newtypes_undeclared, c.raw_ptr_args, c.raw_ptr_rets, c.raw_ptr_seam, c.raw_ptr_wrapped, c.raw_ptr_in_wrapper, c.ref_to_type_wrapper, c.field_proj_wrapped, c.field_proj_outside_impl, c.field_ref_wrapped, c.void_ptr_sanctioned, c.void_ptr_smell, c.raw_ptr_derefs, c.raw_ptr_derefs_outside_impl, c.total_stmts, c.code_lines,
-            sites_json(&sites.raw_ptr), sites_json(&sites.void_ptr), sites_json(&sites.field_proj), sites_json(&sites.field_ref), sites_json(&sites.raw_deref)
+            "{{\"crate\":\"{}\",\"unsafe_blocks\":{},\"unsafe_block_stmts\":{},\"unsafe_block_lines\":{},\"unsafe_block_code_lines\":{},\"unsafe_blocks_wrapper_impl\":{},\"unsafe_blocks_ffi_export\":{},\"unsafe_fns\":{},\"unsafe_fns_seam\":{},\"unsafe_fns_pub\":{},\"unsafe_impls\":{},\"unsafe_traits\":{},\"ffi_calls\":{},\"wrapper_newtypes\":{},\"wrapper_newtypes_declared\":{},\"wrapper_declared_nonconformant\":{},\"wrapper_newtypes_undeclared\":{},\"raw_ptr_args\":{},\"raw_ptr_rets\":{},\"raw_ptr_seam\":{},\"raw_ptr_wrapped\":{},\"raw_ptr_smell\":{},\"ref_to_type_wrapper\":{},\"field_proj_wrapped\":{},\"field_proj_outside_impl\":{},\"field_ref_wrapped\":{},\"void_ptr_sanctioned\":{},\"void_ptr_smell\":{},\"raw_ptr_derefs\":{},\"raw_ptr_derefs_outside_impl\":{},\"total_stmts\":{},\"code_lines\":{},\"raw_ptr_smell_sites\":{},\"void_ptr_sites\":{},\"field_proj_sites\":{},\"field_ref_sites\":{},\"raw_deref_sites\":{}}}",
+            krate, c.unsafe_blocks, c.unsafe_block_stmts, c.unsafe_block_lines, c.unsafe_block_code_lines, c.unsafe_blocks_wrapper_impl, c.unsafe_blocks_ffi_export, c.unsafe_fns, c.unsafe_fns_seam, c.unsafe_fns_pub, c.unsafe_impls, c.unsafe_traits, c.ffi_calls, c.wrapper_newtypes, c.wrapper_newtypes_declared, c.wrapper_declared_nonconformant, c.wrapper_newtypes_undeclared, c.raw_ptr_args, c.raw_ptr_rets, c.raw_ptr_seam, c.raw_ptr_wrapped, c.raw_ptr_smell, c.ref_to_type_wrapper, c.field_proj_wrapped, c.field_proj_outside_impl, c.field_ref_wrapped, c.void_ptr_sanctioned, c.void_ptr_smell, c.raw_ptr_derefs, c.raw_ptr_derefs_outside_impl, c.total_stmts, c.code_lines,
+            sites_json(&sites.raw_ptr_smell), sites_json(&sites.void_ptr), sites_json(&sites.field_proj), sites_json(&sites.field_ref), sites_json(&sites.raw_deref)
         );
         Compilation::Continue
     }

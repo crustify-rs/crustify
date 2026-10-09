@@ -157,7 +157,7 @@ def _derive(doc: dict) -> dict:
         # not excuse.
         "unsafe_fn_pub_ratio": round((c.get("unsafe_fns_pub") or 0) / fns, 4) if fns else None,
         "unsafe_fn_smell": fns - (c.get("unsafe_fns_seam") or 0),
-        "raw_ptr_smell": positions - seam,
+        "raw_ptr_smell": c["raw_ptr_smell"] if "raw_ptr_smell" in c else positions - seam,
         "raw_ptr_seam_ratio": round(seam / positions, 4) if positions else None,
         # Context, explicitly NOT a quality score. See the docstring.
         "unsafe_loc_ratio": round((c.get("unsafe_block_code_lines") or 0) / loc, 4) if loc else None,
