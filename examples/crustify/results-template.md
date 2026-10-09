@@ -93,8 +93,8 @@ the campaign's.
   stay counted in their categories; `total` minus this column is the confirmed
   defects
 - `+unsafe fn smell` / `+raw-ptr smell` — the change the landed batch made to the
-  `unsafe fn` smell and the raw-pointer smell (total − seam) of the static scan
-  over its names, against its wave's base; a review batch's fixes show as
+  `unsafe fn` smell and the raw-pointer smell (total − seam) of the unseeded
+  static scan, at its landing against the commit before it; a review batch's fixes show as
   negative values
 - `rv $` / `rv wall` / `rv loc` — the REVIEW agent's cost, elapsed time, and net
   `.rs` line delta (`+ins/-del`) of its landing commit. Under subscription

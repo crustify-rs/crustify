@@ -1,7 +1,7 @@
 """cli.py — the audit stages behind `crustify scan-unsafe` and
 `crustify spawn-auditor`.
 
-    crustify scan-unsafe   <workdir> [--json] [--name NAME ...]
+    crustify scan-unsafe   <workdir> [--json] [--sites COUNTER ... | all]
     crustify spawn-auditor <workdir> [--model M] [--billing B] [--effort E]
                                      [--timeout MIN] [--instruments I ...]
 
@@ -63,11 +63,6 @@ def add_stages(sub: "argparse._SubParsersAction", *,
     m.add_argument("--json", action="store_true",
                    help="Print the document on stdout instead of a summary. "
                         "Redirect it to keep it; the scan writes no file.")
-    m.add_argument(
-        "--name", nargs="+", action="extend", default=None, metavar="NAME",
-        help="Report raw-pointer, dereference, manual Deref/DerefMut, and "
-             "wrapper-slice sites for these C type or symbol names in each "
-             "workspace crate. Raw-pointer matching does not require a wrapper.")
     m.add_argument(
         "--sites", nargs="+", action="extend", default=None, metavar="COUNTER",
         help="Also report where these counters' increments are in the source: "
@@ -195,7 +190,7 @@ def dispatch(layout, args, command: str) -> int:
 
 def _cmd_unsafe(layout: Layout, args) -> int:
     from crustify_audit import unsafe_scan as M
-    doc = M.compose(layout, names=args.name, sites=args.sites)
+    doc = M.compose(layout, sites=args.sites)
     if args.json:
         print(json.dumps(doc, indent=2))
     else:

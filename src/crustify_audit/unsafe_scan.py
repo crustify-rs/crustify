@@ -121,8 +121,7 @@ def site_counters(requested: list[str]) -> list[str]:
     return list(dict.fromkeys(requested))
 
 
-def compose(layout: Layout, names: list[str] | None = None,
-            sites: list[str] | None = None) -> dict:
+def compose(layout: Layout, sites: list[str] | None = None) -> dict:
     """Scan the workspace and return the metrics document.
 
     ``sites`` names counters whose source locations to report, as a ``sites``
@@ -133,21 +132,13 @@ def compose(layout: Layout, names: list[str] | None = None,
     doc: dict = {"crate_path": str(workspace)}
     all_sites: dict = {}
     try:
-        doc["counts"], all_sites, entries = driver.measure(workspace, names=names)
+        doc["counts"], all_sites = driver.measure(workspace)
         doc["counts_unavailable"] = None
     except driver.DriverUnavailable as e:
         # No counts rather than substitute ones: see driver.py.
         doc["counts"] = None
         doc["counts_unavailable"] = str(e)
         print(f"[crustify-audit] no counts: {e}".rstrip())
-        entries = []
-    if names:
-        if not entries and doc["counts"] is not None:
-            raise SystemExit(
-                "unsafe: no sites matched --name "
-                + " ".join(names))
-        doc["seed"] = "--name " + " ".join(names)
-        doc["entries"] = entries
     if wanted is not None:
         doc["sites"] = {k: all_sites.get(k, []) for k in wanted}
     doc["undocumented_unsafe"] = undocumented_unsafe(workspace)
@@ -216,22 +207,4 @@ def summarize(doc: dict) -> str:
     else:
         lines.append(f"  counts               unavailable — "
                      f"{doc.get('counts_unavailable')}")
-    entries = doc.get("entries") or []
-    if entries:
-        lines.append("\n  named seeds")
-        for e in entries:
-            ptrs = sum(s.get("count", 0) for s in e.get("raw_ptr_sites", []))
-            derefs = sum(s.get("count", 0) for s in e.get("raw_deref_sites", []))
-            deref_impls = sum(s.get("count", 0) for s in e.get("deref_impl_sites", []))
-            deref_mut_impls = sum(
-                s.get("count", 0) for s in e.get("deref_mut_impl_sites", []))
-            shared_slices = sum(
-                s.get("count", 0) for s in e.get("slice_ref_sites", []))
-            mutable_slices = sum(
-                s.get("count", 0) for s in e.get("slice_mut_sites", []))
-            lines.append(
-                f"    {e.get('crate')}::{e.get('name')}"
-                f"  raw-pointer sites {ptrs}, dereference sites {derefs},"
-                f" Deref/DerefMut impl sites {deref_impls}/{deref_mut_impls},"
-                f" shared/mutable slice sites {shared_slices}/{mutable_slices}")
     return "\n".join(lines)

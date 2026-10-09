@@ -52,7 +52,7 @@ runs extend the record instead of repeating completed investigations.
 ## CLI
 
 ```text
-crustify scan-unsafe WORKDIR [--json] [--name NAME ...] [--sites COUNTER ... | all]
+crustify scan-unsafe WORKDIR [--json] [--sites COUNTER ... | all]
 crustify spawn-auditor WORKDIR [--objective audit|audit+patch|patch|revisit]
                        [--workset PATH ...]
                        [--instruments miri|asan/ubsan|bsan|msan|tsan|equivalence ...]
@@ -62,7 +62,6 @@ crustify spawn-auditor WORKDIR [--objective audit|audit+patch|patch|revisit]
 ```
 
 - `unsafe --json` prints the document on stdout; redirect it to keep it.
-- `unsafe --name` adds source sites for selected C types or symbols.
 - `unsafe --sites` adds where the named counters' increments are, as a `sites` record
   beside `counts`; `all` selects every counter that counts source locations.
 - `ub --workset` confines an auditor to specified work items. For audit objectives these
