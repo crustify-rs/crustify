@@ -54,18 +54,31 @@ _COUNTS = (
     "void_ptr_pub_smell", "void_ptr_priv_smell", "raw_ptr_derefs", "raw_ptr_derefs_outside_impl",
     "total_stmts", "code_lines",
 )
-_SITES = ("raw_ptr_smell_sites", "void_ptr_sites", "field_proj_sites",
-          "field_ref_sites", "raw_deref_sites")
+#: The counters that count source locations, so `--sites` can list them. Line
+#: and statement totals (`code_lines`, `total_stmts`, `unsafe_block_*lines`,
+#: `unsafe_block_stmts`) have no sites.
+SITE_COUNTERS = (
+    "unsafe_blocks", "unsafe_blocks_wrapper_impl", "unsafe_blocks_ffi_export",
+    "unsafe_fns", "unsafe_fns_seam", "unsafe_fns_pub_smell",
+    "unsafe_fns_priv_smell", "unsafe_impls", "unsafe_traits", "ffi_calls",
+    "wrapper_newtypes", "wrapper_newtypes_declared",
+    "wrapper_declared_nonconformant", "wrapper_newtypes_undeclared",
+    "raw_ptr_args", "raw_ptr_rets", "raw_ptr_seam", "raw_ptr_wrapped",
+    "raw_ptr_pub_smell", "raw_ptr_priv_smell", "ref_to_type_wrapper",
+    "field_proj_wrapped", "field_proj_outside_impl", "field_ref_wrapped",
+    "void_ptr_seam", "void_ptr_pub_smell", "void_ptr_priv_smell",
+    "raw_ptr_derefs", "raw_ptr_derefs_outside_impl",
+)
 
 
 class DriverUnavailable(Exception):
     """The driver could not measure this tree. Carries the reason to report."""
 
 
-def _collect_emissions(stdout: str) -> tuple[dict, list[dict], int]:
-    """Merge driver JSON lines; return counts, seed entries, crate count."""
+def _collect_emissions(stdout: str) -> tuple[dict, dict, list[dict], int]:
+    """Merge driver JSON lines; return counts, sites, seed entries, crate count."""
     out = {k: 0 for k in _COUNTS}
-    sites = {k: [] for k in _SITES}
+    sites: dict[str, list] = {k: [] for k in SITE_COUNTERS}
     entries: list[dict] = []
     seen = 0
     for line in stdout.splitlines():
@@ -89,10 +102,9 @@ def _collect_emissions(stdout: str) -> tuple[dict, list[dict], int]:
         seen += 1
         for k in _COUNTS:
             out[k] += int(d.get(k, 0))
-        for k in _SITES:
-            sites[k].extend(d.get(k, []))
-    out.update(sites)
-    return out, entries, seen
+        for k, rows in d.get("sites", {}).items():
+            sites.setdefault(k, []).extend(rows)
+    return out, sites, entries, seen
 
 
 def _driver_bin() -> Path:
@@ -154,8 +166,8 @@ def _bust_cache(ws: Path) -> None:
                 root.touch()
 
 
-def measure(ws: Path, names: list[str] | None = None) -> tuple[dict, list[dict]]:
-    """Return ``(tree-wide counts, named seed entries)`` for ``ws``.
+def measure(ws: Path, names: list[str] | None = None) -> tuple[dict, dict, list[dict]]:
+    """Return ``(tree-wide counts, sites per counter, named seed entries)`` for ``ws``.
 
     Type and symbol names resolve independently inside each compiled workspace
     crate. Entries therefore retain their crate name.
@@ -187,9 +199,9 @@ def measure(ws: Path, names: list[str] | None = None) -> tuple[dict, list[dict]]
             f"{r.stderr[-1200:]}")
 
     # `-sys` crates are generated bindings, never the audit subject.
-    out, entries, seen = _collect_emissions(r.stdout)
+    out, sites, entries, seen = _collect_emissions(r.stdout)
     if not seen:
         raise DriverUnavailable(
             "no crate emitted metrics — the build was served from cache, so "
             "nothing was measured")
-    return out, entries
+    return out, sites, entries

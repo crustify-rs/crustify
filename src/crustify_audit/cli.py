@@ -68,6 +68,12 @@ def add_stages(sub: "argparse._SubParsersAction", *,
         help="Report raw-pointer, dereference, manual Deref/DerefMut, and "
              "wrapper-slice sites for these C type or symbol names in each "
              "workspace crate. Raw-pointer matching does not require a wrapper.")
+    m.add_argument(
+        "--sites", nargs="+", action="extend", default=None, metavar="COUNTER",
+        help="Also report where these counters' increments are in the source: "
+             "a `sites` record beside `counts` with one list per counter. Takes "
+             "counters that count source locations (e.g. ref_to_type_wrapper, "
+             "raw_ptr_pub_smell, unsafe_fns_priv_smell), or `all`.")
 
     h = sub.add_parser(
         ub_name,
@@ -187,7 +193,7 @@ def dispatch(layout, args, command: str) -> int:
 
 def _cmd_unsafe(layout: Layout, args) -> int:
     from crustify_audit import unsafe_scan as M
-    doc = M.compose(layout, names=args.name)
+    doc = M.compose(layout, names=args.name, sites=args.sites)
     if args.json:
         print(json.dumps(doc, indent=2))
     else:

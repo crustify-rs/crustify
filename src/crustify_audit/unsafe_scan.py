@@ -108,12 +108,32 @@ def undocumented_unsafe(root: Path) -> dict:
     }
 
 
-def compose(layout: Layout, names: list[str] | None = None) -> dict:
-    """Scan the workspace and return the metrics document."""
+def site_counters(requested: list[str]) -> list[str]:
+    """Validate `--sites` names; `all` expands to every site-bearing counter."""
+    if "all" in requested:
+        return list(driver.SITE_COUNTERS)
+    unknown = [n for n in requested if n not in driver.SITE_COUNTERS]
+    if unknown:
+        raise SystemExit(
+            "unsafe: --sites takes counters that count source locations; "
+            f"unknown or siteless: {' '.join(unknown)}. Valid: "
+            + " ".join(driver.SITE_COUNTERS) + ", or all")
+    return list(dict.fromkeys(requested))
+
+
+def compose(layout: Layout, names: list[str] | None = None,
+            sites: list[str] | None = None) -> dict:
+    """Scan the workspace and return the metrics document.
+
+    ``sites`` names counters whose source locations to report, as a ``sites``
+    record beside ``counts`` with one list per counter.
+    """
     workspace = layout.workspace
+    wanted = site_counters(sites) if sites else None
     doc: dict = {"crate_path": str(workspace)}
+    all_sites: dict = {}
     try:
-        doc["counts"], entries = driver.measure(workspace, names=names)
+        doc["counts"], all_sites, entries = driver.measure(workspace, names=names)
         doc["counts_unavailable"] = None
     except driver.DriverUnavailable as e:
         # No counts rather than substitute ones: see driver.py.
@@ -128,6 +148,8 @@ def compose(layout: Layout, names: list[str] | None = None) -> dict:
                 + " ".join(names))
         doc["seed"] = "--name " + " ".join(names)
         doc["entries"] = entries
+    if wanted is not None:
+        doc["sites"] = {k: all_sites.get(k, []) for k in wanted}
     doc["undocumented_unsafe"] = undocumented_unsafe(workspace)
     doc["derived"] = _derive(doc)
     return doc

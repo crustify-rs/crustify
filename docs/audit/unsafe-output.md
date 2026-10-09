@@ -31,6 +31,7 @@ are not the wrapper being audited.
 - `counts_unavailable`: failure text when counts are unavailable.
 - `derived`: ratios and boundary-oriented comparisons calculated from counts.
 - `seed` and `entries`: present when `--name` requests named source sites.
+- `sites`: present when `--sites` names counters; see Counter sites.
 
 Unsafe-block totals provide context only. A C wrapper must contain unsafe code,
 and combining many small unsafe blocks into fewer large ones improves the count
@@ -44,13 +45,12 @@ FFI seam:
   `counts.unsafe_fns_seam` they partition `counts.unsafe_fns`.
 - `raw_ptr_smell`: raw-pointer argument/return positions not classified as
   seam positions, `counts.raw_ptr_pub_smell + counts.raw_ptr_priv_smell`. With
-  `counts.raw_ptr_seam` they partition `raw_ptr_args + raw_ptr_rets`. Each
-  smell position is listed in `counts.raw_ptr_smell_sites`;
-  `counts.raw_ptr_wrapped` is the subset whose pointee is a C type that already
-  has a wrapper.
+  `counts.raw_ptr_seam` they partition `raw_ptr_args + raw_ptr_rets`.
+  `counts.raw_ptr_wrapped` counts the smell positions whose pointee is a C
+  type that already has a wrapper.
 - `void_ptr_seam`, `void_ptr_pub_smell`, `void_ptr_priv_smell` (counts): the
   `*const c_void` / `*mut c_void` positions among the raw-pointer positions,
-  partitioned the same way; `counts.void_ptr_sites` lists the smell ones.
+  partitioned the same way.
 
 "Pub" is rustc's effective visibility: callable from outside the crate. A
 trait-impl method reachable through a public trait and type is pub; a `pub`
@@ -66,6 +66,18 @@ aliases are resolved, so `type P = *const T` counts as a raw pointer.
 `ref_to_type_wrapper` counts references over layout-compatible wrapper types
 whose underlying memory C may mutate. Read it together with
 `wrapper_newtypes`; when there are no wrapper newtypes, zero is vacuous.
+
+## Counter sites
+
+`--sites COUNTER [COUNTER ...]` (or `--sites all`) adds a `sites` record beside
+`counts`, with one list per named counter: where that counter's increments are
+in the source, as `[{"file": .., "count": N, "lines": [..]}]` per file, lines
+sorted and deduplicated, so `count` is the number of distinct lines. A
+signature position (raw/void pointer, `unsafe fn`, `ref_to_type_wrapper`) is
+sited at its function's signature line; a block, dereference, projection or
+call at the expression. Only counters that count source locations take
+`--sites`: the line and statement totals (`code_lines`, `total_stmts`,
+`unsafe_block_*lines`, `unsafe_block_stmts`) have none.
 
 ## Named sites
 
