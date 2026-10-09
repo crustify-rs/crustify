@@ -228,6 +228,10 @@ Create the wave branch before launching its batches and never check it out: a la
 push to a checked-out branch fails after the batch has been paid for, and one to a missing
 branch silently creates it.
 
+You, the translators and the reviewers share one agent memory directory, and every agent
+reads it at startup. Before launching each wave, curate it: merge duplicate or overlapping
+notes, and correct or delete those the campaign has made stale.
+
 For each scheduled batch:
 - create its artifact sub-dir in its wave sub-dir at `.../wave-<index>/batch-<index>`, and
   write its `schedule.json` entry out verbatim as `batch.json` inside it;
