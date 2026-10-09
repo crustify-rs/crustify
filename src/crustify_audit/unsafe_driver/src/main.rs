@@ -167,6 +167,29 @@ fn ref_to_wrapper_sanctioned(tcx: TyCtxt<'_>, did: DefId) -> bool {
         && STD_VALUE_TRAITS.contains(&tcx.item_name(tr).as_str())
 }
 
+/// True if `t` holds a reference to a layout newtype anywhere: `&W`, `&mut W`,
+/// `&[W]`, or one nested in a generic, tuple or array (`Option<&W>`).
+fn contains_ref_to_type_wrapper(tcx: TyCtxt<'_>, t: Ty<'_>) -> bool {
+    let is_w = |t: Ty<'_>| matches!(t.kind(), ty::TyKind::Adt(d, _) if is_type_wrapper(tcx, d.did()));
+    match t.kind() {
+        ty::TyKind::Ref(_, inner, _) => match inner.kind() {
+            _ if is_w(*inner) => true,
+            ty::TyKind::Slice(e) | ty::TyKind::Array(e, _) if is_w(*e) => true,
+            _ => contains_ref_to_type_wrapper(tcx, *inner),
+        },
+        ty::TyKind::Adt(_, args) => args.types().any(|a| contains_ref_to_type_wrapper(tcx, a)),
+        ty::TyKind::Tuple(tys) => tys.iter().any(|a| contains_ref_to_type_wrapper(tcx, a)),
+        ty::TyKind::Array(e, _) | ty::TyKind::Slice(e) => contains_ref_to_type_wrapper(tcx, *e),
+        _ => false,
+    }
+}
+
+/// True if `t` is a raw pointer or a `NonNull`.
+fn is_raw_or_non_null(tcx: TyCtxt<'_>, t: Ty<'_>) -> bool {
+    t.is_raw_ptr()
+        || matches!(t.kind(), ty::TyKind::Adt(d, _) if tcx.item_name(d.did()).as_str() == "NonNull")
+}
+
 fn is_ref_to_type_wrapper(tcx: TyCtxt<'_>, t: Ty<'_>) -> bool {
     if let ty::TyKind::Ref(_, pointee, _) = t.kind() {
         if let ty::TyKind::Adt(def, _) = pointee.kind() {
@@ -632,6 +655,11 @@ struct Counts {
     // sanctioned (REF_ACCESSORS / STD_VALUE_TRAITS impls) + smell (the rest)
     ref_to_type_wrapper_sanctioned: u64,
     ref_to_type_wrapper_smell: u64,
+    // in function BODIES: a `&W` / `&mut W` (or `&[W]`, `Option<&W>`, ..) formed
+    // from a raw pointer -- `&*p`, `&(*p).f`, an autoref through `*p`, or a
+    // non-local call such as `p.as_ref()` / `NonNull::as_ref` /
+    // `slice::from_raw_parts`. Never sanctioned: target 0.
+    ref_to_type_wrapper_body_smell: u64,
     // `(*p).field` where `p: *C` and `C` has a wrapper (bypasses the
     // accessor): total, and the subset outside any impl/trait (the smell).
     field_proj_wrapped: u64,
@@ -753,6 +781,80 @@ struct BodyVisitor<'a, 'tcx> {
     sites: &'a mut Sites,
 }
 
+impl<'a, 'tcx> BodyVisitor<'a, 'tcx> {
+    /// Is `e` a place reached through a raw-pointer dereference (`*p`,
+    /// `(*p).f`, `(*p)[i]`)?
+    fn raw_based_place(&self, mut e: &'tcx hir::Expr<'tcx>) -> bool {
+        loop {
+            match e.kind {
+                hir::ExprKind::Field(base, _) | hir::ExprKind::Index(base, _, _) => e = base,
+                hir::ExprKind::Unary(hir::UnOp::Deref, inner) => {
+                    return self.typeck.expr_ty_adjusted(inner).is_raw_ptr();
+                }
+                _ => return false,
+            }
+        }
+    }
+
+    fn body_ref(&mut self, e: &'tcx hir::Expr<'tcx>) {
+        self.c.ref_to_type_wrapper_body_smell += 1;
+        self.sites
+            .add("ref_to_type_wrapper_body_smell", counter_site(self.tcx, e.span));
+    }
+
+    /// Count a reference to a layout newtype formed from a raw pointer at `e`.
+    fn count_body_refs(&mut self, e: &'tcx hir::Expr<'tcx>) {
+        let tcx = self.tcx;
+        match e.kind {
+            // `&*p`, `&mut *p`, `&(*p).f`
+            hir::ExprKind::AddrOf(hir::BorrowKind::Ref, _, operand)
+                if is_ref_to_type_wrapper(tcx, self.typeck.expr_ty(e))
+                    && self.raw_based_place(operand) =>
+            {
+                self.body_ref(e);
+                return;
+            }
+            // a non-local call from a raw pointer / NonNull to a reference
+            hir::ExprKind::Call(f, args) => {
+                let callee = match self.typeck.expr_ty(f).kind() {
+                    ty::TyKind::FnDef(did, _) => Some(*did),
+                    _ => None,
+                };
+                if callee.is_some_and(|d| !d.is_local())
+                    && contains_ref_to_type_wrapper(tcx, self.typeck.expr_ty(e))
+                    && args.iter().any(|a| is_raw_or_non_null(tcx, self.typeck.expr_ty_adjusted(a)))
+                {
+                    self.body_ref(e);
+                    return;
+                }
+            }
+            hir::ExprKind::MethodCall(_, recv, args, _) => {
+                let callee = self.typeck.type_dependent_def_id(e.hir_id);
+                if callee.is_some_and(|d| !d.is_local())
+                    && contains_ref_to_type_wrapper(tcx, self.typeck.expr_ty(e))
+                    && std::iter::once(recv)
+                        .chain(args.iter())
+                        .any(|a| is_raw_or_non_null(tcx, self.typeck.expr_ty(a)))
+                {
+                    self.body_ref(e);
+                    return;
+                }
+            }
+            _ => {}
+        }
+        // an autoref through `*p`: `(*p).method()` with `&self` on the wrapper
+        if self.raw_based_place(e) {
+            let borrows = self.typeck.expr_adjustments(e).iter().any(|a| {
+                matches!(a.kind, rustc_middle::ty::adjustment::Adjust::Borrow(_))
+                    && is_ref_to_type_wrapper(tcx, a.target)
+            });
+            if borrows {
+                self.body_ref(e);
+            }
+        }
+    }
+}
+
 impl<'a, 'tcx> Visitor<'tcx> for BodyVisitor<'a, 'tcx> {
     fn visit_stmt(&mut self, s: &'tcx hir::Stmt<'tcx>) {
         self.c.total_stmts += 1;
@@ -763,6 +865,7 @@ impl<'a, 'tcx> Visitor<'tcx> for BodyVisitor<'a, 'tcx> {
     }
 
     fn visit_expr(&mut self, e: &'tcx hir::Expr<'tcx>) {
+        self.count_body_refs(e);
         match e.kind {
             // `unsafe { ... }`
             hir::ExprKind::Block(b, _)
@@ -1946,8 +2049,8 @@ impl Callbacks for MetricsCallbacks {
             }
         }
         println!(
-            "{{\"crate\":\"{}\",\"unsafe_blocks\":{},\"unsafe_block_stmts\":{},\"unsafe_block_lines\":{},\"unsafe_block_code_lines\":{},\"unsafe_blocks_wrapper_impl\":{},\"unsafe_blocks_ffi_export\":{},\"unsafe_fns\":{},\"unsafe_fns_seam\":{},\"unsafe_fns_pub_smell\":{},\"unsafe_fns_priv_smell\":{},\"unsafe_impls\":{},\"unsafe_traits\":{},\"ffi_calls\":{},\"wrapper_newtypes\":{},\"wrapper_newtypes_declared\":{},\"wrapper_declared_nonconformant\":{},\"wrapper_newtypes_undeclared\":{},\"raw_ptr_args\":{},\"raw_ptr_rets\":{},\"raw_ptr_seam\":{},\"raw_ptr_wrapped\":{},\"raw_ptr_pub_smell\":{},\"raw_ptr_priv_smell\":{},\"ref_to_type_wrapper_sanctioned\":{},\"ref_to_type_wrapper_smell\":{},\"field_proj_wrapped\":{},\"field_proj_outside_impl\":{},\"field_ref_wrapped\":{},\"void_ptr_seam\":{},\"void_ptr_pub_smell\":{},\"void_ptr_priv_smell\":{},\"raw_ptr_derefs\":{},\"raw_ptr_derefs_outside_impl\":{},\"total_stmts\":{},\"code_lines\":{},\"sites\":{}}}",
-            krate, c.unsafe_blocks, c.unsafe_block_stmts, c.unsafe_block_lines, c.unsafe_block_code_lines, c.unsafe_blocks_wrapper_impl, c.unsafe_blocks_ffi_export, c.unsafe_fns, c.unsafe_fns_seam, c.unsafe_fns_pub_smell, c.unsafe_fns_priv_smell, c.unsafe_impls, c.unsafe_traits, c.ffi_calls, c.wrapper_newtypes, c.wrapper_newtypes_declared, c.wrapper_declared_nonconformant, c.wrapper_newtypes_undeclared, c.raw_ptr_args, c.raw_ptr_rets, c.raw_ptr_seam, c.raw_ptr_wrapped, c.raw_ptr_pub_smell, c.raw_ptr_priv_smell, c.ref_to_type_wrapper_sanctioned, c.ref_to_type_wrapper_smell, c.field_proj_wrapped, c.field_proj_outside_impl, c.field_ref_wrapped, c.void_ptr_seam, c.void_ptr_pub_smell, c.void_ptr_priv_smell, c.raw_ptr_derefs, c.raw_ptr_derefs_outside_impl, c.total_stmts, c.code_lines,
+            "{{\"crate\":\"{}\",\"unsafe_blocks\":{},\"unsafe_block_stmts\":{},\"unsafe_block_lines\":{},\"unsafe_block_code_lines\":{},\"unsafe_blocks_wrapper_impl\":{},\"unsafe_blocks_ffi_export\":{},\"unsafe_fns\":{},\"unsafe_fns_seam\":{},\"unsafe_fns_pub_smell\":{},\"unsafe_fns_priv_smell\":{},\"unsafe_impls\":{},\"unsafe_traits\":{},\"ffi_calls\":{},\"wrapper_newtypes\":{},\"wrapper_newtypes_declared\":{},\"wrapper_declared_nonconformant\":{},\"wrapper_newtypes_undeclared\":{},\"raw_ptr_args\":{},\"raw_ptr_rets\":{},\"raw_ptr_seam\":{},\"raw_ptr_wrapped\":{},\"raw_ptr_pub_smell\":{},\"raw_ptr_priv_smell\":{},\"ref_to_type_wrapper_sanctioned\":{},\"ref_to_type_wrapper_smell\":{},\"ref_to_type_wrapper_body_smell\":{},\"field_proj_wrapped\":{},\"field_proj_outside_impl\":{},\"field_ref_wrapped\":{},\"void_ptr_seam\":{},\"void_ptr_pub_smell\":{},\"void_ptr_priv_smell\":{},\"raw_ptr_derefs\":{},\"raw_ptr_derefs_outside_impl\":{},\"total_stmts\":{},\"code_lines\":{},\"sites\":{}}}",
+            krate, c.unsafe_blocks, c.unsafe_block_stmts, c.unsafe_block_lines, c.unsafe_block_code_lines, c.unsafe_blocks_wrapper_impl, c.unsafe_blocks_ffi_export, c.unsafe_fns, c.unsafe_fns_seam, c.unsafe_fns_pub_smell, c.unsafe_fns_priv_smell, c.unsafe_impls, c.unsafe_traits, c.ffi_calls, c.wrapper_newtypes, c.wrapper_newtypes_declared, c.wrapper_declared_nonconformant, c.wrapper_newtypes_undeclared, c.raw_ptr_args, c.raw_ptr_rets, c.raw_ptr_seam, c.raw_ptr_wrapped, c.raw_ptr_pub_smell, c.raw_ptr_priv_smell, c.ref_to_type_wrapper_sanctioned, c.ref_to_type_wrapper_smell, c.ref_to_type_wrapper_body_smell, c.field_proj_wrapped, c.field_proj_outside_impl, c.field_ref_wrapped, c.void_ptr_seam, c.void_ptr_pub_smell, c.void_ptr_priv_smell, c.raw_ptr_derefs, c.raw_ptr_derefs_outside_impl, c.total_stmts, c.code_lines,
             sites.json()
         );
         Compilation::Continue

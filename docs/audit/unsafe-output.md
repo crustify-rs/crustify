@@ -72,6 +72,16 @@ the standard value traits `Clone`, `PartialEq`, `Eq`, `PartialOrd`, `Ord`,
 `Hash` and `Debug`, derived or not. The smell should be 0. Read both together
 with `wrapper_newtypes`; when there are no wrapper newtypes, zero is vacuous.
 
+`ref_to_type_wrapper_body_smell` counts the same hazard inside function bodies:
+an expression that forms a reference to a layout wrapper from a raw pointer --
+`&*p`, `&mut *p`, `&(*p).f` (casts included), an autoref through `*p` for a
+`&self` method, or a call to a function from another crate that takes a raw
+pointer or `NonNull` and returns a type holding `&W` (`p.as_ref()`,
+`NonNull::as_ref`, `slice::from_raw_parts`). Calls to the crate's own functions
+are not counted at the call site; their bodies are. Nothing is sanctioned:
+target 0. The driver cannot tell a pointer to C memory from one to a
+Rust-owned value, so both count.
+
 ## Counter sites
 
 `--sites COUNTER [COUNTER ...]` (or `--sites all`) adds a `sites` record beside
