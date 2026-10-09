@@ -120,7 +120,8 @@ may write. Access goes through the handles instead.
   takes a raw pointer or `NonNull` and returns a type holding `&W`
   (`p.as_ref()`, `NonNull::as_ref`, `slice::from_raw_parts`). Calls to the
   crate's own functions are not counted at the call site; their bodies are.
-  Nothing is sanctioned: target 0.
+  A `PhantomData<&W>` marker holds no reference and is not counted. Nothing is
+  sanctioned: target 0.
 - `field_proj_wrapped` counts field accesses `(*p).field` through a raw pointer
   to a wrapped C type or a wrapper, and `field_proj_outside_impl` the subset
   outside any `impl` or trait body. `field_ref_wrapped` counts the references

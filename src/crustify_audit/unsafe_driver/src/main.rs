@@ -177,6 +177,8 @@ fn contains_ref_to_type_wrapper(tcx: TyCtxt<'_>, t: Ty<'_>) -> bool {
             ty::TyKind::Slice(e) | ty::TyKind::Array(e, _) if is_w(*e) => true,
             _ => contains_ref_to_type_wrapper(tcx, *inner),
         },
+        // a zero-sized marker such as a handle's `PhantomData<&'a mut W>` holds no reference
+        ty::TyKind::Adt(d, _) if tcx.item_name(d.did()).as_str() == "PhantomData" => false,
         ty::TyKind::Adt(_, args) => args.types().any(|a| contains_ref_to_type_wrapper(tcx, a)),
         ty::TyKind::Tuple(tys) => tys.iter().any(|a| contains_ref_to_type_wrapper(tcx, a)),
         ty::TyKind::Array(e, _) | ty::TyKind::Slice(e) => contains_ref_to_type_wrapper(tcx, *e),
