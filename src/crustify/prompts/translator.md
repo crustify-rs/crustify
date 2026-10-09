@@ -383,9 +383,9 @@ Proceed with the following steps for a `review` objective.
 A review batch carries one route's whole share of a translated wave: every type, or every
 symbol and callback, that the wave's batches landed, often from several translation batches.
 If the orchestrator's BSan gate on the translated wave failed, its log is
-`crustify/campaigns/<artifact-dir with the batch removed>/bsan-gate.log` (for example
-`crustify/campaigns/<campaign-id>/<link-unit>/<subsystem>/review-wave-<index>/bsan-gate.log`);
-treat every report in it that touches your items as a UB candidate.
+`crustify/campaigns/<campaign-id>/<link-unit>/<subsystem>/review-wave-<index>/bsan-gate.log`,
+with the coordinates of your working branch; treat every report in it that touches your items
+as a UB candidate.
 
 For homing reports and reproducers, use as your artifact dir the part of your working
 branch's name after `crustify/review-batches/`:
