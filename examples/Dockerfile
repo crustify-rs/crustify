@@ -81,7 +81,9 @@
 # bsan's LLVM out from under the matched clang compiler-rt below and there is
 # no error, only instruments that quietly stop finding things. `:latest` moved
 # once already mid-campaign. Bump this deliberately.
-FROM ghcr.io/borrowsanitizer/bsan@sha256:69440e3b6359f3b51ae351998dc4d408777cde23d72a6adc05ed649570cfdce0
+# The previous pin (sha256:69440e3b...) was garbage-collected from ghcr.io; this is
+# `sha-de6ede0`, verified as Ubuntu noble, clang 18, and nightly/bsan on LLVM 23.1.3.
+FROM ghcr.io/borrowsanitizer/bsan@sha256:56bbbfd19dec23ba518e9dc2221045b2869cc1f6aabdd8ea40174a41d860a5b2
 
 ARG CODEQL_VERSION=v2.26.3
 ARG PYTHON_VERSION=3.13
@@ -110,7 +112,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # MSan needs a C compiler whose compiler-rt MATCHES rustc's LLVM, because it is
 # the one sanitizer that tolerates no uninstrumented code: anything built
 # without it leaves shadow memory poisoned and correct reads report as
-# uninitialized. The base image has clang 20 while both Rust toolchains are
+# uninitialized. The base image has clang 18 while both Rust toolchains are
 # LLVM 23, and the bsan toolchain's own clang-23 is a rust-lang/llvm-project
 # build carrying NO compiler-rt at all -- `-fsanitize=memory` there dies on a
 # missing libclang_rt.msan.a. So install a stock LLVM 23 for its runtimes.
@@ -122,7 +124,7 @@ RUN install -m 0755 -d /etc/apt/keyrings \
     && curl -fsSL https://apt.llvm.org/llvm-snapshot.gpg.key \
          -o /etc/apt/keyrings/llvm.asc \
     && echo "deb [signed-by=/etc/apt/keyrings/llvm.asc] \
-https://apt.llvm.org/plucky/ llvm-toolchain-plucky-23 main" \
+https://apt.llvm.org/noble/ llvm-toolchain-noble-23 main" \
        > /etc/apt/sources.list.d/llvm-23.list \
     && apt-get update \
     && apt-get install -y --no-install-recommends clang-23 libclang-rt-23-dev \
@@ -175,15 +177,15 @@ RUN mkdir -p /opt/bsan-shim \
 
 # bindgen for the `-sys` crates. It dlopens libclang at run time and clang-sys
 # looks for the unversioned soname, so the search has to be pinned: this system
-# carries libclang 20 (the base) AND libclang 23 (installed above for MSan's
-# compiler-rt), and an unpinned bindgen may bind either. 20 is the base image's
+# carries libclang 18 (the base) AND libclang 23 (installed above for MSan's
+# compiler-rt), and an unpinned bindgen may bind either. 18 is the base image's
 # own clang, so it matches the headers everything else here is built against.
 # bindgen only parses declarations, so it does not need to agree with the LLVM
 # rustc or bsan codegen against.
 #
 # Installed before CARGO_HOME moves to the /work volume, so the binary lives in
 # the image layer at /root/.cargo/bin and survives a fresh volume.
-ENV LIBCLANG_PATH=/usr/lib/llvm-20/lib
+ENV LIBCLANG_PATH=/usr/lib/llvm-18/lib
 RUN cargo install bindgen-cli --locked
 
 # CodeQL CLI, for wavefront's extraction queries. GitHub publishes this bundle

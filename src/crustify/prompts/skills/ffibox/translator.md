@@ -42,7 +42,7 @@ external consumers. Any UB or functionality test on those should be internal and
 
 ## Review mode
 
-If you discover any soundness or ergonomics hole in ffibox, both in its safe primitives
-or unsafe FFI seams, proceed by emiting a reproducer in `crustify/reviews` to demonstrate
+If you discover any soundness or ergonomics gap in ffibox, both in its safe primitives
+or unsafe FFI seams, emit a reproducer and report in `crustify/reviews` to demonstrate
 the flaw, like you would for bugs in the target repo. Then, emit a patch in a separate
-branch and worktree in the local ffibox checkout.
+branch and worktree of the local ffibox checkout.
