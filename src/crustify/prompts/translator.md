@@ -204,23 +204,24 @@ retain compatible storage and report the blocker.
 ### 1. Functions
 
 Emit `pub fn`; use `pub unsafe fn` only when no safe type-level contract can express the
-caller obligation. Use typed ownership wrappers for arguments and returns. Reconstruct raw
+caller obligation. Use typed wrappers for arguments and returns and reconstruct raw
 pointers at the FFI call only, in a small documented unsafe block.
 
-Separate moved, borrowed, mutable, nullable, scalar, array, and type-erased variants when
-one signature cannot express all valid contracts. Prefer generics for methods that take/return
-type-erased arguments.
+Separate moved (exclusively or refcounted), borrowed (immutably or mutably), nullable, scalar and array variants when one signature cannot
+express all valid contracts. Prefer generics for methods that take/return type-erased arguments.
+
+Prefer stateless ownership. Carry runtime state only when destruction or cloning requires it.
 
 Bind a method to the type that it implements by emiting it in a `impl T` block on the type;
 it takes `&self` or `&mut self` as its first argument. Keep free functions free.
 
-Use a standard-library operation directly when it is equivalent and no C-interoperability
-requirement remains. Prefer stateless ownership. Carry runtime state only when destruction
-or cloning requires it.
+For `wrap`, the ultimate goal is to avoid any unsafe or raw pointer on the exposed public interface,
+and keep any raw or unsafe logic internal. Thus, use safe translated dependencies throughout.
+Keep a documented raw pointer only for an unavailable higher-layer wrapper.
+Update lower-layer raw surfaces when the new safe contract replaces them.
 
-Use safe translated dependencies. Keep a documented raw pointer only for an unavailable
-higher-layer wrapper. Update lower-layer raw surfaces when the new safe contract replaces
-them.
+Use a standard-library operation directly when it is equivalent and no C-interoperability
+requirement remains.
 
 Lifecycle primitives for typed, type-erased or string handles might have been scheduled in your
 worklist, although they implement release/clone/construct strategies/policies emited in a previous
@@ -310,10 +311,10 @@ Cover every instrument prepared by the campaign as a separate obligation:
 - ASan/UBSan: bounds errors, use-after-free, use-after-return, invalid free,
   double free, leak, pointer/alignment UB, and integer/division/shift UB.
 - BSan: conflicting foreign writes and retained foreign pointers across Rust reborrows.
-  Write these tests like the others, but for a `wrap` or `port` objective do not run the
-  BSan variant: it is the slowest instrument, and the orchestrator runs the whole
-  workspace under it at every wave gate and hands its findings to that wave's review.
-  A `review` runs it.
+  Write these tests like the others. BSan is the slowest instrument and reports false
+  positives at the foreign boundary, so run it as the Regressions step prescribes: a
+  `wrap` or `port` batch runs only the tests it expects to trigger BSan, and a `review`
+  runs the whole BSan gate.
 - TSan: races reachable through safe APIs, including every asserted `Send` or `Sync`
   implementation and threaded callback.
 - Miri: Rust-side lifetime, bounds, initialization, validity, alignment, intrinsic, and
@@ -382,10 +383,9 @@ Proceed with the following steps for a `review` objective.
 
 A review batch carries one route's whole share of a translated wave: every type, or every
 symbol and callback, that the wave's batches landed, often from several translation batches.
-If the orchestrator's BSan gate on the translated wave failed, its log is
-`crustify/campaigns/<campaign-id>/<link-unit>/<subsystem>/review-wave-<index>/bsan-gate.log`,
-with the coordinates of your working branch; treat every report in it that touches your items
-as a UB candidate.
+You own the wave's BSan gate: run it on the wave tip you start from and on the tree you
+land, as the Regressions step prescribes, and treat each report that survives its triage as a
+UB candidate of the item it touches.
 
 For homing reports and reproducers, use as your artifact dir the part of your working
 branch's name after `crustify/review-batches/`:
@@ -412,7 +412,8 @@ pointers that could be replaced with safe, idiomatic variants to facilitate API 
 to write less unsafe code. Exclude raw pointers that will be replaced with safe handles
 once their batches get scheduled (i.e. cut SCCs). For those API entry points that must
 legitimately stay unsafe, verify that the safety obligation stated by their `/// SAFETY`
-comment is correct and unambiguous.
+comment is correct and unambiguous. Use `crustify scan-unsafe` as instructed below to
+identify potential smells. Narrow those sites that belong to your target workset.
 
 Fix the affected items and file a report for each defect in
 `crustify/reviews/<artifact-dir>/unsafe/<defect-slug>` that describes your finding.
@@ -479,12 +480,15 @@ be demonstrated by measuring the coverage itself.
 
 ### 1. Static safety scan
 
-Run the static safety scan `crustify scan-unsafe` with your workset names and fix any illegal
-unsafe/raw sites that you might have missed:
+Run the static safety scan `crustify scan-unsafe` on the safe crate and fix
+any smelly unsafe/raw sites that you might have missed. Focus only on those
+sites that belong to your changeset.
 
 ```bash
-crustify scan-unsafe <workdir> --name <batch names...> --json
+crustify scan-unsafe <workdir> --json
 ```
+
+Add `--sites <counters...>` to enumerate the affected sites for the unsafe/raw smells. 
 
 Do NOT run `crustify spawn-auditor`.
 
@@ -502,8 +506,16 @@ cargo test --workspace
 Every FFI, UB, and equivalence test must use the matching reusable sanitized C library or
 a private sanitized replacement.
 
-For `wrap` and `port`, validate under every prepared instrument except BSan; for `review`,
-include BSan.
+Validate under every prepared instrument. BSan is the exception, and runs with discipline:
+
+- `wrap` and `port` run BSan only on the tests they wrote and expect to trigger it, by
+  exact name; never a whole binary or suite.
+- `review` runs the BSan gate: the whole workspace, one invocation per test binary in
+  parallel, each under a `timeout`, once on the wave tip before any fix and once on the
+  tree you land, after your last rebase. Start each run in the background and wait for it
+  to exit; do not poll or read its output while it runs. Pursue only true positives.
+- Only a true positive, a report that reproduces through the Rust side as a single test
+  or standalone reproducer, becomes a UB finding with a fix.
 
 If C changed, run the configured C build and baseline with the Rust feature off. For
 `port`, repeat with the feature on. A wrap-only batch with no C change does not need the
