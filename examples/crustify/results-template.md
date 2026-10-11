@@ -117,6 +117,12 @@ the campaign's.
   two workloads cover the same line. Deriving it arithmetically overstates it.
   It is a reach figure only — it mixes three verdict sources and so bounds no
   single obligation, which is why the three stay reported apart above it
+- `total types` / `total symbols` — the units the target's public API exports, deprecated
+  items excluded: every type, and every symbol and callback, scheduled across all of
+  `schedule.json`, raw-lifetime items aside. They are fixed for the campaign
+- `wrapped types` / `wrapped symbols` — scheduled units whose `Wraps:` or `Replaces:` anchor
+  is present at the campaign tip; the parenthesized share is of `total types` /
+  `total symbols`
 
 Every table below is a heading, a model line and the table. All prose belongs
 in Notes.
@@ -131,10 +137,12 @@ in Notes.
 - **Unit tests** — `<count of #[test]>` (`<n>`% C LoC coverage, `<n>`% Rust LoC coverage)
 - **Total tests** — `<sum of the three counts>` (`<n>`% C LoC coverage, `<n>`% Rust LoC coverage)
 - **C LoC** — `<n>`
+- **total types** — `<n>`
+- **total symbols** — `<n>`
 - **ported types** — `<n>`
 - **ported symbols** — `<n>`
-- **wrapped types** — `<n>`
-- **wrapped symbols** — `<n>`
+- **wrapped types** — `<n>` (`<n>`% of total types)
+- **wrapped symbols** — `<n>` (`<n>`% of total symbols)
 
 Implementation `<provider>/<model>` via `<backend>`; review
 `<provider>/<model>` via `<backend>`.
