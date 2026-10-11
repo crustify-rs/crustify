@@ -60,7 +60,8 @@ item in a private module is not, unless it is re-exported.
 Three counter families partition this way:
 
 - `unsafe_fns` = `unsafe_fns_seam` + `unsafe_fns_pub_smell` +
-  `unsafe_fns_priv_smell`.
+  `unsafe_fns_priv_smell`, and the seam splits by the same visibility:
+  `unsafe_fns_seam` = `unsafe_fns_pub_seam` + `unsafe_fns_priv_seam`.
 - `raw_ptr_args` + `raw_ptr_rets` + `raw_ptr_fields` = `raw_ptr_seam` +
   `raw_ptr_pub_smell` + `raw_ptr_priv_smell`. `raw_ptr_args` and
   `raw_ptr_rets` are the positions in function signatures, `raw_ptr_fields`
@@ -71,9 +72,23 @@ Three counter families partition this way:
   compiled into the crate are skipped: files under the build script's
   `OUT_DIR` and files named `bindings.rs`; bindings in a `-sys` crate are
   excluded with that crate. `raw_ptr_wrapped` counts the smell positions whose
-  pointee is a C type that already has a wrapper.
+  pointee is a C type that already has a wrapper. The seam splits by
+  visibility too (`raw_ptr_seam` = `raw_ptr_pub_seam` + `raw_ptr_priv_seam`),
+  and `raw_ptr_pub` / `raw_ptr_priv` count every position, seam or smell, by
+  visibility: `raw_ptr_args` + `raw_ptr_rets` + `raw_ptr_fields` =
+  `raw_ptr_pub` + `raw_ptr_priv`, `raw_ptr_pub` = `raw_ptr_pub_seam` +
+  `raw_ptr_pub_smell`, and likewise for `_priv`.
 - `void_ptr_seam` + `void_ptr_pub_smell` + `void_ptr_priv_smell` are the
   `*const c_void` / `*mut c_void` positions, a subset of the raw-pointer ones.
+
+`fns_pub` and `fns_priv` count every function and method with a body, safe or
+unsafe, by the same visibility. Methods of impls of canonical `core` /
+`alloc` / `std` traits (`Clone`, `PartialEq`, `Eq`, `PartialOrd`, `Ord`,
+`Hash`, the `fmt` traits, `Drop`, `Default`, `From`, `TryFrom`, `AsRef`,
+`AsMut`, `Borrow`, `BorrowMut`, `Deref`, `DerefMut`; `CANONICAL_STD_TRAITS` in
+the driver) are left out: they are protocol rather than API, and none of them
+is `unsafe`. Every other trait impl's methods count, the crate's own and
+ffibox's included. Trait method declarations without a body are not counted.
 
 A position is every raw pointer in a parameter, return or field type, including
 those nested in references, generic arguments (`Option<*const T>`), tuples,
