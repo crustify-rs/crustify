@@ -64,6 +64,10 @@ the campaign's.
   the agent's own `usage.json`, so it INCLUDES the per-worktree C rebuild
 - `$/type` / `$/symbol` / `$/field` / `$/loc` — that row's `$` over its units,
   its in-scope fields, or its `loc`
+- `tokens` / `rv tokens` / `batch tokens` / `review tokens` / `total tokens` — the
+  tokens behind the `$` cell to their left, in millions: input + output + cache read +
+  cache write, summed over the agent's `usage.json` requests (the figure `crustify cost`
+  reports). Cache reads dominate it
 - `sub-campaign` — the Overview row's `<link-unit>/<subsystem>`, or
   `raw-lifetime-void` / `raw-lifetime-string`
 - `sub-campaign wall` — from its first batch launch through its final review
@@ -147,33 +151,33 @@ in Notes.
 Implementation `<provider>/<model>` via `<backend>`; review
 `<provider>/<model>` via `<backend>`.
 
-| sub-campaign | nr types | nr symbols | sub-campaign wall | batch | review | total | $/type | $/sym |
-|---|---:|---:|---|---:|---:|---:|---:|---:|
-| `raw-lifetime-void` | `0` | `<n>` | `<n>m<n>s` | `$<n>` | `$<n>` | `$<n>` | — | `$<n>` |
-| `raw-lifetime-string` | `0` | `<n>` | `<n>m<n>s` | `$<n>` | `$<n>` | `$<n>` | — | `$<n>` |
-| `<link-unit>/<subsystem>` | `<n>` | `<n>` | `<n>h<n>m<n>s` | `$<n>` | `$<n>` | `$<n>` | `$<n>` | `$<n>` |
-| orchestrator | `<n>` | `<n>` | — | — | — | `$<n>`+ | — | — |
-| **Σ recorded agents** | **`<n>`** | **`<n>`** | **`<n>h<n>m`** | **`$<n>`** | **`$<n>`** | **`$<n>`** | **`$<n>`** | **`$<n>`** |
+| sub-campaign | nr types | nr symbols | sub-campaign wall | batch | batch tokens | review | review tokens | total | total tokens | $/type | $/sym |
+|---|---:|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| `raw-lifetime-void` | `0` | `<n>` | `<n>m<n>s` | `$<n>` | `<n>M` | `$<n>` | `<n>M` | `$<n>` | `<n>M` | — | `$<n>` |
+| `raw-lifetime-string` | `0` | `<n>` | `<n>m<n>s` | `$<n>` | `<n>M` | `$<n>` | `<n>M` | `$<n>` | `<n>M` | — | `$<n>` |
+| `<link-unit>/<subsystem>` | `<n>` | `<n>` | `<n>h<n>m<n>s` | `$<n>` | `<n>M` | `$<n>` | `<n>M` | `$<n>` | `<n>M` | `$<n>` | `$<n>` |
+| orchestrator | `<n>` | `<n>` | — | — | — | — | — | `$<n>`+ | `<n>M`+ | — | — |
+| **Σ recorded agents** | **`<n>`** | **`<n>`** | **`<n>h<n>m`** | **`$<n>`** | **`<n>M`** | **`$<n>`** | **`<n>M`** | **`$<n>`** | **`<n>M`** | **`$<n>`** | **`$<n>`** |
 
 ## Raw lifetime discovery
 
 `<provider>/<model>` via `<backend>`.
 
-| tier | strategies emitted | $ | wall |
-|---|---|---|---|
-| void | `<n>` | `$<n>` | `<n>m<n>s` |
-| string | `<n>` | `$<n>` | `<n>m<n>s` |
-| **Σ** | **`<n>`** | **`$<n>`** | **`<n>m<n>s`** |
+| tier | strategies emitted | $ | tokens | wall |
+|---|---|---|---|---|
+| void | `<n>` | `$<n>` | `<n>M` | `<n>m<n>s` |
+| string | `<n>` | `$<n>` | `<n>M` | `<n>m<n>s` |
+| **Σ** | **`<n>`** | **`$<n>`** | **`<n>M`** | **`<n>m<n>s`** |
 
 ### Review
 
 `<provider>/<model>` via `<backend>`.
 
-| tier | rv loc | rv $ | rv wall |
-|---|---|---|---|
-| void | `+<n>/-<n>` | `$<n>` | `<n>m<n>s` |
-| string | `+<n>/-<n>` | `$<n>` | `<n>m<n>s` |
-| **Σ** | **`+<n>/-<n>`** | **`$<n>`** | **`<n>m<n>s`** |
+| tier | rv loc | rv $ | rv tokens | rv wall |
+|---|---|---|---|---|
+| void | `+<n>/-<n>` | `$<n>` | `<n>M` | `<n>m<n>s` |
+| string | `+<n>/-<n>` | `$<n>` | `<n>M` | `<n>m<n>s` |
+| **Σ** | **`+<n>/-<n>`** | **`$<n>`** | **`<n>M`** | **`<n>m<n>s`** |
 
 ## Types
 
@@ -181,10 +185,10 @@ Implementation `<provider>/<model>` via `<backend>`; review
 
 `<provider>/<model>` via `<backend>`.
 
-| subsystem | wave | batch | types | fields | +LoC | cov (C/Rust) | +unsafe fn smell | +raw-ptr smell | $ | wall | $/type | $/field |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|
-|`<link-unit>/<subsystem>`|`<n>`|`<n>`| `<n>` | `<n>` |`+<n>/-<n>`| `<n>`% / `<n>`% | `±<n>` | `±<n>` | `$<n>` | `<n>m<n>s` | `$<n>` | `$<n>` |
-| **Σ** |  |  | **`<n>`** | **`<n>`** | **`+<n>/-<n>`** | **`<n>`% / `<n>`%** | **`±<n>`** | **`±<n>`** | **`$<n>`** | — | **`$<n>`** | **`$<n>`** |
+| subsystem | wave | batch | types | fields | +LoC | cov (C/Rust) | +unsafe fn smell | +raw-ptr smell | $ | tokens | wall | $/type | $/field |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+|`<link-unit>/<subsystem>`|`<n>`|`<n>`| `<n>` | `<n>` |`+<n>/-<n>`| `<n>`% / `<n>`% | `±<n>` | `±<n>` | `$<n>` | `<n>M` | `<n>m<n>s` | `$<n>` | `$<n>` |
+| **Σ** |  |  | **`<n>`** | **`<n>`** | **`+<n>/-<n>`** | **`<n>`% / `<n>`%** | **`±<n>`** | **`±<n>`** | **`$<n>`** | **`<n>M`** | — | **`$<n>`** | **`$<n>`** |
 
 ### Batches — wrap: tests
 
@@ -199,10 +203,10 @@ Implementation `<provider>/<model>` via `<backend>`; review
 
 `<provider>/<model>` via `<backend>`.
 
-| subsystem | wave | batch | types | fields | +LoC | cov (C/Rust) | +unsafe fn smell | +raw-ptr smell | $ | wall | $/type | $/field |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|
-|`<link-unit>/<subsystem>`|`<n>`|`<n>`| `<n>` | `<n>` |`+<n>/-<n>`| `<n>`% / `<n>`% | `±<n>` | `±<n>` | `$<n>` | `<n>m<n>s` | `$<n>` | `$<n>` |
-| **Σ** |  |  | **`<n>`** | **`<n>`** | **`+<n>/-<n>`** | **`<n>`% / `<n>`%** | **`±<n>`** | **`±<n>`** | **`$<n>`** | — | **`$<n>`** | **`$<n>`** |
+| subsystem | wave | batch | types | fields | +LoC | cov (C/Rust) | +unsafe fn smell | +raw-ptr smell | $ | tokens | wall | $/type | $/field |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+|`<link-unit>/<subsystem>`|`<n>`|`<n>`| `<n>` | `<n>` |`+<n>/-<n>`| `<n>`% / `<n>`% | `±<n>` | `±<n>` | `$<n>` | `<n>M` | `<n>m<n>s` | `$<n>` | `$<n>` |
+| **Σ** |  |  | **`<n>`** | **`<n>`** | **`+<n>/-<n>`** | **`<n>`% / `<n>`%** | **`±<n>`** | **`±<n>`** | **`$<n>`** | **`<n>M`** | — | **`$<n>`** | **`$<n>`** |
 
 ### Batches — port: tests
 
@@ -217,10 +221,10 @@ Implementation `<provider>/<model>` via `<backend>`; review
 
 `<provider>/<model>` via `<backend>`.
 
-| subsystem | wave | batch | types | +LoC | cov (C/Rust) | +unsafe fn smell | +raw-ptr smell | rv loc | rv $ | rv wall | rv $/type |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-|`<link-unit>/<subsystem>`|`<n>`|`<n>`| `<n>` |`+<n>/-<n>`| `<n>`% / `<n>`% | `±<n>` | `±<n>` | `+<n>/-<n>` | `$<n>` | `<n>m<n>s` | `$<n>` |
-| **Σ** |  |  | **`<n>`** | **`+<n>/-<n>`** | **`<n>`% / `<n>`%** | **`±<n>`** | **`±<n>`** | **`+<n>/-<n>`** | **`$<n>`** | — | **`$<n>`** |
+| subsystem | wave | batch | types | +LoC | cov (C/Rust) | +unsafe fn smell | +raw-ptr smell | rv loc | rv $ | rv tokens | rv wall | rv $/type |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+|`<link-unit>/<subsystem>`|`<n>`|`<n>`| `<n>` |`+<n>/-<n>`| `<n>`% / `<n>`% | `±<n>` | `±<n>` | `+<n>/-<n>` | `$<n>` | `<n>M` | `<n>m<n>s` | `$<n>` |
+| **Σ** |  |  | **`<n>`** | **`+<n>/-<n>`** | **`<n>`% / `<n>`%** | **`±<n>`** | **`±<n>`** | **`+<n>/-<n>`** | **`$<n>`** | **`<n>M`** | — | **`$<n>`** |
 
 ### Batches — review: tests
 
@@ -246,11 +250,11 @@ Implementation `<provider>/<model>` via `<backend>`; review
 
 `<provider>/<model>` via `<backend>`.
 
-| subsystem | wave | batch | objective | symbols | loc | +LoC | cov (C/Rust) | +unsafe fn smell | +raw-ptr smell | $ | wall | $/symbol | $/loc |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-|`<link-unit>/<subsystem>`|`<n>`|`<n>`| wrap | `<n>` | `<n>` |`+<n>/-<n>`| `<n>`% / `<n>`% | `±<n>` | `±<n>` | `$<n>` | `<n>m<n>s` | `$<n>` | `$<n>` |
-|`<link-unit>/<subsystem>`|`<n>`|`<n>`| port | `<n>` | `<n>` |`+<n>/-<n>`| `<n>`% / `<n>`% | `±<n>` | `±<n>` | `$<n>` | `<n>m<n>s` | `$<n>` | `$<n>` |
-| **Σ** |  |  |  | **`<n>`** | **`<n>`** | **`+<n>/-<n>`** | **`<n>`% / `<n>`%** | **`±<n>`** | **`±<n>`** | **`$<n>`** | — | **`$<n>`** | **`$<n>`** |
+| subsystem | wave | batch | objective | symbols | loc | +LoC | cov (C/Rust) | +unsafe fn smell | +raw-ptr smell | $ | tokens | wall | $/symbol | $/loc |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+|`<link-unit>/<subsystem>`|`<n>`|`<n>`| wrap | `<n>` | `<n>` |`+<n>/-<n>`| `<n>`% / `<n>`% | `±<n>` | `±<n>` | `$<n>` | `<n>M` | `<n>m<n>s` | `$<n>` | `$<n>` |
+|`<link-unit>/<subsystem>`|`<n>`|`<n>`| port | `<n>` | `<n>` |`+<n>/-<n>`| `<n>`% / `<n>`% | `±<n>` | `±<n>` | `$<n>` | `<n>M` | `<n>m<n>s` | `$<n>` | `$<n>` |
+| **Σ** |  |  |  | **`<n>`** | **`<n>`** | **`+<n>/-<n>`** | **`<n>`% / `<n>`%** | **`±<n>`** | **`±<n>`** | **`$<n>`** | **`<n>M`** | — | **`$<n>`** | **`$<n>`** |
 
 ### Batches: tests
 
@@ -266,10 +270,10 @@ Implementation `<provider>/<model>` via `<backend>`; review
 
 `<provider>/<model>` via `<backend>`.
 
-| subsystem | wave | batch | symbols | +LoC | cov (C/Rust) | +unsafe fn smell | +raw-ptr smell | rv loc | rv $ | rv wall | rv $/symbol |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-|`<link-unit>/<subsystem>`|`<n>`|`<n>`| `<n>` |`+<n>/-<n>`| `<n>`% / `<n>`% | `±<n>` | `±<n>` | `+<n>/-<n>` | `$<n>` | `<n>m<n>s` | `$<n>` |
-| **Σ** |  |  | **`<n>`** | **`+<n>/-<n>`** | **`<n>`% / `<n>`%** | **`±<n>`** | **`±<n>`** | **`+<n>/-<n>`** | **`$<n>`** | — | **`$<n>`** |
+| subsystem | wave | batch | symbols | +LoC | cov (C/Rust) | +unsafe fn smell | +raw-ptr smell | rv loc | rv $ | rv tokens | rv wall | rv $/symbol |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+|`<link-unit>/<subsystem>`|`<n>`|`<n>`| `<n>` |`+<n>/-<n>`| `<n>`% / `<n>`% | `±<n>` | `±<n>` | `+<n>/-<n>` | `$<n>` | `<n>M` | `<n>m<n>s` | `$<n>` |
+| **Σ** |  |  | **`<n>`** | **`+<n>/-<n>`** | **`<n>`% / `<n>`%** | **`±<n>`** | **`±<n>`** | **`+<n>/-<n>`** | **`$<n>`** | **`<n>M`** | — | **`$<n>`** |
 
 ### Batches — review: tests
 
