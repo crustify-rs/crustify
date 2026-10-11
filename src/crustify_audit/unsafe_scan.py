@@ -190,11 +190,15 @@ def summarize(doc: dict) -> str:
             f"  code lines           {c.get('code_lines')}",
             f"  unsafe blocks        {c.get('unsafe_blocks')}"
             f"   ({d.get('unsafe_loc_ratio')} of code lines — context, not a score)",
+            f"  fns                  {(c.get('fns_pub') or 0) + (c.get('fns_priv') or 0)}"
+            f"   ({c.get('fns_pub')} pub + {c.get('fns_priv')} private; canonical std trait methods excluded)",
             f"  unsafe fn            {c.get('unsafe_fns')}"
-            f"   ({c.get('unsafe_fns_seam')} seam, smell {c.get('unsafe_fns_pub_smell')} pub + {c.get('unsafe_fns_priv_smell')} private)",
+            f"   (seam {c.get('unsafe_fns_pub_seam')} pub + {c.get('unsafe_fns_priv_seam')} private,"
+            f" smell {c.get('unsafe_fns_pub_smell')} pub + {c.get('unsafe_fns_priv_smell')} private)",
             f"  raw ptr positions    {(c.get('raw_ptr_args') or 0) + (c.get('raw_ptr_rets') or 0) + (c.get('raw_ptr_fields') or 0)}"
             f"   ({c.get('raw_ptr_args')} args, {c.get('raw_ptr_rets')} rets, {c.get('raw_ptr_fields')} fields;"
-            f" {c.get('raw_ptr_seam')} seam, smell {c.get('raw_ptr_pub_smell')} pub + {c.get('raw_ptr_priv_smell')} private)",
+            f" {c.get('raw_ptr_pub')} pub = seam {c.get('raw_ptr_pub_seam')} + smell {c.get('raw_ptr_pub_smell')},"
+            f" {c.get('raw_ptr_priv')} private = seam {c.get('raw_ptr_priv_seam')} + smell {c.get('raw_ptr_priv_smell')})",
             f"  void ptr positions   {(c.get('void_ptr_seam') or 0) + (c.get('void_ptr_pub_smell') or 0) + (c.get('void_ptr_priv_smell') or 0)}"
             f"   ({c.get('void_ptr_seam')} seam, smell {c.get('void_ptr_pub_smell')} pub + {c.get('void_ptr_priv_smell')} private)",
             f"  ref to layout type   {(c.get('ref_to_type_wrapper_sanctioned') or 0) + (c.get('ref_to_type_wrapper_smell') or 0)}"

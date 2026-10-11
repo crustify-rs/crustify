@@ -69,7 +69,7 @@ def add_stages(sub: "argparse._SubParsersAction", *,
              "a `sites` record beside `counts` with one list per counter. Takes "
              "counters that count source locations (e.g. "
              "ref_to_type_wrapper_smell, raw_ptr_pub_smell, "
-             "unsafe_fns_priv_smell), or `all`. Line and statement totals have "
+             "unsafe_fns_priv_smell, fns_pub), or `all`. Line and statement totals have "
              "no sites.")
 
     h = sub.add_parser(

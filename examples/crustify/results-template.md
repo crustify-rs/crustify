@@ -327,9 +327,13 @@ Deterministic `crustify scan-unsafe <workdir>`; no model.
 | `unsafe_blocks_ffi_export` | `<n>` | `<n>` | … |
 | `unsafe_fns` | `<n>` | `<n>` | … |
 | `unsafe_fns_seam` | `<n>` | `<n>` | … |
+| `unsafe_fns_pub_seam` | `<n>` | `<n>` | … |
+| `unsafe_fns_priv_seam` | `<n>` | `<n>` | … |
 | **`unsafe fn` smell** | **`<n>`** | `<n>` | … |
 | `unsafe_fns_pub_smell` | `<n>` | `<n>` | … |
 | `unsafe_fns_priv_smell` | `<n>` | `<n>` | … |
+| `fns_pub` | `<n>` | `<n>` | … |
+| `fns_priv` | `<n>` | `<n>` | … |
 | `unsafe_impls` / `unsafe_traits` | `<n>` / `<n>` | `<n>` / `<n>` | … |
 | `ffi_calls` | `<n>` | `<n>` | … |
 | `wrapper_newtypes` | `<n>` | `<n>` | … |
@@ -341,8 +345,12 @@ Deterministic `crustify scan-unsafe <workdir>`; no model.
 | `raw_ptr_fields` | `<n>` | `<n>` | … |
 | **total positions** | **`<n>`** | `<n>` | … |
 | `raw_ptr_seam` | `<n>` | `<n>` | … |
+| `raw_ptr_pub_seam` | `<n>` | `<n>` | … |
+| `raw_ptr_priv_seam` | `<n>` | `<n>` | … |
 | `raw_ptr_pub_smell` | `<n>` | `<n>` | … |
 | `raw_ptr_priv_smell` | `<n>` | `<n>` | … |
+| `raw_ptr_pub` | `<n>` | `<n>` | … |
+| `raw_ptr_priv` | `<n>` | `<n>` | … |
 | **smell (total − seam)** | **`<n>`** | `<n>` | … |
 | `raw_ptr_wrapped` | `<n>` | `<n>` | … |
 | `raw_ptr_derefs` | `<n>` | `<n>` | … |
