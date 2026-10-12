@@ -106,21 +106,22 @@ the campaign's.
 - `rv $` / `rv wall` / `rv loc` — the REVIEW agent's cost, elapsed time, and net
   `.rs` line delta (`+ins/-del`) of its landing commit. Under subscription
   billing `rv $` is an API-equivalent comparison value, not a charged amount
-- `UB tests` / `Equiv tests` / `Unit tests` — counts of `#[test]`
-  functions under `mod ub_tests` / `mod equiv_tests` / `mod units_tests`. Each
+- `UB safe tests` / `UB unsafe tests` / `Equiv tests` / `Unit tests` — counts of
+  `#[test]` functions in the `tests/ub_safe`, `tests/ub_unsafe` and `tests/equiv`
+  test binaries and in the library's `#[cfg(test)]` modules. Each
   coverage pair comes from running only that workload, against the
   coverage-instrumented target C sources and authored Rust sources; state any
-  excluded files or generated code in Notes. The three workloads bound different
+  excluded files or generated code in Notes. The four workloads bound different
   obligations, so report them apart and never sum them. Report the UB
   workload once, from a single coverage run on the plain build: it executes once
   per prepared sanitizer, but those runs share one test set and re-counting them
   inflates the figure. Name the instruments it ran under in Notes
-- `Total tests` — the three counts added. Its coverage pair is NOT the three
-  pairs added: it comes from one run of all three workloads together and is the
+- `Total tests` — the four counts added. Its coverage pair is NOT the four
+  pairs added: it comes from one run of all four workloads together and is the
   union of the lines any of them reached, which is smaller than the sum wherever
   two workloads cover the same line. Deriving it arithmetically overstates it.
-  It is a reach figure only — it mixes three verdict sources and so bounds no
-  single obligation, which is why the three stay reported apart above it
+  It is a reach figure only — it mixes four verdict sources and so bounds no
+  single obligation, which is why the four stay reported apart above it
 - `total types` / `total symbols` — the units the target's public API exports, deprecated
   items excluded: every type, and every symbol and callback, scheduled across all of
   `schedule.json`, raw-lifetime items aside. They are fixed for the campaign
@@ -139,7 +140,7 @@ in Notes.
 - **UB unsafe tests** — `<count of #[test]>` (`<n>`% C LoC coverage, `<n>`% Rust LoC coverage)
 - **Equiv tests** — `<count of #[test]>` (`<n>`% C LoC coverage, `<n>`% Rust LoC coverage)
 - **Unit tests** — `<count of #[test]>` (`<n>`% C LoC coverage, `<n>`% Rust LoC coverage)
-- **Total tests** — `<sum of the three counts>` (`<n>`% C LoC coverage, `<n>`% Rust LoC coverage)
+- **Total tests** — `<sum of the four counts>` (`<n>`% C LoC coverage, `<n>`% Rust LoC coverage)
 - **C LoC** — `<n>`
 - **total types** — `<n>`
 - **total symbols** — `<n>`
