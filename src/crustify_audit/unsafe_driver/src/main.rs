@@ -659,11 +659,19 @@ fn in_wrapper_impl(tcx: TyCtxt<'_>, mut did: DefId) -> bool {
 
 #[derive(Default)]
 struct Counts {
+    code_lines: u64, // crate-wide physical LoC: non-blank, non-`//`-comment source lines
+    total_stmts: u64,
+    // Every fn and method with a body, safe or unsafe, by effective visibility;
+    // methods of CANONICAL_STD_TRAITS impls are left out (protocol, not API).
+    fns_pub: u64,
+    fns_priv: u64,
     unsafe_blocks: u64,
     unsafe_block_stmts: u64,
     unsafe_block_lines: u64, // raw brace-to-brace span (incl. blanks/comments)
     unsafe_block_code_lines: u64, // non-blank, non-`//`-comment lines only
     unsafe_blocks_wrapper_impl: u64, // unsafe blocks inside `impl <wrapper T>`
+    // unsafe blocks at the C-ABI boundary (`in_ffi_export`: `#[no_mangle]` /
+    // `#[export_name]` / `extern "C"`)
     unsafe_blocks_ffi_export: u64,
     // `unsafe fn` DECLARATIONS the crate defines, by rustc's effective
     // visibility (callable from outside the crate): unsafe_fns = unsafe_fns_pub
@@ -673,19 +681,8 @@ struct Counts {
     unsafe_fns: u64,
     unsafe_fns_pub: u64,
     unsafe_fns_priv: u64,
-    // Every fn and method with a body, safe or unsafe, by effective visibility;
-    // methods of CANONICAL_STD_TRAITS impls are left out (protocol, not API).
-    fns_pub: u64,
-    fns_priv: u64,
     unsafe_impls: u64,
     unsafe_traits: u64,
-    // Calls to a foreign item -- one declared in an `extern` block
-    // (`is_foreign_item`), which is the FFI boundary itself and is
-    // crate-agnostic: a bindgen `*-sys` binding, `libc`, or a local
-    // `extern "C"` block all resolve to it. Calling one is an unsafe op, so
-    // this is the crate-wide unsafe-FFI-call surface. Resolution-based on the
-    // callee, so alias- and re-export-proof.
-    ffi_calls: u64,
     // Wrapper inventory. `wrapper_newtypes` is the STRUCTURAL count -- every
     // `#[repr(transparent)]` newtype over a pointer or a `#[repr(C)]` type --
     // split into the two roles. The `_declared` pair is the `CCell` baseline
@@ -696,29 +693,44 @@ struct Counts {
     wrapper_newtypes: u64,
     wrapper_newtypes_declared: u64,
     wrapper_declared_nonconformant: u64,
-    wrapper_newtypes_undeclared: u64, // unsafe blocks at the C-ABI boundary
-    //   (`in_ffi_export`: `#[no_mangle]` /
-    //   `#[export_name]` / `extern "C"`)
+    wrapper_newtypes_undeclared: u64,
     // Raw-pointer positions in the items the crate defines, nested ones
-    // included, partitioned by where they sit:
+    // included, each in exactly one counter by where it sits:
     //   raw_ptr_ty_{pub,priv}               (fields of types)
     //   raw_ptr_fn_{pub,priv}_{safe,unsafe} (fn signatures, args and returns)
     // A type's fields count by the TYPE's effective visibility, private fields
     // of a public type included. A signature counts by the fn's effective
     // visibility and its safety: `_safe` is reachable from safe code,
-    // `_unsafe` only by an `unsafe fn` caller. raw_ptr_fn_pub_safe is the safe
-    // public interface; raw_ptr_ty_pub + raw_ptr_fn_pub_safe the raw pointers
-    // on the safe public interface. Methods implementing another crate's
-    // trait are left out: that crate fixed their signature.
+    // `_unsafe` only by an `unsafe fn` caller. raw_ptr_ty_pub +
+    // raw_ptr_fn_pub_safe are the raw pointers on the safe public interface.
+    // Methods implementing another crate's trait are left out: that crate
+    // fixed their signature.
     raw_ptr_ty_pub: u64,
     raw_ptr_ty_priv: u64,
     raw_ptr_fn_pub_safe: u64,
     raw_ptr_fn_pub_unsafe: u64,
     raw_ptr_fn_priv_safe: u64,
     raw_ptr_fn_priv_unsafe: u64,
-    // of raw_ptr, the positions whose pointee is a C type with a wrapper
+    // of those positions, the ones whose pointee is a C type with a wrapper
     // (`*mut ffi::git_oid` where `GitOid` exists)
     raw_ptr_wrapped: u64,
+    raw_ptr_derefs: u64,
+    raw_ptr_derefs_outside_impl: u64, // ...of those, the subset NOT in any impl/trait body
+    // the `*c_void` positions among them, partitioned the same way:
+    // void_ptr_ty_{pub,priv}, void_ptr_fn_{pub,priv}_{safe,unsafe}
+    void_ptr_ty_pub: u64,
+    void_ptr_ty_priv: u64,
+    void_ptr_fn_pub_safe: u64,
+    void_ptr_fn_pub_unsafe: u64,
+    void_ptr_fn_priv_safe: u64,
+    void_ptr_fn_priv_unsafe: u64,
+    // `(*p).field` where `p: *C` and `C` has a wrapper (bypasses the
+    // accessor): total, and the subset outside any impl/trait (the smell).
+    ty_field_proj_wrapped: u64,
+    ty_field_proj_outside_impl: u64,
+    // `&(*p).field` / `&mut (*p).field` where `p: *C` and `C` has a wrapper --
+    // a reference one level down into memory C may write. Should be 0.
+    ty_field_ref_wrapped: u64,
     // `&W` / `&mut W` (incl. the receiver), W a layout newtype, partitioned:
     // sanctioned (REF_ACCESSORS / STD_VALUE_TRAITS impls) + smell (the rest)
     ref_to_type_wrapper_sanctioned: u64,
@@ -731,26 +743,15 @@ struct Counts {
     // `impl Deref` / `impl DerefMut` (core) whose Self is a wrapper, layout or
     // handle. Never sanctioned: target 0.
     deref_impl_on_wrapper: u64,
-    // `(*p).field` where `p: *C` and `C` has a wrapper (bypasses the
-    // accessor): total, and the subset outside any impl/trait (the smell).
-    ty_field_proj_wrapped: u64,
-    ty_field_proj_outside_impl: u64,
-    // `&(*p).field` / `&mut (*p).field` where `p: *C` and `C` has a wrapper --
-    // a reference one level down into memory C may write. Should be 0.
-    ty_field_ref_wrapped: u64,
-    // the `*c_void` positions among them, partitioned the same way:
-    // void_ptr_ty_{pub,priv}, void_ptr_fn_{pub,priv}_{safe,unsafe}
-    void_ptr_ty_pub: u64,
-    void_ptr_ty_priv: u64,
-    void_ptr_fn_pub_safe: u64,
-    void_ptr_fn_pub_unsafe: u64,
-    void_ptr_fn_priv_safe: u64,
-    void_ptr_fn_priv_unsafe: u64,
-    raw_ptr_derefs: u64,
-    raw_ptr_derefs_outside_impl: u64, // ...of those, the subset NOT in any impl/trait body
-    total_stmts: u64,
-    code_lines: u64, // crate-wide physical LoC: non-blank, non-`//`-comment source lines
+    // Calls to a foreign item -- one declared in an `extern` block
+    // (`is_foreign_item`), which is the FFI boundary itself and is
+    // crate-agnostic: a bindgen `*-sys` binding, `libc`, or a local
+    // `extern "C"` block all resolve to it. Calling one is an unsafe op, so
+    // this is the crate-wide unsafe-FFI-call surface. Resolution-based on the
+    // callee, so alias- and re-export-proof.
+    ffi_calls: u64,
 }
+
 
 impl Counts {
     /// The partition counter `name`, for the position helpers.
@@ -1820,8 +1821,8 @@ impl Callbacks for MetricsCallbacks {
             }
         }
         println!(
-            "{{\"crate\":\"{}\",\"unsafe_blocks\":{},\"unsafe_block_stmts\":{},\"unsafe_block_lines\":{},\"unsafe_block_code_lines\":{},\"unsafe_blocks_wrapper_impl\":{},\"unsafe_blocks_ffi_export\":{},\"unsafe_fns\":{},\"unsafe_fns_pub\":{},\"unsafe_fns_priv\":{},\"fns_pub\":{},\"fns_priv\":{},\"unsafe_impls\":{},\"unsafe_traits\":{},\"ffi_calls\":{},\"wrapper_newtypes\":{},\"wrapper_newtypes_declared\":{},\"wrapper_declared_nonconformant\":{},\"wrapper_newtypes_undeclared\":{},\"raw_ptr_ty_pub\":{},\"raw_ptr_ty_priv\":{},\"raw_ptr_fn_pub_safe\":{},\"raw_ptr_fn_pub_unsafe\":{},\"raw_ptr_fn_priv_safe\":{},\"raw_ptr_fn_priv_unsafe\":{},\"raw_ptr_wrapped\":{},\"ref_to_type_wrapper_sanctioned\":{},\"ref_to_type_wrapper_smell\":{},\"ref_to_type_wrapper_body_smell\":{},\"deref_impl_on_wrapper\":{},\"ty_field_proj_wrapped\":{},\"ty_field_proj_outside_impl\":{},\"ty_field_ref_wrapped\":{},\"void_ptr_ty_pub\":{},\"void_ptr_ty_priv\":{},\"void_ptr_fn_pub_safe\":{},\"void_ptr_fn_pub_unsafe\":{},\"void_ptr_fn_priv_safe\":{},\"void_ptr_fn_priv_unsafe\":{},\"raw_ptr_derefs\":{},\"raw_ptr_derefs_outside_impl\":{},\"total_stmts\":{},\"code_lines\":{},\"sites\":{}}}",
-            krate, c.unsafe_blocks, c.unsafe_block_stmts, c.unsafe_block_lines, c.unsafe_block_code_lines, c.unsafe_blocks_wrapper_impl, c.unsafe_blocks_ffi_export, c.unsafe_fns, c.unsafe_fns_pub, c.unsafe_fns_priv, c.fns_pub, c.fns_priv, c.unsafe_impls, c.unsafe_traits, c.ffi_calls, c.wrapper_newtypes, c.wrapper_newtypes_declared, c.wrapper_declared_nonconformant, c.wrapper_newtypes_undeclared, c.raw_ptr_ty_pub, c.raw_ptr_ty_priv, c.raw_ptr_fn_pub_safe, c.raw_ptr_fn_pub_unsafe, c.raw_ptr_fn_priv_safe, c.raw_ptr_fn_priv_unsafe, c.raw_ptr_wrapped, c.ref_to_type_wrapper_sanctioned, c.ref_to_type_wrapper_smell, c.ref_to_type_wrapper_body_smell, c.deref_impl_on_wrapper, c.ty_field_proj_wrapped, c.ty_field_proj_outside_impl, c.ty_field_ref_wrapped, c.void_ptr_ty_pub, c.void_ptr_ty_priv, c.void_ptr_fn_pub_safe, c.void_ptr_fn_pub_unsafe, c.void_ptr_fn_priv_safe, c.void_ptr_fn_priv_unsafe, c.raw_ptr_derefs, c.raw_ptr_derefs_outside_impl, c.total_stmts, c.code_lines,
+            "{{\"crate\":\"{}\",\"code_lines\":{},\"total_stmts\":{},\"fns_pub\":{},\"fns_priv\":{},\"unsafe_blocks\":{},\"unsafe_block_stmts\":{},\"unsafe_block_lines\":{},\"unsafe_block_code_lines\":{},\"unsafe_blocks_wrapper_impl\":{},\"unsafe_blocks_ffi_export\":{},\"unsafe_fns\":{},\"unsafe_fns_pub\":{},\"unsafe_fns_priv\":{},\"unsafe_impls\":{},\"unsafe_traits\":{},\"wrapper_newtypes\":{},\"wrapper_newtypes_declared\":{},\"wrapper_declared_nonconformant\":{},\"wrapper_newtypes_undeclared\":{},\"raw_ptr_ty_pub\":{},\"raw_ptr_ty_priv\":{},\"raw_ptr_fn_pub_safe\":{},\"raw_ptr_fn_pub_unsafe\":{},\"raw_ptr_fn_priv_safe\":{},\"raw_ptr_fn_priv_unsafe\":{},\"raw_ptr_wrapped\":{},\"raw_ptr_derefs\":{},\"raw_ptr_derefs_outside_impl\":{},\"void_ptr_ty_pub\":{},\"void_ptr_ty_priv\":{},\"void_ptr_fn_pub_safe\":{},\"void_ptr_fn_pub_unsafe\":{},\"void_ptr_fn_priv_safe\":{},\"void_ptr_fn_priv_unsafe\":{},\"ty_field_proj_wrapped\":{},\"ty_field_proj_outside_impl\":{},\"ty_field_ref_wrapped\":{},\"ref_to_type_wrapper_sanctioned\":{},\"ref_to_type_wrapper_smell\":{},\"ref_to_type_wrapper_body_smell\":{},\"deref_impl_on_wrapper\":{},\"ffi_calls\":{},\"sites\":{}}}",
+            krate, c.code_lines, c.total_stmts, c.fns_pub, c.fns_priv, c.unsafe_blocks, c.unsafe_block_stmts, c.unsafe_block_lines, c.unsafe_block_code_lines, c.unsafe_blocks_wrapper_impl, c.unsafe_blocks_ffi_export, c.unsafe_fns, c.unsafe_fns_pub, c.unsafe_fns_priv, c.unsafe_impls, c.unsafe_traits, c.wrapper_newtypes, c.wrapper_newtypes_declared, c.wrapper_declared_nonconformant, c.wrapper_newtypes_undeclared, c.raw_ptr_ty_pub, c.raw_ptr_ty_priv, c.raw_ptr_fn_pub_safe, c.raw_ptr_fn_pub_unsafe, c.raw_ptr_fn_priv_safe, c.raw_ptr_fn_priv_unsafe, c.raw_ptr_wrapped, c.raw_ptr_derefs, c.raw_ptr_derefs_outside_impl, c.void_ptr_ty_pub, c.void_ptr_ty_priv, c.void_ptr_fn_pub_safe, c.void_ptr_fn_pub_unsafe, c.void_ptr_fn_priv_safe, c.void_ptr_fn_priv_unsafe, c.ty_field_proj_wrapped, c.ty_field_proj_outside_impl, c.ty_field_ref_wrapped, c.ref_to_type_wrapper_sanctioned, c.ref_to_type_wrapper_smell, c.ref_to_type_wrapper_body_smell, c.deref_impl_on_wrapper, c.ffi_calls,
             sites.json()
         );
         Compilation::Continue
