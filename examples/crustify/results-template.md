@@ -321,6 +321,8 @@ Deterministic `crustify scan-unsafe <workdir>`; no model.
 |---|---|---|---|
 | `code_lines` | `<n>` | `<n>` | … |
 | `total_stmts` | `<n>` | `<n>` | … |
+| `fns_pub` | `<n>` | `<n>` | … |
+| `fns_priv` | `<n>` | `<n>` | … |
 | `unsafe_blocks` | `<n>` | `<n>` | … |
 | `unsafe_block_stmts` | `<n>` | `<n>` | … |
 | `unsafe_block_lines` | `<n>` | `<n>` | … |
@@ -330,10 +332,7 @@ Deterministic `crustify scan-unsafe <workdir>`; no model.
 | `unsafe_fns` | `<n>` | `<n>` | … |
 | **`unsafe_fns_pub`** | **`<n>`** | `<n>` | … |
 | `unsafe_fns_priv` | `<n>` | `<n>` | … |
-| `fns_pub` | `<n>` | `<n>` | … |
-| `fns_priv` | `<n>` | `<n>` | … |
 | `unsafe_impls` / `unsafe_traits` | `<n>` / `<n>` | `<n>` / `<n>` | … |
-| `ffi_calls` | `<n>` | `<n>` | … |
 | `wrapper_newtypes` | `<n>` | `<n>` | … |
 | `wrapper_newtypes_declared` | `<n>` | `<n>` | … |
 | `wrapper_declared_nonconformant` | `<n>` | `<n>` | … |
@@ -346,19 +345,21 @@ Deterministic `crustify scan-unsafe <workdir>`; no model.
 | `raw_ptr_fn_priv_unsafe` | `<n>` | `<n>` | … |
 | `raw_ptr_wrapped` | `<n>` | `<n>` | … |
 | `raw_ptr_derefs` | `<n>` | `<n>` | … |
-| `ref_to_type_wrapper_sanctioned` | `<n>` | `<n>` | … |
-| `ref_to_type_wrapper_smell` | `<n>` | `<n>` | … |
-| `ref_to_type_wrapper_body_smell` | `<n>` | `<n>` | … |
-| `deref_impl_on_wrapper` | `<n>` | `<n>` | … |
-| `ty_field_proj_wrapped` | `<n>` | `<n>` | … |
-| `ty_field_proj_outside_impl` | `<n>` | `<n>` | … |
-| `ty_field_ref_wrapped` | `<n>` | `<n>` | … |
+| `raw_ptr_derefs_outside_impl` | `<n>` | `<n>` | … |
 | `void_ptr_ty_pub` | `<n>` | `<n>` | … |
 | `void_ptr_ty_priv` | `<n>` | `<n>` | … |
 | `void_ptr_fn_pub_safe` | `<n>` | `<n>` | … |
 | `void_ptr_fn_pub_unsafe` | `<n>` | `<n>` | … |
 | `void_ptr_fn_priv_safe` | `<n>` | `<n>` | … |
 | `void_ptr_fn_priv_unsafe` | `<n>` | `<n>` | … |
+| `ty_field_proj_wrapped` | `<n>` | `<n>` | … |
+| `ty_field_proj_outside_impl` | `<n>` | `<n>` | … |
+| `ty_field_ref_wrapped` | `<n>` | `<n>` | … |
+| `ref_to_type_wrapper_sanctioned` | `<n>` | `<n>` | … |
+| `ref_to_type_wrapper_smell` | `<n>` | `<n>` | … |
+| `ref_to_type_wrapper_body_smell` | `<n>` | `<n>` | … |
+| `deref_impl_on_wrapper` | `<n>` | `<n>` | … |
+| `ffi_calls` | `<n>` | `<n>` | … |
 
 ## Notes
 
