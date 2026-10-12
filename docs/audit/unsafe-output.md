@@ -71,7 +71,7 @@ crate: a `pub` item in a private module is not, unless it is re-exported, and a
   fn's visibility and its safety: `_safe` is a safe fn, reachable from safe
   code, `_unsafe` an `unsafe fn`, whose caller has taken the obligation on. The
   raw pointers on the safe public interface are `raw_ptr_ty_pub` +
-  `raw_ptr_fn_pub_safe`. `raw_ptr_wrapped` counts the positions whose pointee is a C type that already has a
+  `raw_ptr_fn_pub_safe`. `raw_ptr_has_ty_wrapper` counts the positions whose pointee is a C type that already has a
   wrapper. Generated bindings compiled into the crate are skipped: files under
   the build script's `OUT_DIR` and files named `bindings.rs`; bindings in a
   `-sys` crate are excluded with that crate.

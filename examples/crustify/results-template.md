@@ -346,7 +346,7 @@ Deterministic `crustify scan-unsafe <workdir>`; no model.
 | `raw_ptr_fn_pub_unsafe` | `<n>` | `<n>` | … |
 | `raw_ptr_fn_priv_safe` | `<n>` | `<n>` | … |
 | `raw_ptr_fn_priv_unsafe` | `<n>` | `<n>` | … |
-| `raw_ptr_wrapped` | `<n>` | `<n>` | … |
+| `raw_ptr_has_ty_wrapper` | `<n>` | `<n>` | … |
 | `raw_ptr_derefs` | `<n>` | `<n>` | … |
 | `raw_ptr_derefs_outside_impl` | `<n>` | `<n>` | … |
 | `void_ptr_ty_pub` | `<n>` | `<n>` | … |
