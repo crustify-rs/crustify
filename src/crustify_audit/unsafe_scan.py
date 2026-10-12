@@ -182,9 +182,12 @@ def _derive(doc: dict) -> dict:
     loc = c.get("code_lines") or 0
     ub = c.get("unsafe_blocks") or 0
     fns = c.get("unsafe_fns") or 0
-    pub_fns = c.get("fns_pub") or 0
+    pub_fns = (c.get("safe_fns_pub") or 0) + (c.get("unsafe_fns_pub") or 0)
+    priv_fns = (c.get("safe_fns_priv") or 0) + (c.get("unsafe_fns_priv") or 0)
     return {
         # Categorical: what the crate's public interface hands its callers.
+        "fns_pub": pub_fns,
+        "fns_priv": priv_fns,
         "unsafe_fn_pub_ratio": round((c.get("unsafe_fns_pub") or 0) / fns, 4) if fns else None,
         "unsafe_fn_share_of_pub_fns": round((c.get("unsafe_fns_pub") or 0) / pub_fns, 4) if pub_fns else None,
         "raw_ptr_pub": (c.get("raw_ptr_ty_pub") or 0) + (c.get("raw_ptr_fn_pub_safe") or 0)
@@ -208,8 +211,10 @@ def summarize(doc: dict) -> str:
             f"  code lines           {c.get('code_lines')}",
             f"  unsafe blocks        {c.get('unsafe_blocks')}"
             f"   ({d.get('unsafe_loc_ratio')} of code lines — context, not a score)",
-            f"  fns                  {(c.get('fns_pub') or 0) + (c.get('fns_priv') or 0)}"
-            f"   ({c.get('fns_pub')} pub + {c.get('fns_priv')} private; canonical std trait methods excluded)",
+            f"  fns                  {d.get('fns_pub', 0) + d.get('fns_priv', 0)}"
+            f"   (pub {c.get('safe_fns_pub')} safe + {c.get('unsafe_fns_pub')} unsafe,"
+            f" private {c.get('safe_fns_priv')} safe + {c.get('unsafe_fns_priv')} unsafe;"
+            f" methods of other crates' traits excluded)",
             f"  unsafe fn            {c.get('unsafe_fns')}"
             f"   ({c.get('unsafe_fns_pub')} pub + {c.get('unsafe_fns_priv')} private;"
             f" methods of other crates' traits excluded)",
@@ -223,7 +228,7 @@ def summarize(doc: dict) -> str:
             f" private {c.get('void_ptr_fn_priv_safe')} safe + {c.get('void_ptr_fn_priv_unsafe')} unsafe)",
             f"  ref to layout type   {(c.get('ref_to_type_wrapper_sanctioned') or 0) + (c.get('ref_to_type_wrapper_smell') or 0)}"
             f"   ({c.get('ref_to_type_wrapper_sanctioned')} sanctioned, smell {c.get('ref_to_type_wrapper_smell')}"
-            f" — target 0) over {c.get('wrapper_newtypes')} layout newtypes",
+            f" — target 0) over {c.get('ty_wrapper_newtypes')} layout newtypes",
             f"  ref formed in body   {c.get('ref_to_type_wrapper_body_smell')}   (target 0)",
             f"  Deref on wrapper     {c.get('deref_impl_on_wrapper')}   (target 0)",
             f"  ffi calls            {c.get('ffi_calls')}",
