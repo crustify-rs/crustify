@@ -116,7 +116,7 @@ def site_counters(requested: list[str], ffibox: bool = False) -> list[str]:
         return list(valid)
     unknown = [n for n in requested if n not in valid]
     if unknown:
-        hint = (" (the ffibox_* / handle_* / *_impl_* counters need --ffibox)"
+        hint = (" (the --ffibox counters need --ffibox)"
                 if any(n in driver.FFIBOX_COUNTERS for n in unknown) else "")
         raise SystemExit(
             "unsafe: --sites takes counters that count source locations; "
@@ -253,16 +253,19 @@ def summarize(doc: dict) -> str:
                     merged[name] = merged.get(name, 0) + v
             return ", ".join(f"{name} {v}" for name, v in sorted(merged.items())) or "none"
 
-        families = (("ffibox owner", "ffibox_{}_owners"), ("ffibox handle", "ffibox_{}_handles"),
-                    ("own owner", "non_ffibox_{}_owner"), ("own borrow", "non_ffibox_{}_borrow"),
-                    ("std borrow", "std_{}_borrow"))
+        kinds = (("ffibox owner", "ffibox_owners"), ("ffibox handle", "ffibox_handles"),
+                 ("own owner", "non_ffibox_owner"), ("own borrow", "non_ffibox_borrow"),
+                 ("std borrow", "std_ty_borrow"))
         lines.append("  ffibox")
-        for where, label in (("fn", "in fn sig"), ("ty", "in type")):
-            for name, stem in families:
-                k = stem.format(where)
-                lines.append(
-                    f"  {name + ' ' + label:<24}{n[k + '_pub']} pub + {n[k + '_priv']} private"
-                    f"   ({keys(k + '_pub', k + '_priv')})")
+        for name, k in kinds:
+            pub, priv = f"fn_sig_{k}_pub", f"fn_sig_{k}_priv"
+            lines.append(
+                f"  {name + ' in fn sig':<24}{n[pub]} pub + {n[priv]} private   ({keys(pub, priv)})")
+        for name, k in kinds:
+            fp, fq, tp = f"ty_pub_fields_pub_{k}", f"ty_pub_fields_priv_{k}", f"ty_priv_{k}"
+            lines.append(
+                f"  {name + ' in fields':<24}pub types: {n[fp]} pub + {n[fq]} private fields,"
+                f" private types: {n[tp]}   ({keys(fp, fq, tp)})")
         lines += [
             f"  ffibox trait impls   {n['ffibox_impl_macro']} by macro + {n['ffibox_impl_manual']} by hand"
             f"   (by hand: {keys('ffibox_impl_manual')})",

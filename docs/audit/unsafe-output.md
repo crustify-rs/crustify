@@ -203,28 +203,28 @@ impl.
 Signature positions, parameters and return types, nested ones included as for
 raw pointers (`Option<CBox<T>>` is one `CBox`):
 
-- `ffibox_fn_owners_*`: an ffibox owner (`CBox`, `CArc`, `CVec`, `CStrBox`,
+- `fn_sig_ffibox_owners_*`: an ffibox owner (`CBox`, `CArc`, `CVec`, `CStrBox`,
   `CVal`), keyed by type. Aliases are resolved, so `type FooBox = CBox<..>` is
   a `CBox`.
-- `ffibox_fn_handles_*`: an ffibox-based borrowed handle: one of the crate's
+- `fn_sig_ffibox_handles_*`: an ffibox-based borrowed handle: one of the crate's
   own, keyed `Ref`, `Mut` or `Locked` (the types its `impl CCell` binds to
   `Ref` / `Mut` and its `impl CGuarded` binds to `Locked`, read off the impls
   rather than the names), or one of ffibox's borrowed views, keyed by type
   (`CSlice`, `CSliceMut`, `CBorrowedPtr`, `CGuardedRef`, `CGuard`). A method's
   receiver counts here when it is such a handle, since that is where a C
   function's borrowed `T *` lands.
-- `non_ffibox_fn_owner_*`: one of the crate's own owners, keyed by type: a
+- `fn_sig_non_ffibox_owner_*`: one of the crate's own owners, keyed by type: a
   crate-defined type with an `impl Drop` that no ffibox macro emitted (the
-  `drop_impl` types). Together with `ffibox_fn_*` it says how much of the
+  `drop_impl` types). Together with `fn_sig_ffibox_*` it says how much of the
   ownership an API hands out goes through ffibox and how much does not.
-  (`ffibox_fn_owners_*` is its ffibox counterpart.)
-- `non_ffibox_fn_borrow_*`: one of the crate's other borrowed types, keyed by
+  (`fn_sig_ffibox_owners_*` is its ffibox counterpart.)
+- `fn_sig_non_ffibox_borrow_*`: one of the crate's other borrowed types, keyed by
   type: a crate-defined type with a lifetime parameter of its own that is
   neither one of its `CCell` / `CGuarded` handles nor one of its own owners.
   These are hand-written handles, iterators and views; the key names them, so
   an iterator is told from a handle written instead of a `CCell` one. A
   method's receiver of such a type counts here too.
-- `std_fn_borrow_*`: a reference to a standard borrowed view, keyed `&CStr`,
+- `fn_sig_std_ty_borrow_*`: a reference to a standard borrowed view, keyed `&CStr`,
   `&str`, `&mut str`, `&[T]` or `&mut [T]` (nested ones included). A slice of
   elements implementing ffibox's `CPlainElem` (primitives, plain newtypes,
   `MaybeUninit<T>`, raw pointers, arrays of those) is a plain buffer, the
@@ -235,15 +235,20 @@ Each splits by the fn's visibility, `_pub` and `_priv`. The
 functions read are free functions, inherent methods and the crate's own trait
 declarations. A trait impl's methods are left out, since the trait fixes their
 signatures. A method's `self` receiver counts only when it is a borrowed handle
-(`ffibox_fn_handles_*` or `non_ffibox_fn_borrow_*`): `&self` on an owner or a
+(`fn_sig_ffibox_handles_*` or `fn_sig_non_ffibox_borrow_*`): `&self` on an owner or a
 plain value borrows a Rust value, not a C object, and is skipped.
 
-The `*_ty_*` families (`ffibox_ty_owners_*`, `ffibox_ty_handles_*`,
-`non_ffibox_ty_owner_*`, `non_ffibox_ty_borrow_*`, `std_ty_borrow_*`) count
-the same kinds in the fields of the structs, unions and enums the crate
-defines, `_pub` / `_priv` by the type's visibility as for `raw_ptr_ty_*`:
-what the crate's types hold, where the `*_fn_*` families are what its fns take
-and return.
+The field families -- `ty_pub_fields_pub_<kind>`, `ty_pub_fields_priv_<kind>`
+and `ty_priv_<kind>`, for the kinds `ffibox_owners`, `ffibox_handles`,
+`non_ffibox_owner`, `non_ffibox_borrow` and `std_ty_borrow` -- count the same
+kinds in the fields of the structs, unions and enums the crate defines, split
+as for `raw_ptr_ty_*`: by the type's visibility and, in a public type, by the
+field's own. They say what the crate's types hold, where the `fn_sig_*`
+families say what its functions take and return. `fn_sig_std_ty_borrow_*` and
+`fn_sig_non_ffibox_borrow_*` never count the same type: the first is a
+reference to a standard view (`&str`, `&[T]`, `&CStr`), the second a crate
+type with a lifetime parameter; a nested position such as `&[MyIter<'a>]`
+counts once in each.
 
 Trait impls, counted as distinct crate-defined types per trait, so a type
 implementing `From<A>` and `From<B>` counts once for `From`:
