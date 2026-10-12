@@ -74,16 +74,35 @@ SITE_COUNTERS = (
     "void_ptr_seam", "void_ptr_pub_smell", "void_ptr_priv_smell",
     "raw_ptr_derefs", "raw_ptr_derefs_outside_impl",
 )
+#: The `--ffibox` counters (`UM_FFIBOX` in the driver), in its order. Each is
+#: a breakdown `{type, handle kind or trait: N}` rather than a number, and each
+#: counts source locations, so all of them take `--sites` under `--ffibox`.
+FFIBOX_COUNTERS = (
+    "ffibox_sig_owners_pub", "ffibox_sig_owners_pub_seam",
+    "ffibox_sig_owners_priv", "ffibox_sig_owners_priv_seam",
+    "ffibox_sig_handles_pub", "ffibox_sig_handles_pub_seam",
+    "ffibox_sig_handles_priv", "ffibox_sig_handles_priv_seam",
+    "non_ffibox_sig_owner_pub", "non_ffibox_sig_owner_pub_seam",
+    "non_ffibox_sig_owner_priv", "non_ffibox_sig_owner_priv_seam",
+    "non_ffibox_sig_borrow_pub", "non_ffibox_sig_borrow_pub_seam",
+    "non_ffibox_sig_borrow_priv", "non_ffibox_sig_borrow_priv_seam",
+    "std_sig_borrow_pub", "std_sig_borrow_pub_seam", "std_sig_borrow_priv", "std_sig_borrow_priv_seam",
+    "ffibox_impl_macro", "ffibox_impl_manual",
+    "ffibox_define_ctype_macro", "ffibox_define_ctype_manual",
+    "drop_impl", "clone_impl",
+)
 
 
 class DriverUnavailable(Exception):
     """The driver could not measure this tree. Carries the reason to report."""
 
 
-def _collect_emissions(stdout: str) -> tuple[dict, dict, int]:
-    """Merge driver JSON lines; return counts, sites, crate count."""
+def _collect_emissions(stdout: str) -> tuple[dict, dict, int, dict]:
+    """Merge driver JSON lines; return counts, sites, crate count, and the
+    `--ffibox` breakdowns (empty unless the driver emitted them)."""
     out = {k: 0 for k in _COUNTS}
     sites: dict[str, list] = {k: [] for k in SITE_COUNTERS}
+    ffibox: dict[str, dict[str, int]] = {}
     seen = 0
     for line in stdout.splitlines():
         line = line.strip()
@@ -96,6 +115,14 @@ def _collect_emissions(stdout: str) -> tuple[dict, dict, int]:
         crate = d.get("crate", "")
         if crate.endswith("_sys"):
             continue
+        if "ffibox" in d:
+            for k in FFIBOX_COUNTERS:
+                by = ffibox.setdefault(k, {})
+                for name, n in d["ffibox"].get(k, {}).items():
+                    by[name] = by.get(name, 0) + int(n)
+            for k, rows in d.get("sites", {}).items():
+                sites.setdefault(k, []).extend(rows)
+            continue
         if "unsafe_blocks" not in d:
             continue
         seen += 1
@@ -103,7 +130,7 @@ def _collect_emissions(stdout: str) -> tuple[dict, dict, int]:
             out[k] += int(d.get(k, 0))
         for k, rows in d.get("sites", {}).items():
             sites.setdefault(k, []).extend(rows)
-    return out, sites, seen
+    return out, sites, seen, ffibox
 
 
 def _driver_bin() -> Path:
@@ -165,8 +192,12 @@ def _bust_cache(ws: Path) -> None:
                 root.touch()
 
 
-def measure(ws: Path) -> tuple[dict, dict]:
-    """Return ``(tree-wide counts, sites per counter)`` for ``ws``."""
+def measure(ws: Path, ffibox: bool = False,
+            seams: list[str] | None = None) -> tuple[dict, dict, dict | None]:
+    """Return ``(tree-wide counts, sites per counter, ffibox breakdowns)`` for
+    ``ws``. The breakdowns are ``None`` unless ``ffibox`` asked for them.
+    ``seams`` are the fn names the driver treats as the FFI seam; none by
+    default."""
     driver = _driver_bin()
     sysroot = subprocess.run(["rustc", f"+{_TOOLCHAIN}", "--print", "sysroot"],
                              capture_output=True, text=True).stdout.strip()
@@ -181,6 +212,9 @@ def measure(ws: Path) -> tuple[dict, dict]:
     env["SYSROOT"] = sysroot
     ld = env.get("LD_LIBRARY_PATH", "")
     env["LD_LIBRARY_PATH"] = f"{sysroot}/lib" + (f":{ld}" if ld else "")
+    if ffibox:
+        env["UM_FFIBOX"] = "1"
+    env["UM_SEAM_FNS"] = ",".join(seams or ())
 
     r = subprocess.run(["cargo", f"+{_TOOLCHAIN}", "build"], cwd=ws, env=env,
                        capture_output=True, text=True)
@@ -191,9 +225,9 @@ def measure(ws: Path) -> tuple[dict, dict]:
             f"{r.stderr[-1200:]}")
 
     # `-sys` crates are generated bindings, never the audit subject.
-    out, sites, seen = _collect_emissions(r.stdout)
+    out, sites, seen, ffibox_counts = _collect_emissions(r.stdout)
     if not seen:
         raise DriverUnavailable(
             "no crate emitted metrics — the build was served from cache, so "
             "nothing was measured")
-    return out, sites
+    return out, sites, (ffibox_counts if ffibox else None)

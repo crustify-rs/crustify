@@ -34,61 +34,32 @@ use rustc_hir::intravisit::{self, Visitor};
 use rustc_middle::middle::codegen_fn_attrs::CodegenFnAttrFlags;
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeckResults};
 use rustc_span::def_id::DefId;
-use rustc_span::hygiene::{ExpnKind, MacroKind};
+use rustc_span::hygiene::ExpnKind;
 use rustc_span::Span;
 use std::collections::{HashMap, HashSet};
 
-/// FFI-seam conversion routines: raw pointers in these signatures are the
-/// expected boundary, not a smell. Mirrors `ffibox`'s seam surface — the
-/// `define_ctype!` handles, the owners (`CBox`, `CStrBox`, `CVec`, `CArc`,
-/// `CGuardedArc`) and the run views — plus the names the ported trees add for
-/// callback wrappers.
-const SEAM_FNS: &[&str] = &[
-    // ffibox: outbound, Rust-side pointee or the C type (`as_c_ptr`)
-    "as_ptr",
-    "as_mut_ptr",
-    "as_c_ptr",
-    "as_non_null",
-    // the run views' plain-element pointers
-    "as_elem_ptr",
-    "as_mut_elem_ptr",
-    // the handles' erasure trio: erase shared / erase exclusive / reconstitute
-    "as_void_ptr",
-    "as_mut_void_ptr",
-    "from_void_ptr",
-    // inbound: borrow (`from_ptr`) or adopt (`from_raw*`, `from_c*`)
-    "from_ptr",
-    "from_raw",
-    "from_raw_with",
-    "from_raw_parts",
-    "from_raw_parts_with",
-    "from_c",
-    "from_c_with",
-    // surrender ownership
-    "into_raw",
-    "into_raw_with",
-    "into_raw_parts",
-    "into_raw_parts_with",
-    "into_c",
-    // ported trees: safe callback wrapper -> raw C fn pointer
-    "to_raw",
-    // unsafe lifecycle trait methods: release, clone, share, lock and dispose
-    // hooks whose `unsafe fn` signature the trait fixes, so an implementation
-    // cannot be safe
-    "c_drop",
-    "c_drop_len",
-    "c_dup",
-    "c_clone_len",
-    "c_up_ref",
-    "c_is_sole_owner",
-    "c_lock",
-    "c_unlock",
-    "c_dispose",
-];
+/// FFI-seam conversion routines, by name: raw pointers in these signatures are
+/// the expected boundary, not a smell. The caller names them: `UM_SEAM_FNS` is
+/// a comma-separated list of exact fn names (`scan-unsafe --seams` reads them
+/// from the seam files a crate or a convention ships, such as ffibox's
+/// `seams.txt`). Unset or empty, no fn is seam by name; the C-ABI gateway
+/// (`in_ffi_export`) is seam either way, by structure.
+fn seam_fns() -> &'static HashSet<String> {
+    static SEAMS: std::sync::OnceLock<HashSet<String>> = std::sync::OnceLock::new();
+    SEAMS.get_or_init(|| {
+        std::env::var("UM_SEAM_FNS")
+            .unwrap_or_default()
+            .split(',')
+            .map(str::trim)
+            .filter(|n| !n.is_empty())
+            .map(String::from)
+            .collect()
+    })
+}
 
 fn is_seam_fn(tcx: TyCtxt<'_>, did: DefId) -> bool {
     tcx.opt_item_name(did)
-        .is_some_and(|n| SEAM_FNS.contains(&n.as_str()))
+        .is_some_and(|n| seam_fns().contains(n.as_str()))
 }
 
 /// True if `t` is `PhantomData<..>` -- a ZST, so it is not the wrapper's
@@ -818,7 +789,7 @@ struct Counts {
 
 /// Source sites `(file, 1-based line)` per counter, keyed by the counter's
 /// output name: every increment of a location-counting counter records where it
-/// happened. Line and statement totals have none. Aggregated by `sites_json`.
+/// happened. Line and statement totals have none. Aggregated by `Sites::json`.
 #[derive(Default)]
 struct Sites(std::collections::BTreeMap<&'static str, Vec<(String, usize)>>);
 
@@ -879,32 +850,6 @@ fn span_site(tcx: TyCtxt<'_>, span: Span) -> (String, usize) {
         .unwrap_or_default();
     let line = sm.lookup_char_pos(span.lo()).line;
     (file, line)
-}
-
-/// Aggregate `(file, line)` sites into audit.py's
-/// `[{"file":..,"count":N,"lines":[..]}]` JSON (one row per file, lines sorted/deduped).
-fn sites_json(sites: &[(String, usize)]) -> String {
-    use std::collections::BTreeMap;
-    let mut by_file: BTreeMap<&str, Vec<usize>> = BTreeMap::new();
-    for (f, l) in sites {
-        by_file.entry(f.as_str()).or_default().push(*l);
-    }
-    let rows: Vec<String> = by_file
-        .iter()
-        .map(|(f, lines)| {
-            let mut ls = lines.clone();
-            ls.sort_unstable();
-            ls.dedup();
-            let arr: Vec<String> = ls.iter().map(|l| l.to_string()).collect();
-            format!(
-                "{{\"file\":\"{}\",\"count\":{},\"lines\":[{}]}}",
-                f,
-                ls.len(),
-                arr.join(",")
-            )
-        })
-        .collect();
-    format!("[{}]", rows.join(","))
 }
 
 struct BodyVisitor<'a, 'tcx> {
@@ -1112,170 +1057,436 @@ impl<'a, 'tcx> Visitor<'tcx> for BodyVisitor<'a, 'tcx> {
     }
 }
 
-/// The `ffibox` macros, tallied by expansion site. `define_ctype!` emits the
-/// layout type and its handles; the `impl_*!` family binds a C lifecycle or
-/// lock routine to a policy (or, for `impl_cguarded!`, to the layout type).
-const FFIBOX_MACROS: &[&str] = &[
-    "define_ctype",
-    "impl_cdrop",
-    "impl_cdrop_str",
-    "impl_cdrop_void",
-    "impl_cdupclone",
-    "impl_cdupclone_str",
-    "impl_crefclone",
-    "impl_clendrop",
-    "impl_clenclone",
-    "impl_cdispose",
-    "impl_cguarded",
+// --------------------------------------------------------------- ffibox mode
+
+/// `UM_FFIBOX` (`scan-unsafe --ffibox`) counters, each broken down by ffibox
+/// type, handle kind or trait. Every one counts source locations, so all take
+/// `--sites`. `_pub` / `_priv` is rustc's effective visibility, as elsewhere:
+/// of the fn for a signature position, of the implementing type for an impl.
+///
+///  - `ffibox_sig_owners_*`: an ffibox owner (`CBox`, `CArc`, `CVec`,
+///    `CStrBox`, `CVal`) in a parameter or return type, nested ones included,
+///    keyed by type name. `_pub` is the public API proper and `_priv` the
+///    private remainder; a seam fn's positions are named in `_pub_seam` /
+///    `_priv_seam` rather than dropped, as for `raw_ptr_*`, so the four parts
+///    are every position.
+///  - `ffibox_sig_handles_*`: likewise for ffibox-based borrowed handles: the
+///    crate's own, the types its `CCell` / `CGuarded` impls name as `Ref`,
+///    `Mut` and `Locked` (keyed by that kind), and ffibox's borrowed views
+///    (`CSlice`, `CSliceMut`, `CBorrowedPtr`, `CGuardedRef`, `CGuard`, keyed by
+///    type). A method's receiver counts here when it is such a handle: that is
+///    where a C function's borrowed `T *` lands.
+///  - `non_ffibox_sig_owner_*`: likewise for the crate's own owners, the types
+///    with an `impl Drop` no ffibox macro emitted (`drop_impl`), keyed by type:
+///    ownership the API hands out outside ffibox's `CBox` / `CArc` / `CVec`.
+///  - `non_ffibox_sig_borrow_*`: likewise for the crate's other borrowed
+///    types, those with a lifetime parameter that are neither its `CCell` /
+///    `CGuarded` handles nor its own owners (hand-written handles, iterators,
+///    views), keyed by type; a method's receiver of such a type counts too.
+///  - `std_sig_borrow_*`: a reference to a standard borrowed view, keyed
+///    `&CStr`, `&str`, `&mut str`, `&[T]` or `&mut [T]`; a slice of
+///    `CPlainElem` elements, a plain buffer, is keyed `&[CPlainElem]` /
+///    `&mut [CPlainElem]` apart, since it is the expected shape.
+///  - `ffibox_impl_macro` / `ffibox_impl_manual`: distinct crate-defined types
+///    implementing each ffibox trait, keyed by trait, split by whether an
+///    ffibox macro (`define_ctype!`, `impl_cdrop!`, ..) emitted the impl.
+///  - `ffibox_define_ctype_macro` / `ffibox_define_ctype_manual`: the crate's
+///    layout types (its `CCell` implementors), keyed by type, split by whether
+///    `define_ctype!` emitted the `CCell` impl or the author wrote it.
+///  - `drop_impl`: crate-defined types with an `impl Drop` no ffibox macro
+///    emitted, keyed by type: owners written instead of ffibox's `CBox` /
+///    `CArc` / `CVec`.
+///  - `clone_impl`: crate-defined types with a hand-written `impl Clone`
+///    (neither derived nor emitted by an ffibox macro), keyed by type: copies
+///    written instead of ffibox's clone policies.
+const FFIBOX_COUNTERS: &[&str] = &[
+    "ffibox_sig_owners_pub",
+    "ffibox_sig_owners_pub_seam",
+    "ffibox_sig_owners_priv",
+    "ffibox_sig_owners_priv_seam",
+    "ffibox_sig_handles_pub",
+    "ffibox_sig_handles_pub_seam",
+    "ffibox_sig_handles_priv",
+    "ffibox_sig_handles_priv_seam",
+    "non_ffibox_sig_owner_pub",
+    "non_ffibox_sig_owner_pub_seam",
+    "non_ffibox_sig_owner_priv",
+    "non_ffibox_sig_owner_priv_seam",
+    "non_ffibox_sig_borrow_pub",
+    "non_ffibox_sig_borrow_pub_seam",
+    "non_ffibox_sig_borrow_priv",
+    "non_ffibox_sig_borrow_priv_seam",
+    "std_sig_borrow_pub",
+    "std_sig_borrow_pub_seam",
+    "std_sig_borrow_priv",
+    "std_sig_borrow_priv_seam",
+    "ffibox_impl_macro",
+    "ffibox_impl_manual",
+    "ffibox_define_ctype_macro",
+    "ffibox_define_ctype_manual",
+    "drop_impl",
+    "clone_impl",
 ];
 
-/// The crate whose primitives `UM_MODE=usage` profiles.
+/// Compiler-emitted marker impls a `#[derive]` adds beside the trait asked
+/// for. They assert nothing the author wrote.
+const INTERNAL_MARKER_TRAITS: &[&str] = &["TrivialClone", "StructuralPartialEq"];
+
 fn is_ffibox_crate(tcx: TyCtxt<'_>, did: DefId) -> bool {
     tcx.crate_name(did.krate).as_str() == "ffibox"
 }
 
-/// Recursively tally references to ffibox structs in a type.
-fn count_ty(tcx: TyCtxt<'_>, t: Ty<'_>, m: &mut std::collections::BTreeMap<String, u64>) {
-    match t.kind() {
-        ty::TyKind::Adt(def, args) => {
-            let did = def.did();
-            if is_ffibox_crate(tcx, did) {
-                *m.entry(tcx.item_name(did).to_string()).or_default() += 1;
+/// True when `span` is output of an ffibox macro (`define_ctype!`,
+/// `impl_cguarded!`, ..), at any depth of expansion. Resolved through the
+/// macro's definition, so a renamed import still counts.
+fn from_ffibox_macro(tcx: TyCtxt<'_>, span: Span) -> bool {
+    let mut ctxt = span.ctxt();
+    while !ctxt.is_root() {
+        let data = ctxt.outer_expn_data();
+        if data.macro_def_id.is_some_and(|m| is_ffibox_crate(tcx, m)) {
+            return true;
+        }
+        ctxt = data.call_site.ctxt();
+    }
+    false
+}
+
+/// The crate's borrowed handles, by kind: the types its `impl CCell` and
+/// `impl CGuarded` blocks bind to `Ref`, `Mut` and `Locked`. Read off the
+/// impls rather than the names, so `HolderRef<'a, 'x>` is found like `FooRef`.
+fn ffibox_handles(tcx: TyCtxt<'_>) -> HashMap<DefId, &'static str> {
+    let mut out = HashMap::new();
+    for ld in tcx.hir_crate_items(()).definitions() {
+        let did = ld.to_def_id();
+        if !matches!(tcx.def_kind(did), DefKind::Impl { of_trait: true }) {
+            continue;
+        }
+        let tr = tcx.impl_trait_ref(did).skip_binder().def_id;
+        if !is_ffibox_crate(tcx, tr) || !matches!(tcx.item_name(tr).as_str(), "CCell" | "CGuarded") {
+            continue;
+        }
+        for &item in tcx.associated_item_def_ids(did) {
+            if tcx.def_kind(item) != DefKind::AssocTy {
+                continue;
             }
-            for a in args.types() {
-                count_ty(tcx, a, m);
+            let kind = match tcx.item_name(item).as_str() {
+                "Ref" => "Ref",
+                "Mut" => "Mut",
+                "Locked" => "Locked",
+                _ => continue,
+            };
+            let t = tcx.type_of(item).instantiate_identity().skip_norm_wip();
+            if let ty::TyKind::Adt(d, _) = t.kind() {
+                out.insert(d.did(), kind);
             }
         }
-        ty::TyKind::RawPtr(p, _) | ty::TyKind::Ref(_, p, _) => count_ty(tcx, *p, m),
-        ty::TyKind::Slice(e) | ty::TyKind::Array(e, _) => count_ty(tcx, *e, m),
+    }
+    out
+}
+
+/// What a signature position names: an ffibox owner, an ffibox-based
+/// borrowed handle (the crate's `CCell` / `CGuarded` handles and ffibox's
+/// borrowed views), one of the crate's own owners, another of its borrowed
+/// types, or a reference to a standard borrowed view.
+#[derive(Clone, Copy, PartialEq)]
+enum SigKind {
+    FfiboxOwner,
+    FfiboxHandle,
+    Owner,
+    Borrow,
+    StdBorrow,
+}
+
+/// ffibox's owners; its other public types (`CSlice`, `CSliceMut`,
+/// `CBorrowedPtr`, `CGuardedRef`, `CGuard`) borrow.
+const FFIBOX_OWNERS: &[&str] = &["CBox", "CArc", "CVec", "CStrBox", "CVal"];
+
+/// The element types implementing ffibox's `CPlainElem`, read off its impls
+/// in every crate: concrete types (the primitives, the crate's own plain
+/// newtypes), ADTs implemented generically (`MaybeUninit<T>`), raw pointers,
+/// and arrays of plain elements.
+#[derive(Default)]
+struct PlainElems<'tcx> {
+    concrete: HashSet<Ty<'tcx>>,
+    adts: HashSet<DefId>,
+    raw_ptrs: bool,
+    arrays: bool,
+}
+
+impl<'tcx> PlainElems<'tcx> {
+    fn new(tcx: TyCtxt<'tcx>) -> Self {
+        let mut out = Self::default();
+        let Some(tr) = tcx
+            .all_traits_including_private()
+            .find(|&t| is_ffibox_crate(tcx, t) && tcx.item_name(t).as_str() == "CPlainElem")
+        else {
+            return out;
+        };
+        for imp in tcx.all_impls(tr) {
+            let t = tcx.type_of(imp).instantiate_identity().skip_norm_wip();
+            match t.kind() {
+                ty::TyKind::RawPtr(..) => out.raw_ptrs = true,
+                ty::TyKind::Array(..) => out.arrays = true,
+                ty::TyKind::Adt(d, args) if args.types().next().is_some() => {
+                    out.adts.insert(d.did());
+                }
+                _ => {
+                    out.concrete.insert(t);
+                    if let ty::TyKind::Adt(d, _) = t.kind() {
+                        out.adts.insert(d.did());
+                    }
+                }
+            }
+        }
+        out
+    }
+
+    fn contains(&self, t: Ty<'tcx>) -> bool {
+        match t.kind() {
+            ty::TyKind::RawPtr(..) => self.raw_ptrs,
+            ty::TyKind::Array(e, _) => self.arrays && self.contains(*e),
+            ty::TyKind::Adt(d, _) => self.adts.contains(&d.did()),
+            _ => self.concrete.contains(&t),
+        }
+    }
+}
+
+/// True when `did` declares a lifetime parameter of its own.
+fn has_lifetime_param(tcx: TyCtxt<'_>, did: DefId) -> bool {
+    tcx.generics_of(did)
+        .own_params
+        .iter()
+        .any(|p| matches!(p.kind, ty::GenericParamDefKind::Lifetime))
+}
+
+/// Every ffibox type (keyed by its name), crate handle (by kind) and crate
+/// owner (by path) in `t`, nested in references, raw pointers, generic
+/// arguments, tuples, arrays and slices included. Aliases are already resolved
+/// in `t`.
+fn ffibox_positions<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    t: Ty<'tcx>,
+    handles: &HashMap<DefId, &'static str>,
+    owners: &HashSet<DefId>,
+    plain: &PlainElems<'tcx>,
+    out: &mut Vec<(SigKind, String)>,
+) {
+    match t.kind() {
+        ty::TyKind::Adt(d, args) => {
+            let did = d.did();
+            if is_ffibox_crate(tcx, did) {
+                let name = tcx.item_name(did);
+                let kind = if FFIBOX_OWNERS.contains(&name.as_str()) { SigKind::FfiboxOwner } else { SigKind::FfiboxHandle };
+                out.push((kind, name.to_string()));
+            } else if let Some(kind) = handles.get(&did) {
+                out.push((SigKind::FfiboxHandle, kind.to_string()));
+            } else if owners.contains(&did) {
+                out.push((SigKind::Owner, tcx.def_path_str(did)));
+            } else if did.is_local() && has_lifetime_param(tcx, did) {
+                out.push((SigKind::Borrow, tcx.def_path_str(did)));
+            }
+            for a in args.types() {
+                ffibox_positions(tcx, a, handles, owners, plain, out);
+            }
+        }
+        ty::TyKind::Ref(_, p, m) => {
+            let mutable = m.is_mut();
+            let view = match p.kind() {
+                ty::TyKind::Str => Some(if mutable { "&mut str" } else { "&str" }),
+                ty::TyKind::Slice(e) if plain.contains(*e) => {
+                    Some(if mutable { "&mut [CPlainElem]" } else { "&[CPlainElem]" })
+                }
+                ty::TyKind::Slice(_) => Some(if mutable { "&mut [T]" } else { "&[T]" }),
+                ty::TyKind::Adt(d, _)
+                    if tcx.crate_name(d.did().krate).as_str() == "core" && tcx.item_name(d.did()).as_str() == "CStr" =>
+                {
+                    Some(if mutable { "&mut CStr" } else { "&CStr" })
+                }
+                _ => None,
+            };
+            if let Some(key) = view {
+                out.push((SigKind::StdBorrow, key.to_string()));
+            }
+            ffibox_positions(tcx, *p, handles, owners, plain, out)
+        }
+        ty::TyKind::RawPtr(p, _) => ffibox_positions(tcx, *p, handles, owners, plain, out),
+        ty::TyKind::Slice(e) | ty::TyKind::Array(e, _) => ffibox_positions(tcx, *e, handles, owners, plain, out),
+        ty::TyKind::Tuple(tys) => {
+            for e in tys.iter() {
+                ffibox_positions(tcx, e, handles, owners, plain, out);
+            }
+        }
         _ => {}
     }
 }
 
-/// `UM_MODE=usage`: profile ffibox primitive usage.
-///  - `types`: references to the owner / handle / view structs in type positions
-///    (fn signatures, struct/enum/union fields, const/alias types)
-///  - `trait_impls`: `impl <ffibox trait> for T` counts
-///  - `macros`: distinct invocations of the ffibox `*!` macros
-///  - `ffi_calls`: per-`crate::symbol` count of every call to a foreign fn
-///    (`tcx.is_foreign_item` — declared in an `extern` block), crate-agnostic
-///    (bindgen `*-sys`, `libc`, local `extern "C"`). Calling one is unsafe, so
-///    this is the crate-wide unsafe-FFI-call surface.
-///  - `ffi_call_sites`: those calls grouped `{crate::symbol: {region: [{file,count,lines}]}}`
-///    where region is `free_fn` / `inherent_impl` / `trait_impl:<Trait>` — so a
-///    `git__free` in `trait_impl:CDrop` (a sanctioned wrapper dtor) is separable
-///    from one in a `free_fn` port body (actionable smell)
-fn usage_json(tcx: TyCtxt<'_>, krate: rustc_span::Symbol) -> String {
-    use std::collections::BTreeMap;
-    let mut types: BTreeMap<String, u64> = BTreeMap::new();
-    let mut trait_impls: BTreeMap<String, u64> = BTreeMap::new();
-    let mut macros: BTreeMap<String, HashSet<rustc_span::ExpnId>> = BTreeMap::new();
-    // Crate-wide scan: every call to a foreign fn — one declared in an `extern`
-    // block (`tcx.is_foreign_item`), which is the FFI boundary itself and is
-    // crate-agnostic (bindgen `*-sys`, `libc`, or a local `extern "C"` block all
-    // resolve to it). Calling one is an unsafe op, so this is the unsafe-FFI-call
-    // surface. Resolution-based (callee `DefId`), so alias-/re-export-proof and
-    // multi-line-safe. Keyed `crate::symbol` so same-named foreign fns from
-    // different crates (e.g. `libc::close` vs a sys binding) stay distinct.
-    let mut ffi_calls: BTreeMap<String, u64> = BTreeMap::new();
-    // crate::symbol -> region ("free_fn" | "inherent_impl" | "trait_impl:<Trait>")
-    // -> sites. The region separates wrapper-teardown chokepoints (a `git__free`
-    // in `trait_impl:CDrop` / `:CLenDrop`) from port-body smell (`free_fn` /
-    // `inherent_impl`), so the actionable subset is a filter, not a judgement.
-    let mut ffi_sites: BTreeMap<String, BTreeMap<String, Vec<(String, usize)>>> = BTreeMap::new();
-    for owner in tcx.hir_body_owners() {
-        let region = call_region(tcx, owner.to_def_id());
-        let typeck = tcx.typeck(owner);
-        let mut callees: Vec<(DefId, rustc_span::Span)> = Vec::new();
-        CallCollector {
-            typeck,
-            out: &mut callees,
+/// The crate's own owners: local types with an `impl Drop` that no ffibox
+/// macro emitted (the `drop_impl` set).
+fn own_owners(tcx: TyCtxt<'_>) -> HashSet<DefId> {
+    let mut out = HashSet::new();
+    for ld in tcx.hir_crate_items(()).definitions() {
+        let did = ld.to_def_id();
+        if !matches!(tcx.def_kind(did), DefKind::Impl { of_trait: true }) {
+            continue;
         }
-        .visit_body(tcx.hir_body_owned_by(owner));
-        for (did, sp) in callees {
-            if tcx.is_foreign_item(did) {
-                let key = format!("{}::{}", tcx.crate_name(did.krate), tcx.item_name(did));
-                *ffi_calls.entry(key.clone()).or_default() += 1;
-                ffi_sites
-                    .entry(key)
-                    .or_default()
-                    .entry(region.clone())
-                    .or_default()
-                    .push(span_site(tcx, sp));
+        let tr = tcx.impl_trait_ref(did).skip_binder().def_id;
+        if tcx.crate_name(tr.krate).as_str() != "core"
+            || tcx.item_name(tr).as_str() != "Drop"
+            || from_ffibox_macro(tcx, tcx.def_span(did))
+        {
+            continue;
+        }
+        if let ty::TyKind::Adt(d, _) = tcx.type_of(did).instantiate_identity().skip_norm_wip().kind() {
+            if d.did().is_local() {
+                out.insert(d.did());
             }
         }
     }
+    out
+}
 
+type FfiboxTally = std::collections::BTreeMap<&'static str, std::collections::BTreeMap<String, u64>>;
+
+fn ffibox_bump(m: &mut FfiboxTally, sites: &mut Sites, counter: &'static str, key: String, site: (String, usize)) {
+    *m.entry(counter).or_default().entry(key).or_default() += 1;
+    sites.add(counter, site);
+}
+
+/// `UM_FFIBOX`: the crate's ffibox surface, as one JSON line beside the
+/// metrics line: `{"crate":..,"ffibox":{"<counter>":{"<key>":N,..},..},"sites":{..}}`.
+///
+/// Signatures are those of free fns, inherent methods and the crate's own
+/// trait declarations. A trait impl's methods are left out: the trait fixes
+/// their signatures, and the impl itself is what `*_impl_*` counts. A method's
+/// `self` receiver counts only when it is a borrowed handle (an ffibox one or
+/// one of the crate's own borrowed types); on an owner or a plain value it
+/// borrows a Rust value and is skipped.
+/// A seam fn (a `UM_SEAM_FNS` name, the C-ABI gateway, or anything an ffibox macro
+/// emitted, such as a handle's `as_ref` / `from_ptr`) is the conversion layer
+/// rather than the API, so its positions go to `_pub_seam` / `_priv_seam`.
+fn ffibox_json(tcx: TyCtxt<'_>, krate: rustc_span::Symbol) -> String {
+    let handles = ffibox_handles(tcx);
+    let owners = own_owners(tcx);
+    let plain = PlainElems::new(tcx);
+    let mut m: FfiboxTally = FFIBOX_COUNTERS.iter().map(|k| (*k, Default::default())).collect();
+    let mut sites = Sites::default();
+    let exported = |did: DefId| did.as_local().is_some_and(|l| tcx.effective_visibilities(()).is_exported(l));
+    // (trait, implementing type): a type implementing `From<A>` and `From<B>`
+    // implements `From` once.
+    let mut impls: HashSet<(DefId, DefId)> = HashSet::new();
     for ld in tcx.hir_crate_items(()).definitions() {
         let did = ld.to_def_id();
         match tcx.def_kind(did) {
             DefKind::Fn | DefKind::AssocFn => {
+                let in_trait_impl = tcx
+                    .opt_parent(did)
+                    .is_some_and(|p| matches!(tcx.def_kind(p), DefKind::Impl { of_trait: true }));
+                let span = tcx.def_span(did);
+                if in_trait_impl || in_generated_file(tcx, span) {
+                    continue;
+                }
+                let public = exported(did);
+                let seam = is_seam_fn(tcx, did) || in_ffi_export(tcx, did) || from_ffibox_macro(tcx, span);
                 let sig = tcx.fn_sig(did).skip_binder().skip_binder();
+                let receiver = tcx.def_kind(did) == DefKind::AssocFn && tcx.associated_item(did).is_method();
+                let mut found: Vec<(SigKind, String)> = Vec::new();
+                // A receiver counts only as a borrowed handle: that is where a C
+                // function's borrowed `T *` lands. `&self` on an owner or a plain
+                // value borrows a Rust value, not a C object.
+                if receiver {
+                    let mut recv = Vec::new();
+                    ffibox_positions(tcx, sig.inputs()[0], &handles, &owners, &plain, &mut recv);
+                    found.extend(recv.into_iter().filter(|(k, _)| matches!(k, SigKind::FfiboxHandle | SigKind::Borrow)));
+                }
                 for t in sig
                     .inputs()
                     .iter()
                     .copied()
+                    .skip(receiver as usize)
                     .chain(std::iter::once(sig.output()))
                 {
-                    count_ty(tcx, t, &mut types);
+                    ffibox_positions(tcx, t, &handles, &owners, &plain, &mut found);
                 }
-            }
-            DefKind::Struct | DefKind::Enum | DefKind::Union => {
-                for f in tcx.adt_def(did).all_fields() {
-                    count_ty(tcx, tcx.type_of(f.did).skip_binder(), &mut types);
+                let site = counter_site(tcx, span);
+                for (kind, key) in found {
+                    let counter = match (kind, public, seam) {
+                        (SigKind::FfiboxOwner, true, false) => "ffibox_sig_owners_pub",
+                        (SigKind::FfiboxOwner, true, true) => "ffibox_sig_owners_pub_seam",
+                        (SigKind::FfiboxOwner, false, false) => "ffibox_sig_owners_priv",
+                        (SigKind::FfiboxOwner, false, true) => "ffibox_sig_owners_priv_seam",
+                        (SigKind::FfiboxHandle, true, false) => "ffibox_sig_handles_pub",
+                        (SigKind::FfiboxHandle, true, true) => "ffibox_sig_handles_pub_seam",
+                        (SigKind::FfiboxHandle, false, false) => "ffibox_sig_handles_priv",
+                        (SigKind::FfiboxHandle, false, true) => "ffibox_sig_handles_priv_seam",
+                        (SigKind::Owner, true, false) => "non_ffibox_sig_owner_pub",
+                        (SigKind::Owner, true, true) => "non_ffibox_sig_owner_pub_seam",
+                        (SigKind::Owner, false, false) => "non_ffibox_sig_owner_priv",
+                        (SigKind::Owner, false, true) => "non_ffibox_sig_owner_priv_seam",
+                        (SigKind::Borrow, true, false) => "non_ffibox_sig_borrow_pub",
+                        (SigKind::Borrow, true, true) => "non_ffibox_sig_borrow_pub_seam",
+                        (SigKind::Borrow, false, false) => "non_ffibox_sig_borrow_priv",
+                        (SigKind::Borrow, false, true) => "non_ffibox_sig_borrow_priv_seam",
+                        (SigKind::StdBorrow, true, false) => "std_sig_borrow_pub",
+                        (SigKind::StdBorrow, true, true) => "std_sig_borrow_pub_seam",
+                        (SigKind::StdBorrow, false, false) => "std_sig_borrow_priv",
+                        (SigKind::StdBorrow, false, true) => "std_sig_borrow_priv_seam",
+                    };
+                    ffibox_bump(&mut m, &mut sites, counter, key, site.clone());
                 }
             }
             DefKind::Impl { of_trait: true } => {
-                let tdid = tcx.impl_trait_ref(did).skip_binder().def_id;
-                if is_ffibox_crate(tcx, tdid) {
-                    *trait_impls
-                        .entry(tcx.item_name(tdid).to_string())
-                        .or_default() += 1;
+                let tr = tcx.impl_trait_ref(did).skip_binder().def_id;
+                let name = tcx.item_name(tr);
+                if INTERNAL_MARKER_TRAITS.contains(&name.as_str()) || name.as_str().starts_with("__") {
+                    continue;
+                }
+                let self_ty = tcx.type_of(did).instantiate_identity().skip_norm_wip();
+                let ty::TyKind::Adt(d, _) = self_ty.kind() else {
+                    continue;
+                };
+                let ty_did = d.did();
+                if !ty_did.is_local() || !impls.insert((tr, ty_did)) {
+                    continue;
+                }
+                let site = counter_site(tcx, tcx.def_span(did));
+                let by_macro = from_ffibox_macro(tcx, tcx.def_span(did));
+                if is_ffibox_crate(tcx, tr) {
+                    let c = if by_macro { "ffibox_impl_macro" } else { "ffibox_impl_manual" };
+                    ffibox_bump(&mut m, &mut sites, c, name.to_string(), site.clone());
+                    // A layout type is a `CCell` implementor; `define_ctype!` emits
+                    // its `CCell` impl, so the impl's origin is the type's.
+                    if name.as_str() == "CCell" {
+                        let c = if by_macro { "ffibox_define_ctype_macro" } else { "ffibox_define_ctype_manual" };
+                        ffibox_bump(&mut m, &mut sites, c, tcx.def_path_str(ty_did), site);
+                    }
+                    continue;
+                }
+                // A crate type's own `Drop` is an owner written instead of
+                // ffibox's; one an ffibox macro emitted is ffibox's design.
+                if !by_macro && tcx.crate_name(tr.krate).as_str() == "core" {
+                    match name.as_str() {
+                        "Drop" => ffibox_bump(&mut m, &mut sites, "drop_impl", tcx.def_path_str(ty_did), site),
+                        // A `#[derive(Clone)]` copies field by field and is not a
+                        // decision about the C object; a hand-written one is.
+                        "Clone" if !tcx.is_automatically_derived(did) => {
+                            ffibox_bump(&mut m, &mut sites, "clone_impl", tcx.def_path_str(ty_did), site)
+                        }
+                        _ => {}
+                    }
                 }
             }
             _ => {}
         }
-        // distinct macro invocations (items from one invocation share an ExpnId)
-        let ctxt = tcx.def_span(did).ctxt();
-        if let ExpnKind::Macro(MacroKind::Bang, name) = ctxt.outer_expn_data().kind {
-            if let Some(last) = name.as_str().rsplit("::").next() {
-                if FFIBOX_MACROS.contains(&last) {
-                    macros
-                        .entry(last.to_string())
-                        .or_default()
-                        .insert(ctxt.outer_expn());
-                }
-            }
-        }
     }
-
-    let obj = |m: &BTreeMap<String, u64>| {
-        m.iter()
-            .map(|(k, v)| format!("\"{k}\":{v}"))
-            .collect::<Vec<_>>()
-            .join(",")
-    };
-    let macros_obj = macros
+    let body = m
         .iter()
-        .map(|(k, s)| format!("\"{k}\":{}", s.len()))
-        .collect::<Vec<_>>()
-        .join(",");
-    let ffi_sites_obj = ffi_sites
-        .iter()
-        .map(|(sym, by_region)| {
-            let inner = by_region
-                .iter()
-                .map(|(region, sites)| format!("\"{region}\":{}", sites_json(sites)))
-                .collect::<Vec<_>>()
-                .join(",");
-            format!("\"{sym}\":{{{}}}", inner)
+        .map(|(k, by)| {
+            let inner = by.iter().map(|(n, v)| format!("\"{n}\":{v}")).collect::<Vec<_>>().join(",");
+            format!("\"{k}\":{{{inner}}}")
         })
         .collect::<Vec<_>>()
         .join(",");
-    format!(
-        "{{\"crate\":\"{krate}\",\"types\":{{{}}},\"trait_impls\":{{{}}},\"macros\":{{{}}},\"ffi_calls\":{{{}}},\"ffi_call_sites\":{{{}}}}}",
-        obj(&types), obj(&trait_impls), macros_obj, obj(&ffi_calls), ffi_sites_obj
-    )
+    format!("{{\"crate\":\"{krate}\",\"ffibox\":{{{body}}},\"sites\":{}}}", sites.json())
 }
 
 // ---------------------------------------------------------------- seed mode
@@ -1289,29 +1500,6 @@ fn enclosing_impl_self(tcx: TyCtxt<'_>, mut did: DefId) -> Option<DefId> {
         }
     }
     None
-}
-
-/// Classify a body owner's enclosing region, for grouping ffi-call sites:
-/// `trait_impl:<Trait>` (a call inside `impl Trait for T` — e.g. the
-/// `CDrop` / `CLenDrop` wrapper-teardown chokepoints), `inherent_impl`
-/// (a method in `impl T { .. }`), or `free_fn` (a free function or any
-/// other body not in an impl).
-fn call_region(tcx: TyCtxt<'_>, mut did: DefId) -> String {
-    while let Some(parent) = tcx.opt_parent(did) {
-        match tcx.def_kind(parent) {
-            DefKind::Impl { of_trait } => {
-                return if of_trait {
-                    let tdid = tcx.impl_trait_ref(parent).skip_binder().def_id;
-                    format!("trait_impl:{}", tcx.item_name(tdid))
-                } else {
-                    "inherent_impl".to_string()
-                };
-            }
-            DefKind::Mod | DefKind::ForeignMod => break,
-            _ => did = parent,
-        }
-    }
-    "free_fn".to_string()
 }
 
 /// Collect free-function callee `DefId`s + call-site spans in a body, for FFI
@@ -1349,10 +1537,10 @@ impl Callbacks for MetricsCallbacks {
         if under_cargo && (!primary || krate.as_str() == "build_script_build") {
             return Compilation::Continue;
         }
-        // Usage mode: primitive-usage profile, separate from the unsafe metrics.
-        if std::env::var("UM_MODE").as_deref() == Ok("usage") {
-            println!("{}", usage_json(tcx, krate));
-            return Compilation::Continue;
+        // `--ffibox`: a second line from the same compilation, beside the
+        // metrics line below. The dispatcher tells them apart by key.
+        if std::env::var_os("UM_FFIBOX").is_some() {
+            println!("{}", ffibox_json(tcx, krate));
         }
         // Named mode prints its site entries, then falls through to emit the
         // crate-wide metrics block from the same compilation. The dispatcher

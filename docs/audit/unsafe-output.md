@@ -29,6 +29,8 @@ are not the wrapper being audited.
 ## Document shape
 
 - `crate_path`: audited Cargo workspace.
+- `seam_fns`: the `--seams` files (`files`) and the fn names read from them
+  (`names`) that the seam/smell split rests on.
 - `counts`: aggregate compiled-code metrics (numbers only), or `null`.
 - `counts_unavailable`: failure text when counts are unavailable.
 - `derived`: ratios and sums calculated from counts.
@@ -38,6 +40,8 @@ are not the wrapper being audited.
   `clippy::undocumented_unsafe_blocks`: a long comment above its lookback
   window, or a site inside a macro, can disagree with the lint.
 - `sites`: present when `--sites` names counters; see Counter sites.
+- `ffibox`: present with `--ffibox`; see ffibox surface. `null` when there are
+  no counts.
 
 Unsafe-block totals provide context only. A C wrapper must contain unsafe code,
 and combining many small unsafe blocks into fewer large ones improves the count
@@ -46,12 +50,16 @@ without improving the code.
 ## Seam, smell and visibility
 
 The seam is where a wrapper is expected to be unsafe. A function is seam when
-its name is a conversion or lifecycle hook (`as_ptr`, `as_c_ptr`, `from_ptr`,
-`from_void_ptr`, `from_raw*`, `into_raw*`, `to_raw`, and the unsafe trait
-methods `c_drop`, `c_drop_len`, `c_dup`, `c_clone_len`, `c_up_ref`,
-`c_is_sole_owner`, `c_lock`, `c_unlock`, `c_dispose`; the full list is
-`SEAM_FNS` in the driver), or when it has a C ABI or `#[no_mangle]`. A
-raw-pointer position is also seam when it points to the method's own `Self`.
+its name is in one of the seam files passed as `--seams FILE[,FILE...]`, or
+when it has a C ABI or `#[no_mangle]`. A seam file lists exact fn names, one per
+line (blank lines and `#` comments are skipped, there are no globs). The scanner
+assumes none: a crate's seam names are the conventions it is built on, so the
+caller passes them — ffibox's `seams.txt` for a crate built on ffibox, plus
+crustify's `docs/translate/seams.txt` for a crustify tree, or a list written
+for any other crate's own conventions (`wrap`, `raw`, ..). Without `--seams`
+only the C-ABI gateway is seam. The names used, and the files they came from,
+are recorded in the document's `seam_fns`. A raw-pointer position is also seam
+when it points to the method's own `Self`.
 Everything else is smell, split by the declaring function's visibility:
 "pub" is rustc's effective visibility, callable from outside the crate. A
 trait-impl method reachable through a public trait and type is pub; a `pub`
@@ -151,6 +159,80 @@ Read these together with `wrapper_newtypes`; when there are no wrapper
 newtypes, zero is vacuous. The driver cannot tell a pointer to C memory from
 one to a Rust-owned value, so a site means "check where this pointer comes
 from".
+
+## ffibox surface
+
+`--ffibox` adds an `ffibox` record, `{"counts": {counter: N}, "by": {counter:
+{key: N}}}`: each counter's total, and its breakdown by ffibox type, handle
+kind or trait. Every counter is present, zeros included, and each takes
+`--sites` alongside `--ffibox`. `_pub` / `_priv` is the effective visibility of
+the function for a signature position, and of the implementing type for an
+impl.
+
+Signature positions, parameters and return types, nested ones included as for
+raw pointers (`Option<CBox<T>>` is one `CBox`):
+
+- `ffibox_sig_owners_*`: an ffibox owner (`CBox`, `CArc`, `CVec`, `CStrBox`,
+  `CVal`), keyed by type. Aliases are resolved, so `type FooBox = CBox<..>` is
+  a `CBox`.
+- `ffibox_sig_handles_*`: an ffibox-based borrowed handle: one of the crate's
+  own, keyed `Ref`, `Mut` or `Locked` (the types its `impl CCell` binds to
+  `Ref` / `Mut` and its `impl CGuarded` binds to `Locked`, read off the impls
+  rather than the names), or one of ffibox's borrowed views, keyed by type
+  (`CSlice`, `CSliceMut`, `CBorrowedPtr`, `CGuardedRef`, `CGuard`). A method's
+  receiver counts here when it is such a handle, since that is where a C
+  function's borrowed `T *` lands.
+- `non_ffibox_sig_owner_*`: one of the crate's own owners, keyed by type: a
+  crate-defined type with an `impl Drop` that no ffibox macro emitted (the
+  `drop_impl` types). Together with `ffibox_sig_*` it says how much of the
+  ownership an API hands out goes through ffibox and how much does not.
+  (`ffibox_sig_owners_*` is its ffibox counterpart.)
+- `non_ffibox_sig_borrow_*`: one of the crate's other borrowed types, keyed by
+  type: a crate-defined type with a lifetime parameter of its own that is
+  neither one of its `CCell` / `CGuarded` handles nor one of its own owners.
+  These are hand-written handles, iterators and views; the key names them, so
+  an iterator is told from a handle written instead of a `CCell` one. A
+  method's receiver of such a type counts here too.
+- `std_sig_borrow_*`: a reference to a standard borrowed view, keyed `&CStr`,
+  `&str`, `&mut str`, `&[T]` or `&mut [T]` (nested ones included). A slice of
+  elements implementing ffibox's `CPlainElem` (primitives, plain newtypes,
+  `MaybeUninit<T>`, raw pointers, arrays of those) is a plain buffer, the
+  expected shape, and is keyed `&[CPlainElem]` / `&mut [CPlainElem]` apart. References
+  to the crate's layout types are `ref_to_type_wrapper_*` instead.
+
+Each splits four ways: `_pub` and `_priv` are the API, and `_pub_seam` and
+`_priv_seam` the conversion layer, so the four sum to every position. A
+function is seam when its name is in a `--seams` file, it is in the C-ABI gateway, or
+an ffibox macro emitted it (a handle's `as_ref`, `as_mut`, `from_ptr`, ..). The
+functions read are free functions, inherent methods and the crate's own trait
+declarations. A trait impl's methods are left out, since the trait fixes their
+signatures. A method's `self` receiver counts only when it is a borrowed handle
+(`ffibox_sig_handles_*` or `non_ffibox_sig_borrow_*`): `&self` on an owner or a
+plain value borrows a Rust value, not a C object, and is skipped.
+
+Trait impls, counted as distinct crate-defined types per trait, so a type
+implementing `From<A>` and `From<B>` counts once for `From`:
+
+- `ffibox_impl_macro` / `ffibox_impl_manual`: types implementing each ffibox
+  trait (`CCell`, `CDrop`, `CRefClone`, `CDupClone`, `CGuarded`, ..), keyed by
+  trait, split by whether an ffibox macro (`define_ctype!`, `impl_cdrop!`, ..)
+  emitted the impl. A lifecycle policy implements `CDrop<T>` and the like, so
+  it is the policy type that counts here, not the layout type.
+- `ffibox_define_ctype_macro` / `ffibox_define_ctype_manual`: the crate's
+  layout types, its `CCell` implementors, keyed by type, split by whether
+  `define_ctype!` emitted the `CCell` impl or it was written by hand.
+- `drop_impl`: crate-defined types with an `impl Drop` that no ffibox macro
+  emitted, keyed by type. Each is an owner written instead of using ffibox's
+  `CBox` / `CArc` / `CVec`, so it deserves a look.
+- `clone_impl`: crate-defined types with a hand-written `impl Clone`, neither
+  derived nor emitted by an ffibox macro, keyed by type. A derived `Clone`
+  copies field by field; a hand-written one is a decision about how the C
+  object is copied, which ffibox's clone policies (`CDupClone`, `CRefClone`,
+  ..) otherwise make.
+
+Impls for a type the crate does not define, or for a reference or other
+non-ADT type, are not counted. The compiler's `TrivialClone` and
+`StructuralPartialEq` marker impls, which a `#[derive]` adds, are skipped.
 
 ## Counter sites
 
