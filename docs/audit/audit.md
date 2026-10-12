@@ -52,7 +52,8 @@ runs extend the record instead of repeating completed investigations.
 ## CLI
 
 ```text
-crustify scan-unsafe WORKDIR [--json] [--sites COUNTER ... | all]
+crustify scan-unsafe WORKDIR [--json] [--seams FILE[,FILE...]] [--ffibox]
+                    [--sites COUNTER ... | all]
 crustify spawn-auditor WORKDIR [--objective audit|audit+patch|patch|revisit]
                        [--workset PATH ...]
                        [--instruments miri|asan/ubsan|bsan|msan|tsan|equivalence ...]

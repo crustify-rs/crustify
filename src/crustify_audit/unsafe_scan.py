@@ -108,42 +108,87 @@ def undocumented_unsafe(root: Path) -> dict:
     }
 
 
-def site_counters(requested: list[str]) -> list[str]:
-    """Validate `--sites` names; `all` expands to every site-bearing counter."""
+def site_counters(requested: list[str], ffibox: bool = False) -> list[str]:
+    """Validate `--sites` names; `all` expands to every site-bearing counter.
+    The `--ffibox` counters are valid only when that scan runs."""
+    valid = driver.SITE_COUNTERS + (driver.FFIBOX_COUNTERS if ffibox else ())
     if "all" in requested:
-        return list(driver.SITE_COUNTERS)
-    unknown = [n for n in requested if n not in driver.SITE_COUNTERS]
+        return list(valid)
+    unknown = [n for n in requested if n not in valid]
     if unknown:
+        hint = (" (the ffibox_* / handle_* / *_impl_* counters need --ffibox)"
+                if any(n in driver.FFIBOX_COUNTERS for n in unknown) else "")
         raise SystemExit(
             "unsafe: --sites takes counters that count source locations; "
-            f"unknown or siteless: {' '.join(unknown)}. Valid: "
-            + " ".join(driver.SITE_COUNTERS) + ", or all")
+            f"unknown or siteless: {' '.join(unknown)}{hint}. Valid: "
+            + " ".join(valid) + ", or all")
     return list(dict.fromkeys(requested))
 
 
-def compose(layout: Layout, sites: list[str] | None = None) -> dict:
+def seam_names(files: list[str] | None) -> list[str]:
+    """The seam fn names in ``files``: one exact name per line, blank lines
+    and `#` comments skipped, first occurrence kept. No file, no names."""
+    names: dict[str, None] = {}
+    for f in files or ():
+        try:
+            text = Path(f).read_text()
+        except OSError as e:
+            raise SystemExit(f"unsafe: --seams: cannot read {f}: {e.strerror}")
+        for line in text.splitlines():
+            name = line.split("#", 1)[0].strip()
+            if not name:
+                continue
+            if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", name):
+                raise SystemExit(
+                    f"unsafe: --seams: {f}: {name!r} is not a fn name "
+                    "(one exact name per line, no globs)")
+            names[name] = None
+    return list(names)
+
+
+def compose(layout: Layout, sites: list[str] | None = None,
+            ffibox: bool = False, seams: list[str] | None = None) -> dict:
     """Scan the workspace and return the metrics document.
 
     ``sites`` names counters whose source locations to report, as a ``sites``
-    record beside ``counts`` with one list per counter.
+    record beside ``counts`` with one list per counter. ``ffibox`` adds the
+    ``ffibox`` record: the crate's ffibox surface. ``seams`` are the seam
+    files whose names the seam/smell split treats as the FFI seam; recorded
+    in ``seam_fns`` so the document says what its split rests on.
     """
     workspace = layout.workspace
-    wanted = site_counters(sites) if sites else None
-    doc: dict = {"crate_path": str(workspace)}
+    wanted = site_counters(sites, ffibox) if sites else None
+    names = seam_names(seams)
+    doc: dict = {"crate_path": str(workspace),
+                 "seam_fns": {"files": [str(Path(f).resolve()) for f in seams or ()],
+                              "names": names}}
     all_sites: dict = {}
     try:
-        doc["counts"], all_sites = driver.measure(workspace)
+        doc["counts"], all_sites, breakdowns = driver.measure(
+            workspace, ffibox=ffibox, seams=names)
         doc["counts_unavailable"] = None
     except driver.DriverUnavailable as e:
         # No counts rather than substitute ones: see driver.py.
         doc["counts"] = None
         doc["counts_unavailable"] = str(e)
+        breakdowns = None
         print(f"[crustify-audit] no counts: {e}".rstrip())
+    if ffibox:
+        doc["ffibox"] = _ffibox_record(breakdowns)
     if wanted is not None:
         doc["sites"] = {k: all_sites.get(k, []) for k in wanted}
     doc["undocumented_unsafe"] = undocumented_unsafe(workspace)
     doc["derived"] = _derive(doc)
     return doc
+
+
+def _ffibox_record(breakdowns: dict | None) -> dict | None:
+    """``{"counts": {counter: total}, "by": {counter: {key: N}}}``, every
+    counter present; ``None`` when the build produced no counts."""
+    if breakdowns is None:
+        return None
+    by = {k: dict(sorted(breakdowns.get(k, {}).items())) for k in driver.FFIBOX_COUNTERS}
+    return {"counts": {k: sum(v.values()) for k, v in by.items()}, "by": by}
 
 
 def _derive(doc: dict) -> dict:
@@ -184,7 +229,11 @@ def _derive(doc: dict) -> dict:
 def summarize(doc: dict) -> str:
     c = doc.get("counts") or {}
     d = doc.get("derived", {})
-    lines: list[str] = []
+    s = doc.get("seam_fns") or {}
+    lines: list[str] = [
+        f"  seam fns             {len(s.get('names', []))} names from "
+        + (", ".join(s.get("files", [])) or "no --seams file (only the C-ABI gateway is seam)"),
+    ]
     if c:
         lines += [
             f"  code lines           {c.get('code_lines')}",
@@ -211,4 +260,40 @@ def summarize(doc: dict) -> str:
     else:
         lines.append(f"  counts               unavailable — "
                      f"{doc.get('counts_unavailable')}")
+    f = doc.get("ffibox")
+    if f:
+        n, by = f["counts"], f["by"]
+
+        def keys(*counters: str) -> str:
+            merged: dict[str, int] = {}
+            for k in counters:
+                for name, v in by[k].items():
+                    merged[name] = merged.get(name, 0) + v
+            return ", ".join(f"{name} {v}" for name, v in sorted(merged.items())) or "none"
+
+        lines += [
+            "  ffibox",
+            f"  ffibox owner in sig  {n['ffibox_sig_owners_pub']} pub + {n['ffibox_sig_owners_priv']} private"
+            f"   (API: {keys('ffibox_sig_owners_pub', 'ffibox_sig_owners_priv')};"
+            f" seam {n['ffibox_sig_owners_pub_seam']} pub + {n['ffibox_sig_owners_priv_seam']} private)",
+            f"  ffibox handle in sig {n['ffibox_sig_handles_pub']} pub + {n['ffibox_sig_handles_priv']} private"
+            f"   (API: {keys('ffibox_sig_handles_pub', 'ffibox_sig_handles_priv')};"
+            f" seam {n['ffibox_sig_handles_pub_seam']} pub + {n['ffibox_sig_handles_priv_seam']} private)",
+            f"  own owner in sig     {n['non_ffibox_sig_owner_pub']} pub + {n['non_ffibox_sig_owner_priv']} private"
+            f"   (API: {keys('non_ffibox_sig_owner_pub', 'non_ffibox_sig_owner_priv')};"
+            f" seam {n['non_ffibox_sig_owner_pub_seam']} pub + {n['non_ffibox_sig_owner_priv_seam']} private)",
+            f"  own borrow in sig    {n['non_ffibox_sig_borrow_pub']} pub + {n['non_ffibox_sig_borrow_priv']} private"
+            f"   (seam {n['non_ffibox_sig_borrow_pub_seam']} pub + {n['non_ffibox_sig_borrow_priv_seam']} private)",
+            f"  std borrow in sig    {n['std_sig_borrow_pub']} pub + {n['std_sig_borrow_priv']} private"
+            f"   (API: {keys('std_sig_borrow_pub', 'std_sig_borrow_priv')};"
+            f" seam {n['std_sig_borrow_pub_seam']} pub + {n['std_sig_borrow_priv_seam']} private)",
+            f"  ffibox trait impls   {n['ffibox_impl_macro']} by macro + {n['ffibox_impl_manual']} by hand"
+            f"   (by hand: {keys('ffibox_impl_manual')})",
+            f"  layout types         {n['ffibox_define_ctype_macro']} define_ctype! +"
+            f" {n['ffibox_define_ctype_manual']} by hand",
+            f"  own Drop impls       {n['drop_impl']}   ({keys('drop_impl')})",
+            f"  own Clone impls      {n['clone_impl']}   ({keys('clone_impl')})",
+        ]
+    elif "ffibox" in doc:
+        lines.append("  ffibox               unavailable — no counts")
     return "\n".join(lines)
