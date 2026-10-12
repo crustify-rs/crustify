@@ -191,8 +191,8 @@ impl PtrSite {
     /// The `raw_ptr_*` and `void_ptr_*` partition counters for this position.
     fn counters(self) -> (&'static str, &'static str) {
         match self {
-            PtrSite::Type { exported: true } => ("raw_ptr_type_pub", "void_ptr_type_pub"),
-            PtrSite::Type { exported: false } => ("raw_ptr_type_priv", "void_ptr_type_priv"),
+            PtrSite::Type { exported: true } => ("raw_ptr_ty_pub", "void_ptr_ty_pub"),
+            PtrSite::Type { exported: false } => ("raw_ptr_ty_priv", "void_ptr_ty_priv"),
             PtrSite::Fn { exported: true, safe: true } => ("raw_ptr_fn_pub_safe", "void_ptr_fn_pub_safe"),
             PtrSite::Fn { exported: true, safe: false } => ("raw_ptr_fn_pub_unsafe", "void_ptr_fn_pub_unsafe"),
             PtrSite::Fn { exported: false, safe: true } => ("raw_ptr_fn_priv_safe", "void_ptr_fn_priv_safe"),
@@ -201,8 +201,8 @@ impl PtrSite {
     }
 }
 
-/// Count one raw-pointer position (pointee `p`) into the partition
-/// `raw_ptr` = `raw_ptr_type_{pub,priv}` + `raw_ptr_fn_{pub,priv}_{safe,unsafe}`;
+/// Count one raw-pointer position (pointee `p`) into its partition,
+/// `raw_ptr_ty_{pub,priv}` or `raw_ptr_fn_{pub,priv}_{safe,unsafe}`;
 /// `*c_void` positions likewise into `void_ptr_*`, and a pointee with a wrapper
 /// into `raw_ptr_wrapped`.
 fn count_ptr_position(
@@ -215,13 +215,9 @@ fn count_ptr_position(
     sites: &mut Sites,
 ) {
     let (raw, void) = at.counters();
-    c.raw_ptr += 1;
-    sites.add("raw_ptr", site.clone());
     *c.slot(raw) += 1;
     sites.add(raw, site.clone());
     if is_c_void(tcx, p) {
-        c.void_ptr += 1;
-        sites.add("void_ptr", site.clone());
         *c.slot(void) += 1;
         sites.add(void, site.clone());
     }
@@ -232,8 +228,8 @@ fn count_ptr_position(
 }
 
 /// Raw-pointer positions in the fields of a struct or union the crate declares
-/// (nested ones included, as for signatures), counted into `raw_ptr_fields` and
-/// `raw_ptr_type_{pub,priv}` by the effective visibility of the TYPE: every
+/// (nested ones included, as for signatures), counted into
+/// `raw_ptr_ty_{pub,priv}` by the effective visibility of the TYPE: every
 /// raw pointer a public type holds counts, private fields included, since it
 /// is that type's representation.
 fn count_raw_ptr_fields(
@@ -253,8 +249,6 @@ fn count_raw_ptr_fields(
         raw_pointees(tcx, ft, &mut pointees);
         let site = counter_site(tcx, tcx.def_span(f.did));
         for p in pointees {
-            c.raw_ptr_fields += 1;
-            sites.add("raw_ptr_fields", site.clone());
             count_ptr_position(tcx, p, PtrSite::Type { exported }, wrapped_c, site.clone(), c, sites);
         }
     }
@@ -707,20 +701,17 @@ struct Counts {
     //   `#[export_name]` / `extern "C"`)
     // Raw-pointer positions in the items the crate defines, nested ones
     // included, partitioned by where they sit:
-    //   raw_ptr = raw_ptr_type_pub + raw_ptr_type_priv            (fields)
-    //           + raw_ptr_fn_{pub,priv}_{safe,unsafe}             (signatures)
+    //   raw_ptr_ty_{pub,priv}               (fields of types)
+    //   raw_ptr_fn_{pub,priv}_{safe,unsafe} (fn signatures, args and returns)
     // A type's fields count by the TYPE's effective visibility, private fields
     // of a public type included. A signature counts by the fn's effective
     // visibility and its safety: `_safe` is reachable from safe code,
     // `_unsafe` only by an `unsafe fn` caller. raw_ptr_fn_pub_safe is the safe
-    // public interface. raw_ptr_fields = the type counters, raw_ptr_args +
-    // raw_ptr_rets = the fn counters. Methods implementing another crate's
+    // public interface; raw_ptr_ty_pub + raw_ptr_fn_pub_safe the raw pointers
+    // on the safe public interface. Methods implementing another crate's
     // trait are left out: that crate fixed their signature.
-    raw_ptr: u64,
-    raw_ptr_args: u64,
-    raw_ptr_rets: u64,
-    raw_ptr_type_pub: u64,
-    raw_ptr_type_priv: u64,
+    raw_ptr_ty_pub: u64,
+    raw_ptr_ty_priv: u64,
     raw_ptr_fn_pub_safe: u64,
     raw_ptr_fn_pub_unsafe: u64,
     raw_ptr_fn_priv_safe: u64,
@@ -740,21 +731,17 @@ struct Counts {
     // `impl Deref` / `impl DerefMut` (core) whose Self is a wrapper, layout or
     // handle. Never sanctioned: target 0.
     deref_impl_on_wrapper: u64,
-    // raw-pointer positions in the fields of structs/unions the crate declares
-    // (generated bindings excluded)
-    raw_ptr_fields: u64,
     // `(*p).field` where `p: *C` and `C` has a wrapper (bypasses the
     // accessor): total, and the subset outside any impl/trait (the smell).
-    field_proj_wrapped: u64,
-    field_proj_outside_impl: u64,
+    ty_field_proj_wrapped: u64,
+    ty_field_proj_outside_impl: u64,
     // `&(*p).field` / `&mut (*p).field` where `p: *C` and `C` has a wrapper --
     // a reference one level down into memory C may write. Should be 0.
-    field_ref_wrapped: u64,
-    // `*c_void` positions, a subset of raw_ptr, partitioned the same way:
-    // void_ptr = void_ptr_type_{pub,priv} + void_ptr_fn_{pub,priv}_{safe,unsafe}
-    void_ptr: u64,
-    void_ptr_type_pub: u64,
-    void_ptr_type_priv: u64,
+    ty_field_ref_wrapped: u64,
+    // the `*c_void` positions among them, partitioned the same way:
+    // void_ptr_ty_{pub,priv}, void_ptr_fn_{pub,priv}_{safe,unsafe}
+    void_ptr_ty_pub: u64,
+    void_ptr_ty_priv: u64,
     void_ptr_fn_pub_safe: u64,
     void_ptr_fn_pub_unsafe: u64,
     void_ptr_fn_priv_safe: u64,
@@ -769,14 +756,14 @@ impl Counts {
     /// The partition counter `name`, for the position helpers.
     fn slot(&mut self, name: &str) -> &mut u64 {
         match name {
-            "raw_ptr_type_pub" => &mut self.raw_ptr_type_pub,
-            "raw_ptr_type_priv" => &mut self.raw_ptr_type_priv,
+            "raw_ptr_ty_pub" => &mut self.raw_ptr_ty_pub,
+            "raw_ptr_ty_priv" => &mut self.raw_ptr_ty_priv,
             "raw_ptr_fn_pub_safe" => &mut self.raw_ptr_fn_pub_safe,
             "raw_ptr_fn_pub_unsafe" => &mut self.raw_ptr_fn_pub_unsafe,
             "raw_ptr_fn_priv_safe" => &mut self.raw_ptr_fn_priv_safe,
             "raw_ptr_fn_priv_unsafe" => &mut self.raw_ptr_fn_priv_unsafe,
-            "void_ptr_type_pub" => &mut self.void_ptr_type_pub,
-            "void_ptr_type_priv" => &mut self.void_ptr_type_priv,
+            "void_ptr_ty_pub" => &mut self.void_ptr_ty_pub,
+            "void_ptr_ty_priv" => &mut self.void_ptr_ty_priv,
             "void_ptr_fn_pub_safe" => &mut self.void_ptr_fn_pub_safe,
             "void_ptr_fn_pub_unsafe" => &mut self.void_ptr_fn_pub_unsafe,
             "void_ptr_fn_priv_safe" => &mut self.void_ptr_fn_priv_safe,
@@ -1023,11 +1010,11 @@ impl<'a, 'tcx> Visitor<'tcx> for BodyVisitor<'a, 'tcx> {
                 if let hir::ExprKind::Unary(hir::UnOp::Deref, inner) = base.kind {
                     if let ty::TyKind::RawPtr(pointee, _) = self.typeck.expr_ty(inner).kind() {
                         if pointee_has_wrapper(self.tcx, *pointee, self.wrapped_c) {
-                            self.c.field_proj_wrapped += 1;
-                            self.sites.add("field_proj_wrapped", counter_site(self.tcx, e.span));
+                            self.c.ty_field_proj_wrapped += 1;
+                            self.sites.add("ty_field_proj_wrapped", counter_site(self.tcx, e.span));
                             if !self.in_impl {
-                                self.c.field_proj_outside_impl += 1;
-                                self.sites.add("field_proj_outside_impl", counter_site(self.tcx, e.span));
+                                self.c.ty_field_proj_outside_impl += 1;
+                                self.sites.add("ty_field_proj_outside_impl", counter_site(self.tcx, e.span));
                             }
                         }
                     }
@@ -1043,8 +1030,8 @@ impl<'a, 'tcx> Visitor<'tcx> for BodyVisitor<'a, 'tcx> {
                     if let hir::ExprKind::Unary(hir::UnOp::Deref, inner) = base.kind {
                         if let ty::TyKind::RawPtr(pointee, _) = self.typeck.expr_ty(inner).kind() {
                             if pointee_has_wrapper(self.tcx, *pointee, self.wrapped_c) {
-                                self.c.field_ref_wrapped += 1;
-                                self.sites.add("field_ref_wrapped", counter_site(self.tcx, e.span));
+                                self.c.ty_field_ref_wrapped += 1;
+                                self.sites.add("ty_field_ref_wrapped", counter_site(self.tcx, e.span));
                             }
                         }
                     }
@@ -1087,7 +1074,7 @@ impl<'a, 'tcx> Visitor<'tcx> for BodyVisitor<'a, 'tcx> {
 ///    `ffibox_ty_handles_*`, `non_ffibox_ty_owner_*`, `non_ffibox_ty_borrow_*`,
 ///    `std_ty_borrow_*`) over the fields of the structs, unions and enums the
 ///    crate defines, `_pub` / `_priv` by the TYPE's effective visibility, as for
-///    `raw_ptr_type_*`: what the crate's types hold, where `*_fn_*` is what its
+///    `raw_ptr_ty_*`: what the crate's types hold, where `*_fn_*` is what its
 ///    fns take and return.
 ///  - `ffibox_impl_macro` / `ffibox_impl_manual`: distinct crate-defined types
 ///    implementing each ffibox trait, keyed by trait, split by whether an
@@ -1732,30 +1719,16 @@ impl Callbacks for MetricsCallbacks {
                         sites.add("unsafe_fns_priv", site);
                     }
                 }
-                // Raw-pointer args/rets: every position, by visibility and safety.
+                // Raw pointers in the signature, args and return: every
+                // position, by the fn's visibility and safety.
                 if !foreign {
-                    let mut tally = |p: Ty<'_>, is_ret: bool, c: &mut Counts| {
-                        let site = counter_site(tcx, tcx.def_span(did));
-                        if is_ret {
-                            c.raw_ptr_rets += 1;
-                            sites.add("raw_ptr_rets", site.clone());
-                        } else {
-                            c.raw_ptr_args += 1;
-                            sites.add("raw_ptr_args", site.clone());
-                        }
-                        count_ptr_position(tcx, p, PtrSite::Fn { exported, safe }, &wrapped_c, site, c, &mut sites);
-                    };
-                    for inp in sig.inputs() {
-                        let mut pointees = Vec::new();
-                        raw_pointees(tcx, *inp, &mut pointees);
-                        for p in pointees {
-                            tally(p, false, &mut c);
-                        }
-                    }
+                    let site = counter_site(tcx, tcx.def_span(did));
                     let mut pointees = Vec::new();
-                    raw_pointees(tcx, sig.output(), &mut pointees);
+                    for t in sig.inputs().iter().copied().chain(std::iter::once(sig.output())) {
+                        raw_pointees(tcx, t, &mut pointees);
+                    }
                     for p in pointees {
-                        tally(p, true, &mut c);
+                        count_ptr_position(tcx, p, PtrSite::Fn { exported, safe }, &wrapped_c, site.clone(), &mut c, &mut sites);
                     }
                 }
             }
@@ -1847,8 +1820,8 @@ impl Callbacks for MetricsCallbacks {
             }
         }
         println!(
-            "{{\"crate\":\"{}\",\"unsafe_blocks\":{},\"unsafe_block_stmts\":{},\"unsafe_block_lines\":{},\"unsafe_block_code_lines\":{},\"unsafe_blocks_wrapper_impl\":{},\"unsafe_blocks_ffi_export\":{},\"unsafe_fns\":{},\"unsafe_fns_pub\":{},\"unsafe_fns_priv\":{},\"fns_pub\":{},\"fns_priv\":{},\"unsafe_impls\":{},\"unsafe_traits\":{},\"ffi_calls\":{},\"wrapper_newtypes\":{},\"wrapper_newtypes_declared\":{},\"wrapper_declared_nonconformant\":{},\"wrapper_newtypes_undeclared\":{},\"raw_ptr\":{},\"raw_ptr_args\":{},\"raw_ptr_rets\":{},\"raw_ptr_type_pub\":{},\"raw_ptr_type_priv\":{},\"raw_ptr_fn_pub_safe\":{},\"raw_ptr_fn_pub_unsafe\":{},\"raw_ptr_fn_priv_safe\":{},\"raw_ptr_fn_priv_unsafe\":{},\"raw_ptr_wrapped\":{},\"ref_to_type_wrapper_sanctioned\":{},\"ref_to_type_wrapper_smell\":{},\"ref_to_type_wrapper_body_smell\":{},\"deref_impl_on_wrapper\":{},\"raw_ptr_fields\":{},\"field_proj_wrapped\":{},\"field_proj_outside_impl\":{},\"field_ref_wrapped\":{},\"void_ptr\":{},\"void_ptr_type_pub\":{},\"void_ptr_type_priv\":{},\"void_ptr_fn_pub_safe\":{},\"void_ptr_fn_pub_unsafe\":{},\"void_ptr_fn_priv_safe\":{},\"void_ptr_fn_priv_unsafe\":{},\"raw_ptr_derefs\":{},\"raw_ptr_derefs_outside_impl\":{},\"total_stmts\":{},\"code_lines\":{},\"sites\":{}}}",
-            krate, c.unsafe_blocks, c.unsafe_block_stmts, c.unsafe_block_lines, c.unsafe_block_code_lines, c.unsafe_blocks_wrapper_impl, c.unsafe_blocks_ffi_export, c.unsafe_fns, c.unsafe_fns_pub, c.unsafe_fns_priv, c.fns_pub, c.fns_priv, c.unsafe_impls, c.unsafe_traits, c.ffi_calls, c.wrapper_newtypes, c.wrapper_newtypes_declared, c.wrapper_declared_nonconformant, c.wrapper_newtypes_undeclared, c.raw_ptr, c.raw_ptr_args, c.raw_ptr_rets, c.raw_ptr_type_pub, c.raw_ptr_type_priv, c.raw_ptr_fn_pub_safe, c.raw_ptr_fn_pub_unsafe, c.raw_ptr_fn_priv_safe, c.raw_ptr_fn_priv_unsafe, c.raw_ptr_wrapped, c.ref_to_type_wrapper_sanctioned, c.ref_to_type_wrapper_smell, c.ref_to_type_wrapper_body_smell, c.deref_impl_on_wrapper, c.raw_ptr_fields, c.field_proj_wrapped, c.field_proj_outside_impl, c.field_ref_wrapped, c.void_ptr, c.void_ptr_type_pub, c.void_ptr_type_priv, c.void_ptr_fn_pub_safe, c.void_ptr_fn_pub_unsafe, c.void_ptr_fn_priv_safe, c.void_ptr_fn_priv_unsafe, c.raw_ptr_derefs, c.raw_ptr_derefs_outside_impl, c.total_stmts, c.code_lines,
+            "{{\"crate\":\"{}\",\"unsafe_blocks\":{},\"unsafe_block_stmts\":{},\"unsafe_block_lines\":{},\"unsafe_block_code_lines\":{},\"unsafe_blocks_wrapper_impl\":{},\"unsafe_blocks_ffi_export\":{},\"unsafe_fns\":{},\"unsafe_fns_pub\":{},\"unsafe_fns_priv\":{},\"fns_pub\":{},\"fns_priv\":{},\"unsafe_impls\":{},\"unsafe_traits\":{},\"ffi_calls\":{},\"wrapper_newtypes\":{},\"wrapper_newtypes_declared\":{},\"wrapper_declared_nonconformant\":{},\"wrapper_newtypes_undeclared\":{},\"raw_ptr_ty_pub\":{},\"raw_ptr_ty_priv\":{},\"raw_ptr_fn_pub_safe\":{},\"raw_ptr_fn_pub_unsafe\":{},\"raw_ptr_fn_priv_safe\":{},\"raw_ptr_fn_priv_unsafe\":{},\"raw_ptr_wrapped\":{},\"ref_to_type_wrapper_sanctioned\":{},\"ref_to_type_wrapper_smell\":{},\"ref_to_type_wrapper_body_smell\":{},\"deref_impl_on_wrapper\":{},\"ty_field_proj_wrapped\":{},\"ty_field_proj_outside_impl\":{},\"ty_field_ref_wrapped\":{},\"void_ptr_ty_pub\":{},\"void_ptr_ty_priv\":{},\"void_ptr_fn_pub_safe\":{},\"void_ptr_fn_pub_unsafe\":{},\"void_ptr_fn_priv_safe\":{},\"void_ptr_fn_priv_unsafe\":{},\"raw_ptr_derefs\":{},\"raw_ptr_derefs_outside_impl\":{},\"total_stmts\":{},\"code_lines\":{},\"sites\":{}}}",
+            krate, c.unsafe_blocks, c.unsafe_block_stmts, c.unsafe_block_lines, c.unsafe_block_code_lines, c.unsafe_blocks_wrapper_impl, c.unsafe_blocks_ffi_export, c.unsafe_fns, c.unsafe_fns_pub, c.unsafe_fns_priv, c.fns_pub, c.fns_priv, c.unsafe_impls, c.unsafe_traits, c.ffi_calls, c.wrapper_newtypes, c.wrapper_newtypes_declared, c.wrapper_declared_nonconformant, c.wrapper_newtypes_undeclared, c.raw_ptr_ty_pub, c.raw_ptr_ty_priv, c.raw_ptr_fn_pub_safe, c.raw_ptr_fn_pub_unsafe, c.raw_ptr_fn_priv_safe, c.raw_ptr_fn_priv_unsafe, c.raw_ptr_wrapped, c.ref_to_type_wrapper_sanctioned, c.ref_to_type_wrapper_smell, c.ref_to_type_wrapper_body_smell, c.deref_impl_on_wrapper, c.ty_field_proj_wrapped, c.ty_field_proj_outside_impl, c.ty_field_ref_wrapped, c.void_ptr_ty_pub, c.void_ptr_ty_priv, c.void_ptr_fn_pub_safe, c.void_ptr_fn_pub_unsafe, c.void_ptr_fn_priv_safe, c.void_ptr_fn_priv_unsafe, c.raw_ptr_derefs, c.raw_ptr_derefs_outside_impl, c.total_stmts, c.code_lines,
             sites.json()
         );
         Compilation::Continue

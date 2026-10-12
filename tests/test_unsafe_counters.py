@@ -37,7 +37,7 @@ class EmissionTests(unittest.TestCase):
     def test_visibility_splits_are_emitted(self) -> None:
         keys, _ = _emission()
         for k in ("unsafe_fns_pub", "unsafe_fns_priv", "fns_pub", "fns_priv",
-                  "raw_ptr_fn_pub_safe", "raw_ptr_type_pub"):
+                  "raw_ptr_fn_pub_safe", "raw_ptr_ty_pub"):
             self.assertIn(k, keys)
             self.assertIn(k, driver.SITE_COUNTERS)
 
@@ -97,10 +97,11 @@ class PartitionTests(unittest.TestCase):
 
     def test_raw_and_void_partitions_are_emitted(self) -> None:
         keys, _ = _emission()
-        parts = ("type_pub", "type_priv", "fn_pub_safe", "fn_pub_unsafe",
+        parts = ("ty_pub", "ty_priv", "fn_pub_safe", "fn_pub_unsafe",
                  "fn_priv_safe", "fn_priv_unsafe")
+        for k in ("raw_ptr", "raw_ptr_args", "raw_ptr_rets", "raw_ptr_fields", "void_ptr"):
+            self.assertNotIn(k, keys)
         for fam in ("raw_ptr", "void_ptr"):
-            self.assertIn(fam, keys)
             for part in parts:
                 self.assertIn(f"{fam}_{part}", keys)
                 self.assertIn(f"{fam}_{part}", driver.SITE_COUNTERS)

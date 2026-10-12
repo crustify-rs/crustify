@@ -158,7 +158,7 @@ but it needs the C instrumented, which forfeits the reach advantage.
 Three ways to form a Rust reference into memory C may write go uncounted
 (see Known limitations in `docs/audit/unsafe-output.md`):
 
-- **Deep places.** `field_ref_wrapped` matches only `&(*p).field`, one field
+- **Deep places.** `ty_field_ref_wrapped` matches only `&(*p).field`, one field
   below the raw-pointer dereference. Follow the whole place instead — any
   depth of fields and indexing back to a raw-pointer deref — so `&(*p).a.b`,
   `&(*p).arr[i]` and `&mut (*p).a[i].b` count.
