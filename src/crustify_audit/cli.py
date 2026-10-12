@@ -69,7 +69,7 @@ def add_stages(sub: "argparse._SubParsersAction", *,
         help="Also report where these counters' increments are in the source: "
              "a `sites` record beside `counts` with one list per counter. Takes "
              "counters that count source locations (e.g. "
-             "raw_ptr_fn_pub_safe, raw_ptr_ty_pub, "
+             "raw_ptr_fn_pub_safe, raw_ptr_ty_pub_fields_pub, "
              "unsafe_fns_pub, ty_wrapper_refs_smell), or `all`. Line and statement totals have "
              "no sites.")
     m.add_argument(

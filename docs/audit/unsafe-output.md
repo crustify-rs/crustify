@@ -57,25 +57,29 @@ crate: a `pub` item in a private module is not, unless it is re-exported, and a
 
 - `unsafe_fns` = `unsafe_fns_pub` + `unsafe_fns_priv`. `unsafe_fns_pub` is the
   public unsafe surface: every obligation the crate exports to its callers.
-- Every raw-pointer position falls in exactly one of six counters, by where
+- Every raw-pointer position falls in exactly one of seven counters, by where
   it sits:
 
   ```text
-  raw_ptr_ty_pub,       raw_ptr_ty_priv          fields of types
+  raw_ptr_ty_pub_fields_pub, raw_ptr_ty_pub_fields_priv, raw_ptr_ty_priv
+                                                 fields of types
   raw_ptr_fn_pub_safe,  raw_ptr_fn_pub_unsafe    fn signatures (args and return)
   raw_ptr_fn_priv_safe, raw_ptr_fn_priv_unsafe
   ```
 
-  A type's fields count by the TYPE's visibility, private fields of a public
-  type included, since they are its representation. A signature counts by the
+  A field counts by its type's visibility and, in a public type, by the
+  field's own: `_fields_pub` are reachable from outside the crate (a `pub`
+  field of an exported type), `_fields_priv` are the representation a public
+  type keeps to itself. A signature counts by the
   fn's visibility and its safety: `_safe` is a safe fn, reachable from safe
   code, `_unsafe` an `unsafe fn`, whose caller has taken the obligation on. The
-  raw pointers on the safe public interface are `raw_ptr_ty_pub` +
+  raw pointers on the safe public interface are `raw_ptr_ty_pub_fields_pub` +
   `raw_ptr_fn_pub_safe`. `raw_ptr_has_ty_wrapper` counts the positions whose pointee is a C type that already has a
   wrapper. Generated bindings compiled into the crate are skipped: files under
   the build script's `OUT_DIR` and files named `bindings.rs`; bindings in a
   `-sys` crate are excluded with that crate.
-- `void_ptr_ty_{pub,priv}` and `void_ptr_fn_{pub,priv}_{safe,unsafe}` count
+- `void_ptr_ty_pub_fields_{pub,priv}`, `void_ptr_ty_priv` and
+  `void_ptr_fn_{pub,priv}_{safe,unsafe}` count
   the `*const c_void` / `*mut c_void` positions among them, partitioned the
   same way.
 
@@ -101,8 +105,9 @@ The derived fields:
 - `fns_pub` / `fns_priv`: `safe_fns_pub + unsafe_fns_pub`, likewise `_priv`.
 - `unsafe_fn_pub_ratio`: `unsafe_fns_pub / unsafe_fns`.
 - `unsafe_fn_share_of_pub_fns`: `unsafe_fns_pub / fns_pub`.
-- `raw_ptr_pub`: `raw_ptr_ty_pub + raw_ptr_fn_pub_safe + raw_ptr_fn_pub_unsafe`.
-- `raw_ptr_pub_safe_interface`: `raw_ptr_ty_pub + raw_ptr_fn_pub_safe`.
+- `raw_ptr_pub`: `raw_ptr_ty_pub_fields_pub + raw_ptr_ty_pub_fields_priv +
+  raw_ptr_fn_pub_safe + raw_ptr_fn_pub_unsafe`.
+- `raw_ptr_pub_safe_interface`: `raw_ptr_ty_pub_fields_pub + raw_ptr_fn_pub_safe`.
 - `unsafe_loc_ratio` and `loc_per_unsafe_block`: context, not a score.
 
 ## Wrappers and references into C memory

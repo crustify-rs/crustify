@@ -503,9 +503,9 @@ only on those sites that belong to your changeset.
 crustify scan-unsafe <workdir> --json
 ```
 
-Add `--sites unsafe_fns_pub raw_ptr_ty_pub raw_ptr_fn_pub_safe` to list where they
-are: the public `unsafe fn`s, the raw pointers public types hold, and the raw pointers in
-the signatures of public safe fns.
+Add `--sites unsafe_fns_pub raw_ptr_ty_pub_fields_pub raw_ptr_fn_pub_safe` to list where
+they are: the public `unsafe fn`s, the raw pointers in public fields of public types, and
+the raw pointers in the signatures of public safe fns.
 
 Do NOT run `crustify spawn-auditor`.
 

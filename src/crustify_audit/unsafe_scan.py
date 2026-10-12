@@ -193,9 +193,10 @@ def _derive(doc: dict) -> dict:
         "fns_priv": priv_fns,
         "unsafe_fn_pub_ratio": round((c.get("unsafe_fns_pub") or 0) / fns, 4) if fns else None,
         "unsafe_fn_share_of_pub_fns": round((c.get("unsafe_fns_pub") or 0) / pub_fns, 4) if pub_fns else None,
-        "raw_ptr_pub": (c.get("raw_ptr_ty_pub") or 0) + (c.get("raw_ptr_fn_pub_safe") or 0)
+        "raw_ptr_pub": (c.get("raw_ptr_ty_pub_fields_pub") or 0)
+                       + (c.get("raw_ptr_ty_pub_fields_priv") or 0) + (c.get("raw_ptr_fn_pub_safe") or 0)
                        + (c.get("raw_ptr_fn_pub_unsafe") or 0),
-        "raw_ptr_pub_safe_interface": (c.get("raw_ptr_ty_pub") or 0)
+        "raw_ptr_pub_safe_interface": (c.get("raw_ptr_ty_pub_fields_pub") or 0)
                                       + (c.get("raw_ptr_fn_pub_safe") or 0),
         # Context, explicitly NOT a quality score. See the docstring.
         "unsafe_loc_ratio": round((c.get("unsafe_block_code_lines") or 0) / loc, 4) if loc else None,
@@ -221,12 +222,14 @@ def summarize(doc: dict) -> str:
             f"  unsafe fn            {c.get('unsafe_fns')}"
             f"   ({c.get('unsafe_fns_pub')} pub + {c.get('unsafe_fns_priv')} private;"
             f" methods of other crates' traits excluded)",
-            f"  raw ptr positions    {sum(c.get('raw_ptr_' + k) or 0 for k in ('ty_pub', 'ty_priv', 'fn_pub_safe', 'fn_pub_unsafe', 'fn_priv_safe', 'fn_priv_unsafe'))}"
-            f"   (types: {c.get('raw_ptr_ty_pub')} pub + {c.get('raw_ptr_ty_priv')} private;"
+            f"  raw ptr positions    {sum(c.get('raw_ptr_' + k) or 0 for k in ('ty_pub_fields_pub', 'ty_pub_fields_priv', 'ty_priv', 'fn_pub_safe', 'fn_pub_unsafe', 'fn_priv_safe', 'fn_priv_unsafe'))}"
+            f"   (pub types: {c.get('raw_ptr_ty_pub_fields_pub')} pub fields + {c.get('raw_ptr_ty_pub_fields_priv')} private fields,"
+            f" private types: {c.get('raw_ptr_ty_priv')};"
             f" fn signatures: pub {c.get('raw_ptr_fn_pub_safe')} safe + {c.get('raw_ptr_fn_pub_unsafe')} unsafe,"
             f" private {c.get('raw_ptr_fn_priv_safe')} safe + {c.get('raw_ptr_fn_priv_unsafe')} unsafe)",
-            f"  void ptr positions   {sum(c.get('void_ptr_' + k) or 0 for k in ('ty_pub', 'ty_priv', 'fn_pub_safe', 'fn_pub_unsafe', 'fn_priv_safe', 'fn_priv_unsafe'))}"
-            f"   (types: {c.get('void_ptr_ty_pub')} pub + {c.get('void_ptr_ty_priv')} private;"
+            f"  void ptr positions   {sum(c.get('void_ptr_' + k) or 0 for k in ('ty_pub_fields_pub', 'ty_pub_fields_priv', 'ty_priv', 'fn_pub_safe', 'fn_pub_unsafe', 'fn_priv_safe', 'fn_priv_unsafe'))}"
+            f"   (pub types: {c.get('void_ptr_ty_pub_fields_pub')} pub fields + {c.get('void_ptr_ty_pub_fields_priv')} private fields,"
+            f" private types: {c.get('void_ptr_ty_priv')};"
             f" fn signatures: pub {c.get('void_ptr_fn_pub_safe')} safe + {c.get('void_ptr_fn_pub_unsafe')} unsafe,"
             f" private {c.get('void_ptr_fn_priv_safe')} safe + {c.get('void_ptr_fn_priv_unsafe')} unsafe)",
             f"  ref to layout type   {(c.get('ty_wrapper_refs_sanctioned') or 0) + (c.get('ty_wrapper_refs_smell') or 0)}"
