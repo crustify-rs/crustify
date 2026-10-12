@@ -314,6 +314,15 @@ Use `--sites` when inspecting smells.
 
 Record them in their respective workdirs.
 
+##### Test coverage
+
+When you measure test coverage, exclude the tests themselves. Rust coverage counts only
+the authored non-test sources: drop the test crates and, inside the library sources,
+every line under a `#[cfg(test)]` item such as an inline `mod unit_tests`. Otherwise a
+workload that cannot run those lines reads low, and the unit tests are credited for
+executing themselves. Run each workload alone against the coverage-instrumented build,
+and take the total from the union of their lines, never from summing the workloads.
+
 ##### Cost
 
 After each batch, both translation and review, run `crustify cost` over the batch
