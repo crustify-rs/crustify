@@ -93,7 +93,7 @@ class PartitionTests(unittest.TestCase):
         src = MAIN_RS.read_text()
         self.assertNotIn("UM_SEAM_FNS", src)
         self.assertFalse([k for k in driver._COUNTS if k.endswith(("_seam", "_smell"))
-                          and not k.startswith("ref_to_type_wrapper")])
+                          and not k.startswith("ty_wrapper_refs")])
 
     def test_raw_and_void_partitions_are_emitted(self) -> None:
         keys, _ = _emission()
