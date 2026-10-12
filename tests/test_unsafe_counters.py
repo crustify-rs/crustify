@@ -36,18 +36,18 @@ class EmissionTests(unittest.TestCase):
 
     def test_visibility_splits_are_emitted(self) -> None:
         keys, _ = _emission()
-        for k in ("unsafe_fns_pub", "unsafe_fns_priv", "fns_pub", "fns_priv",
+        for k in ("unsafe_fns_pub", "unsafe_fns_priv", "safe_fns_pub", "safe_fns_priv",
                   "raw_ptr_fn_pub_safe", "raw_ptr_ty_pub"):
             self.assertIn(k, keys)
             self.assertIn(k, driver.SITE_COUNTERS)
 
     def test_new_counts_sum_across_crates(self) -> None:
         line = lambda crate, n: json.dumps(
-            {"crate": crate, "unsafe_blocks": 0, "fns_pub": n, "raw_ptr_fn_pub_safe": n, "sites": {}})
+            {"crate": crate, "unsafe_blocks": 0, "safe_fns_pub": n, "raw_ptr_fn_pub_safe": n, "sites": {}})
         counts, _, seen, _ = driver._collect_emissions(
             "\n".join([line("a", 2), line("b", 3), line("c_sys", 100)]))
         self.assertEqual(seen, 2)
-        self.assertEqual(counts["fns_pub"], 5)
+        self.assertEqual(counts["safe_fns_pub"], 5)
         self.assertEqual(counts["raw_ptr_fn_pub_safe"], 5)
 
 

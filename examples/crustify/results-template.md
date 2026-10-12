@@ -321,8 +321,8 @@ Deterministic `crustify scan-unsafe <workdir>`; no model.
 |---|---|---|---|
 | `code_lines` | `<n>` | `<n>` | … |
 | `total_stmts` | `<n>` | `<n>` | … |
-| `fns_pub` | `<n>` | `<n>` | … |
-| `fns_priv` | `<n>` | `<n>` | … |
+| `safe_fns_pub` | `<n>` | `<n>` | … |
+| `safe_fns_priv` | `<n>` | `<n>` | … |
 | `unsafe_blocks` | `<n>` | `<n>` | … |
 | `unsafe_block_stmts` | `<n>` | `<n>` | … |
 | `unsafe_block_lines` | `<n>` | `<n>` | … |
@@ -333,10 +333,10 @@ Deterministic `crustify scan-unsafe <workdir>`; no model.
 | **`unsafe_fns_pub`** | **`<n>`** | `<n>` | … |
 | `unsafe_fns_priv` | `<n>` | `<n>` | … |
 | `unsafe_impls` / `unsafe_traits` | `<n>` / `<n>` | `<n>` / `<n>` | … |
-| `wrapper_newtypes` | `<n>` | `<n>` | … |
-| `wrapper_newtypes_declared` | `<n>` | `<n>` | … |
-| `wrapper_declared_nonconformant` | `<n>` | `<n>` | … |
-| `wrapper_newtypes_undeclared` | `<n>` | `<n>` | … |
+| `ty_wrapper_newtypes` | `<n>` | `<n>` | … |
+| `ty_wrapper_newtypes_declared` | `<n>` | `<n>` | … |
+| `ty_wrapper_declared_nonconformant` | `<n>` | `<n>` | … |
+| `ty_wrapper_newtypes_undeclared` | `<n>` | `<n>` | … |
 | **`raw_ptr_ty_pub`** | **`<n>`** | `<n>` | … |
 | `raw_ptr_ty_priv` | `<n>` | `<n>` | … |
 | **`raw_ptr_fn_pub_safe`** | **`<n>`** | `<n>` | … |

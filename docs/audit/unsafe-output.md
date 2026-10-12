@@ -83,14 +83,11 @@ The C-ABI gateway (`#[no_mangle]` / `#[export_name]` / `extern "C"` fns) is
 counted like any other fn; its unsafe blocks are also counted apart, in
 `unsafe_blocks_ffi_export`.
 
-`fns_pub` and `fns_priv` count every function and method with a body, safe or
-unsafe, by the same visibility. Methods of impls of canonical `core` /
-`alloc` / `std` traits (`Clone`, `PartialEq`, `Eq`, `PartialOrd`, `Ord`,
-`Hash`, the `fmt` traits, `Drop`, `Default`, `From`, `TryFrom`, `AsRef`,
-`AsMut`, `Borrow`, `BorrowMut`, `Deref`, `DerefMut`; `CANONICAL_STD_TRAITS` in
-the driver) are left out: they are protocol rather than API, and none of them
-is `unsafe`. Every other trait impl's methods count here, the crate's own and
-ffibox's included. Trait method declarations without a body are not counted.
+`safe_fns_pub` and `safe_fns_priv` count the safe functions and methods with
+a body, on the same terms as `unsafe_fns_*`: by visibility, leaving out
+methods implementing another crate's trait. So the crate's own functions are
+`fns_pub` = `safe_fns_pub` + `unsafe_fns_pub` and likewise `fns_priv`, both
+given in `derived`. Trait method declarations without a body are not counted.
 
 A position is every raw pointer in a parameter, return or field type, including
 those nested in references, generic arguments (`Option<*const T>`), tuples,
@@ -101,6 +98,7 @@ marker, not a position. Type aliases are resolved, so
 
 The derived fields:
 
+- `fns_pub` / `fns_priv`: `safe_fns_pub + unsafe_fns_pub`, likewise `_priv`.
 - `unsafe_fn_pub_ratio`: `unsafe_fns_pub / unsafe_fns`.
 - `unsafe_fn_share_of_pub_fns`: `unsafe_fns_pub / fns_pub`.
 - `raw_ptr_pub`: `raw_ptr_ty_pub + raw_ptr_fn_pub_safe + raw_ptr_fn_pub_unsafe`.
@@ -115,8 +113,8 @@ A wrapper is found by its shape alone: a struct that is either a handle, a
 `#[repr(C)]`, that embeds by value a `#[repr(C)]` type from another crate
 (the C type from the `-sys` crate). Same-crate `#[repr(C)]` fields are searched
 through, so C's own nested structs are not mistaken for wrappers.
-`wrapper_newtypes` counts the layout newtypes; `wrapper_newtypes_declared`,
-`_undeclared` and `wrapper_declared_nonconformant` compare that set with the
+`ty_wrapper_newtypes` counts the layout newtypes; `ty_wrapper_newtypes_declared`,
+`_undeclared` and `ty_wrapper_declared_nonconformant` compare that set with the
 types that declare `CCell`.
 
 A layout newtype's memory is C's when it is reached through a C pointer, so a
@@ -149,7 +147,7 @@ may write. Access goes through the handles instead.
   `*w` and auto-deref into a reference to its target, typically the C object,
   outside the handles. Nothing is sanctioned: target 0.
 
-Read these together with `wrapper_newtypes`; when there are no wrapper
+Read these together with `ty_wrapper_newtypes`; when there are no wrapper
 newtypes, zero is vacuous. The driver cannot tell a pointer to C memory from
 one to a Rust-owned value, so a site means "check where this pointer comes
 from".

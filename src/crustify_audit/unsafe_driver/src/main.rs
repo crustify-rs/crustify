@@ -96,30 +96,6 @@ const REF_ACCESSORS: &[&str] = &["as_ref", "as_mut"];
 const STD_VALUE_TRAITS: &[&str] =
     &["Clone", "PartialEq", "Eq", "PartialOrd", "Ord", "Hash", "Debug"];
 
-/// Canonical `core` / `alloc` / `std` traits whose methods are protocol, not API:
-/// `fns_pub` / `fns_priv` leave their impls' methods out, so the function totals
-/// count the inherent API and the crate's own (and ffibox's) trait impls. Every
-/// method of these traits is safe, so dropping them cannot hide an `unsafe fn`.
-const CANONICAL_STD_TRAITS: &[&str] = &[
-    "Clone", "PartialEq", "Eq", "PartialOrd", "Ord", "Hash", "Debug", "Display",
-    "Binary", "Octal", "LowerHex", "UpperHex", "LowerExp", "UpperExp", "Pointer",
-    "Drop", "Default", "From", "TryFrom", "AsRef", "AsMut", "Borrow", "BorrowMut",
-    "Deref", "DerefMut",
-];
-
-/// True when `did` is a method of an impl of one of the `CANONICAL_STD_TRAITS`.
-fn in_canonical_std_trait_impl(tcx: TyCtxt<'_>, did: DefId) -> bool {
-    let Some(parent) = tcx.opt_parent(did) else {
-        return false;
-    };
-    if !matches!(tcx.def_kind(parent), DefKind::Impl { of_trait: true }) {
-        return false;
-    }
-    let tr = tcx.impl_trait_ref(parent).skip_binder().def_id;
-    matches!(tcx.crate_name(tr.krate).as_str(), "core" | "alloc" | "std")
-        && CANONICAL_STD_TRAITS.contains(&tcx.item_name(tr).as_str())
-}
-
 /// True when a `&W` in `did`'s signature is sanctioned: `did` is one of the
 /// `REF_ACCESSORS`, or a method of an impl of one of the `STD_VALUE_TRAITS`.
 fn ref_to_wrapper_sanctioned(tcx: TyCtxt<'_>, did: DefId) -> bool {
@@ -397,7 +373,7 @@ fn with_wrappers<R>(tcx: TyCtxt<'_>, f: impl FnOnce(&Wrappers) -> R) -> R {
 }
 
 /// The `CCell` / `CLayout`-declared set. Read ONLY by
-/// `wrapper_newtypes_declared` / `_nonconformant` / `_undeclared`, where the
+/// `ty_wrapper_newtypes_declared` / `_nonconformant` / `_undeclared`, where the
 /// declaration is the subject being measured rather than a dependency.
 fn is_declared_wrapper(tcx: TyCtxt<'_>, did: DefId) -> bool {
     DECLARED.with(|c| {
@@ -423,7 +399,7 @@ fn is_declared_wrapper(tcx: TyCtxt<'_>, did: DefId) -> bool {
 /// structural test by construction -- ffibox requires `#[repr(transparent)]`
 /// over `Self::C` -- so the structural set SUBSUMES the declared one,
 /// and a type that declares `CCell` while failing this test is a wrapper
-/// without the layout it claims: reported as `wrapper_declared_nonconformant`,
+/// without the layout it claims: reported as `ty_wrapper_declared_nonconformant`,
 /// never silently admitted.
 fn peel_transparent<'tcx>(tcx: TyCtxt<'tcx>, t: Ty<'tcx>) -> Ty<'tcx> {
     let mut cur = t;
@@ -661,10 +637,12 @@ fn in_wrapper_impl(tcx: TyCtxt<'_>, mut did: DefId) -> bool {
 struct Counts {
     code_lines: u64, // crate-wide physical LoC: non-blank, non-`//`-comment source lines
     total_stmts: u64,
-    // Every fn and method with a body, safe or unsafe, by effective visibility;
-    // methods of CANONICAL_STD_TRAITS impls are left out (protocol, not API).
-    fns_pub: u64,
-    fns_priv: u64,
+    // Safe fns and methods with a body the crate defines, by effective
+    // visibility, on the same terms as unsafe_fns_*: fns_pub = safe_fns_pub +
+    // unsafe_fns_pub, likewise _priv. Methods implementing another crate's
+    // trait are left out.
+    safe_fns_pub: u64,
+    safe_fns_priv: u64,
     unsafe_blocks: u64,
     unsafe_block_stmts: u64,
     unsafe_block_lines: u64, // raw brace-to-brace span (incl. blanks/comments)
@@ -683,17 +661,17 @@ struct Counts {
     unsafe_fns_priv: u64,
     unsafe_impls: u64,
     unsafe_traits: u64,
-    // Wrapper inventory. `wrapper_newtypes` is the STRUCTURAL count -- every
+    // Wrapper inventory. `ty_wrapper_newtypes` is the STRUCTURAL count -- every
     // `#[repr(transparent)]` newtype over a pointer or a `#[repr(C)]` type --
     // split into the two roles. The `_declared` pair is the `CCell` baseline
     // this replaces, kept so the two can be compared: `_nonconformant` is a
     // type declaring `CCell` that fails the structural test, i.e. a wrapper
     // without the layout it claims, and `_undeclared` is one the old keying
     // could not see.
-    wrapper_newtypes: u64,
-    wrapper_newtypes_declared: u64,
-    wrapper_declared_nonconformant: u64,
-    wrapper_newtypes_undeclared: u64,
+    ty_wrapper_newtypes: u64,
+    ty_wrapper_newtypes_declared: u64,
+    ty_wrapper_declared_nonconformant: u64,
+    ty_wrapper_newtypes_undeclared: u64,
     // Raw-pointer positions in the items the crate defines, nested ones
     // included, each in exactly one counter by where it sits:
     //   raw_ptr_ty_{pub,priv}               (fields of types)
@@ -1586,19 +1564,19 @@ impl Callbacks for MetricsCallbacks {
                     // a layout newtype is the hazard `ref_to_type_wrapper`
                     // exists to keep at 0.
                     if is_layout {
-                        c.wrapper_newtypes += 1;
-                        sites.add("wrapper_newtypes", counter_site(tcx, tcx.def_span(did)));
+                        c.ty_wrapper_newtypes += 1;
+                        sites.add("ty_wrapper_newtypes", counter_site(tcx, tcx.def_span(did)));
                         if !declared {
-                            c.wrapper_newtypes_undeclared += 1;
-                            sites.add("wrapper_newtypes_undeclared", counter_site(tcx, tcx.def_span(did)));
+                            c.ty_wrapper_newtypes_undeclared += 1;
+                            sites.add("ty_wrapper_newtypes_undeclared", counter_site(tcx, tcx.def_span(did)));
                         }
                     }
                     if declared {
-                        c.wrapper_newtypes_declared += 1;
-                        sites.add("wrapper_newtypes_declared", counter_site(tcx, tcx.def_span(did)));
+                        c.ty_wrapper_newtypes_declared += 1;
+                        sites.add("ty_wrapper_newtypes_declared", counter_site(tcx, tcx.def_span(did)));
                         if !is_layout {
-                            c.wrapper_declared_nonconformant += 1;
-                            sites.add("wrapper_declared_nonconformant", counter_site(tcx, tcx.def_span(did)));
+                            c.ty_wrapper_declared_nonconformant += 1;
+                            sites.add("ty_wrapper_declared_nonconformant", counter_site(tcx, tcx.def_span(did)));
                         }
                     }
                 }
@@ -1698,14 +1676,14 @@ impl Callbacks for MetricsCallbacks {
                         }
                     }
                 }
-                if !in_canonical_std_trait_impl(tcx, did) {
+                if safe && !foreign {
                     let site = counter_site(tcx, tcx.def_span(did));
                     if exported {
-                        c.fns_pub += 1;
-                        sites.add("fns_pub", site);
+                        c.safe_fns_pub += 1;
+                        sites.add("safe_fns_pub", site);
                     } else {
-                        c.fns_priv += 1;
-                        sites.add("fns_priv", site);
+                        c.safe_fns_priv += 1;
+                        sites.add("safe_fns_priv", site);
                     }
                 }
                 if !safe && !foreign {
@@ -1821,8 +1799,8 @@ impl Callbacks for MetricsCallbacks {
             }
         }
         println!(
-            "{{\"crate\":\"{}\",\"code_lines\":{},\"total_stmts\":{},\"fns_pub\":{},\"fns_priv\":{},\"unsafe_blocks\":{},\"unsafe_block_stmts\":{},\"unsafe_block_lines\":{},\"unsafe_block_code_lines\":{},\"unsafe_blocks_wrapper_impl\":{},\"unsafe_blocks_ffi_export\":{},\"unsafe_fns\":{},\"unsafe_fns_pub\":{},\"unsafe_fns_priv\":{},\"unsafe_impls\":{},\"unsafe_traits\":{},\"wrapper_newtypes\":{},\"wrapper_newtypes_declared\":{},\"wrapper_declared_nonconformant\":{},\"wrapper_newtypes_undeclared\":{},\"raw_ptr_ty_pub\":{},\"raw_ptr_ty_priv\":{},\"raw_ptr_fn_pub_safe\":{},\"raw_ptr_fn_pub_unsafe\":{},\"raw_ptr_fn_priv_safe\":{},\"raw_ptr_fn_priv_unsafe\":{},\"raw_ptr_wrapped\":{},\"raw_ptr_derefs\":{},\"raw_ptr_derefs_outside_impl\":{},\"void_ptr_ty_pub\":{},\"void_ptr_ty_priv\":{},\"void_ptr_fn_pub_safe\":{},\"void_ptr_fn_pub_unsafe\":{},\"void_ptr_fn_priv_safe\":{},\"void_ptr_fn_priv_unsafe\":{},\"ty_field_proj_wrapped\":{},\"ty_field_proj_outside_impl\":{},\"ty_field_ref_wrapped\":{},\"ref_to_type_wrapper_sanctioned\":{},\"ref_to_type_wrapper_smell\":{},\"ref_to_type_wrapper_body_smell\":{},\"deref_impl_on_wrapper\":{},\"ffi_calls\":{},\"sites\":{}}}",
-            krate, c.code_lines, c.total_stmts, c.fns_pub, c.fns_priv, c.unsafe_blocks, c.unsafe_block_stmts, c.unsafe_block_lines, c.unsafe_block_code_lines, c.unsafe_blocks_wrapper_impl, c.unsafe_blocks_ffi_export, c.unsafe_fns, c.unsafe_fns_pub, c.unsafe_fns_priv, c.unsafe_impls, c.unsafe_traits, c.wrapper_newtypes, c.wrapper_newtypes_declared, c.wrapper_declared_nonconformant, c.wrapper_newtypes_undeclared, c.raw_ptr_ty_pub, c.raw_ptr_ty_priv, c.raw_ptr_fn_pub_safe, c.raw_ptr_fn_pub_unsafe, c.raw_ptr_fn_priv_safe, c.raw_ptr_fn_priv_unsafe, c.raw_ptr_wrapped, c.raw_ptr_derefs, c.raw_ptr_derefs_outside_impl, c.void_ptr_ty_pub, c.void_ptr_ty_priv, c.void_ptr_fn_pub_safe, c.void_ptr_fn_pub_unsafe, c.void_ptr_fn_priv_safe, c.void_ptr_fn_priv_unsafe, c.ty_field_proj_wrapped, c.ty_field_proj_outside_impl, c.ty_field_ref_wrapped, c.ref_to_type_wrapper_sanctioned, c.ref_to_type_wrapper_smell, c.ref_to_type_wrapper_body_smell, c.deref_impl_on_wrapper, c.ffi_calls,
+            "{{\"crate\":\"{}\",\"code_lines\":{},\"total_stmts\":{},\"safe_fns_pub\":{},\"safe_fns_priv\":{},\"unsafe_blocks\":{},\"unsafe_block_stmts\":{},\"unsafe_block_lines\":{},\"unsafe_block_code_lines\":{},\"unsafe_blocks_wrapper_impl\":{},\"unsafe_blocks_ffi_export\":{},\"unsafe_fns\":{},\"unsafe_fns_pub\":{},\"unsafe_fns_priv\":{},\"unsafe_impls\":{},\"unsafe_traits\":{},\"ty_wrapper_newtypes\":{},\"ty_wrapper_newtypes_declared\":{},\"ty_wrapper_declared_nonconformant\":{},\"ty_wrapper_newtypes_undeclared\":{},\"raw_ptr_ty_pub\":{},\"raw_ptr_ty_priv\":{},\"raw_ptr_fn_pub_safe\":{},\"raw_ptr_fn_pub_unsafe\":{},\"raw_ptr_fn_priv_safe\":{},\"raw_ptr_fn_priv_unsafe\":{},\"raw_ptr_wrapped\":{},\"raw_ptr_derefs\":{},\"raw_ptr_derefs_outside_impl\":{},\"void_ptr_ty_pub\":{},\"void_ptr_ty_priv\":{},\"void_ptr_fn_pub_safe\":{},\"void_ptr_fn_pub_unsafe\":{},\"void_ptr_fn_priv_safe\":{},\"void_ptr_fn_priv_unsafe\":{},\"ty_field_proj_wrapped\":{},\"ty_field_proj_outside_impl\":{},\"ty_field_ref_wrapped\":{},\"ref_to_type_wrapper_sanctioned\":{},\"ref_to_type_wrapper_smell\":{},\"ref_to_type_wrapper_body_smell\":{},\"deref_impl_on_wrapper\":{},\"ffi_calls\":{},\"sites\":{}}}",
+            krate, c.code_lines, c.total_stmts, c.safe_fns_pub, c.safe_fns_priv, c.unsafe_blocks, c.unsafe_block_stmts, c.unsafe_block_lines, c.unsafe_block_code_lines, c.unsafe_blocks_wrapper_impl, c.unsafe_blocks_ffi_export, c.unsafe_fns, c.unsafe_fns_pub, c.unsafe_fns_priv, c.unsafe_impls, c.unsafe_traits, c.ty_wrapper_newtypes, c.ty_wrapper_newtypes_declared, c.ty_wrapper_declared_nonconformant, c.ty_wrapper_newtypes_undeclared, c.raw_ptr_ty_pub, c.raw_ptr_ty_priv, c.raw_ptr_fn_pub_safe, c.raw_ptr_fn_pub_unsafe, c.raw_ptr_fn_priv_safe, c.raw_ptr_fn_priv_unsafe, c.raw_ptr_wrapped, c.raw_ptr_derefs, c.raw_ptr_derefs_outside_impl, c.void_ptr_ty_pub, c.void_ptr_ty_priv, c.void_ptr_fn_pub_safe, c.void_ptr_fn_pub_unsafe, c.void_ptr_fn_priv_safe, c.void_ptr_fn_priv_unsafe, c.ty_field_proj_wrapped, c.ty_field_proj_outside_impl, c.ty_field_ref_wrapped, c.ref_to_type_wrapper_sanctioned, c.ref_to_type_wrapper_smell, c.ref_to_type_wrapper_body_smell, c.deref_impl_on_wrapper, c.ffi_calls,
             sites.json()
         );
         Compilation::Continue
