@@ -232,10 +232,10 @@ def summarize(doc: dict) -> str:
             f" private types: {c.get('void_ptr_ty_priv')};"
             f" fn signatures: pub {c.get('void_ptr_fn_pub_safe')} safe + {c.get('void_ptr_fn_pub_unsafe')} unsafe,"
             f" private {c.get('void_ptr_fn_priv_safe')} safe + {c.get('void_ptr_fn_priv_unsafe')} unsafe)",
-            f"  ref to layout type   {(c.get('ty_wrapper_refs_sanctioned') or 0) + (c.get('ty_wrapper_refs_smell') or 0)}"
-            f"   ({c.get('ty_wrapper_refs_sanctioned')} sanctioned, smell {c.get('ty_wrapper_refs_smell')}"
+            f"  ref to layout type   {(c.get('ty_wrapper_borrow_sanctioned') or 0) + (c.get('ty_wrapper_borrow_smell') or 0)}"
+            f"   ({c.get('ty_wrapper_borrow_sanctioned')} sanctioned, smell {c.get('ty_wrapper_borrow_smell')}"
             f" — target 0) over {c.get('ty_wrapper_newtypes')} layout newtypes",
-            f"  ref formed in body   {c.get('ty_wrapper_refs_body_smell')}   (target 0)",
+            f"  ref formed in body   {c.get('ty_wrapper_borrow_body_smell')}   (target 0)",
             f"  Deref on wrapper     {c.get('deref_impl_on_wrapper')}   (target 0)",
             f"  ffi calls            {c.get('ffi_calls')}",
         ]
@@ -253,18 +253,20 @@ def summarize(doc: dict) -> str:
                     merged[name] = merged.get(name, 0) + v
             return ", ".join(f"{name} {v}" for name, v in sorted(merged.items())) or "none"
 
-        kinds = (("ffibox owner", "ffibox_owners"), ("ffibox handle", "ffibox_handles"),
-                 ("own owner", "non_ffibox_owner"), ("own borrow", "non_ffibox_borrow"),
+        kinds = (("ffibox owner", "ffibox_owner"), ("ffibox handle", "ffibox_handle"),
+                 ("own owner", "non_ffibox_owner"),
+                 ("own wrapper borrow", "non_ffibox_wrapper_borrow"),
+                 ("other own borrow", "non_ffibox_non_wrapper_borrow"),
                  ("std borrow", "std_ty_borrow"))
         lines.append("  ffibox")
         for name, k in kinds:
             pub, priv = f"fn_sig_{k}_pub", f"fn_sig_{k}_priv"
             lines.append(
-                f"  {name + ' in fn sig':<24}{n[pub]} pub + {n[priv]} private   ({keys(pub, priv)})")
+                f"  {name + ' in fn sig':<30}{n[pub]} pub + {n[priv]} private   ({keys(pub, priv)})")
         for name, k in kinds:
             fp, fq, tp = f"ty_pub_fields_pub_{k}", f"ty_pub_fields_priv_{k}", f"ty_priv_{k}"
             lines.append(
-                f"  {name + ' in fields':<24}pub types: {n[fp]} pub + {n[fq]} private fields,"
+                f"  {name + ' in fields':<30}pub types: {n[fp]} pub + {n[fq]} private fields,"
                 f" private types: {n[tp]}   ({keys(fp, fq, tp)})")
         lines += [
             f"  ffibox trait impls   {n['ffibox_impl_macro']} by macro + {n['ffibox_impl_manual']} by hand"
