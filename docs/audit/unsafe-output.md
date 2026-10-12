@@ -127,9 +127,12 @@ types the build hands to C:
   C-reachable type by value.
 
 Passing a type by value is a copy and seeds nothing. The sys crates are every
-crate in the dependency graph with a Cargo `links` key (`cargo metadata`), plus
-any named with `--sys-crates CRATE[,CRATE...]` -- for bindings without one,
-such as `libc`. The document records the set in `sys_crates`; their emissions
+crate in the dependency graph with a Cargo `links` key or named `*-sys`
+(`cargo metadata`; a binding crate that links nothing itself, such as
+`pcre2-sys`, sets no `links`), plus any named with
+`--sys-crates CRATE[,CRATE...]` -- for bindings that are neither, such as
+`libc`. A crate may set `links` only to pass build-script metadata (such as
+`prettyplease`); it then joins the set harmlessly, having no C types. The document records the set in `sys_crates`; their emissions
 are bindings and are skipped, whatever their name.
 
 ### Wrappers
@@ -302,6 +305,6 @@ and statement totals (`code_lines`, `total_stmts`, `unsafe_block_*lines`,
 - **C reachability it cannot see.** Memory C reaches through an erased
   `void *` with no visible cast in the crate, through integer round trips, or
   through a generic wrapper (`W<T>` over a C type: only declarations are read);
-  and C types of a native library whose binding crate has no `links` key,
-  unless named with `--sys-crates`. Every `#[repr(C)]` type of a sys crate is
+  and C types of a binding crate with neither a `links` key nor a `*-sys`
+  name, unless named with `--sys-crates`. Every `#[repr(C)]` type of a sys crate is
   taken as C's, including ones C only passes by value.

@@ -100,7 +100,8 @@ class DriverUnavailable(Exception):
 def sys_crates(ws: Path, extra: list[str] | None = None) -> list[str]:
     """The crates whose `#[repr(C)]` types are C's, by crate (lib target)
     name: every package in the build's dependency graph with a Cargo `links`
-    key, plus ``extra``. `cargo metadata` resolves the graph; when it cannot,
+    key or named `*-sys` (bindings that link nothing themselves, such as
+    `pcre2-sys`, set no `links`), plus ``extra``. `cargo metadata` resolves the graph; when it cannot,
     only the workspace's own packages are read."""
     names: set[str] = {n.replace("-", "_") for n in extra or ()}
     for args in (["--format-version", "1"], ["--no-deps", "--format-version", "1"]):
@@ -108,7 +109,7 @@ def sys_crates(ws: Path, extra: list[str] | None = None) -> list[str]:
                            capture_output=True, text=True)
         if r.returncode == 0:
             for pkg in json.loads(r.stdout)["packages"]:
-                if not pkg.get("links"):
+                if not (pkg.get("links") or pkg["name"].endswith(("-sys", "_sys"))):
                     continue
                 libs = [t["name"] for t in pkg["targets"]
                         if {"lib", "rlib", "staticlib", "cdylib", "dylib"} & set(t["kind"])]

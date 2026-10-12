@@ -76,8 +76,8 @@ def add_stages(sub: "argparse._SubParsersAction", *,
         "--sys-crates", type=lambda v: [c for c in v.split(",") if c], default=None,
         metavar="CRATE[,CRATE...]",
         help="Crates whose #[repr(C)] types are C's, beside the ones found "
-             "automatically (every crate with a Cargo `links` key). Use it "
-             "for bindings without one, such as `libc`.")
+             "automatically (every crate with a Cargo `links` key or named "
+             "`*-sys`). Use it for bindings that are neither, such as `libc`.")
     m.add_argument(
         "--ffibox", action="store_true",
         help="Also count the crate's ffibox surface: ffibox types and the "
