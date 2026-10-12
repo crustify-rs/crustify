@@ -318,7 +318,13 @@ Cover every instrument prepared by the campaign as a separate obligation:
 - TSan: races reachable through safe APIs, including every asserted `Send` or `Sync`
   implementation and threaded callback.
 - Miri: Rust-side lifetime, bounds, initialization, validity, alignment, intrinsic, and
-  `repr` assumptions. Miri cannot call the foreign library.
+  `repr` assumptions. Miri cannot call the foreign library, read its globals or spawn a
+  process. Give every test that cannot run under Miri `#[cfg_attr(miri, ignore = "<reason>")]`
+  on its test function, naming what stops it: `"calls C"`, `"reads a C global"`, and so on.
+  Mark a test only after running it alone under Miri and seeing Miri stop there; never to
+  silence a Miri report of undefined behaviour, a panic or a failed assertion, which are
+  findings. Do not use `#[cfg(not(miri))]` or test-name filters instead: with the attribute
+  in place, `cargo miri test` runs every other test.
 
 Exercise every owner and borrowed form, shared and mutable access path, lifecycle
 strategy, generic instance, and callback variant emitted by the batch. Attempt to outlive
@@ -386,6 +392,11 @@ symbol and callback, that the wave's batches landed, often from several translat
 You own the wave's BSan gate: run it on the wave tip you start from and on the tree you
 land, as the Regressions step prescribes, and treat each report that survives its triage as a
 UB candidate of the item it touches.
+
+You also own the workspace-wide Miri gate, in every wave, as the Regressions step
+prescribes. Treat each Miri report of undefined behaviour as a UB candidate of the item it
+touches, and give a test that Miri stops at the foreign boundary the attribute the Tests
+section prescribes when it lacks one.
 
 For homing reports and reproducers, use as your artifact dir the part of your working
 branch's name after `crustify/review-batches/`:
@@ -516,6 +527,14 @@ Validate under every prepared instrument. BSan is the exception, and runs with d
   to exit; do not poll or read its output while it runs. Pursue only true positives.
 - Only a true positive, a report that reproduces through the Rust side as a single test
   or standalone reproducer, becomes a UB finding with a fix.
+
+Miri runs as a gate too. `wrap` and `port` run their own tests under Miri. Every `review`
+runs the Miri gate over the whole workspace: one `cargo +nightly miri test` per test binary
+(`--lib`, and `--test <name>` for each integration binary), in parallel, each with
+`-- --skip compile_fail`, once on the wave tip before any fix and once on the tree you land,
+after your last rebase. Start each run in the background
+and wait for it to exit. The gate passes only with no Miri error: a test that stops at the
+foreign boundary without the attribute gets it, and any other Miri error is a UB candidate.
 
 If C changed, run the configured C build and baseline with the Rust feature off. For
 `port`, repeat with the feature on. A wrap-only batch with no C change does not need the
