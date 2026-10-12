@@ -101,7 +101,7 @@ the campaign's.
   defects
 - `+pub unsafe fn` / `+pub raw ptr` — the change the landed batch made to the
   public unsafe surface (`unsafe_fns_pub`) and to the raw pointers on the safe
-  public interface (`raw_ptr_type_pub` + `raw_ptr_fn_pub_safe`) of the unseeded
+  public interface (`raw_ptr_ty_pub` + `raw_ptr_fn_pub_safe`) of the unseeded
   static scan, at its landing against the commit before it; a review batch's fixes
   show as negative values
 - `rv $` / `rv wall` / `rv loc` — the REVIEW agent's cost, elapsed time, and net
@@ -338,12 +338,8 @@ Deterministic `crustify scan-unsafe <workdir>`; no model.
 | `wrapper_newtypes_declared` | `<n>` | `<n>` | … |
 | `wrapper_declared_nonconformant` | `<n>` | `<n>` | … |
 | `wrapper_newtypes_undeclared` | `<n>` | `<n>` | … |
-| **`raw_ptr`** | **`<n>`** | `<n>` | … |
-| `raw_ptr_args` | `<n>` | `<n>` | … |
-| `raw_ptr_rets` | `<n>` | `<n>` | … |
-| `raw_ptr_fields` | `<n>` | `<n>` | … |
-| **`raw_ptr_type_pub`** | **`<n>`** | `<n>` | … |
-| `raw_ptr_type_priv` | `<n>` | `<n>` | … |
+| **`raw_ptr_ty_pub`** | **`<n>`** | `<n>` | … |
+| `raw_ptr_ty_priv` | `<n>` | `<n>` | … |
 | **`raw_ptr_fn_pub_safe`** | **`<n>`** | `<n>` | … |
 | `raw_ptr_fn_pub_unsafe` | `<n>` | `<n>` | … |
 | `raw_ptr_fn_priv_safe` | `<n>` | `<n>` | … |
@@ -354,12 +350,11 @@ Deterministic `crustify scan-unsafe <workdir>`; no model.
 | `ref_to_type_wrapper_smell` | `<n>` | `<n>` | … |
 | `ref_to_type_wrapper_body_smell` | `<n>` | `<n>` | … |
 | `deref_impl_on_wrapper` | `<n>` | `<n>` | … |
-| `field_proj_wrapped` | `<n>` | `<n>` | … |
-| `field_proj_outside_impl` | `<n>` | `<n>` | … |
-| `field_ref_wrapped` | `<n>` | `<n>` | … |
-| `void_ptr` | `<n>` | `<n>` | … |
-| `void_ptr_type_pub` | `<n>` | `<n>` | … |
-| `void_ptr_type_priv` | `<n>` | `<n>` | … |
+| `ty_field_proj_wrapped` | `<n>` | `<n>` | … |
+| `ty_field_proj_outside_impl` | `<n>` | `<n>` | … |
+| `ty_field_ref_wrapped` | `<n>` | `<n>` | … |
+| `void_ptr_ty_pub` | `<n>` | `<n>` | … |
+| `void_ptr_ty_priv` | `<n>` | `<n>` | … |
 | `void_ptr_fn_pub_safe` | `<n>` | `<n>` | … |
 | `void_ptr_fn_pub_unsafe` | `<n>` | `<n>` | … |
 | `void_ptr_fn_priv_safe` | `<n>` | `<n>` | … |

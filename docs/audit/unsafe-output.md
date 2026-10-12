@@ -57,28 +57,27 @@ crate: a `pub` item in a private module is not, unless it is re-exported, and a
 
 - `unsafe_fns` = `unsafe_fns_pub` + `unsafe_fns_priv`. `unsafe_fns_pub` is the
   public unsafe surface: every obligation the crate exports to its callers.
-- `raw_ptr` counts every raw-pointer position, partitioned by where it sits:
+- Every raw-pointer position falls in exactly one of six counters, by where
+  it sits:
 
   ```text
-  raw_ptr = raw_ptr_type_pub + raw_ptr_type_priv          (fields of types)
-          + raw_ptr_fn_pub_safe  + raw_ptr_fn_pub_unsafe  (fn signatures)
-          + raw_ptr_fn_priv_safe + raw_ptr_fn_priv_unsafe
+  raw_ptr_ty_pub,       raw_ptr_ty_priv          fields of types
+  raw_ptr_fn_pub_safe,  raw_ptr_fn_pub_unsafe    fn signatures (args and return)
+  raw_ptr_fn_priv_safe, raw_ptr_fn_priv_unsafe
   ```
 
   A type's fields count by the TYPE's visibility, private fields of a public
   type included, since they are its representation. A signature counts by the
   fn's visibility and its safety: `_safe` is a safe fn, reachable from safe
   code, `_unsafe` an `unsafe fn`, whose caller has taken the obligation on. The
-  raw pointers on the safe public interface are `raw_ptr_type_pub` +
-  `raw_ptr_fn_pub_safe`. The same total splits by position kind:
-  `raw_ptr` = `raw_ptr_fields` + `raw_ptr_args` + `raw_ptr_rets`.
-  `raw_ptr_wrapped` is the subset whose pointee is a C type that already has a
+  raw pointers on the safe public interface are `raw_ptr_ty_pub` +
+  `raw_ptr_fn_pub_safe`. `raw_ptr_wrapped` counts the positions whose pointee is a C type that already has a
   wrapper. Generated bindings compiled into the crate are skipped: files under
   the build script's `OUT_DIR` and files named `bindings.rs`; bindings in a
   `-sys` crate are excluded with that crate.
-- `void_ptr` is the `*const c_void` / `*mut c_void` subset of `raw_ptr`,
-  partitioned the same way (`void_ptr_type_{pub,priv}`,
-  `void_ptr_fn_{pub,priv}_{safe,unsafe}`).
+- `void_ptr_ty_{pub,priv}` and `void_ptr_fn_{pub,priv}_{safe,unsafe}` count
+  the `*const c_void` / `*mut c_void` positions among them, partitioned the
+  same way.
 
 The C-ABI gateway (`#[no_mangle]` / `#[export_name]` / `extern "C"` fns) is
 counted like any other fn; its unsafe blocks are also counted apart, in
@@ -104,7 +103,8 @@ The derived fields:
 
 - `unsafe_fn_pub_ratio`: `unsafe_fns_pub / unsafe_fns`.
 - `unsafe_fn_share_of_pub_fns`: `unsafe_fns_pub / fns_pub`.
-- `raw_ptr_pub`: `raw_ptr_type_pub + raw_ptr_fn_pub_safe + raw_ptr_fn_pub_unsafe`.
+- `raw_ptr_pub`: `raw_ptr_ty_pub + raw_ptr_fn_pub_safe + raw_ptr_fn_pub_unsafe`.
+- `raw_ptr_pub_safe_interface`: `raw_ptr_ty_pub + raw_ptr_fn_pub_safe`.
 - `unsafe_loc_ratio` and `loc_per_unsafe_block`: context, not a score.
 
 ## Wrappers and references into C memory
@@ -138,9 +138,9 @@ may write. Access goes through the handles instead.
   crate's own functions are not counted at the call site; their bodies are.
   A `PhantomData<&W>` marker holds no reference and is not counted. Nothing is
   sanctioned: target 0.
-- `field_proj_wrapped` counts field accesses `(*p).field` through a raw pointer
-  to a wrapped C type or a wrapper, and `field_proj_outside_impl` the subset
-  outside any `impl` or trait body. `field_ref_wrapped` counts the references
+- `ty_field_proj_wrapped` counts field accesses `(*p).field` through a raw pointer
+  to a wrapped C type or a wrapper, and `ty_field_proj_outside_impl` the subset
+  outside any `impl` or trait body. `ty_field_ref_wrapped` counts the references
   `&(*p).field` / `&mut (*p).field` among them; raw borrows (`&raw const`,
   `addr_of!`) are not counted.
 
@@ -204,7 +204,7 @@ plain value borrows a Rust value, not a C object, and is skipped.
 The `*_ty_*` families (`ffibox_ty_owners_*`, `ffibox_ty_handles_*`,
 `non_ffibox_ty_owner_*`, `non_ffibox_ty_borrow_*`, `std_ty_borrow_*`) count
 the same kinds in the fields of the structs, unions and enums the crate
-defines, `_pub` / `_priv` by the type's visibility as for `raw_ptr_type_*`:
+defines, `_pub` / `_priv` by the type's visibility as for `raw_ptr_ty_*`:
 what the crate's types hold, where the `*_fn_*` families are what its fns take
 and return.
 
@@ -249,7 +249,7 @@ and statement totals (`code_lines`, `total_stmts`, `unsafe_block_*lines`,
 
 ## Known limitations
 
-- **References into C memory the counters miss.** `field_ref_wrapped` matches
+- **References into C memory the counters miss.** `ty_field_ref_wrapped` matches
   only `&(*p).field` one field deep, so `&(*p).a.b` and `&(*p).arr[i]` are not
   counted; an autoref on a field (`(*p).field.method()` with `&self`) is not
   counted; and a reference to the C type itself (`&*p` with
