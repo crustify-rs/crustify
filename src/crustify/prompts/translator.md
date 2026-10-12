@@ -500,8 +500,13 @@ any smelly unsafe/raw sites that you might have missed. Focus only on those
 sites that belong to your changeset.
 
 ```bash
-crustify scan-unsafe <workdir> --json
+crustify scan-unsafe <workdir> --json --seams <seam files>
 ```
+
+`--seams` takes a comma-separated list of seam files, each naming one fn per line whose
+raw pointers and `unsafe` belong to the FFI seam rather than to the API. Pass crustify's
+own, `docs/translate/seams.txt`, plus the one shipped by each library the safe crate
+builds its seam on. Without them every seam site reads as a smell.
 
 Add `--sites <counters...>` to enumerate the affected sites for the unsafe/raw smells. 
 

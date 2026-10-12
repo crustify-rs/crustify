@@ -307,8 +307,14 @@ branch and purge its worktree.
 At batch, wave, sub-campaign, and campaign end, record an unseeded scan for unsafe metrics:
 
 ```bash
-crustify scan-unsafe <workdir> --json
+crustify scan-unsafe <workdir> --json --seams <seam files>
 ```
+
+`--seams` takes a comma-separated list of seam files, each naming one fn per line whose
+raw pointers and `unsafe` belong to the FFI seam rather than to the API. Pass crustify's
+own, `docs/translate/seams.txt`, plus the one shipped by each library the safe crate
+builds its seam on. Without them nothing is seam by name and every such site reads as a
+smell. Use the same list for every scan of a campaign, so its figures stay comparable.
 
 Use `--sites` when inspecting smells.
 
