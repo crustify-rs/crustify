@@ -28,7 +28,7 @@ class DeterministicWorkspaceTests(unittest.TestCase):
                     return_value=({"code_lines": 1}, {}, None)) as measure:
                 document = unsafe_scan.compose(layout)
 
-            measure.assert_called_once_with(workspace, ffibox=False, seams=[])
+            measure.assert_called_once_with(workspace, ffibox=False)
             self.assertEqual(document["crate_path"], str(workspace))
 
     def test_root_cargo_workspace_wins_over_campaign_fallback(self) -> None:

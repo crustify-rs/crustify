@@ -44,17 +44,19 @@ _TOOLCHAIN = tomllib.loads(
 _COUNTS = (
     "unsafe_blocks", "unsafe_block_stmts", "unsafe_block_lines",
     "unsafe_block_code_lines", "unsafe_blocks_wrapper_impl",
-    "unsafe_blocks_ffi_export", "unsafe_fns", "unsafe_fns_seam",
-    "unsafe_fns_pub_seam", "unsafe_fns_priv_seam",
-    "unsafe_fns_pub_smell", "unsafe_fns_priv_smell", "fns_pub", "fns_priv",
-    "unsafe_impls", "unsafe_traits", "ffi_calls",
-    "wrapper_newtypes", "wrapper_newtypes_declared",
-    "wrapper_declared_nonconformant", "wrapper_newtypes_undeclared",
-    "raw_ptr_args", "raw_ptr_rets", "raw_ptr_seam", "raw_ptr_wrapped",
-    "raw_ptr_pub_smell", "raw_ptr_priv_smell", "raw_ptr_pub_seam",
-    "raw_ptr_priv_seam", "raw_ptr_pub", "raw_ptr_priv", "ref_to_type_wrapper_sanctioned", "ref_to_type_wrapper_smell", "ref_to_type_wrapper_body_smell", "deref_impl_on_wrapper", "raw_ptr_fields", "field_ref_wrapped",
-    "field_proj_wrapped", "field_proj_outside_impl", "void_ptr_seam",
-    "void_ptr_pub_smell", "void_ptr_priv_smell", "raw_ptr_derefs", "raw_ptr_derefs_outside_impl",
+    "unsafe_blocks_ffi_export", "unsafe_fns", "unsafe_fns_pub",
+    "unsafe_fns_priv", "fns_pub", "fns_priv", "unsafe_impls", "unsafe_traits",
+    "ffi_calls", "wrapper_newtypes", "wrapper_newtypes_declared",
+    "wrapper_declared_nonconformant", "wrapper_newtypes_undeclared", "raw_ptr",
+    "raw_ptr_args", "raw_ptr_rets", "raw_ptr_type_pub", "raw_ptr_type_priv",
+    "raw_ptr_fn_pub_safe", "raw_ptr_fn_pub_unsafe", "raw_ptr_fn_priv_safe",
+    "raw_ptr_fn_priv_unsafe", "raw_ptr_wrapped",
+    "ref_to_type_wrapper_sanctioned", "ref_to_type_wrapper_smell",
+    "ref_to_type_wrapper_body_smell", "deref_impl_on_wrapper", "raw_ptr_fields",
+    "field_proj_wrapped", "field_proj_outside_impl", "field_ref_wrapped",
+    "void_ptr", "void_ptr_type_pub", "void_ptr_type_priv",
+    "void_ptr_fn_pub_safe", "void_ptr_fn_pub_unsafe", "void_ptr_fn_priv_safe",
+    "void_ptr_fn_priv_unsafe", "raw_ptr_derefs", "raw_ptr_derefs_outside_impl",
     "total_stmts", "code_lines",
 )
 #: The counters that count source locations, so `--sites` can list them. Line
@@ -62,34 +64,34 @@ _COUNTS = (
 #: `unsafe_block_stmts`) have no sites.
 SITE_COUNTERS = (
     "unsafe_blocks", "unsafe_blocks_wrapper_impl", "unsafe_blocks_ffi_export",
-    "unsafe_fns", "unsafe_fns_seam", "unsafe_fns_pub_seam",
-    "unsafe_fns_priv_seam", "unsafe_fns_pub_smell", "unsafe_fns_priv_smell",
-    "fns_pub", "fns_priv", "unsafe_impls", "unsafe_traits", "ffi_calls",
-    "wrapper_newtypes", "wrapper_newtypes_declared",
-    "wrapper_declared_nonconformant", "wrapper_newtypes_undeclared",
-    "raw_ptr_args", "raw_ptr_rets", "raw_ptr_seam", "raw_ptr_wrapped",
-    "raw_ptr_pub_smell", "raw_ptr_priv_smell", "raw_ptr_pub_seam",
-    "raw_ptr_priv_seam", "raw_ptr_pub", "raw_ptr_priv", "ref_to_type_wrapper_sanctioned", "ref_to_type_wrapper_smell", "ref_to_type_wrapper_body_smell", "deref_impl_on_wrapper", "raw_ptr_fields",
-    "field_proj_wrapped", "field_proj_outside_impl", "field_ref_wrapped",
-    "void_ptr_seam", "void_ptr_pub_smell", "void_ptr_priv_smell",
-    "raw_ptr_derefs", "raw_ptr_derefs_outside_impl",
+    "unsafe_fns", "unsafe_fns_pub", "unsafe_fns_priv", "fns_pub", "fns_priv",
+    "unsafe_impls", "unsafe_traits", "ffi_calls", "wrapper_newtypes",
+    "wrapper_newtypes_declared", "wrapper_declared_nonconformant",
+    "wrapper_newtypes_undeclared", "raw_ptr", "raw_ptr_args", "raw_ptr_rets",
+    "raw_ptr_type_pub", "raw_ptr_type_priv", "raw_ptr_fn_pub_safe",
+    "raw_ptr_fn_pub_unsafe", "raw_ptr_fn_priv_safe", "raw_ptr_fn_priv_unsafe",
+    "raw_ptr_wrapped", "ref_to_type_wrapper_sanctioned",
+    "ref_to_type_wrapper_smell", "ref_to_type_wrapper_body_smell",
+    "deref_impl_on_wrapper", "raw_ptr_fields", "field_proj_wrapped",
+    "field_proj_outside_impl", "field_ref_wrapped", "void_ptr",
+    "void_ptr_type_pub", "void_ptr_type_priv", "void_ptr_fn_pub_safe",
+    "void_ptr_fn_pub_unsafe", "void_ptr_fn_priv_safe",
+    "void_ptr_fn_priv_unsafe", "raw_ptr_derefs", "raw_ptr_derefs_outside_impl",
 )
 #: The `--ffibox` counters (`UM_FFIBOX` in the driver), in its order. Each is
 #: a breakdown `{type, handle kind or trait: N}` rather than a number, and each
 #: counts source locations, so all of them take `--sites` under `--ffibox`.
 FFIBOX_COUNTERS = (
-    "ffibox_sig_owners_pub", "ffibox_sig_owners_pub_seam",
-    "ffibox_sig_owners_priv", "ffibox_sig_owners_priv_seam",
-    "ffibox_sig_handles_pub", "ffibox_sig_handles_pub_seam",
-    "ffibox_sig_handles_priv", "ffibox_sig_handles_priv_seam",
-    "non_ffibox_sig_owner_pub", "non_ffibox_sig_owner_pub_seam",
-    "non_ffibox_sig_owner_priv", "non_ffibox_sig_owner_priv_seam",
-    "non_ffibox_sig_borrow_pub", "non_ffibox_sig_borrow_pub_seam",
-    "non_ffibox_sig_borrow_priv", "non_ffibox_sig_borrow_priv_seam",
-    "std_sig_borrow_pub", "std_sig_borrow_pub_seam", "std_sig_borrow_priv", "std_sig_borrow_priv_seam",
-    "ffibox_impl_macro", "ffibox_impl_manual",
-    "ffibox_define_ctype_macro", "ffibox_define_ctype_manual",
-    "drop_impl", "clone_impl",
+    "ffibox_fn_owners_pub", "ffibox_fn_owners_priv", "ffibox_fn_handles_pub",
+    "ffibox_fn_handles_priv", "non_ffibox_fn_owner_pub",
+    "non_ffibox_fn_owner_priv", "non_ffibox_fn_borrow_pub",
+    "non_ffibox_fn_borrow_priv", "std_fn_borrow_pub", "std_fn_borrow_priv",
+    "ffibox_ty_owners_pub", "ffibox_ty_owners_priv", "ffibox_ty_handles_pub",
+    "ffibox_ty_handles_priv", "non_ffibox_ty_owner_pub",
+    "non_ffibox_ty_owner_priv", "non_ffibox_ty_borrow_pub",
+    "non_ffibox_ty_borrow_priv", "std_ty_borrow_pub", "std_ty_borrow_priv",
+    "ffibox_impl_macro", "ffibox_impl_manual", "ffibox_define_ctype_macro",
+    "ffibox_define_ctype_manual", "drop_impl", "clone_impl",
 )
 
 
@@ -192,12 +194,9 @@ def _bust_cache(ws: Path) -> None:
                 root.touch()
 
 
-def measure(ws: Path, ffibox: bool = False,
-            seams: list[str] | None = None) -> tuple[dict, dict, dict | None]:
+def measure(ws: Path, ffibox: bool = False) -> tuple[dict, dict, dict | None]:
     """Return ``(tree-wide counts, sites per counter, ffibox breakdowns)`` for
-    ``ws``. The breakdowns are ``None`` unless ``ffibox`` asked for them.
-    ``seams`` are the fn names the driver treats as the FFI seam; none by
-    default."""
+    ``ws``. The breakdowns are ``None`` unless ``ffibox`` asked for them."""
     driver = _driver_bin()
     sysroot = subprocess.run(["rustc", f"+{_TOOLCHAIN}", "--print", "sysroot"],
                              capture_output=True, text=True).stdout.strip()
@@ -214,7 +213,6 @@ def measure(ws: Path, ffibox: bool = False,
     env["LD_LIBRARY_PATH"] = f"{sysroot}/lib" + (f":{ld}" if ld else "")
     if ffibox:
         env["UM_FFIBOX"] = "1"
-    env["UM_SEAM_FNS"] = ",".join(seams or ())
 
     r = subprocess.run(["cargo", f"+{_TOOLCHAIN}", "build"], cwd=ws, env=env,
                        capture_output=True, text=True)

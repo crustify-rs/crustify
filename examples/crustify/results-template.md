@@ -99,10 +99,11 @@ the campaign's.
   reproduce, or did not show a real bug, and their fixes were reverted. They
   stay counted in their categories; `total` minus this column is the confirmed
   defects
-- `+unsafe fn smell` / `+raw-ptr smell` — the change the landed batch made to the
-  `unsafe fn` smell and the raw-pointer smell (total − seam) of the unseeded
-  static scan, at its landing against the commit before it; a review batch's fixes show as
-  negative values
+- `+pub unsafe fn` / `+pub raw ptr` — the change the landed batch made to the
+  public unsafe surface (`unsafe_fns_pub`) and to the raw pointers on the safe
+  public interface (`raw_ptr_type_pub` + `raw_ptr_fn_pub_safe`) of the unseeded
+  static scan, at its landing against the commit before it; a review batch's fixes
+  show as negative values
 - `rv $` / `rv wall` / `rv loc` — the REVIEW agent's cost, elapsed time, and net
   `.rs` line delta (`+ins/-del`) of its landing commit. Under subscription
   billing `rv $` is an API-equivalent comparison value, not a charged amount
@@ -186,7 +187,7 @@ Implementation `<provider>/<model>` via `<backend>`; review
 
 `<provider>/<model>` via `<backend>`.
 
-| subsystem | wave | batch | types | fields | +LoC | cov (C/Rust) | +unsafe fn smell | +raw-ptr smell | $ | tokens | wall | $/type | $/field |
+| subsystem | wave | batch | types | fields | +LoC | cov (C/Rust) | +pub unsafe fn | +pub raw ptr | $ | tokens | wall | $/type | $/field |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 |`<link-unit>/<subsystem>`|`<n>`|`<n>`| `<n>` | `<n>` |`+<n>/-<n>`| `<n>`% / `<n>`% | `±<n>` | `±<n>` | `$<n>` | `<n>M` | `<n>m<n>s` | `$<n>` | `$<n>` |
 | **Σ** |  |  | **`<n>`** | **`<n>`** | **`+<n>/-<n>`** | **`<n>`% / `<n>`%** | **`±<n>`** | **`±<n>`** | **`$<n>`** | **`<n>M`** | — | **`$<n>`** | **`$<n>`** |
@@ -204,7 +205,7 @@ Implementation `<provider>/<model>` via `<backend>`; review
 
 `<provider>/<model>` via `<backend>`.
 
-| subsystem | wave | batch | types | fields | +LoC | cov (C/Rust) | +unsafe fn smell | +raw-ptr smell | $ | tokens | wall | $/type | $/field |
+| subsystem | wave | batch | types | fields | +LoC | cov (C/Rust) | +pub unsafe fn | +pub raw ptr | $ | tokens | wall | $/type | $/field |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 |`<link-unit>/<subsystem>`|`<n>`|`<n>`| `<n>` | `<n>` |`+<n>/-<n>`| `<n>`% / `<n>`% | `±<n>` | `±<n>` | `$<n>` | `<n>M` | `<n>m<n>s` | `$<n>` | `$<n>` |
 | **Σ** |  |  | **`<n>`** | **`<n>`** | **`+<n>/-<n>`** | **`<n>`% / `<n>`%** | **`±<n>`** | **`±<n>`** | **`$<n>`** | **`<n>M`** | — | **`$<n>`** | **`$<n>`** |
@@ -222,7 +223,7 @@ Implementation `<provider>/<model>` via `<backend>`; review
 
 `<provider>/<model>` via `<backend>`.
 
-| subsystem | wave | batch | types | +LoC | cov (C/Rust) | +unsafe fn smell | +raw-ptr smell | rv loc | rv $ | rv tokens | rv wall | rv $/type |
+| subsystem | wave | batch | types | +LoC | cov (C/Rust) | +pub unsafe fn | +pub raw ptr | rv loc | rv $ | rv tokens | rv wall | rv $/type |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 |`<link-unit>/<subsystem>`|`<n>`|`<n>`| `<n>` |`+<n>/-<n>`| `<n>`% / `<n>`% | `±<n>` | `±<n>` | `+<n>/-<n>` | `$<n>` | `<n>M` | `<n>m<n>s` | `$<n>` |
 | **Σ** |  |  | **`<n>`** | **`+<n>/-<n>`** | **`<n>`% / `<n>`%** | **`±<n>`** | **`±<n>`** | **`+<n>/-<n>`** | **`$<n>`** | **`<n>M`** | — | **`$<n>`** |
@@ -251,7 +252,7 @@ Implementation `<provider>/<model>` via `<backend>`; review
 
 `<provider>/<model>` via `<backend>`.
 
-| subsystem | wave | batch | objective | symbols | loc | +LoC | cov (C/Rust) | +unsafe fn smell | +raw-ptr smell | $ | tokens | wall | $/symbol | $/loc |
+| subsystem | wave | batch | objective | symbols | loc | +LoC | cov (C/Rust) | +pub unsafe fn | +pub raw ptr | $ | tokens | wall | $/symbol | $/loc |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 |`<link-unit>/<subsystem>`|`<n>`|`<n>`| wrap | `<n>` | `<n>` |`+<n>/-<n>`| `<n>`% / `<n>`% | `±<n>` | `±<n>` | `$<n>` | `<n>M` | `<n>m<n>s` | `$<n>` | `$<n>` |
 |`<link-unit>/<subsystem>`|`<n>`|`<n>`| port | `<n>` | `<n>` |`+<n>/-<n>`| `<n>`% / `<n>`% | `±<n>` | `±<n>` | `$<n>` | `<n>M` | `<n>m<n>s` | `$<n>` | `$<n>` |
@@ -271,7 +272,7 @@ Implementation `<provider>/<model>` via `<backend>`; review
 
 `<provider>/<model>` via `<backend>`.
 
-| subsystem | wave | batch | symbols | +LoC | cov (C/Rust) | +unsafe fn smell | +raw-ptr smell | rv loc | rv $ | rv tokens | rv wall | rv $/symbol |
+| subsystem | wave | batch | symbols | +LoC | cov (C/Rust) | +pub unsafe fn | +pub raw ptr | rv loc | rv $ | rv tokens | rv wall | rv $/symbol |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 |`<link-unit>/<subsystem>`|`<n>`|`<n>`| `<n>` |`+<n>/-<n>`| `<n>`% / `<n>`% | `±<n>` | `±<n>` | `+<n>/-<n>` | `$<n>` | `<n>M` | `<n>m<n>s` | `$<n>` |
 | **Σ** |  |  | **`<n>`** | **`+<n>/-<n>`** | **`<n>`% / `<n>`%** | **`±<n>`** | **`±<n>`** | **`+<n>/-<n>`** | **`$<n>`** | **`<n>M`** | — | **`$<n>`** |
@@ -307,9 +308,9 @@ Deterministic `crustify scan-unsafe <workdir>`; no model.
 | blocks | `<n>` |
 | % in `impl T` | `<n>`% |
 | `unsafe fn` | `<n>` |
-| ...of which not sanctioned | `<n>` |
-| raw-ptr smell | `<n>` |
-| void-ptr smell | `<n>` |
+| ...public | `<n>` |
+| raw ptrs on the safe public interface (types + safe fns) | `<n>` |
+| void ptrs on the safe public interface (types + safe fns) | `<n>` |
 | FFI calls | `<n>` |
 | `&`/`&mut` on a wrapper | `<n>` |
 | field proj outside an accessor | `<n>` |
@@ -327,12 +328,8 @@ Deterministic `crustify scan-unsafe <workdir>`; no model.
 | `unsafe_blocks_wrapper_impl` | `<n>` | `<n>` | … |
 | `unsafe_blocks_ffi_export` | `<n>` | `<n>` | … |
 | `unsafe_fns` | `<n>` | `<n>` | … |
-| `unsafe_fns_seam` | `<n>` | `<n>` | … |
-| `unsafe_fns_pub_seam` | `<n>` | `<n>` | … |
-| `unsafe_fns_priv_seam` | `<n>` | `<n>` | … |
-| **`unsafe fn` smell** | **`<n>`** | `<n>` | … |
-| `unsafe_fns_pub_smell` | `<n>` | `<n>` | … |
-| `unsafe_fns_priv_smell` | `<n>` | `<n>` | … |
+| **`unsafe_fns_pub`** | **`<n>`** | `<n>` | … |
+| `unsafe_fns_priv` | `<n>` | `<n>` | … |
 | `fns_pub` | `<n>` | `<n>` | … |
 | `fns_priv` | `<n>` | `<n>` | … |
 | `unsafe_impls` / `unsafe_traits` | `<n>` / `<n>` | `<n>` / `<n>` | … |
@@ -341,18 +338,16 @@ Deterministic `crustify scan-unsafe <workdir>`; no model.
 | `wrapper_newtypes_declared` | `<n>` | `<n>` | … |
 | `wrapper_declared_nonconformant` | `<n>` | `<n>` | … |
 | `wrapper_newtypes_undeclared` | `<n>` | `<n>` | … |
+| **`raw_ptr`** | **`<n>`** | `<n>` | … |
 | `raw_ptr_args` | `<n>` | `<n>` | … |
 | `raw_ptr_rets` | `<n>` | `<n>` | … |
 | `raw_ptr_fields` | `<n>` | `<n>` | … |
-| **total positions** | **`<n>`** | `<n>` | … |
-| `raw_ptr_seam` | `<n>` | `<n>` | … |
-| `raw_ptr_pub_seam` | `<n>` | `<n>` | … |
-| `raw_ptr_priv_seam` | `<n>` | `<n>` | … |
-| `raw_ptr_pub_smell` | `<n>` | `<n>` | … |
-| `raw_ptr_priv_smell` | `<n>` | `<n>` | … |
-| `raw_ptr_pub` | `<n>` | `<n>` | … |
-| `raw_ptr_priv` | `<n>` | `<n>` | … |
-| **smell (total − seam)** | **`<n>`** | `<n>` | … |
+| **`raw_ptr_type_pub`** | **`<n>`** | `<n>` | … |
+| `raw_ptr_type_priv` | `<n>` | `<n>` | … |
+| **`raw_ptr_fn_pub_safe`** | **`<n>`** | `<n>` | … |
+| `raw_ptr_fn_pub_unsafe` | `<n>` | `<n>` | … |
+| `raw_ptr_fn_priv_safe` | `<n>` | `<n>` | … |
+| `raw_ptr_fn_priv_unsafe` | `<n>` | `<n>` | … |
 | `raw_ptr_wrapped` | `<n>` | `<n>` | … |
 | `raw_ptr_derefs` | `<n>` | `<n>` | … |
 | `ref_to_type_wrapper_sanctioned` | `<n>` | `<n>` | … |
@@ -362,9 +357,13 @@ Deterministic `crustify scan-unsafe <workdir>`; no model.
 | `field_proj_wrapped` | `<n>` | `<n>` | … |
 | `field_proj_outside_impl` | `<n>` | `<n>` | … |
 | `field_ref_wrapped` | `<n>` | `<n>` | … |
-| `void_ptr_seam` | `<n>` | `<n>` | … |
-| `void_ptr_pub_smell` | `<n>` | `<n>` | … |
-| `void_ptr_priv_smell` | `<n>` | `<n>` | … |
+| `void_ptr` | `<n>` | `<n>` | … |
+| `void_ptr_type_pub` | `<n>` | `<n>` | … |
+| `void_ptr_type_priv` | `<n>` | `<n>` | … |
+| `void_ptr_fn_pub_safe` | `<n>` | `<n>` | … |
+| `void_ptr_fn_pub_unsafe` | `<n>` | `<n>` | … |
+| `void_ptr_fn_priv_safe` | `<n>` | `<n>` | … |
+| `void_ptr_fn_priv_unsafe` | `<n>` | `<n>` | … |
 
 ## Notes
 

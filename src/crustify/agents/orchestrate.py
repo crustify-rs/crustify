@@ -39,12 +39,6 @@ _SKILLS = (
         "wavefront", "SKILL.md", capability="wavefront",
         role_header="skills/wavefront/orchestrator.md",
     ),
-    #: The orchestrator does not write wrappers, but it scans what translators
-    #: land, and ffibox ships the seam names that scan needs.
-    SkillSpec(
-        "ffibox", "SKILL.md", capability="ffibox",
-        role_header="skills/ffibox/orchestrator.md",
-    ),
 )
 
 
