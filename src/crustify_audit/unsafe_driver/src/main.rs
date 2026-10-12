@@ -672,6 +672,15 @@ struct Counts {
     ty_wrapper_newtypes_declared: u64,
     ty_wrapper_declared_nonconformant: u64,
     ty_wrapper_newtypes_undeclared: u64,
+    // `&W` / `&mut W` (incl. the receiver), W a layout newtype, partitioned:
+    // sanctioned (REF_ACCESSORS / STD_VALUE_TRAITS impls) + smell (the rest)
+    ty_wrapper_refs_sanctioned: u64,
+    ty_wrapper_refs_smell: u64,
+    // in function BODIES: a `&W` / `&mut W` (or `&[W]`, `Option<&W>`, ..) formed
+    // from a raw pointer -- `&*p`, `&(*p).f`, an autoref through `*p`, or a
+    // non-local call such as `p.as_ref()` / `NonNull::as_ref` /
+    // `slice::from_raw_parts`. Never sanctioned: target 0.
+    ty_wrapper_refs_body_smell: u64,
     // Raw-pointer positions in the items the crate defines, nested ones
     // included, each in exactly one counter by where it sits:
     //   raw_ptr_ty_{pub,priv}               (fields of types)
@@ -709,15 +718,6 @@ struct Counts {
     // `&(*p).field` / `&mut (*p).field` where `p: *C` and `C` has a wrapper --
     // a reference one level down into memory C may write. Should be 0.
     ty_field_ref_wrapped: u64,
-    // `&W` / `&mut W` (incl. the receiver), W a layout newtype, partitioned:
-    // sanctioned (REF_ACCESSORS / STD_VALUE_TRAITS impls) + smell (the rest)
-    ref_to_type_wrapper_sanctioned: u64,
-    ref_to_type_wrapper_smell: u64,
-    // in function BODIES: a `&W` / `&mut W` (or `&[W]`, `Option<&W>`, ..) formed
-    // from a raw pointer -- `&*p`, `&(*p).f`, an autoref through `*p`, or a
-    // non-local call such as `p.as_ref()` / `NonNull::as_ref` /
-    // `slice::from_raw_parts`. Never sanctioned: target 0.
-    ref_to_type_wrapper_body_smell: u64,
     // `impl Deref` / `impl DerefMut` (core) whose Self is a wrapper, layout or
     // handle. Never sanctioned: target 0.
     deref_impl_on_wrapper: u64,
@@ -845,9 +845,9 @@ impl<'a, 'tcx> BodyVisitor<'a, 'tcx> {
     }
 
     fn body_ref(&mut self, e: &'tcx hir::Expr<'tcx>) {
-        self.c.ref_to_type_wrapper_body_smell += 1;
+        self.c.ty_wrapper_refs_body_smell += 1;
         self.sites
-            .add("ref_to_type_wrapper_body_smell", counter_site(self.tcx, e.span));
+            .add("ty_wrapper_refs_body_smell", counter_site(self.tcx, e.span));
     }
 
     /// Count a reference to a layout newtype formed from a raw pointer at `e`.
@@ -1668,11 +1668,11 @@ impl Callbacks for MetricsCallbacks {
                     if is_ref_to_type_wrapper(tcx, t) {
                         let site = counter_site(tcx, tcx.def_span(did));
                         if ref_to_wrapper_sanctioned(tcx, did) {
-                            c.ref_to_type_wrapper_sanctioned += 1;
-                            sites.add("ref_to_type_wrapper_sanctioned", site);
+                            c.ty_wrapper_refs_sanctioned += 1;
+                            sites.add("ty_wrapper_refs_sanctioned", site);
                         } else {
-                            c.ref_to_type_wrapper_smell += 1;
-                            sites.add("ref_to_type_wrapper_smell", site);
+                            c.ty_wrapper_refs_smell += 1;
+                            sites.add("ty_wrapper_refs_smell", site);
                         }
                     }
                 }
@@ -1799,8 +1799,8 @@ impl Callbacks for MetricsCallbacks {
             }
         }
         println!(
-            "{{\"crate\":\"{}\",\"code_lines\":{},\"total_stmts\":{},\"safe_fns_pub\":{},\"safe_fns_priv\":{},\"unsafe_blocks\":{},\"unsafe_block_stmts\":{},\"unsafe_block_lines\":{},\"unsafe_block_code_lines\":{},\"unsafe_blocks_wrapper_impl\":{},\"unsafe_blocks_ffi_export\":{},\"unsafe_fns\":{},\"unsafe_fns_pub\":{},\"unsafe_fns_priv\":{},\"unsafe_impls\":{},\"unsafe_traits\":{},\"ty_wrapper_newtypes\":{},\"ty_wrapper_newtypes_declared\":{},\"ty_wrapper_declared_nonconformant\":{},\"ty_wrapper_newtypes_undeclared\":{},\"raw_ptr_ty_pub\":{},\"raw_ptr_ty_priv\":{},\"raw_ptr_fn_pub_safe\":{},\"raw_ptr_fn_pub_unsafe\":{},\"raw_ptr_fn_priv_safe\":{},\"raw_ptr_fn_priv_unsafe\":{},\"raw_ptr_wrapped\":{},\"raw_ptr_derefs\":{},\"raw_ptr_derefs_outside_impl\":{},\"void_ptr_ty_pub\":{},\"void_ptr_ty_priv\":{},\"void_ptr_fn_pub_safe\":{},\"void_ptr_fn_pub_unsafe\":{},\"void_ptr_fn_priv_safe\":{},\"void_ptr_fn_priv_unsafe\":{},\"ty_field_proj_wrapped\":{},\"ty_field_proj_outside_impl\":{},\"ty_field_ref_wrapped\":{},\"ref_to_type_wrapper_sanctioned\":{},\"ref_to_type_wrapper_smell\":{},\"ref_to_type_wrapper_body_smell\":{},\"deref_impl_on_wrapper\":{},\"ffi_calls\":{},\"sites\":{}}}",
-            krate, c.code_lines, c.total_stmts, c.safe_fns_pub, c.safe_fns_priv, c.unsafe_blocks, c.unsafe_block_stmts, c.unsafe_block_lines, c.unsafe_block_code_lines, c.unsafe_blocks_wrapper_impl, c.unsafe_blocks_ffi_export, c.unsafe_fns, c.unsafe_fns_pub, c.unsafe_fns_priv, c.unsafe_impls, c.unsafe_traits, c.ty_wrapper_newtypes, c.ty_wrapper_newtypes_declared, c.ty_wrapper_declared_nonconformant, c.ty_wrapper_newtypes_undeclared, c.raw_ptr_ty_pub, c.raw_ptr_ty_priv, c.raw_ptr_fn_pub_safe, c.raw_ptr_fn_pub_unsafe, c.raw_ptr_fn_priv_safe, c.raw_ptr_fn_priv_unsafe, c.raw_ptr_wrapped, c.raw_ptr_derefs, c.raw_ptr_derefs_outside_impl, c.void_ptr_ty_pub, c.void_ptr_ty_priv, c.void_ptr_fn_pub_safe, c.void_ptr_fn_pub_unsafe, c.void_ptr_fn_priv_safe, c.void_ptr_fn_priv_unsafe, c.ty_field_proj_wrapped, c.ty_field_proj_outside_impl, c.ty_field_ref_wrapped, c.ref_to_type_wrapper_sanctioned, c.ref_to_type_wrapper_smell, c.ref_to_type_wrapper_body_smell, c.deref_impl_on_wrapper, c.ffi_calls,
+            "{{\"crate\":\"{}\",\"code_lines\":{},\"total_stmts\":{},\"safe_fns_pub\":{},\"safe_fns_priv\":{},\"unsafe_blocks\":{},\"unsafe_block_stmts\":{},\"unsafe_block_lines\":{},\"unsafe_block_code_lines\":{},\"unsafe_blocks_wrapper_impl\":{},\"unsafe_blocks_ffi_export\":{},\"unsafe_fns\":{},\"unsafe_fns_pub\":{},\"unsafe_fns_priv\":{},\"unsafe_impls\":{},\"unsafe_traits\":{},\"ty_wrapper_newtypes\":{},\"ty_wrapper_newtypes_declared\":{},\"ty_wrapper_declared_nonconformant\":{},\"ty_wrapper_newtypes_undeclared\":{},\"ty_wrapper_refs_sanctioned\":{},\"ty_wrapper_refs_smell\":{},\"ty_wrapper_refs_body_smell\":{},\"raw_ptr_ty_pub\":{},\"raw_ptr_ty_priv\":{},\"raw_ptr_fn_pub_safe\":{},\"raw_ptr_fn_pub_unsafe\":{},\"raw_ptr_fn_priv_safe\":{},\"raw_ptr_fn_priv_unsafe\":{},\"raw_ptr_wrapped\":{},\"raw_ptr_derefs\":{},\"raw_ptr_derefs_outside_impl\":{},\"void_ptr_ty_pub\":{},\"void_ptr_ty_priv\":{},\"void_ptr_fn_pub_safe\":{},\"void_ptr_fn_pub_unsafe\":{},\"void_ptr_fn_priv_safe\":{},\"void_ptr_fn_priv_unsafe\":{},\"ty_field_proj_wrapped\":{},\"ty_field_proj_outside_impl\":{},\"ty_field_ref_wrapped\":{},\"deref_impl_on_wrapper\":{},\"ffi_calls\":{},\"sites\":{}}}",
+            krate, c.code_lines, c.total_stmts, c.safe_fns_pub, c.safe_fns_priv, c.unsafe_blocks, c.unsafe_block_stmts, c.unsafe_block_lines, c.unsafe_block_code_lines, c.unsafe_blocks_wrapper_impl, c.unsafe_blocks_ffi_export, c.unsafe_fns, c.unsafe_fns_pub, c.unsafe_fns_priv, c.unsafe_impls, c.unsafe_traits, c.ty_wrapper_newtypes, c.ty_wrapper_newtypes_declared, c.ty_wrapper_declared_nonconformant, c.ty_wrapper_newtypes_undeclared, c.ty_wrapper_refs_sanctioned, c.ty_wrapper_refs_smell, c.ty_wrapper_refs_body_smell, c.raw_ptr_ty_pub, c.raw_ptr_ty_priv, c.raw_ptr_fn_pub_safe, c.raw_ptr_fn_pub_unsafe, c.raw_ptr_fn_priv_safe, c.raw_ptr_fn_priv_unsafe, c.raw_ptr_wrapped, c.raw_ptr_derefs, c.raw_ptr_derefs_outside_impl, c.void_ptr_ty_pub, c.void_ptr_ty_priv, c.void_ptr_fn_pub_safe, c.void_ptr_fn_pub_unsafe, c.void_ptr_fn_priv_safe, c.void_ptr_fn_priv_unsafe, c.ty_field_proj_wrapped, c.ty_field_proj_outside_impl, c.ty_field_ref_wrapped, c.deref_impl_on_wrapper, c.ffi_calls,
             sites.json()
         );
         Compilation::Continue

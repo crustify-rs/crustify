@@ -337,6 +337,9 @@ Deterministic `crustify scan-unsafe <workdir>`; no model.
 | `ty_wrapper_newtypes_declared` | `<n>` | `<n>` | … |
 | `ty_wrapper_declared_nonconformant` | `<n>` | `<n>` | … |
 | `ty_wrapper_newtypes_undeclared` | `<n>` | `<n>` | … |
+| `ty_wrapper_refs_sanctioned` | `<n>` | `<n>` | … |
+| `ty_wrapper_refs_smell` | `<n>` | `<n>` | … |
+| `ty_wrapper_refs_body_smell` | `<n>` | `<n>` | … |
 | **`raw_ptr_ty_pub`** | **`<n>`** | `<n>` | … |
 | `raw_ptr_ty_priv` | `<n>` | `<n>` | … |
 | **`raw_ptr_fn_pub_safe`** | **`<n>`** | `<n>` | … |
@@ -355,9 +358,6 @@ Deterministic `crustify scan-unsafe <workdir>`; no model.
 | `ty_field_proj_wrapped` | `<n>` | `<n>` | … |
 | `ty_field_proj_outside_impl` | `<n>` | `<n>` | … |
 | `ty_field_ref_wrapped` | `<n>` | `<n>` | … |
-| `ref_to_type_wrapper_sanctioned` | `<n>` | `<n>` | … |
-| `ref_to_type_wrapper_smell` | `<n>` | `<n>` | … |
-| `ref_to_type_wrapper_body_smell` | `<n>` | `<n>` | … |
 | `deref_impl_on_wrapper` | `<n>` | `<n>` | … |
 | `ffi_calls` | `<n>` | `<n>` | … |
 

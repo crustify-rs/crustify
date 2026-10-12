@@ -164,10 +164,10 @@ Three ways to form a Rust reference into memory C may write go uncounted
   `&(*p).arr[i]` and `&mut (*p).a[i].b` count.
 - **Autoref on a field.** `(*p).field.method()` with a `&self` method borrows
   the field implicitly. Count `Adjust::Borrow` adjustments on raw-based places,
-  as `ref_to_type_wrapper_body_smell` already does for whole wrappers.
-- **References to the C type itself.** `ref_to_type_wrapper_*` only cover
+  as `ty_wrapper_refs_body_smell` already does for whole wrappers.
+- **References to the C type itself.** `ty_wrapper_refs_*` only cover
   layout wrappers, so `&*p` with `p: *const ffi::T`, or
   `NonNull<ffi::T>::as_ref()`, is counted nowhere although it is the same
-  hazard. Open question: widen `ref_to_type_wrapper_body_smell` to C types that
+  hazard. Open question: widen `ty_wrapper_refs_body_smell` to C types that
   have a wrapper, or add a separate counter so "reference to a wrapper" and
   "reference to the raw C type" stay apart.
