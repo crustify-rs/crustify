@@ -101,7 +101,7 @@ the campaign's.
   defects
 - `+pub unsafe fn` / `+pub raw ptr` — the change the landed batch made to the
   public unsafe surface (`unsafe_fns_pub`) and to the raw pointers on the safe
-  public interface (`raw_ptr_ty_pub` + `raw_ptr_fn_pub_safe`) of the unseeded
+  public interface (`raw_ptr_ty_pub_fields_pub` + `raw_ptr_fn_pub_safe`) of the unseeded
   static scan, at its landing against the commit before it; a review batch's fixes
   show as negative values
 - `rv $` / `rv wall` / `rv loc` — the REVIEW agent's cost, elapsed time, and net
@@ -337,7 +337,8 @@ Deterministic `crustify scan-unsafe <workdir>`; no model.
 | `ty_wrapper_refs_sanctioned` | `<n>` | `<n>` | … |
 | `ty_wrapper_refs_smell` | `<n>` | `<n>` | … |
 | `ty_wrapper_refs_body_smell` | `<n>` | `<n>` | … |
-| **`raw_ptr_ty_pub`** | **`<n>`** | `<n>` | … |
+| **`raw_ptr_ty_pub_fields_pub`** | **`<n>`** | `<n>` | … |
+| `raw_ptr_ty_pub_fields_priv` | `<n>` | `<n>` | … |
 | `raw_ptr_ty_priv` | `<n>` | `<n>` | … |
 | **`raw_ptr_fn_pub_safe`** | **`<n>`** | `<n>` | … |
 | `raw_ptr_fn_pub_unsafe` | `<n>` | `<n>` | … |
@@ -346,7 +347,8 @@ Deterministic `crustify scan-unsafe <workdir>`; no model.
 | `raw_ptr_has_ty_wrapper` | `<n>` | `<n>` | … |
 | `raw_ptr_derefs` | `<n>` | `<n>` | … |
 | `raw_ptr_derefs_outside_impl` | `<n>` | `<n>` | … |
-| `void_ptr_ty_pub` | `<n>` | `<n>` | … |
+| `void_ptr_ty_pub_fields_pub` | `<n>` | `<n>` | … |
+| `void_ptr_ty_pub_fields_priv` | `<n>` | `<n>` | … |
 | `void_ptr_ty_priv` | `<n>` | `<n>` | … |
 | `void_ptr_fn_pub_safe` | `<n>` | `<n>` | … |
 | `void_ptr_fn_pub_unsafe` | `<n>` | `<n>` | … |

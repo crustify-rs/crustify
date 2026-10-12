@@ -154,8 +154,9 @@ fn in_foreign_trait_impl(tcx: TyCtxt<'_>, did: DefId) -> bool {
 /// Where a raw-pointer position sits: a field of a type, or a fn signature.
 #[derive(Clone, Copy)]
 enum PtrSite {
-    /// A field, by the effective visibility of its TYPE.
-    Type { exported: bool },
+    /// A field, by the effective visibility of its TYPE and, for an exported
+    /// type, of the field itself (reachable from outside the crate or not).
+    Type { exported: bool, field_exported: bool },
     /// A parameter or return, by the fn's effective visibility and safety.
     Fn { exported: bool, safe: bool },
 }
@@ -164,8 +165,13 @@ impl PtrSite {
     /// The `raw_ptr_*` and `void_ptr_*` partition counters for this position.
     fn counters(self) -> (&'static str, &'static str) {
         match self {
-            PtrSite::Type { exported: true } => ("raw_ptr_ty_pub", "void_ptr_ty_pub"),
-            PtrSite::Type { exported: false } => ("raw_ptr_ty_priv", "void_ptr_ty_priv"),
+            PtrSite::Type { exported: true, field_exported: true } => {
+                ("raw_ptr_ty_pub_fields_pub", "void_ptr_ty_pub_fields_pub")
+            }
+            PtrSite::Type { exported: true, field_exported: false } => {
+                ("raw_ptr_ty_pub_fields_priv", "void_ptr_ty_pub_fields_priv")
+            }
+            PtrSite::Type { exported: false, .. } => ("raw_ptr_ty_priv", "void_ptr_ty_priv"),
             PtrSite::Fn { exported: true, safe: true } => ("raw_ptr_fn_pub_safe", "void_ptr_fn_pub_safe"),
             PtrSite::Fn { exported: true, safe: false } => ("raw_ptr_fn_pub_unsafe", "void_ptr_fn_pub_unsafe"),
             PtrSite::Fn { exported: false, safe: true } => ("raw_ptr_fn_priv_safe", "void_ptr_fn_priv_safe"),
@@ -221,8 +227,9 @@ fn count_raw_ptr_fields(
         let mut pointees = Vec::new();
         raw_pointees(tcx, ft, &mut pointees);
         let site = counter_site(tcx, tcx.def_span(f.did));
+        let field_exported = f.did.as_local().is_some_and(|l| tcx.effective_visibilities(()).is_exported(l));
         for p in pointees {
-            count_ptr_position(tcx, p, PtrSite::Type { exported }, wrapped_c, site.clone(), c, sites);
+            count_ptr_position(tcx, p, PtrSite::Type { exported, field_exported }, wrapped_c, site.clone(), c, sites);
         }
     }
 }
@@ -1008,16 +1015,18 @@ struct Counts {
     ty_wrapper_refs_body_smell: u64,
     // Raw-pointer positions in the items the crate defines, nested ones
     // included, each in exactly one counter by where it sits:
-    //   raw_ptr_ty_{pub,priv}               (fields of types)
-    //   raw_ptr_fn_{pub,priv}_{safe,unsafe} (fn signatures, args and returns)
-    // A type's fields count by the TYPE's effective visibility, private fields
-    // of a public type included. A signature counts by the fn's effective
-    // visibility and its safety: `_safe` is reachable from safe code,
-    // `_unsafe` only by an `unsafe fn` caller. raw_ptr_ty_pub +
-    // raw_ptr_fn_pub_safe are the raw pointers on the safe public interface.
+    //   raw_ptr_ty_pub_fields_{pub,priv}, raw_ptr_ty_priv  (fields of types)
+    //   raw_ptr_fn_{pub,priv}_{safe,unsafe}               (fn signatures)
+    // A field counts by its TYPE's effective visibility and, in a public type,
+    // by whether the field itself is reachable from outside the crate. A
+    // signature counts by the fn's effective visibility and its safety: `_safe`
+    // is reachable from safe code, `_unsafe` only by an `unsafe fn` caller.
+    // raw_ptr_ty_pub_fields_pub + raw_ptr_fn_pub_safe are the raw pointers on
+    // the safe public interface.
     // Methods implementing another crate's trait are left out: that crate
     // fixed their signature.
-    raw_ptr_ty_pub: u64,
+    raw_ptr_ty_pub_fields_pub: u64,
+    raw_ptr_ty_pub_fields_priv: u64,
     raw_ptr_ty_priv: u64,
     raw_ptr_fn_pub_safe: u64,
     raw_ptr_fn_pub_unsafe: u64,
@@ -1029,8 +1038,10 @@ struct Counts {
     raw_ptr_derefs: u64,
     raw_ptr_derefs_outside_impl: u64, // ...of those, the subset NOT in any impl/trait body
     // the `*c_void` positions among them, partitioned the same way:
-    // void_ptr_ty_{pub,priv}, void_ptr_fn_{pub,priv}_{safe,unsafe}
-    void_ptr_ty_pub: u64,
+    // void_ptr_ty_pub_fields_{pub,priv}, void_ptr_ty_priv,
+    // void_ptr_fn_{pub,priv}_{safe,unsafe}
+    void_ptr_ty_pub_fields_pub: u64,
+    void_ptr_ty_pub_fields_priv: u64,
     void_ptr_ty_priv: u64,
     void_ptr_fn_pub_safe: u64,
     void_ptr_fn_pub_unsafe: u64,
@@ -1060,13 +1071,15 @@ impl Counts {
     /// The partition counter `name`, for the position helpers.
     fn slot(&mut self, name: &str) -> &mut u64 {
         match name {
-            "raw_ptr_ty_pub" => &mut self.raw_ptr_ty_pub,
+            "raw_ptr_ty_pub_fields_pub" => &mut self.raw_ptr_ty_pub_fields_pub,
+            "raw_ptr_ty_pub_fields_priv" => &mut self.raw_ptr_ty_pub_fields_priv,
             "raw_ptr_ty_priv" => &mut self.raw_ptr_ty_priv,
             "raw_ptr_fn_pub_safe" => &mut self.raw_ptr_fn_pub_safe,
             "raw_ptr_fn_pub_unsafe" => &mut self.raw_ptr_fn_pub_unsafe,
             "raw_ptr_fn_priv_safe" => &mut self.raw_ptr_fn_priv_safe,
             "raw_ptr_fn_priv_unsafe" => &mut self.raw_ptr_fn_priv_unsafe,
-            "void_ptr_ty_pub" => &mut self.void_ptr_ty_pub,
+            "void_ptr_ty_pub_fields_pub" => &mut self.void_ptr_ty_pub_fields_pub,
+            "void_ptr_ty_pub_fields_priv" => &mut self.void_ptr_ty_pub_fields_priv,
             "void_ptr_ty_priv" => &mut self.void_ptr_ty_priv,
             "void_ptr_fn_pub_safe" => &mut self.void_ptr_fn_pub_safe,
             "void_ptr_fn_pub_unsafe" => &mut self.void_ptr_fn_pub_unsafe,
@@ -2134,8 +2147,8 @@ impl Callbacks for MetricsCallbacks {
             }
         }
         println!(
-            "{{\"crate\":\"{}\",\"code_lines\":{},\"total_stmts\":{},\"safe_fns_pub\":{},\"safe_fns_priv\":{},\"unsafe_blocks\":{},\"unsafe_block_stmts\":{},\"unsafe_block_lines\":{},\"unsafe_block_code_lines\":{},\"unsafe_blocks_wrapper_impl\":{},\"unsafe_blocks_ffi_export\":{},\"unsafe_fns\":{},\"unsafe_fns_pub\":{},\"unsafe_fns_priv\":{},\"unsafe_impls\":{},\"unsafe_traits\":{},\"ty_wrapper_newtypes\":{},\"ty_wrapper_ref_handles\":{},\"ty_wrapper_refs_sanctioned\":{},\"ty_wrapper_refs_smell\":{},\"ty_wrapper_refs_body_smell\":{},\"raw_ptr_ty_pub\":{},\"raw_ptr_ty_priv\":{},\"raw_ptr_fn_pub_safe\":{},\"raw_ptr_fn_pub_unsafe\":{},\"raw_ptr_fn_priv_safe\":{},\"raw_ptr_fn_priv_unsafe\":{},\"raw_ptr_has_ty_wrapper\":{},\"raw_ptr_derefs\":{},\"raw_ptr_derefs_outside_impl\":{},\"void_ptr_ty_pub\":{},\"void_ptr_ty_priv\":{},\"void_ptr_fn_pub_safe\":{},\"void_ptr_fn_pub_unsafe\":{},\"void_ptr_fn_priv_safe\":{},\"void_ptr_fn_priv_unsafe\":{},\"ty_field_proj_wrapped\":{},\"ty_field_proj_outside_impl\":{},\"ty_field_ref_wrapped\":{},\"deref_impl_on_wrapper\":{},\"ffi_calls\":{},\"sites\":{}}}",
-            krate, c.code_lines, c.total_stmts, c.safe_fns_pub, c.safe_fns_priv, c.unsafe_blocks, c.unsafe_block_stmts, c.unsafe_block_lines, c.unsafe_block_code_lines, c.unsafe_blocks_wrapper_impl, c.unsafe_blocks_ffi_export, c.unsafe_fns, c.unsafe_fns_pub, c.unsafe_fns_priv, c.unsafe_impls, c.unsafe_traits, c.ty_wrapper_newtypes, c.ty_wrapper_ref_handles, c.ty_wrapper_refs_sanctioned, c.ty_wrapper_refs_smell, c.ty_wrapper_refs_body_smell, c.raw_ptr_ty_pub, c.raw_ptr_ty_priv, c.raw_ptr_fn_pub_safe, c.raw_ptr_fn_pub_unsafe, c.raw_ptr_fn_priv_safe, c.raw_ptr_fn_priv_unsafe, c.raw_ptr_has_ty_wrapper, c.raw_ptr_derefs, c.raw_ptr_derefs_outside_impl, c.void_ptr_ty_pub, c.void_ptr_ty_priv, c.void_ptr_fn_pub_safe, c.void_ptr_fn_pub_unsafe, c.void_ptr_fn_priv_safe, c.void_ptr_fn_priv_unsafe, c.ty_field_proj_wrapped, c.ty_field_proj_outside_impl, c.ty_field_ref_wrapped, c.deref_impl_on_wrapper, c.ffi_calls,
+            "{{\"crate\":\"{}\",\"code_lines\":{},\"total_stmts\":{},\"safe_fns_pub\":{},\"safe_fns_priv\":{},\"unsafe_blocks\":{},\"unsafe_block_stmts\":{},\"unsafe_block_lines\":{},\"unsafe_block_code_lines\":{},\"unsafe_blocks_wrapper_impl\":{},\"unsafe_blocks_ffi_export\":{},\"unsafe_fns\":{},\"unsafe_fns_pub\":{},\"unsafe_fns_priv\":{},\"unsafe_impls\":{},\"unsafe_traits\":{},\"ty_wrapper_newtypes\":{},\"ty_wrapper_ref_handles\":{},\"ty_wrapper_refs_sanctioned\":{},\"ty_wrapper_refs_smell\":{},\"ty_wrapper_refs_body_smell\":{},\"raw_ptr_ty_pub_fields_pub\":{},\"raw_ptr_ty_pub_fields_priv\":{},\"raw_ptr_ty_priv\":{},\"raw_ptr_fn_pub_safe\":{},\"raw_ptr_fn_pub_unsafe\":{},\"raw_ptr_fn_priv_safe\":{},\"raw_ptr_fn_priv_unsafe\":{},\"raw_ptr_has_ty_wrapper\":{},\"raw_ptr_derefs\":{},\"raw_ptr_derefs_outside_impl\":{},\"void_ptr_ty_pub_fields_pub\":{},\"void_ptr_ty_pub_fields_priv\":{},\"void_ptr_ty_priv\":{},\"void_ptr_fn_pub_safe\":{},\"void_ptr_fn_pub_unsafe\":{},\"void_ptr_fn_priv_safe\":{},\"void_ptr_fn_priv_unsafe\":{},\"ty_field_proj_wrapped\":{},\"ty_field_proj_outside_impl\":{},\"ty_field_ref_wrapped\":{},\"deref_impl_on_wrapper\":{},\"ffi_calls\":{},\"sites\":{}}}",
+            krate, c.code_lines, c.total_stmts, c.safe_fns_pub, c.safe_fns_priv, c.unsafe_blocks, c.unsafe_block_stmts, c.unsafe_block_lines, c.unsafe_block_code_lines, c.unsafe_blocks_wrapper_impl, c.unsafe_blocks_ffi_export, c.unsafe_fns, c.unsafe_fns_pub, c.unsafe_fns_priv, c.unsafe_impls, c.unsafe_traits, c.ty_wrapper_newtypes, c.ty_wrapper_ref_handles, c.ty_wrapper_refs_sanctioned, c.ty_wrapper_refs_smell, c.ty_wrapper_refs_body_smell, c.raw_ptr_ty_pub_fields_pub, c.raw_ptr_ty_pub_fields_priv, c.raw_ptr_ty_priv, c.raw_ptr_fn_pub_safe, c.raw_ptr_fn_pub_unsafe, c.raw_ptr_fn_priv_safe, c.raw_ptr_fn_priv_unsafe, c.raw_ptr_has_ty_wrapper, c.raw_ptr_derefs, c.raw_ptr_derefs_outside_impl, c.void_ptr_ty_pub_fields_pub, c.void_ptr_ty_pub_fields_priv, c.void_ptr_ty_priv, c.void_ptr_fn_pub_safe, c.void_ptr_fn_pub_unsafe, c.void_ptr_fn_priv_safe, c.void_ptr_fn_priv_unsafe, c.ty_field_proj_wrapped, c.ty_field_proj_outside_impl, c.ty_field_ref_wrapped, c.deref_impl_on_wrapper, c.ffi_calls,
             sites.json()
         );
         Compilation::Continue
