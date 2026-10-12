@@ -25,10 +25,13 @@ class DeterministicWorkspaceTests(unittest.TestCase):
 
             with mock.patch(
                     "crustify_audit.unsafe_scan.driver.measure",
-                    return_value=({"code_lines": 1}, {}, None)) as measure:
+                    return_value=({"code_lines": 1}, {}, None)) as measure, \
+                 mock.patch("crustify_audit.unsafe_scan.driver.sys_crates",
+                            return_value=["foo_sys"]):
                 document = unsafe_scan.compose(layout)
 
-            measure.assert_called_once_with(workspace, ffibox=False)
+            measure.assert_called_once_with(workspace, ffibox=False, sys=["foo_sys"])
+            self.assertEqual(document["sys_crates"], ["foo_sys"])
             self.assertEqual(document["crate_path"], str(workspace))
 
     def test_root_cargo_workspace_wins_over_campaign_fallback(self) -> None:

@@ -126,20 +126,23 @@ def site_counters(requested: list[str], ffibox: bool = False) -> list[str]:
 
 
 def compose(layout: Layout, sites: list[str] | None = None,
-            ffibox: bool = False) -> dict:
+            ffibox: bool = False, sys_crates: list[str] | None = None) -> dict:
     """Scan the workspace and return the metrics document.
 
     ``sites`` names counters whose source locations to report, as a ``sites``
     record beside ``counts`` with one list per counter. ``ffibox`` adds the
-    ``ffibox`` record: the crate's ffibox surface.
+    ``ffibox`` record: the crate's ffibox surface. ``sys_crates`` add to the
+    sys crates found by Cargo's `links` keys; the set is recorded in
+    ``sys_crates``, since which types are C's rests on it.
     """
     workspace = layout.workspace
     wanted = site_counters(sites, ffibox) if sites else None
-    doc: dict = {"crate_path": str(workspace)}
+    sys = driver.sys_crates(workspace, sys_crates)
+    doc: dict = {"crate_path": str(workspace), "sys_crates": sys}
     all_sites: dict = {}
     try:
         doc["counts"], all_sites, breakdowns = driver.measure(
-            workspace, ffibox=ffibox)
+            workspace, ffibox=ffibox, sys=sys)
         doc["counts_unavailable"] = None
     except driver.DriverUnavailable as e:
         # No counts rather than substitute ones: see driver.py.

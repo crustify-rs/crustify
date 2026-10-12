@@ -111,9 +111,10 @@ fn ref_to_wrapper_sanctioned(tcx: TyCtxt<'_>, did: DefId) -> bool {
 
 /// True if `t` holds a reference to a layout newtype anywhere: `&W`, `&mut W`,
 /// `&[W]`, or one nested in a generic, tuple or array (`Option<&W>`).
-fn contains_ref_to_type_wrapper(tcx: TyCtxt<'_>, t: Ty<'_>) -> bool {
+fn contains_ref_to_type_wrapper<'tcx>(tcx: TyCtxt<'tcx>, t: Ty<'tcx>) -> bool {
     let is_w = |t: Ty<'_>| matches!(t.kind(), ty::TyKind::Adt(d, _) if is_type_wrapper(tcx, d.did()));
     match t.kind() {
+        ty::TyKind::Ref(_, inner, m) if !m.is_mut() && has_unsafe_cell(tcx, *inner, 0) => false,
         ty::TyKind::Ref(_, inner, _) => match inner.kind() {
             _ if is_w(*inner) => true,
             ty::TyKind::Slice(e) | ty::TyKind::Array(e, _) if is_w(*e) => true,
@@ -232,8 +233,13 @@ fn is_raw_or_non_null(tcx: TyCtxt<'_>, t: Ty<'_>) -> bool {
         || matches!(t.kind(), ty::TyKind::Adt(d, _) if tcx.item_name(d.did()).as_str() == "NonNull")
 }
 
-fn is_ref_to_type_wrapper(tcx: TyCtxt<'_>, t: Ty<'_>) -> bool {
-    if let ty::TyKind::Ref(_, pointee, _) = t.kind() {
+fn is_ref_to_type_wrapper<'tcx>(tcx: TyCtxt<'tcx>, t: Ty<'tcx>) -> bool {
+    if let ty::TyKind::Ref(_, pointee, m) = t.kind() {
+        // A shared `&W` over `UnsafeCell` storage asserts neither readonly
+        // nor noalias: only `&mut W` is the hazard there.
+        if !m.is_mut() && has_unsafe_cell(tcx, *pointee, 0) {
+            return false;
+        }
         if let ty::TyKind::Adt(def, _) = pointee.kind() {
             return is_type_wrapper(tcx, def.did());
         }
@@ -287,6 +293,331 @@ fn pointee_has_wrapper(tcx: TyCtxt<'_>, p: Ty<'_>, wrapped_c: &HashSet<DefId>) -
 /// wraps`, empty where the wrapper names no ADT (`*mut c_void`) — a LAYOUT
 /// newtype may carry several. Key presence IS `is_wrapper`; the flattened
 /// values are `wrapped_c`.
+// ------------------------------------------------------------ C visibility
+//
+// Which types C can reach memory of. `#[repr(C)]` alone does not say: Rust
+// crates use it for their own layouts too. So C reachability is decided by
+// provenance, as a closure over the types the build hands to C:
+//
+//  * seeds: every type behind a pointer (`*const T`, `*mut T`, `&T`,
+//    `NonNull<T>`, nested) in the signature of a foreign fn (an `extern`
+//    block), of a fn the crate defines with a non-Rust ABI (callbacks, the
+//    `#[no_mangle]` gateway), or of a C-ABI fn-pointer type anywhere in the
+//    crate (vtables, callback slots); a foreign static's own type; the types
+//    a pointer cast or transmute converts to or from `*c_void` (a payload
+//    handed to C, or C memory typed by Rust); and every `#[repr(C)]` type of
+//    a sys crate, one with a Cargo `links` key (`UM_SYS_CRATES`);
+//  * closure: a field a reachable type holds by value, or points to; either
+//    side of a pointer cast or transmute whose other side is reachable; and a
+//    local `#[repr(C)]` / `#[repr(transparent)]` type that holds a reachable
+//    type by value (a wrapper whose bytes are C's).
+//
+// Passing a type by VALUE is a copy and seeds nothing. Generic wrappers
+// (`W<T>` over a C type) and memory C reaches through an erased `void *`
+// with no visible cast are not seen; a reachable TYPE does not mean every
+// value of it lives in C memory (see docs/audit/unsafe-output.md).
+
+/// The crates whose `#[repr(C)]` types are C's, by crate name: `UM_SYS_CRATES`,
+/// comma-separated, set by `scan-unsafe` from Cargo's `links` keys plus
+/// `--sys-crates`.
+fn sys_crates() -> &'static HashSet<String> {
+    static SYS: std::sync::OnceLock<HashSet<String>> = std::sync::OnceLock::new();
+    SYS.get_or_init(|| {
+        std::env::var("UM_SYS_CRATES")
+            .unwrap_or_default()
+            .split(',')
+            .map(|n| n.trim().replace('-', "_"))
+            .filter(|n| !n.is_empty())
+            .collect()
+    })
+}
+
+fn is_sys_c_type(tcx: TyCtxt<'_>, did: DefId) -> bool {
+    matches!(tcx.def_kind(did), DefKind::Struct | DefKind::Union | DefKind::Enum)
+        && tcx.adt_def(did).repr().c()
+        && sys_crates().contains(tcx.crate_name(did.krate).as_str())
+}
+
+fn is_std_crate(tcx: TyCtxt<'_>, did: DefId) -> bool {
+    matches!(tcx.crate_name(did.krate).as_str(), "core" | "alloc" | "std")
+}
+
+/// The ADTs behind a pointer in `t` (`behind` once a pointer was crossed):
+/// raw pointers, references, `NonNull`, nested in generics, tuples and arrays,
+/// pointers to pointers included, and the parameters and return of a C-ABI
+/// fn-pointer type.
+fn c_pointee_adts<'tcx>(tcx: TyCtxt<'tcx>, t: Ty<'tcx>, behind: bool, out: &mut Vec<DefId>) {
+    match t.kind() {
+        ty::TyKind::RawPtr(p, _) | ty::TyKind::Ref(_, p, _) => c_pointee_adts(tcx, *p, true, out),
+        ty::TyKind::Pat(base, _) => c_pointee_adts(tcx, *base, behind, out),
+        ty::TyKind::Adt(d, args) => {
+            let name = tcx.item_name(d.did());
+            if name.as_str() == "PhantomData" {
+                return;
+            }
+            if name.as_str() == "NonNull" {
+                for a in args.types() {
+                    c_pointee_adts(tcx, a, true, out);
+                }
+                return;
+            }
+            if behind && !is_std_crate(tcx, d.did()) {
+                out.push(d.did());
+            }
+            for a in args.types() {
+                c_pointee_adts(tcx, a, false, out);
+            }
+        }
+        ty::TyKind::Tuple(tys) => {
+            for a in tys.iter() {
+                c_pointee_adts(tcx, a, behind, out);
+            }
+        }
+        ty::TyKind::Array(e, _) | ty::TyKind::Slice(e) => c_pointee_adts(tcx, *e, behind, out),
+        ty::TyKind::FnPtr(sig_tys, hdr) if hdr.abi() != ExternAbi::Rust => {
+            for a in sig_tys.skip_binder().inputs_and_output.iter() {
+                c_pointee_adts(tcx, a, false, out);
+            }
+        }
+        _ => {}
+    }
+}
+
+/// The ADTs C reaches through every C-ABI fn-pointer type nested in `t`.
+fn c_fnptr_adts<'tcx>(tcx: TyCtxt<'tcx>, t: Ty<'tcx>, out: &mut Vec<DefId>) {
+    match t.kind() {
+        ty::TyKind::FnPtr(_, hdr) if hdr.abi() != ExternAbi::Rust => c_pointee_adts(tcx, t, false, out),
+        ty::TyKind::RawPtr(p, _) | ty::TyKind::Ref(_, p, _) | ty::TyKind::Pat(p, _) => c_fnptr_adts(tcx, *p, out),
+        ty::TyKind::Array(e, _) | ty::TyKind::Slice(e) => c_fnptr_adts(tcx, *e, out),
+        ty::TyKind::Tuple(tys) => {
+            for a in tys.iter() {
+                c_fnptr_adts(tcx, a, out);
+            }
+        }
+        ty::TyKind::Adt(_, args) => {
+            for a in args.types() {
+                c_fnptr_adts(tcx, a, out);
+            }
+        }
+        _ => {}
+    }
+}
+
+/// The pointee of a raw pointer or reference, peeled to its ADT.
+fn ptr_pointee_adt<'tcx>(tcx: TyCtxt<'tcx>, t: Ty<'tcx>) -> Option<Ty<'tcx>> {
+    match t.kind() {
+        ty::TyKind::RawPtr(p, _) | ty::TyKind::Ref(_, p, _) => Some(peel_transparent(tcx, *p)),
+        _ => None,
+    }
+}
+
+/// Pointer casts and transmutes in the crate's bodies, as the C-reachability
+/// seeds and pairs they imply.
+struct CastCollector<'a, 'tcx> {
+    tcx: TyCtxt<'tcx>,
+    typeck: &'tcx TypeckResults<'tcx>,
+    seeds: &'a mut Vec<DefId>,
+    pairs: &'a mut Vec<(DefId, DefId)>,
+}
+
+impl<'a, 'tcx> CastCollector<'a, 'tcx> {
+    fn record(&mut self, from: Ty<'tcx>, to: Ty<'tcx>) {
+        let (Some(a), Some(b)) = (ptr_pointee_adt(self.tcx, from), ptr_pointee_adt(self.tcx, to)) else {
+            return;
+        };
+        let adt = |t: Ty<'tcx>| match t.kind() {
+            ty::TyKind::Adt(d, _) if !is_std_crate(self.tcx, d.did()) => Some(d.did()),
+            _ => None,
+        };
+        match (adt(a), adt(b)) {
+            (Some(x), Some(y)) if x != y => self.pairs.push((x, y)),
+            // `*mut T as *mut c_void` hands T to C; `*mut c_void as *mut T`
+            // types C's memory as T.
+            (Some(x), None) if is_c_void(self.tcx, b) => self.seeds.push(x),
+            (None, Some(y)) if is_c_void(self.tcx, a) => self.seeds.push(y),
+            _ => {}
+        }
+    }
+}
+
+impl<'a, 'tcx> Visitor<'tcx> for CastCollector<'a, 'tcx> {
+    fn visit_expr(&mut self, e: &'tcx hir::Expr<'tcx>) {
+        match e.kind {
+            hir::ExprKind::Cast(inner, _) => {
+                self.record(self.typeck.expr_ty(inner), self.typeck.expr_ty(e));
+            }
+            // `p.cast::<U>()`
+            hir::ExprKind::MethodCall(seg, recv, _, _) if seg.ident.as_str() == "cast" => {
+                self.record(self.typeck.expr_ty(recv), self.typeck.expr_ty(e));
+            }
+            // `transmute::<*mut T, *mut U>(p)`
+            hir::ExprKind::Call(f, [arg]) => {
+                if let hir::ExprKind::Path(ref qp) = f.kind {
+                    if let hir::def::Res::Def(_, did) = self.typeck.qpath_res(qp, f.hir_id) {
+                        if self.tcx.item_name(did).as_str() == "transmute" && is_std_crate(self.tcx, did) {
+                            self.record(self.typeck.expr_ty(arg), self.typeck.expr_ty(e));
+                        }
+                    }
+                }
+            }
+            _ => {}
+        }
+        intravisit::walk_expr(self, e);
+    }
+}
+
+fn compute_c_visible(tcx: TyCtxt<'_>) -> HashSet<DefId> {
+    let mut seeds: Vec<DefId> = Vec::new();
+    let mut pairs: Vec<(DefId, DefId)> = Vec::new();
+    let mut local_layouts: Vec<DefId> = Vec::new();
+    for ld in tcx.hir_crate_items(()).definitions() {
+        let did = ld.to_def_id();
+        match tcx.def_kind(did) {
+            DefKind::Fn | DefKind::AssocFn => {
+                let sig = tcx.fn_sig(did).skip_binder().skip_binder();
+                let c_side = tcx.is_foreign_item(did) || sig.abi() != ExternAbi::Rust;
+                for t in sig.inputs_and_output.iter() {
+                    if c_side {
+                        c_pointee_adts(tcx, t, false, &mut seeds);
+                    }
+                    c_fnptr_adts(tcx, t, &mut seeds);
+                }
+            }
+            DefKind::Static { .. } => {
+                let t = tcx.type_of(did).instantiate_identity().skip_norm_wip();
+                if tcx.is_foreign_item(did) {
+                    if let Some(d) = field_adt(tcx, t) {
+                        seeds.push(d.did());
+                    }
+                    c_pointee_adts(tcx, t, false, &mut seeds);
+                }
+                c_fnptr_adts(tcx, t, &mut seeds);
+            }
+            DefKind::Struct | DefKind::Union | DefKind::Enum => {
+                let def = tcx.adt_def(did);
+                for f in def.all_fields() {
+                    c_fnptr_adts(tcx, tcx.type_of(f.did).instantiate_identity().skip_norm_wip(), &mut seeds);
+                }
+                if (def.repr().c() || def.repr().transparent()) && !def.is_enum() {
+                    local_layouts.push(did);
+                }
+            }
+            DefKind::TyAlias => {
+                c_fnptr_adts(tcx, tcx.type_of(did).instantiate_identity().skip_norm_wip(), &mut seeds);
+            }
+            _ => {}
+        }
+    }
+    for owner in tcx.hir_body_owners() {
+        let typeck = tcx.typeck(owner);
+        CastCollector { tcx, typeck, seeds: &mut seeds, pairs: &mut pairs }
+            .visit_body(tcx.hir_body_owned_by(owner));
+    }
+    let mut vis: HashSet<DefId> = seeds.into_iter().collect();
+    let reach = |vis: &HashSet<DefId>, d: DefId| vis.contains(&d) || is_sys_c_type(tcx, d);
+    let mut expanded: HashSet<DefId> = HashSet::new();
+    loop {
+        let before = vis.len();
+        // Fields of reachable types: by value, and behind pointers.
+        let todo: Vec<DefId> = vis.iter().copied().filter(|d| !expanded.contains(d)).collect();
+        for d in todo {
+            expanded.insert(d);
+            if is_std_crate(tcx, d) || !matches!(tcx.def_kind(d), DefKind::Struct | DefKind::Union | DefKind::Enum) {
+                continue;
+            }
+            for f in tcx.adt_def(d).all_fields() {
+                let ft = tcx.type_of(f.did).instantiate_identity().skip_norm_wip();
+                if is_phantom(tcx, ft) || is_zst_marker(tcx, ft) {
+                    continue;
+                }
+                if let Some(a) = field_adt(tcx, ft) {
+                    if !is_std_crate(tcx, a.did()) {
+                        vis.insert(a.did());
+                    }
+                }
+                let mut ps = Vec::new();
+                c_pointee_adts(tcx, ft, false, &mut ps);
+                vis.extend(ps);
+            }
+        }
+        for &(a, b) in &pairs {
+            if reach(&vis, a) {
+                vis.insert(b);
+            }
+            if reach(&vis, b) {
+                vis.insert(a);
+            }
+        }
+        // A local layout type holding a reachable type by value.
+        for &d in &local_layouts {
+            if vis.contains(&d) {
+                continue;
+            }
+            let holds = tcx.adt_def(d).all_fields().any(|f| {
+                let ft = tcx.type_of(f.did).instantiate_identity().skip_norm_wip();
+                !is_phantom(tcx, ft)
+                    && !is_zst_marker(tcx, ft)
+                    && field_adt(tcx, ft).is_some_and(|a| reach(&vis, a.did()))
+            });
+            if holds {
+                vis.insert(d);
+            }
+        }
+        if vis.len() == before {
+            break;
+        }
+    }
+    vis
+}
+
+thread_local! {
+    static C_VISIBLE: std::cell::RefCell<Option<HashSet<DefId>>> =
+        const { std::cell::RefCell::new(None) };
+}
+
+/// True when C can reach memory of type `did` (see the section comment).
+fn is_c_visible(tcx: TyCtxt<'_>, did: DefId) -> bool {
+    is_sys_c_type(tcx, did)
+        || C_VISIBLE.with(|c| {
+            let mut b = c.borrow_mut();
+            if b.is_none() {
+                *b = Some(compute_c_visible(tcx));
+            }
+            b.as_ref().unwrap().contains(&did)
+        })
+}
+
+/// True when `t` holds an `UnsafeCell` (directly, or in a field, transitively):
+/// a shared `&T` then asserts neither `readonly` nor `noalias` over it.
+fn has_unsafe_cell<'tcx>(tcx: TyCtxt<'tcx>, t: Ty<'tcx>, depth: u32) -> bool {
+    if depth > 8 {
+        return false;
+    }
+    match t.kind() {
+        ty::TyKind::Adt(d, args) => {
+            if tcx.lang_items().unsafe_cell_type() == Some(d.did()) {
+                return true;
+            }
+            d.all_fields().any(|f| has_unsafe_cell(tcx, tcx.type_of(f.did).instantiate(tcx, args).skip_norm_wip(), depth + 1))
+        }
+        ty::TyKind::Array(e, _) => has_unsafe_cell(tcx, *e, depth + 1),
+        ty::TyKind::Tuple(tys) => tys.iter().any(|a| has_unsafe_cell(tcx, a, depth + 1)),
+        _ => false,
+    }
+}
+
+/// A `#[repr(transparent)]` newtype over a Rust reference to a C-reachable
+/// type: a handle shape that nonetheless IS a reference into C memory.
+fn is_ref_handle_to_c(tcx: TyCtxt<'_>, did: DefId) -> bool {
+    let def = tcx.adt_def(did);
+    if !def.is_struct() || !def.repr().transparent() {
+        return false;
+    }
+    let inner = peel_transparent(tcx, tcx.type_of(did).instantiate_identity().skip_norm_wip());
+    matches!(inner.kind(), ty::TyKind::Ref(_, p, _)
+        if matches!(peel_transparent(tcx, *p).kind(), ty::TyKind::Adt(d, _) if is_c_visible(tcx, d.did())))
+}
+
 type Wrappers = HashMap<DefId, Vec<DefId>>;
 
 /// Structural inventory: every local struct `structural_wrapper` admits.
@@ -454,19 +785,13 @@ fn field_adt<'tcx>(tcx: TyCtxt<'tcx>, t: Ty<'tcx>) -> Option<ty::AdtDef<'tcx>> {
     None
 }
 
-/// The C types whose BYTES `did` stores inline, transitively.
-///
-/// A field is C's when it is a `#[repr(C)]` ADT from ANOTHER CRATE. That
-/// cross-crate step is what separates a wrapper from C's own aggregate:
-/// `git2::Oid { raw: raw::git_oid }` reaches into libgit2-sys, while
-/// `libgit2_sys::git_index_entry { ctime: git_index_time, .. }` matches the
-/// same repr shape entirely within its own crate and is not a wrapper of
-/// anything. Both are `#[repr(C)]` carrying a `#[repr(C)]` field, so nothing
-/// short of the crate boundary tells them apart.
-///
-/// A same-crate `#[repr(C)]` field is RECURSED into rather than accepted, so a
-/// wrapper that reaches C through its own intermediate struct still resolves.
-/// Depth- and cycle-guarded.
+/// The C types whose BYTES `did` stores inline, transitively: every field held
+/// by value whose type C can reach (`is_c_visible`). A local `#[repr(C)]` field
+/// C does not reach is RECURSED into rather than accepted, so a wrapper that
+/// reaches C through its own intermediate struct still resolves, while a
+/// sys crate's own aggregate (`git_index_entry { ctime: git_index_time, .. }`)
+/// is a C type, not a wrapper of one, since it is not local. Depth- and
+/// cycle-guarded.
 fn embedded_c(
     tcx: TyCtxt<'_>,
     did: DefId,
@@ -485,14 +810,11 @@ fn embedded_c(
         let Some(d) = field_adt(tcx, ft) else {
             continue;
         };
-        if !d.repr().c() {
-            continue;
-        }
-        if d.did().krate != did.krate {
+        if is_c_visible(tcx, d.did()) {
             if !out.contains(&d.did()) {
                 out.push(d.did());
             }
-        } else if seen.insert(d.did()) {
+        } else if d.did().is_local() && d.repr().c() && seen.insert(d.did()) {
             embedded_c(tcx, d.did(), depth + 1, seen, out);
         }
     }
@@ -504,8 +826,9 @@ fn embedded_c(
 ///
 ///   * HANDLE -- the POINTEE. `#[repr(transparent)]` over a raw pointer, or
 ///     over `NonNull` / `CBorrowedPtr` and friends, which peel to one.
-///   * LAYOUT -- every `#[repr(C)]` ADT reached by `embedded_c`. `W` itself
-///     must be `#[repr(C)]` or `#[repr(transparent)]`; both give it C's bytes.
+///   * LAYOUT -- every C-reachable type `embedded_c` finds held by value, or,
+///     for a local type C reaches itself, none. `W` itself must be
+///     `#[repr(C)]` or `#[repr(transparent)]`; both give it C's bytes.
 ///     NOT gated on a single field: a struct carrying a C object beside Rust
 ///     ones still has those bytes inside it, and `&W` still asserts noalias /
 ///     readonly / validity across them.
@@ -538,13 +861,17 @@ fn structural_wrapper(tcx: TyCtxt<'_>, did: DefId) -> Option<(bool, Vec<DefId>)>
             _ => {}
         }
     }
-    // LAYOUT: C's bytes inline.
+    // LAYOUT: C's bytes inline -- a type holding a C-reachable type by value,
+    // or a local C type C reaches itself (a hand-written mirror, a payload).
     if def.repr().c() || def.repr().transparent() {
         let mut cs = Vec::new();
         let mut seen = HashSet::from([did]);
         embedded_c(tcx, did, 0, &mut seen, &mut cs);
         if !cs.is_empty() {
             return Some((true, cs));
+        }
+        if did.is_local() && is_c_visible(tcx, did) {
+            return Some((true, Vec::new()));
         }
     }
     None
@@ -658,10 +985,13 @@ struct Counts {
     unsafe_impls: u64,
     unsafe_traits: u64,
     // Layout newtypes, found by shape (`structural_wrapper`): a
-    // `#[repr(C)]` / `#[repr(transparent)]` struct storing a C object's bytes
-    // inline. How these relate to ffibox's `CCell` is the `--ffibox` record's
+    // `#[repr(C)]` / `#[repr(transparent)]` struct storing a C-reachable type's
+    // bytes inline (see "C visibility"). How these relate to ffibox's `CCell` is the `--ffibox` record's
     // (`ffibox_layout_not_ccell` / `ffibox_ccell_not_layout`).
     ty_wrapper_newtypes: u64,
+    // `#[repr(transparent)]` newtypes over a Rust reference to a C-reachable
+    // type: handle-shaped, yet a reference into C memory. Target 0.
+    ty_wrapper_ref_handles: u64,
     // `&W` / `&mut W` (incl. the receiver), W a layout newtype, partitioned:
     // sanctioned (REF_ACCESSORS / STD_VALUE_TRAITS impls) + smell (the rest)
     ty_wrapper_refs_sanctioned: u64,
@@ -1390,7 +1720,7 @@ fn ffibox_json(tcx: TyCtxt<'_>, krate: rustc_span::Symbol) -> String {
                     continue;
                 }
                 if tcx.def_kind(did) == DefKind::Struct {
-                    let layout = matches!(structural_wrapper(tcx, did), Some((true, _)));
+                    let layout = matches!(structural_wrapper(tcx, did), Some((true, cs)) if !cs.is_empty());
                     let declared = is_declared_wrapper(tcx, did);
                     let site = counter_site(tcx, tcx.def_span(did));
                     if declared && !layout {
@@ -1563,15 +1893,21 @@ impl Callbacks for MetricsCallbacks {
             }
             match tcx.def_kind(did) {
                 DefKind::Struct => {
-                    let is_layout = matches!(structural_wrapper(tcx, did), Some((true, _)));
-                    // LAYOUT newtypes only. A handle is a wrapper too, but it
-                    // is not the set this audit polices: `&handle` covers
-                    // Rust-owned pointer storage and is ordinary, while `&W` on
-                    // a layout newtype is the hazard `ref_to_type_wrapper`
-                    // exists to keep at 0.
+                    // LAYOUT newtypes only, and only those wrapping a C type: a
+                    // local C type C reaches itself is in the reference check
+                    // (`is_type_wrapper`) but is not a wrapper of anything. A
+                    // handle is a wrapper too, but it is not the set this audit
+                    // polices: `&handle` covers Rust-owned pointer storage and
+                    // is ordinary, while `&W` on a layout newtype is the hazard
+                    // `ty_wrapper_refs_*` exists to keep at 0.
+                    let is_layout = matches!(structural_wrapper(tcx, did), Some((true, cs)) if !cs.is_empty());
                     if is_layout {
                         c.ty_wrapper_newtypes += 1;
                         sites.add("ty_wrapper_newtypes", counter_site(tcx, tcx.def_span(did)));
+                    }
+                    if is_ref_handle_to_c(tcx, did) {
+                        c.ty_wrapper_ref_handles += 1;
+                        sites.add("ty_wrapper_ref_handles", counter_site(tcx, tcx.def_span(did)));
                     }
                 }
                 DefKind::Impl { of_trait: true } => {
@@ -1793,8 +2129,8 @@ impl Callbacks for MetricsCallbacks {
             }
         }
         println!(
-            "{{\"crate\":\"{}\",\"code_lines\":{},\"total_stmts\":{},\"safe_fns_pub\":{},\"safe_fns_priv\":{},\"unsafe_blocks\":{},\"unsafe_block_stmts\":{},\"unsafe_block_lines\":{},\"unsafe_block_code_lines\":{},\"unsafe_blocks_wrapper_impl\":{},\"unsafe_blocks_ffi_export\":{},\"unsafe_fns\":{},\"unsafe_fns_pub\":{},\"unsafe_fns_priv\":{},\"unsafe_impls\":{},\"unsafe_traits\":{},\"ty_wrapper_newtypes\":{},\"ty_wrapper_refs_sanctioned\":{},\"ty_wrapper_refs_smell\":{},\"ty_wrapper_refs_body_smell\":{},\"raw_ptr_ty_pub\":{},\"raw_ptr_ty_priv\":{},\"raw_ptr_fn_pub_safe\":{},\"raw_ptr_fn_pub_unsafe\":{},\"raw_ptr_fn_priv_safe\":{},\"raw_ptr_fn_priv_unsafe\":{},\"raw_ptr_has_ty_wrapper\":{},\"raw_ptr_derefs\":{},\"raw_ptr_derefs_outside_impl\":{},\"void_ptr_ty_pub\":{},\"void_ptr_ty_priv\":{},\"void_ptr_fn_pub_safe\":{},\"void_ptr_fn_pub_unsafe\":{},\"void_ptr_fn_priv_safe\":{},\"void_ptr_fn_priv_unsafe\":{},\"ty_field_proj_wrapped\":{},\"ty_field_proj_outside_impl\":{},\"ty_field_ref_wrapped\":{},\"deref_impl_on_wrapper\":{},\"ffi_calls\":{},\"sites\":{}}}",
-            krate, c.code_lines, c.total_stmts, c.safe_fns_pub, c.safe_fns_priv, c.unsafe_blocks, c.unsafe_block_stmts, c.unsafe_block_lines, c.unsafe_block_code_lines, c.unsafe_blocks_wrapper_impl, c.unsafe_blocks_ffi_export, c.unsafe_fns, c.unsafe_fns_pub, c.unsafe_fns_priv, c.unsafe_impls, c.unsafe_traits, c.ty_wrapper_newtypes, c.ty_wrapper_refs_sanctioned, c.ty_wrapper_refs_smell, c.ty_wrapper_refs_body_smell, c.raw_ptr_ty_pub, c.raw_ptr_ty_priv, c.raw_ptr_fn_pub_safe, c.raw_ptr_fn_pub_unsafe, c.raw_ptr_fn_priv_safe, c.raw_ptr_fn_priv_unsafe, c.raw_ptr_has_ty_wrapper, c.raw_ptr_derefs, c.raw_ptr_derefs_outside_impl, c.void_ptr_ty_pub, c.void_ptr_ty_priv, c.void_ptr_fn_pub_safe, c.void_ptr_fn_pub_unsafe, c.void_ptr_fn_priv_safe, c.void_ptr_fn_priv_unsafe, c.ty_field_proj_wrapped, c.ty_field_proj_outside_impl, c.ty_field_ref_wrapped, c.deref_impl_on_wrapper, c.ffi_calls,
+            "{{\"crate\":\"{}\",\"code_lines\":{},\"total_stmts\":{},\"safe_fns_pub\":{},\"safe_fns_priv\":{},\"unsafe_blocks\":{},\"unsafe_block_stmts\":{},\"unsafe_block_lines\":{},\"unsafe_block_code_lines\":{},\"unsafe_blocks_wrapper_impl\":{},\"unsafe_blocks_ffi_export\":{},\"unsafe_fns\":{},\"unsafe_fns_pub\":{},\"unsafe_fns_priv\":{},\"unsafe_impls\":{},\"unsafe_traits\":{},\"ty_wrapper_newtypes\":{},\"ty_wrapper_ref_handles\":{},\"ty_wrapper_refs_sanctioned\":{},\"ty_wrapper_refs_smell\":{},\"ty_wrapper_refs_body_smell\":{},\"raw_ptr_ty_pub\":{},\"raw_ptr_ty_priv\":{},\"raw_ptr_fn_pub_safe\":{},\"raw_ptr_fn_pub_unsafe\":{},\"raw_ptr_fn_priv_safe\":{},\"raw_ptr_fn_priv_unsafe\":{},\"raw_ptr_has_ty_wrapper\":{},\"raw_ptr_derefs\":{},\"raw_ptr_derefs_outside_impl\":{},\"void_ptr_ty_pub\":{},\"void_ptr_ty_priv\":{},\"void_ptr_fn_pub_safe\":{},\"void_ptr_fn_pub_unsafe\":{},\"void_ptr_fn_priv_safe\":{},\"void_ptr_fn_priv_unsafe\":{},\"ty_field_proj_wrapped\":{},\"ty_field_proj_outside_impl\":{},\"ty_field_ref_wrapped\":{},\"deref_impl_on_wrapper\":{},\"ffi_calls\":{},\"sites\":{}}}",
+            krate, c.code_lines, c.total_stmts, c.safe_fns_pub, c.safe_fns_priv, c.unsafe_blocks, c.unsafe_block_stmts, c.unsafe_block_lines, c.unsafe_block_code_lines, c.unsafe_blocks_wrapper_impl, c.unsafe_blocks_ffi_export, c.unsafe_fns, c.unsafe_fns_pub, c.unsafe_fns_priv, c.unsafe_impls, c.unsafe_traits, c.ty_wrapper_newtypes, c.ty_wrapper_ref_handles, c.ty_wrapper_refs_sanctioned, c.ty_wrapper_refs_smell, c.ty_wrapper_refs_body_smell, c.raw_ptr_ty_pub, c.raw_ptr_ty_priv, c.raw_ptr_fn_pub_safe, c.raw_ptr_fn_pub_unsafe, c.raw_ptr_fn_priv_safe, c.raw_ptr_fn_priv_unsafe, c.raw_ptr_has_ty_wrapper, c.raw_ptr_derefs, c.raw_ptr_derefs_outside_impl, c.void_ptr_ty_pub, c.void_ptr_ty_priv, c.void_ptr_fn_pub_safe, c.void_ptr_fn_pub_unsafe, c.void_ptr_fn_priv_safe, c.void_ptr_fn_priv_unsafe, c.ty_field_proj_wrapped, c.ty_field_proj_outside_impl, c.ty_field_ref_wrapped, c.deref_impl_on_wrapper, c.ffi_calls,
             sites.json()
         );
         Compilation::Continue

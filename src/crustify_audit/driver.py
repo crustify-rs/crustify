@@ -47,13 +47,13 @@ _COUNTS = (
     "unsafe_block_code_lines", "unsafe_blocks_wrapper_impl",
     "unsafe_blocks_ffi_export", "unsafe_fns", "unsafe_fns_pub",
     "unsafe_fns_priv", "unsafe_impls", "unsafe_traits", "ty_wrapper_newtypes",
-    "ty_wrapper_refs_sanctioned", "ty_wrapper_refs_smell",
-    "ty_wrapper_refs_body_smell", "raw_ptr_ty_pub", "raw_ptr_ty_priv",
-    "raw_ptr_fn_pub_safe", "raw_ptr_fn_pub_unsafe", "raw_ptr_fn_priv_safe",
-    "raw_ptr_fn_priv_unsafe", "raw_ptr_has_ty_wrapper", "raw_ptr_derefs",
-    "raw_ptr_derefs_outside_impl", "void_ptr_ty_pub", "void_ptr_ty_priv",
-    "void_ptr_fn_pub_safe", "void_ptr_fn_pub_unsafe", "void_ptr_fn_priv_safe",
-    "void_ptr_fn_priv_unsafe", "ty_field_proj_wrapped",
+    "ty_wrapper_ref_handles", "ty_wrapper_refs_sanctioned",
+    "ty_wrapper_refs_smell", "ty_wrapper_refs_body_smell", "raw_ptr_ty_pub",
+    "raw_ptr_ty_priv", "raw_ptr_fn_pub_safe", "raw_ptr_fn_pub_unsafe",
+    "raw_ptr_fn_priv_safe", "raw_ptr_fn_priv_unsafe", "raw_ptr_has_ty_wrapper",
+    "raw_ptr_derefs", "raw_ptr_derefs_outside_impl", "void_ptr_ty_pub",
+    "void_ptr_ty_priv", "void_ptr_fn_pub_safe", "void_ptr_fn_pub_unsafe",
+    "void_ptr_fn_priv_safe", "void_ptr_fn_priv_unsafe", "ty_field_proj_wrapped",
     "ty_field_proj_outside_impl", "ty_field_ref_wrapped",
     "deref_impl_on_wrapper", "ffi_calls",
 )
@@ -64,13 +64,14 @@ SITE_COUNTERS = (
     "safe_fns_pub", "safe_fns_priv", "unsafe_blocks",
     "unsafe_blocks_wrapper_impl", "unsafe_blocks_ffi_export", "unsafe_fns",
     "unsafe_fns_pub", "unsafe_fns_priv", "unsafe_impls", "unsafe_traits",
-    "ty_wrapper_newtypes", "ty_wrapper_refs_sanctioned",
-    "ty_wrapper_refs_smell", "ty_wrapper_refs_body_smell", "raw_ptr_ty_pub",
-    "raw_ptr_ty_priv", "raw_ptr_fn_pub_safe", "raw_ptr_fn_pub_unsafe",
-    "raw_ptr_fn_priv_safe", "raw_ptr_fn_priv_unsafe", "raw_ptr_has_ty_wrapper",
-    "raw_ptr_derefs", "raw_ptr_derefs_outside_impl", "void_ptr_ty_pub",
-    "void_ptr_ty_priv", "void_ptr_fn_pub_safe", "void_ptr_fn_pub_unsafe",
-    "void_ptr_fn_priv_safe", "void_ptr_fn_priv_unsafe", "ty_field_proj_wrapped",
+    "ty_wrapper_newtypes", "ty_wrapper_ref_handles",
+    "ty_wrapper_refs_sanctioned", "ty_wrapper_refs_smell",
+    "ty_wrapper_refs_body_smell", "raw_ptr_ty_pub", "raw_ptr_ty_priv",
+    "raw_ptr_fn_pub_safe", "raw_ptr_fn_pub_unsafe", "raw_ptr_fn_priv_safe",
+    "raw_ptr_fn_priv_unsafe", "raw_ptr_has_ty_wrapper", "raw_ptr_derefs",
+    "raw_ptr_derefs_outside_impl", "void_ptr_ty_pub", "void_ptr_ty_priv",
+    "void_ptr_fn_pub_safe", "void_ptr_fn_pub_unsafe", "void_ptr_fn_priv_safe",
+    "void_ptr_fn_priv_unsafe", "ty_field_proj_wrapped",
     "ty_field_proj_outside_impl", "ty_field_ref_wrapped",
     "deref_impl_on_wrapper", "ffi_calls",
 )
@@ -96,9 +97,31 @@ class DriverUnavailable(Exception):
     """The driver could not measure this tree. Carries the reason to report."""
 
 
-def _collect_emissions(stdout: str) -> tuple[dict, dict, int, dict]:
+def sys_crates(ws: Path, extra: list[str] | None = None) -> list[str]:
+    """The crates whose `#[repr(C)]` types are C's, by crate (lib target)
+    name: every package in the build's dependency graph with a Cargo `links`
+    key, plus ``extra``. `cargo metadata` resolves the graph; when it cannot,
+    only the workspace's own packages are read."""
+    names: set[str] = {n.replace("-", "_") for n in extra or ()}
+    for args in (["--format-version", "1"], ["--no-deps", "--format-version", "1"]):
+        r = subprocess.run(["cargo", "metadata", *args], cwd=ws,
+                           capture_output=True, text=True)
+        if r.returncode == 0:
+            for pkg in json.loads(r.stdout)["packages"]:
+                if not pkg.get("links"):
+                    continue
+                libs = [t["name"] for t in pkg["targets"]
+                        if {"lib", "rlib", "staticlib", "cdylib", "dylib"} & set(t["kind"])]
+                names.update(n.replace("-", "_") for n in libs or [pkg["name"]])
+            break
+    return sorted(names)
+
+
+def _collect_emissions(stdout: str, sys: set[str] | frozenset = frozenset()
+                       ) -> tuple[dict, dict, int, dict]:
     """Merge driver JSON lines; return counts, sites, crate count, and the
-    `--ffibox` breakdowns (empty unless the driver emitted them)."""
+    `--ffibox` breakdowns (empty unless the driver emitted them). Sys crates
+    -- named `*_sys`, or in ``sys`` -- are bindings, never the subject."""
     out = {k: 0 for k in _COUNTS}
     sites: dict[str, list] = {k: [] for k in SITE_COUNTERS}
     ffibox: dict[str, dict[str, int]] = {}
@@ -112,7 +135,7 @@ def _collect_emissions(stdout: str) -> tuple[dict, dict, int, dict]:
         except json.JSONDecodeError:
             continue
         crate = d.get("crate", "")
-        if crate.endswith("_sys"):
+        if crate.endswith("_sys") or crate in sys:
             continue
         if "ffibox" in d:
             for k in FFIBOX_COUNTERS:
@@ -191,9 +214,12 @@ def _bust_cache(ws: Path) -> None:
                 root.touch()
 
 
-def measure(ws: Path, ffibox: bool = False) -> tuple[dict, dict, dict | None]:
+def measure(ws: Path, ffibox: bool = False, sys: list[str] | None = None
+            ) -> tuple[dict, dict, dict | None]:
     """Return ``(tree-wide counts, sites per counter, ffibox breakdowns)`` for
-    ``ws``. The breakdowns are ``None`` unless ``ffibox`` asked for them."""
+    ``ws``. The breakdowns are ``None`` unless ``ffibox`` asked for them.
+    ``sys`` are the sys crates (``sys_crates``): their `#[repr(C)]` types are
+    C's, and their emissions are skipped."""
     driver = _driver_bin()
     sysroot = subprocess.run(["rustc", f"+{_TOOLCHAIN}", "--print", "sysroot"],
                              capture_output=True, text=True).stdout.strip()
@@ -210,6 +236,7 @@ def measure(ws: Path, ffibox: bool = False) -> tuple[dict, dict, dict | None]:
     env["LD_LIBRARY_PATH"] = f"{sysroot}/lib" + (f":{ld}" if ld else "")
     if ffibox:
         env["UM_FFIBOX"] = "1"
+    env["UM_SYS_CRATES"] = ",".join(sys or ())
 
     r = subprocess.run(["cargo", f"+{_TOOLCHAIN}", "build"], cwd=ws, env=env,
                        capture_output=True, text=True)
@@ -220,7 +247,7 @@ def measure(ws: Path, ffibox: bool = False) -> tuple[dict, dict, dict | None]:
             f"{r.stderr[-1200:]}")
 
     # `-sys` crates are generated bindings, never the audit subject.
-    out, sites, seen, ffibox_counts = _collect_emissions(r.stdout)
+    out, sites, seen, ffibox_counts = _collect_emissions(r.stdout, set(sys or ()))
     if not seen:
         raise DriverUnavailable(
             "no crate emitted metrics — the build was served from cache, so "

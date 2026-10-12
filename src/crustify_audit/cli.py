@@ -1,7 +1,7 @@
 """cli.py — the audit stages behind `crustify scan-unsafe` and
 `crustify spawn-auditor`.
 
-    crustify scan-unsafe   <workdir> [--json] [--ffibox]
+    crustify scan-unsafe   <workdir> [--json] [--ffibox] [--sys-crates CRATE,...]
                                      [--sites COUNTER ... | all]
     crustify spawn-auditor <workdir> [--model M] [--billing B] [--effort E]
                                      [--timeout MIN] [--instruments I ...]
@@ -72,6 +72,12 @@ def add_stages(sub: "argparse._SubParsersAction", *,
              "raw_ptr_fn_pub_safe, raw_ptr_ty_pub, "
              "unsafe_fns_pub, ty_wrapper_refs_smell), or `all`. Line and statement totals have "
              "no sites.")
+    m.add_argument(
+        "--sys-crates", type=lambda v: [c for c in v.split(",") if c], default=None,
+        metavar="CRATE[,CRATE...]",
+        help="Crates whose #[repr(C)] types are C's, beside the ones found "
+             "automatically (every crate with a Cargo `links` key). Use it "
+             "for bindings without one, such as `libc`.")
     m.add_argument(
         "--ffibox", action="store_true",
         help="Also count the crate's ffibox surface: ffibox types and the "
@@ -198,7 +204,8 @@ def dispatch(layout, args, command: str) -> int:
 
 def _cmd_unsafe(layout: Layout, args) -> int:
     from crustify_audit import unsafe_scan as M
-    doc = M.compose(layout, sites=args.sites, ffibox=args.ffibox)
+    doc = M.compose(layout, sites=args.sites, ffibox=args.ffibox,
+                    sys_crates=args.sys_crates)
     if args.json:
         print(json.dumps(doc, indent=2))
     else:
