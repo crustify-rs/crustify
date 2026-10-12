@@ -1,5 +1,0 @@
-# crustify's own FFI seam names, beyond the ffibox ones (ffibox's seams.txt).
-# One exact fn name per line. Pass both to `crustify scan-unsafe --seams`.
-#
-# A ported tree's safe callback wrapper hands C its raw fn pointer.
-to_raw

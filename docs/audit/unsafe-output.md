@@ -29,8 +29,6 @@ are not the wrapper being audited.
 ## Document shape
 
 - `crate_path`: audited Cargo workspace.
-- `seam_fns`: the `--seams` files (`files`) and the fn names read from them
-  (`names`) that the seam/smell split rests on.
 - `counts`: aggregate compiled-code metrics (numbers only), or `null`.
 - `counts_unavailable`: failure text when counts are unavailable.
 - `derived`: ratios and sums calculated from counts.
@@ -47,47 +45,44 @@ Unsafe-block totals provide context only. A C wrapper must contain unsafe code,
 and combining many small unsafe blocks into fewer large ones improves the count
 without improving the code.
 
-## Seam, smell and visibility
+## The crate's own surface: visibility and safety
 
-The seam is where a wrapper is expected to be unsafe. A function is seam when
-its name is in one of the seam files passed as `--seams FILE[,FILE...]`, or
-when it has a C ABI or `#[no_mangle]`. A seam file lists exact fn names, one per
-line (blank lines and `#` comments are skipped, there are no globs). The scanner
-assumes none: a crate's seam names are the conventions it is built on, so the
-caller passes them — ffibox's `seams.txt` for a crate built on ffibox, plus
-crustify's `docs/translate/seams.txt` for a crustify tree, or a list written
-for any other crate's own conventions (`wrap`, `raw`, ..). Without `--seams`
-only the C-ABI gateway is seam. The names used, and the files they came from,
-are recorded in the document's `seam_fns`. A raw-pointer position is also seam
-when it points to the method's own `Self`.
-Everything else is smell, split by the declaring function's visibility:
-"pub" is rustc's effective visibility, callable from outside the crate. A
-trait-impl method reachable through a public trait and type is pub; a `pub`
-item in a private module is not, unless it is re-exported.
+Every counter measures what the scanned crate itself defines: its types, its
+fns and its methods. Items of other crates are never counted (ffibox's `CBox`,
+`CArc` and their methods, std's), and neither are methods implementing another
+crate's trait (`Clone`, `Drop`, ffibox's `CDrop`, ..), whose signature that
+crate fixed. "pub" is rustc's effective visibility, reachable from outside the
+crate: a `pub` item in a private module is not, unless it is re-exported, and a
+`pub(crate)` item (such as the constructors `define_ctype!` emits) is private.
 
-Three counter families partition this way:
+- `unsafe_fns` = `unsafe_fns_pub` + `unsafe_fns_priv`. `unsafe_fns_pub` is the
+  public unsafe surface: every obligation the crate exports to its callers.
+- `raw_ptr` counts every raw-pointer position, partitioned by where it sits:
 
-- `unsafe_fns` = `unsafe_fns_seam` + `unsafe_fns_pub_smell` +
-  `unsafe_fns_priv_smell`, and the seam splits by the same visibility:
-  `unsafe_fns_seam` = `unsafe_fns_pub_seam` + `unsafe_fns_priv_seam`.
-- `raw_ptr_args` + `raw_ptr_rets` + `raw_ptr_fields` = `raw_ptr_seam` +
-  `raw_ptr_pub_smell` + `raw_ptr_priv_smell`. `raw_ptr_args` and
-  `raw_ptr_rets` are the positions in function signatures, `raw_ptr_fields`
-  those in the fields of structs and unions the crate declares. A field is seam
-  when its struct is a handle (storing the pointer is what a handle is for);
-  otherwise it is pub smell when it is reachable from outside the crate (a
-  `pub` field of an exported type), else private smell. Generated bindings
-  compiled into the crate are skipped: files under the build script's
-  `OUT_DIR` and files named `bindings.rs`; bindings in a `-sys` crate are
-  excluded with that crate. `raw_ptr_wrapped` counts the smell positions whose
-  pointee is a C type that already has a wrapper. The seam splits by
-  visibility too (`raw_ptr_seam` = `raw_ptr_pub_seam` + `raw_ptr_priv_seam`),
-  and `raw_ptr_pub` / `raw_ptr_priv` count every position, seam or smell, by
-  visibility: `raw_ptr_args` + `raw_ptr_rets` + `raw_ptr_fields` =
-  `raw_ptr_pub` + `raw_ptr_priv`, `raw_ptr_pub` = `raw_ptr_pub_seam` +
-  `raw_ptr_pub_smell`, and likewise for `_priv`.
-- `void_ptr_seam` + `void_ptr_pub_smell` + `void_ptr_priv_smell` are the
-  `*const c_void` / `*mut c_void` positions, a subset of the raw-pointer ones.
+  ```text
+  raw_ptr = raw_ptr_type_pub + raw_ptr_type_priv          (fields of types)
+          + raw_ptr_fn_pub_safe  + raw_ptr_fn_pub_unsafe  (fn signatures)
+          + raw_ptr_fn_priv_safe + raw_ptr_fn_priv_unsafe
+  ```
+
+  A type's fields count by the TYPE's visibility, private fields of a public
+  type included, since they are its representation. A signature counts by the
+  fn's visibility and its safety: `_safe` is a safe fn, reachable from safe
+  code, `_unsafe` an `unsafe fn`, whose caller has taken the obligation on. The
+  raw pointers on the safe public interface are `raw_ptr_type_pub` +
+  `raw_ptr_fn_pub_safe`. The same total splits by position kind:
+  `raw_ptr` = `raw_ptr_fields` + `raw_ptr_args` + `raw_ptr_rets`.
+  `raw_ptr_wrapped` is the subset whose pointee is a C type that already has a
+  wrapper. Generated bindings compiled into the crate are skipped: files under
+  the build script's `OUT_DIR` and files named `bindings.rs`; bindings in a
+  `-sys` crate are excluded with that crate.
+- `void_ptr` is the `*const c_void` / `*mut c_void` subset of `raw_ptr`,
+  partitioned the same way (`void_ptr_type_{pub,priv}`,
+  `void_ptr_fn_{pub,priv}_{safe,unsafe}`).
+
+The C-ABI gateway (`#[no_mangle]` / `#[export_name]` / `extern "C"` fns) is
+counted like any other fn; its unsafe blocks are also counted apart, in
+`unsafe_blocks_ffi_export`.
 
 `fns_pub` and `fns_priv` count every function and method with a body, safe or
 unsafe, by the same visibility. Methods of impls of canonical `core` /
@@ -95,7 +90,7 @@ unsafe, by the same visibility. Methods of impls of canonical `core` /
 `Hash`, the `fmt` traits, `Drop`, `Default`, `From`, `TryFrom`, `AsRef`,
 `AsMut`, `Borrow`, `BorrowMut`, `Deref`, `DerefMut`; `CANONICAL_STD_TRAITS` in
 the driver) are left out: they are protocol rather than API, and none of them
-is `unsafe`. Every other trait impl's methods count, the crate's own and
+is `unsafe`. Every other trait impl's methods count here, the crate's own and
 ffibox's included. Trait method declarations without a body are not counted.
 
 A position is every raw pointer in a parameter, return or field type, including
@@ -107,10 +102,9 @@ marker, not a position. Type aliases are resolved, so
 
 The derived fields:
 
-- `unsafe_fn_smell`: `unsafe_fns_pub_smell + unsafe_fns_priv_smell`.
-- `raw_ptr_smell`: `raw_ptr_pub_smell + raw_ptr_priv_smell`.
-- `unsafe_fn_pub_ratio`: `unsafe_fns_pub_smell / unsafe_fns`.
-- `raw_ptr_seam_ratio`: fraction of raw-pointer positions at the seam.
+- `unsafe_fn_pub_ratio`: `unsafe_fns_pub / unsafe_fns`.
+- `unsafe_fn_share_of_pub_fns`: `unsafe_fns_pub / fns_pub`.
+- `raw_ptr_pub`: `raw_ptr_type_pub + raw_ptr_fn_pub_safe + raw_ptr_fn_pub_unsafe`.
 - `unsafe_loc_ratio` and `loc_per_unsafe_block`: context, not a score.
 
 ## Wrappers and references into C memory
@@ -172,43 +166,47 @@ impl.
 Signature positions, parameters and return types, nested ones included as for
 raw pointers (`Option<CBox<T>>` is one `CBox`):
 
-- `ffibox_sig_owners_*`: an ffibox owner (`CBox`, `CArc`, `CVec`, `CStrBox`,
+- `ffibox_fn_owners_*`: an ffibox owner (`CBox`, `CArc`, `CVec`, `CStrBox`,
   `CVal`), keyed by type. Aliases are resolved, so `type FooBox = CBox<..>` is
   a `CBox`.
-- `ffibox_sig_handles_*`: an ffibox-based borrowed handle: one of the crate's
+- `ffibox_fn_handles_*`: an ffibox-based borrowed handle: one of the crate's
   own, keyed `Ref`, `Mut` or `Locked` (the types its `impl CCell` binds to
   `Ref` / `Mut` and its `impl CGuarded` binds to `Locked`, read off the impls
   rather than the names), or one of ffibox's borrowed views, keyed by type
   (`CSlice`, `CSliceMut`, `CBorrowedPtr`, `CGuardedRef`, `CGuard`). A method's
   receiver counts here when it is such a handle, since that is where a C
   function's borrowed `T *` lands.
-- `non_ffibox_sig_owner_*`: one of the crate's own owners, keyed by type: a
+- `non_ffibox_fn_owner_*`: one of the crate's own owners, keyed by type: a
   crate-defined type with an `impl Drop` that no ffibox macro emitted (the
-  `drop_impl` types). Together with `ffibox_sig_*` it says how much of the
+  `drop_impl` types). Together with `ffibox_fn_*` it says how much of the
   ownership an API hands out goes through ffibox and how much does not.
-  (`ffibox_sig_owners_*` is its ffibox counterpart.)
-- `non_ffibox_sig_borrow_*`: one of the crate's other borrowed types, keyed by
+  (`ffibox_fn_owners_*` is its ffibox counterpart.)
+- `non_ffibox_fn_borrow_*`: one of the crate's other borrowed types, keyed by
   type: a crate-defined type with a lifetime parameter of its own that is
   neither one of its `CCell` / `CGuarded` handles nor one of its own owners.
   These are hand-written handles, iterators and views; the key names them, so
   an iterator is told from a handle written instead of a `CCell` one. A
   method's receiver of such a type counts here too.
-- `std_sig_borrow_*`: a reference to a standard borrowed view, keyed `&CStr`,
+- `std_fn_borrow_*`: a reference to a standard borrowed view, keyed `&CStr`,
   `&str`, `&mut str`, `&[T]` or `&mut [T]` (nested ones included). A slice of
   elements implementing ffibox's `CPlainElem` (primitives, plain newtypes,
   `MaybeUninit<T>`, raw pointers, arrays of those) is a plain buffer, the
   expected shape, and is keyed `&[CPlainElem]` / `&mut [CPlainElem]` apart. References
   to the crate's layout types are `ref_to_type_wrapper_*` instead.
 
-Each splits four ways: `_pub` and `_priv` are the API, and `_pub_seam` and
-`_priv_seam` the conversion layer, so the four sum to every position. A
-function is seam when its name is in a `--seams` file, it is in the C-ABI gateway, or
-an ffibox macro emitted it (a handle's `as_ref`, `as_mut`, `from_ptr`, ..). The
+Each splits by the fn's visibility, `_pub` and `_priv`. The
 functions read are free functions, inherent methods and the crate's own trait
 declarations. A trait impl's methods are left out, since the trait fixes their
 signatures. A method's `self` receiver counts only when it is a borrowed handle
-(`ffibox_sig_handles_*` or `non_ffibox_sig_borrow_*`): `&self` on an owner or a
+(`ffibox_fn_handles_*` or `non_ffibox_fn_borrow_*`): `&self` on an owner or a
 plain value borrows a Rust value, not a C object, and is skipped.
+
+The `*_ty_*` families (`ffibox_ty_owners_*`, `ffibox_ty_handles_*`,
+`non_ffibox_ty_owner_*`, `non_ffibox_ty_borrow_*`, `std_ty_borrow_*`) count
+the same kinds in the fields of the structs, unions and enums the crate
+defines, `_pub` / `_priv` by the type's visibility as for `raw_ptr_type_*`:
+what the crate's types hold, where the `*_fn_*` families are what its fns take
+and return.
 
 Trait impls, counted as distinct crate-defined types per trait, so a type
 implementing `From<A>` and `From<B>` counts once for `From`:
@@ -263,7 +261,5 @@ and statement totals (`code_lines`, `total_stmts`, `unsafe_block_*lines`,
   include struct and union fields. Raw pointers in locals, casts, closure parameters, enum variants and
   statics are not positions, `NonNull` is never one, and a trait method
   declared without a default body is not counted.
-- **Seam by name.** A function is seam because of its name or ABI, not because
-  of what it does: a hand-written `as_ptr` is sanctioned like a generated one.
 - **Pointer origin.** No counter can tell C-owned memory from Rust-owned memory
   behind a pointer.

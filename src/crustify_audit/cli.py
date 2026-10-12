@@ -1,7 +1,7 @@
 """cli.py — the audit stages behind `crustify scan-unsafe` and
 `crustify spawn-auditor`.
 
-    crustify scan-unsafe   <workdir> [--json] [--seams FILE[,FILE...]] [--ffibox]
+    crustify scan-unsafe   <workdir> [--json] [--ffibox]
                                      [--sites COUNTER ... | all]
     crustify spawn-auditor <workdir> [--model M] [--billing B] [--effort E]
                                      [--timeout MIN] [--instruments I ...]
@@ -69,25 +69,14 @@ def add_stages(sub: "argparse._SubParsersAction", *,
         help="Also report where these counters' increments are in the source: "
              "a `sites` record beside `counts` with one list per counter. Takes "
              "counters that count source locations (e.g. "
-             "ref_to_type_wrapper_smell, raw_ptr_pub_smell, "
-             "unsafe_fns_priv_smell, fns_pub), or `all`. Line and statement totals have "
+             "raw_ptr_fn_pub_safe, raw_ptr_type_pub, "
+             "unsafe_fns_pub, ref_to_type_wrapper_smell), or `all`. Line and statement totals have "
              "no sites.")
-    m.add_argument(
-        "--seams", type=lambda v: [f for f in v.split(",") if f], default=None,
-        metavar="FILE[,FILE...]",
-        help="Seam files: each lists, one per line, the exact names of the "
-             "fns that convert between the safe API and C pointers "
-             "(`as_ptr`, `from_raw`, ...). Their raw pointers and `unsafe fn` "
-             "count as seam, the rest as smell. Without it no fn is seam by "
-             "name; the C-ABI gateway (`#[no_mangle]` / `extern \"C\"` "
-             "exports) is seam either way. A crate built on ffibox passes "
-             "ffibox's `seams.txt`, plus any convention's own (crustify's: "
-             "docs/translate/seams.txt).")
     m.add_argument(
         "--ffibox", action="store_true",
         help="Also count the crate's ffibox surface: ffibox types and the "
              "crate's Ref/Mut/Locked handles in fn signatures (pub or private, "
-             "API or seam), and the crate's types implementing ffibox traits "
+             "by kind), and the crate's types implementing ffibox traits "
              "and other traits (ffibox-macro, derived and hand-written). Adds an "
              "`ffibox` record; its counters also take --sites.")
 
@@ -209,7 +198,7 @@ def dispatch(layout, args, command: str) -> int:
 
 def _cmd_unsafe(layout: Layout, args) -> int:
     from crustify_audit import unsafe_scan as M
-    doc = M.compose(layout, sites=args.sites, ffibox=args.ffibox, seams=args.seams)
+    doc = M.compose(layout, sites=args.sites, ffibox=args.ffibox)
     if args.json:
         print(json.dumps(doc, indent=2))
     else:

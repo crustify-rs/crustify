@@ -125,47 +125,21 @@ def site_counters(requested: list[str], ffibox: bool = False) -> list[str]:
     return list(dict.fromkeys(requested))
 
 
-def seam_names(files: list[str] | None) -> list[str]:
-    """The seam fn names in ``files``: one exact name per line, blank lines
-    and `#` comments skipped, first occurrence kept. No file, no names."""
-    names: dict[str, None] = {}
-    for f in files or ():
-        try:
-            text = Path(f).read_text()
-        except OSError as e:
-            raise SystemExit(f"unsafe: --seams: cannot read {f}: {e.strerror}")
-        for line in text.splitlines():
-            name = line.split("#", 1)[0].strip()
-            if not name:
-                continue
-            if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", name):
-                raise SystemExit(
-                    f"unsafe: --seams: {f}: {name!r} is not a fn name "
-                    "(one exact name per line, no globs)")
-            names[name] = None
-    return list(names)
-
-
 def compose(layout: Layout, sites: list[str] | None = None,
-            ffibox: bool = False, seams: list[str] | None = None) -> dict:
+            ffibox: bool = False) -> dict:
     """Scan the workspace and return the metrics document.
 
     ``sites`` names counters whose source locations to report, as a ``sites``
     record beside ``counts`` with one list per counter. ``ffibox`` adds the
-    ``ffibox`` record: the crate's ffibox surface. ``seams`` are the seam
-    files whose names the seam/smell split treats as the FFI seam; recorded
-    in ``seam_fns`` so the document says what its split rests on.
+    ``ffibox`` record: the crate's ffibox surface.
     """
     workspace = layout.workspace
     wanted = site_counters(sites, ffibox) if sites else None
-    names = seam_names(seams)
-    doc: dict = {"crate_path": str(workspace),
-                 "seam_fns": {"files": [str(Path(f).resolve()) for f in seams or ()],
-                              "names": names}}
+    doc: dict = {"crate_path": str(workspace)}
     all_sites: dict = {}
     try:
         doc["counts"], all_sites, breakdowns = driver.measure(
-            workspace, ffibox=ffibox, seams=names)
+            workspace, ffibox=ffibox)
         doc["counts_unavailable"] = None
     except driver.DriverUnavailable as e:
         # No counts rather than substitute ones: see driver.py.
@@ -208,16 +182,13 @@ def _derive(doc: dict) -> dict:
     loc = c.get("code_lines") or 0
     ub = c.get("unsafe_blocks") or 0
     fns = c.get("unsafe_fns") or 0
-    positions = ((c.get("raw_ptr_args") or 0) + (c.get("raw_ptr_rets") or 0)
-                 + (c.get("raw_ptr_fields") or 0))
-    seam = c.get("raw_ptr_seam") or 0
+    pub_fns = c.get("fns_pub") or 0
     return {
-        # Categorical: an obligation pushed onto callers, and one the seam does
-        # not excuse.
-        "unsafe_fn_pub_ratio": round((c.get("unsafe_fns_pub_smell") or 0) / fns, 4) if fns else None,
-        "unsafe_fn_smell": (c.get("unsafe_fns_pub_smell") or 0) + (c.get("unsafe_fns_priv_smell") or 0),
-        "raw_ptr_smell": (c.get("raw_ptr_pub_smell") or 0) + (c.get("raw_ptr_priv_smell") or 0),
-        "raw_ptr_seam_ratio": round(seam / positions, 4) if positions else None,
+        # Categorical: what the crate's public interface hands its callers.
+        "unsafe_fn_pub_ratio": round((c.get("unsafe_fns_pub") or 0) / fns, 4) if fns else None,
+        "unsafe_fn_share_of_pub_fns": round((c.get("unsafe_fns_pub") or 0) / pub_fns, 4) if pub_fns else None,
+        "raw_ptr_pub": (c.get("raw_ptr_type_pub") or 0) + (c.get("raw_ptr_fn_pub_safe") or 0)
+                       + (c.get("raw_ptr_fn_pub_unsafe") or 0),
         # Context, explicitly NOT a quality score. See the docstring.
         "unsafe_loc_ratio": round((c.get("unsafe_block_code_lines") or 0) / loc, 4) if loc else None,
         "loc_per_unsafe_block": round(loc / ub, 1) if ub else None,
@@ -229,11 +200,7 @@ def _derive(doc: dict) -> dict:
 def summarize(doc: dict) -> str:
     c = doc.get("counts") or {}
     d = doc.get("derived", {})
-    s = doc.get("seam_fns") or {}
-    lines: list[str] = [
-        f"  seam fns             {len(s.get('names', []))} names from "
-        + (", ".join(s.get("files", [])) or "no --seams file (only the C-ABI gateway is seam)"),
-    ]
+    lines: list[str] = []
     if c:
         lines += [
             f"  code lines           {c.get('code_lines')}",
@@ -242,14 +209,16 @@ def summarize(doc: dict) -> str:
             f"  fns                  {(c.get('fns_pub') or 0) + (c.get('fns_priv') or 0)}"
             f"   ({c.get('fns_pub')} pub + {c.get('fns_priv')} private; canonical std trait methods excluded)",
             f"  unsafe fn            {c.get('unsafe_fns')}"
-            f"   (seam {c.get('unsafe_fns_pub_seam')} pub + {c.get('unsafe_fns_priv_seam')} private,"
-            f" smell {c.get('unsafe_fns_pub_smell')} pub + {c.get('unsafe_fns_priv_smell')} private)",
-            f"  raw ptr positions    {(c.get('raw_ptr_args') or 0) + (c.get('raw_ptr_rets') or 0) + (c.get('raw_ptr_fields') or 0)}"
-            f"   ({c.get('raw_ptr_args')} args, {c.get('raw_ptr_rets')} rets, {c.get('raw_ptr_fields')} fields;"
-            f" {c.get('raw_ptr_pub')} pub = seam {c.get('raw_ptr_pub_seam')} + smell {c.get('raw_ptr_pub_smell')},"
-            f" {c.get('raw_ptr_priv')} private = seam {c.get('raw_ptr_priv_seam')} + smell {c.get('raw_ptr_priv_smell')})",
-            f"  void ptr positions   {(c.get('void_ptr_seam') or 0) + (c.get('void_ptr_pub_smell') or 0) + (c.get('void_ptr_priv_smell') or 0)}"
-            f"   ({c.get('void_ptr_seam')} seam, smell {c.get('void_ptr_pub_smell')} pub + {c.get('void_ptr_priv_smell')} private)",
+            f"   ({c.get('unsafe_fns_pub')} pub + {c.get('unsafe_fns_priv')} private;"
+            f" methods of other crates' traits excluded)",
+            f"  raw ptr positions    {c.get('raw_ptr')}"
+            f"   (types: {c.get('raw_ptr_type_pub')} pub + {c.get('raw_ptr_type_priv')} private;"
+            f" fn signatures: pub {c.get('raw_ptr_fn_pub_safe')} safe + {c.get('raw_ptr_fn_pub_unsafe')} unsafe,"
+            f" private {c.get('raw_ptr_fn_priv_safe')} safe + {c.get('raw_ptr_fn_priv_unsafe')} unsafe)",
+            f"  void ptr positions   {c.get('void_ptr')}"
+            f"   (types: {c.get('void_ptr_type_pub')} pub + {c.get('void_ptr_type_priv')} private;"
+            f" fn signatures: pub {c.get('void_ptr_fn_pub_safe')} safe + {c.get('void_ptr_fn_pub_unsafe')} unsafe,"
+            f" private {c.get('void_ptr_fn_priv_safe')} safe + {c.get('void_ptr_fn_priv_unsafe')} unsafe)",
             f"  ref to layout type   {(c.get('ref_to_type_wrapper_sanctioned') or 0) + (c.get('ref_to_type_wrapper_smell') or 0)}"
             f"   ({c.get('ref_to_type_wrapper_sanctioned')} sanctioned, smell {c.get('ref_to_type_wrapper_smell')}"
             f" — target 0) over {c.get('wrapper_newtypes')} layout newtypes",
@@ -271,22 +240,17 @@ def summarize(doc: dict) -> str:
                     merged[name] = merged.get(name, 0) + v
             return ", ".join(f"{name} {v}" for name, v in sorted(merged.items())) or "none"
 
+        families = (("ffibox owner", "ffibox_{}_owners"), ("ffibox handle", "ffibox_{}_handles"),
+                    ("own owner", "non_ffibox_{}_owner"), ("own borrow", "non_ffibox_{}_borrow"),
+                    ("std borrow", "std_{}_borrow"))
+        lines.append("  ffibox")
+        for where, label in (("fn", "in fn sig"), ("ty", "in type")):
+            for name, stem in families:
+                k = stem.format(where)
+                lines.append(
+                    f"  {name + ' ' + label:<24}{n[k + '_pub']} pub + {n[k + '_priv']} private"
+                    f"   ({keys(k + '_pub', k + '_priv')})")
         lines += [
-            "  ffibox",
-            f"  ffibox owner in sig  {n['ffibox_sig_owners_pub']} pub + {n['ffibox_sig_owners_priv']} private"
-            f"   (API: {keys('ffibox_sig_owners_pub', 'ffibox_sig_owners_priv')};"
-            f" seam {n['ffibox_sig_owners_pub_seam']} pub + {n['ffibox_sig_owners_priv_seam']} private)",
-            f"  ffibox handle in sig {n['ffibox_sig_handles_pub']} pub + {n['ffibox_sig_handles_priv']} private"
-            f"   (API: {keys('ffibox_sig_handles_pub', 'ffibox_sig_handles_priv')};"
-            f" seam {n['ffibox_sig_handles_pub_seam']} pub + {n['ffibox_sig_handles_priv_seam']} private)",
-            f"  own owner in sig     {n['non_ffibox_sig_owner_pub']} pub + {n['non_ffibox_sig_owner_priv']} private"
-            f"   (API: {keys('non_ffibox_sig_owner_pub', 'non_ffibox_sig_owner_priv')};"
-            f" seam {n['non_ffibox_sig_owner_pub_seam']} pub + {n['non_ffibox_sig_owner_priv_seam']} private)",
-            f"  own borrow in sig    {n['non_ffibox_sig_borrow_pub']} pub + {n['non_ffibox_sig_borrow_priv']} private"
-            f"   (seam {n['non_ffibox_sig_borrow_pub_seam']} pub + {n['non_ffibox_sig_borrow_priv_seam']} private)",
-            f"  std borrow in sig    {n['std_sig_borrow_pub']} pub + {n['std_sig_borrow_priv']} private"
-            f"   (API: {keys('std_sig_borrow_pub', 'std_sig_borrow_priv')};"
-            f" seam {n['std_sig_borrow_pub_seam']} pub + {n['std_sig_borrow_priv_seam']} private)",
             f"  ffibox trait impls   {n['ffibox_impl_macro']} by macro + {n['ffibox_impl_manual']} by hand"
             f"   (by hand: {keys('ffibox_impl_manual')})",
             f"  layout types         {n['ffibox_define_ctype_macro']} define_ctype! +"

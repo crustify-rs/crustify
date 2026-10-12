@@ -36,19 +36,19 @@ class EmissionTests(unittest.TestCase):
 
     def test_visibility_splits_are_emitted(self) -> None:
         keys, _ = _emission()
-        for k in ("unsafe_fns_pub_seam", "unsafe_fns_priv_seam", "fns_pub", "fns_priv",
-                  "raw_ptr_pub_seam", "raw_ptr_priv_seam", "raw_ptr_pub", "raw_ptr_priv"):
+        for k in ("unsafe_fns_pub", "unsafe_fns_priv", "fns_pub", "fns_priv",
+                  "raw_ptr_fn_pub_safe", "raw_ptr_type_pub"):
             self.assertIn(k, keys)
             self.assertIn(k, driver.SITE_COUNTERS)
 
     def test_new_counts_sum_across_crates(self) -> None:
         line = lambda crate, n: json.dumps(
-            {"crate": crate, "unsafe_blocks": 0, "fns_pub": n, "raw_ptr_priv_seam": n, "sites": {}})
+            {"crate": crate, "unsafe_blocks": 0, "fns_pub": n, "raw_ptr_fn_pub_safe": n, "sites": {}})
         counts, _, seen, _ = driver._collect_emissions(
             "\n".join([line("a", 2), line("b", 3), line("c_sys", 100)]))
         self.assertEqual(seen, 2)
         self.assertEqual(counts["fns_pub"], 5)
-        self.assertEqual(counts["raw_ptr_priv_seam"], 5)
+        self.assertEqual(counts["raw_ptr_fn_pub_safe"], 5)
 
 
 class FfiboxTests(unittest.TestCase):
@@ -60,61 +60,58 @@ class FfiboxTests(unittest.TestCase):
     def test_breakdowns_merge_across_crates_and_skip_sys(self) -> None:
         line = lambda crate, n: json.dumps({
             "crate": crate,
-            "ffibox": {"ffibox_sig_owners_pub": {"CBox": n}, "drop_impl": {"crate::Owner": 1}},
-            "sites": {"ffibox_sig_owners_pub": [{"file": "a.rs", "count": n, "lines": [1]}]}})
+            "ffibox": {"ffibox_fn_owners_pub": {"CBox": n}, "drop_impl": {"crate::Owner": 1}},
+            "sites": {"ffibox_fn_owners_pub": [{"file": "a.rs", "count": n, "lines": [1]}]}})
         _, sites, seen, ffibox = driver._collect_emissions(
             "\n".join([line("a", 2), line("b", 3), line("c_sys", 100)]))
         # an ffibox line is not a metrics line
         self.assertEqual(seen, 0)
-        self.assertEqual(ffibox["ffibox_sig_owners_pub"], {"CBox": 5})
+        self.assertEqual(ffibox["ffibox_fn_owners_pub"], {"CBox": 5})
         self.assertEqual(ffibox["drop_impl"], {"crate::Owner": 2})
-        self.assertEqual(ffibox["ffibox_sig_handles_priv"], {})
-        self.assertEqual(sum(r["count"] for r in sites["ffibox_sig_owners_pub"]), 5)
+        self.assertEqual(ffibox["ffibox_fn_handles_priv"], {})
+        self.assertEqual(sum(r["count"] for r in sites["ffibox_fn_owners_pub"]), 5)
 
     def test_record_totals_every_counter(self) -> None:
-        rec = unsafe_scan._ffibox_record({"ffibox_sig_handles_pub": {"Ref": 4, "Mut": 1}})
+        rec = unsafe_scan._ffibox_record({"ffibox_fn_handles_pub": {"Ref": 4, "Mut": 1}})
         self.assertEqual(set(rec["counts"]), set(driver.FFIBOX_COUNTERS))
-        self.assertEqual(rec["counts"]["ffibox_sig_handles_pub"], 5)
-        self.assertEqual(rec["counts"]["ffibox_sig_owners_pub"], 0)
+        self.assertEqual(rec["counts"]["ffibox_fn_handles_pub"], 5)
+        self.assertEqual(rec["counts"]["ffibox_fn_owners_pub"], 0)
         self.assertIsNone(unsafe_scan._ffibox_record(None))
 
     def test_ffibox_sites_need_the_flag(self) -> None:
         with self.assertRaises(SystemExit) as e:
-            unsafe_scan.site_counters(["ffibox_sig_owners_pub"])
+            unsafe_scan.site_counters(["ffibox_fn_owners_pub"])
         self.assertIn("--ffibox", str(e.exception))
-        self.assertEqual(unsafe_scan.site_counters(["ffibox_sig_owners_pub"], ffibox=True),
-                         ["ffibox_sig_owners_pub"])
-        self.assertNotIn("ffibox_sig_owners_pub", unsafe_scan.site_counters(["all"]))
-        self.assertIn("ffibox_sig_owners_pub", unsafe_scan.site_counters(["all"], ffibox=True))
+        self.assertEqual(unsafe_scan.site_counters(["ffibox_fn_owners_pub"], ffibox=True),
+                         ["ffibox_fn_owners_pub"])
+        self.assertNotIn("ffibox_fn_owners_pub", unsafe_scan.site_counters(["all"]))
+        self.assertIn("ffibox_fn_owners_pub", unsafe_scan.site_counters(["all"], ffibox=True))
 
 
-class SeamTests(unittest.TestCase):
-    def test_driver_carries_no_seam_names_of_its_own(self) -> None:
+class PartitionTests(unittest.TestCase):
+    def test_driver_carries_no_seam_names(self) -> None:
         src = MAIN_RS.read_text()
-        self.assertNotIn("const SEAM_FNS", src)
-        self.assertIn('"UM_SEAM_FNS"', src)
+        self.assertNotIn("UM_SEAM_FNS", src)
+        self.assertFalse([k for k in driver._COUNTS if k.endswith(("_seam", "_smell"))
+                          and not k.startswith("ref_to_type_wrapper")])
 
-    def test_seam_files_are_exact_names_per_line(self) -> None:
-        from tempfile import TemporaryDirectory
-        with TemporaryDirectory() as d:
-            a, b = Path(d, "a.txt"), Path(d, "b.txt")
-            a.write_text("# ffibox\nas_ptr\n\nfrom_raw  # adopt\n")
-            b.write_text("wrap\nas_ptr\n")
-            self.assertEqual(unsafe_scan.seam_names([str(a), str(b)]),
-                             ["as_ptr", "from_raw", "wrap"])
-            Path(d, "g.txt").write_text("wrap_with_*\n")
-            with self.assertRaises(SystemExit) as e:
-                unsafe_scan.seam_names([str(Path(d, "g.txt"))])
-            self.assertIn("no globs", str(e.exception))
-        self.assertEqual(unsafe_scan.seam_names(None), [])
+    def test_raw_and_void_partitions_are_emitted(self) -> None:
+        keys, _ = _emission()
+        parts = ("type_pub", "type_priv", "fn_pub_safe", "fn_pub_unsafe",
+                 "fn_priv_safe", "fn_priv_unsafe")
+        for fam in ("raw_ptr", "void_ptr"):
+            self.assertIn(fam, keys)
+            for part in parts:
+                self.assertIn(f"{fam}_{part}", keys)
+                self.assertIn(f"{fam}_{part}", driver.SITE_COUNTERS)
+        for k in ("unsafe_fns", "unsafe_fns_pub", "unsafe_fns_priv"):
+            self.assertIn(k, keys)
 
-    def test_shipped_seam_files_parse_and_do_not_overlap(self) -> None:
-        repo = Path(driver.__file__).resolve().parents[2]
-        crustify = unsafe_scan.seam_names([str(repo / "docs/translate/seams.txt")])
-        self.assertEqual(crustify, ["to_raw"])
-        ffibox = repo.parent / "ffibox" / "seams.txt"
-        if ffibox.is_file():
-            self.assertFalse(set(crustify) & set(unsafe_scan.seam_names([str(ffibox)])))
+    def test_ffibox_fn_and_ty_families_mirror(self) -> None:
+        fn = [k for k in driver.FFIBOX_COUNTERS if "_fn_" in k]
+        ty = [k for k in driver.FFIBOX_COUNTERS if "_ty_" in k]
+        self.assertEqual([k.replace("_fn_", "_ty_") for k in fn], ty)
+        self.assertFalse([k for k in driver.FFIBOX_COUNTERS if "_sig_" in k or k.endswith("_seam")])
 
 
 if __name__ == "__main__":

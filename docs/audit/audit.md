@@ -52,7 +52,7 @@ runs extend the record instead of repeating completed investigations.
 ## CLI
 
 ```text
-crustify scan-unsafe WORKDIR [--json] [--seams FILE[,FILE...]] [--ffibox]
+crustify scan-unsafe WORKDIR [--json] [--ffibox]
                     [--sites COUNTER ... | all]
 crustify spawn-auditor WORKDIR [--objective audit|audit+patch|patch|revisit]
                        [--workset PATH ...]
@@ -178,7 +178,7 @@ scan-unsafe /target`.
 
 ## Reference
 
-- [Deterministic output: counters, seam, sites and known limitations](unsafe-output.md)
+- [Deterministic output: counters, visibility and safety, sites and known limitations](unsafe-output.md)
 - [Task questionnaire](../../examples/crustify_audit/TASK.md.template)
 - [Example results and report format](../../examples/crustify_audit/results.md)
 - [`ub` auditor prompt](../../src/crustify_audit/prompts/ub.md)
