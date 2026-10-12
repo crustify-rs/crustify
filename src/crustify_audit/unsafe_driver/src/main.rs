@@ -1367,32 +1367,33 @@ impl<'a, 'tcx> Visitor<'tcx> for BodyVisitor<'a, 'tcx> {
 /// `--sites`. `_pub` / `_priv` is rustc's effective visibility, as elsewhere:
 /// of the fn for a signature position, of the implementing type for an impl.
 ///
-///  - `ffibox_fn_owners_*`: an ffibox owner (`CBox`, `CArc`, `CVec`,
+///  - `fn_sig_ffibox_owners_*`: an ffibox owner (`CBox`, `CArc`, `CVec`,
 ///    `CStrBox`, `CVal`) in a parameter or return type, nested ones included,
 ///    keyed by type name, `_pub` / `_priv` by the fn's visibility.
-///  - `ffibox_fn_handles_*`: likewise for ffibox-based borrowed handles: the
+///  - `fn_sig_ffibox_handles_*`: likewise for ffibox-based borrowed handles: the
 ///    crate's own, the types its `CCell` / `CGuarded` impls name as `Ref`,
 ///    `Mut` and `Locked` (keyed by that kind), and ffibox's borrowed views
 ///    (`CSlice`, `CSliceMut`, `CBorrowedPtr`, `CGuardedRef`, `CGuard`, keyed by
 ///    type). A method's receiver counts here when it is such a handle: that is
 ///    where a C function's borrowed `T *` lands.
-///  - `non_ffibox_fn_owner_*`: likewise for the crate's own owners, the types
+///  - `fn_sig_non_ffibox_owner_*`: likewise for the crate's own owners, the types
 ///    with an `impl Drop` no ffibox macro emitted (`drop_impl`), keyed by type:
 ///    ownership the API hands out outside ffibox's `CBox` / `CArc` / `CVec`.
-///  - `non_ffibox_fn_borrow_*`: likewise for the crate's other borrowed
+///  - `fn_sig_non_ffibox_borrow_*`: likewise for the crate's other borrowed
 ///    types, those with a lifetime parameter that are neither its `CCell` /
 ///    `CGuarded` handles nor its own owners (hand-written handles, iterators,
 ///    views), keyed by type; a method's receiver of such a type counts too.
-///  - `std_fn_borrow_*`: a reference to a standard borrowed view, keyed
+///  - `fn_sig_std_ty_borrow_*`: a reference to a standard borrowed view, keyed
 ///    `&CStr`, `&str`, `&mut str`, `&[T]` or `&mut [T]`; a slice of
 ///    `CPlainElem` elements, a plain buffer, is keyed `&[CPlainElem]` /
 ///    `&mut [CPlainElem]` apart, since it is the expected shape.
-///  - `*_ty_*`: the same five families (`ffibox_ty_owners_*`,
-///    `ffibox_ty_handles_*`, `non_ffibox_ty_owner_*`, `non_ffibox_ty_borrow_*`,
-///    `std_ty_borrow_*`) over the fields of the structs, unions and enums the
-///    crate defines, `_pub` / `_priv` by the TYPE's effective visibility, as for
-///    `raw_ptr_ty_*`: what the crate's types hold, where `*_fn_*` is what its
-///    fns take and return.
+///  - `ty_pub_fields_pub_<kind>`, `ty_pub_fields_priv_<kind>`, `ty_priv_<kind>`:
+///    the same five kinds (`ffibox_owners`, `ffibox_handles`,
+///    `non_ffibox_owner`, `non_ffibox_borrow`, `std_ty_borrow`) in the fields
+///    of the structs, unions and enums the crate defines, split as for
+///    `raw_ptr_ty_*`: by the type's effective visibility and, in a public type,
+///    by the field's own. What the crate's types hold, where `fn_sig_*` is what
+///    its fns take and return.
 ///  - `ffibox_impl_macro` / `ffibox_impl_manual`: distinct crate-defined types
 ///    implementing each ffibox trait, keyed by trait, split by whether an
 ///    ffibox macro (`define_ctype!`, `impl_cdrop!`, ..) emitted the impl.
@@ -1411,26 +1412,31 @@ impl<'a, 'tcx> Visitor<'tcx> for BodyVisitor<'a, 'tcx> {
 ///    (neither derived nor emitted by an ffibox macro), keyed by type: copies
 ///    written instead of ffibox's clone policies.
 const FFIBOX_COUNTERS: &[&str] = &[
-    "ffibox_fn_owners_pub",
-    "ffibox_fn_owners_priv",
-    "ffibox_fn_handles_pub",
-    "ffibox_fn_handles_priv",
-    "non_ffibox_fn_owner_pub",
-    "non_ffibox_fn_owner_priv",
-    "non_ffibox_fn_borrow_pub",
-    "non_ffibox_fn_borrow_priv",
-    "std_fn_borrow_pub",
-    "std_fn_borrow_priv",
-    "ffibox_ty_owners_pub",
-    "ffibox_ty_owners_priv",
-    "ffibox_ty_handles_pub",
-    "ffibox_ty_handles_priv",
-    "non_ffibox_ty_owner_pub",
-    "non_ffibox_ty_owner_priv",
-    "non_ffibox_ty_borrow_pub",
-    "non_ffibox_ty_borrow_priv",
-    "std_ty_borrow_pub",
-    "std_ty_borrow_priv",
+    "fn_sig_ffibox_owners_pub",
+    "fn_sig_ffibox_owners_priv",
+    "fn_sig_ffibox_handles_pub",
+    "fn_sig_ffibox_handles_priv",
+    "fn_sig_non_ffibox_owner_pub",
+    "fn_sig_non_ffibox_owner_priv",
+    "fn_sig_non_ffibox_borrow_pub",
+    "fn_sig_non_ffibox_borrow_priv",
+    "fn_sig_std_ty_borrow_pub",
+    "fn_sig_std_ty_borrow_priv",
+    "ty_pub_fields_pub_ffibox_owners",
+    "ty_pub_fields_priv_ffibox_owners",
+    "ty_priv_ffibox_owners",
+    "ty_pub_fields_pub_ffibox_handles",
+    "ty_pub_fields_priv_ffibox_handles",
+    "ty_priv_ffibox_handles",
+    "ty_pub_fields_pub_non_ffibox_owner",
+    "ty_pub_fields_priv_non_ffibox_owner",
+    "ty_priv_non_ffibox_owner",
+    "ty_pub_fields_pub_non_ffibox_borrow",
+    "ty_pub_fields_priv_non_ffibox_borrow",
+    "ty_priv_non_ffibox_borrow",
+    "ty_pub_fields_pub_std_ty_borrow",
+    "ty_pub_fields_priv_std_ty_borrow",
+    "ty_priv_std_ty_borrow",
     "ffibox_impl_macro",
     "ffibox_impl_manual",
     "ffibox_define_ctype_macro",
@@ -1719,16 +1725,16 @@ fn ffibox_json(tcx: TyCtxt<'_>, krate: rustc_span::Symbol) -> String {
                 let site = counter_site(tcx, span);
                 for (kind, key) in found {
                     let counter = match (kind, public) {
-                        (SigKind::FfiboxOwner, true) => "ffibox_fn_owners_pub",
-                        (SigKind::FfiboxOwner, false) => "ffibox_fn_owners_priv",
-                        (SigKind::FfiboxHandle, true) => "ffibox_fn_handles_pub",
-                        (SigKind::FfiboxHandle, false) => "ffibox_fn_handles_priv",
-                        (SigKind::Owner, true) => "non_ffibox_fn_owner_pub",
-                        (SigKind::Owner, false) => "non_ffibox_fn_owner_priv",
-                        (SigKind::Borrow, true) => "non_ffibox_fn_borrow_pub",
-                        (SigKind::Borrow, false) => "non_ffibox_fn_borrow_priv",
-                        (SigKind::StdBorrow, true) => "std_fn_borrow_pub",
-                        (SigKind::StdBorrow, false) => "std_fn_borrow_priv",
+                        (SigKind::FfiboxOwner, true) => "fn_sig_ffibox_owners_pub",
+                        (SigKind::FfiboxOwner, false) => "fn_sig_ffibox_owners_priv",
+                        (SigKind::FfiboxHandle, true) => "fn_sig_ffibox_handles_pub",
+                        (SigKind::FfiboxHandle, false) => "fn_sig_ffibox_handles_priv",
+                        (SigKind::Owner, true) => "fn_sig_non_ffibox_owner_pub",
+                        (SigKind::Owner, false) => "fn_sig_non_ffibox_owner_priv",
+                        (SigKind::Borrow, true) => "fn_sig_non_ffibox_borrow_pub",
+                        (SigKind::Borrow, false) => "fn_sig_non_ffibox_borrow_priv",
+                        (SigKind::StdBorrow, true) => "fn_sig_std_ty_borrow_pub",
+                        (SigKind::StdBorrow, false) => "fn_sig_std_ty_borrow_priv",
                     };
                     ffibox_bump(&mut m, &mut sites, counter, key, site.clone());
                 }
@@ -1753,18 +1759,24 @@ fn ffibox_json(tcx: TyCtxt<'_>, krate: rustc_span::Symbol) -> String {
                     let ft = tcx.type_of(f.did).instantiate_identity().skip_norm_wip();
                     ffibox_positions(tcx, ft, &handles, &owners, &plain, &mut found);
                     let site = counter_site(tcx, tcx.def_span(f.did));
+                    let field_public = exported(f.did);
                     for (kind, key) in found {
-                        let counter = match (kind, public) {
-                            (SigKind::FfiboxOwner, true) => "ffibox_ty_owners_pub",
-                            (SigKind::FfiboxOwner, false) => "ffibox_ty_owners_priv",
-                            (SigKind::FfiboxHandle, true) => "ffibox_ty_handles_pub",
-                            (SigKind::FfiboxHandle, false) => "ffibox_ty_handles_priv",
-                            (SigKind::Owner, true) => "non_ffibox_ty_owner_pub",
-                            (SigKind::Owner, false) => "non_ffibox_ty_owner_priv",
-                            (SigKind::Borrow, true) => "non_ffibox_ty_borrow_pub",
-                            (SigKind::Borrow, false) => "non_ffibox_ty_borrow_priv",
-                            (SigKind::StdBorrow, true) => "std_ty_borrow_pub",
-                            (SigKind::StdBorrow, false) => "std_ty_borrow_priv",
+                        let counter = match (kind, public, field_public) {
+                            (SigKind::FfiboxOwner, true, true) => "ty_pub_fields_pub_ffibox_owners",
+                            (SigKind::FfiboxOwner, true, false) => "ty_pub_fields_priv_ffibox_owners",
+                            (SigKind::FfiboxOwner, false, _) => "ty_priv_ffibox_owners",
+                            (SigKind::FfiboxHandle, true, true) => "ty_pub_fields_pub_ffibox_handles",
+                            (SigKind::FfiboxHandle, true, false) => "ty_pub_fields_priv_ffibox_handles",
+                            (SigKind::FfiboxHandle, false, _) => "ty_priv_ffibox_handles",
+                            (SigKind::Owner, true, true) => "ty_pub_fields_pub_non_ffibox_owner",
+                            (SigKind::Owner, true, false) => "ty_pub_fields_priv_non_ffibox_owner",
+                            (SigKind::Owner, false, _) => "ty_priv_non_ffibox_owner",
+                            (SigKind::Borrow, true, true) => "ty_pub_fields_pub_non_ffibox_borrow",
+                            (SigKind::Borrow, true, false) => "ty_pub_fields_priv_non_ffibox_borrow",
+                            (SigKind::Borrow, false, _) => "ty_priv_non_ffibox_borrow",
+                            (SigKind::StdBorrow, true, true) => "ty_pub_fields_pub_std_ty_borrow",
+                            (SigKind::StdBorrow, true, false) => "ty_pub_fields_priv_std_ty_borrow",
+                            (SigKind::StdBorrow, false, _) => "ty_priv_std_ty_borrow",
                         };
                         ffibox_bump(&mut m, &mut sites, counter, key, site.clone());
                     }

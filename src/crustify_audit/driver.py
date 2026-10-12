@@ -82,17 +82,22 @@ SITE_COUNTERS = (
 #: a breakdown `{type, handle kind or trait: N}` rather than a number, and each
 #: counts source locations, so all of them take `--sites` under `--ffibox`.
 FFIBOX_COUNTERS = (
-    "ffibox_fn_owners_pub", "ffibox_fn_owners_priv", "ffibox_fn_handles_pub",
-    "ffibox_fn_handles_priv", "non_ffibox_fn_owner_pub",
-    "non_ffibox_fn_owner_priv", "non_ffibox_fn_borrow_pub",
-    "non_ffibox_fn_borrow_priv", "std_fn_borrow_pub", "std_fn_borrow_priv",
-    "ffibox_ty_owners_pub", "ffibox_ty_owners_priv", "ffibox_ty_handles_pub",
-    "ffibox_ty_handles_priv", "non_ffibox_ty_owner_pub",
-    "non_ffibox_ty_owner_priv", "non_ffibox_ty_borrow_pub",
-    "non_ffibox_ty_borrow_priv", "std_ty_borrow_pub", "std_ty_borrow_priv",
-    "ffibox_impl_macro", "ffibox_impl_manual", "ffibox_define_ctype_macro",
-    "ffibox_define_ctype_manual", "ffibox_ccell_not_layout",
-    "ffibox_layout_not_ccell", "drop_impl", "clone_impl",
+    "fn_sig_ffibox_owners_pub", "fn_sig_ffibox_owners_priv",
+    "fn_sig_ffibox_handles_pub", "fn_sig_ffibox_handles_priv",
+    "fn_sig_non_ffibox_owner_pub", "fn_sig_non_ffibox_owner_priv",
+    "fn_sig_non_ffibox_borrow_pub", "fn_sig_non_ffibox_borrow_priv",
+    "fn_sig_std_ty_borrow_pub", "fn_sig_std_ty_borrow_priv",
+    "ty_pub_fields_pub_ffibox_owners", "ty_pub_fields_priv_ffibox_owners",
+    "ty_priv_ffibox_owners", "ty_pub_fields_pub_ffibox_handles",
+    "ty_pub_fields_priv_ffibox_handles", "ty_priv_ffibox_handles",
+    "ty_pub_fields_pub_non_ffibox_owner", "ty_pub_fields_priv_non_ffibox_owner",
+    "ty_priv_non_ffibox_owner", "ty_pub_fields_pub_non_ffibox_borrow",
+    "ty_pub_fields_priv_non_ffibox_borrow", "ty_priv_non_ffibox_borrow",
+    "ty_pub_fields_pub_std_ty_borrow", "ty_pub_fields_priv_std_ty_borrow",
+    "ty_priv_std_ty_borrow", "ffibox_impl_macro", "ffibox_impl_manual",
+    "ffibox_define_ctype_macro", "ffibox_define_ctype_manual",
+    "ffibox_ccell_not_layout", "ffibox_layout_not_ccell", "drop_impl",
+    "clone_impl",
 )
 
 
