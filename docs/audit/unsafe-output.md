@@ -107,15 +107,44 @@ The derived fields:
 
 ## Wrappers and references into C memory
 
-A wrapper is found by its shape alone: a struct that is either a handle, a
-`#[repr(transparent)]` newtype whose one non-zero-sized field is a raw pointer,
-`NonNull` or reference, or a layout newtype, `#[repr(transparent)]` or
-`#[repr(C)]`, that embeds by value a `#[repr(C)]` type from another crate
-(the C type from the `-sys` crate). Same-crate `#[repr(C)]` fields are searched
-through, so C's own nested structs are not mistaken for wrappers.
-`ty_wrapper_newtypes` counts the layout newtypes. How that set relates to
-ffibox's `CCell` is in the `--ffibox` record (`ffibox_layout_not_ccell`,
-`ffibox_ccell_not_layout`).
+### Which types are C's
+
+`#[repr(C)]` does not make a type C's: Rust crates use it for their own
+layouts too. The driver decides by provenance instead, as a closure over the
+types the build hands to C:
+
+- **Seeds.** Every type behind a pointer (`*const T`, `*mut T`, `&T`,
+  `NonNull<T>`, nested) in the signature of a foreign function (an `extern`
+  block), of a function the crate defines with a non-Rust ABI (callbacks, the
+  `#[no_mangle]` gateway), or of a C-ABI function-pointer type anywhere in the
+  crate (vtables, callback slots); a foreign static's own type; the type a
+  pointer cast or `transmute` converts to or from `*c_void` (a payload handed
+  to C, or C memory typed as Rust); and every `#[repr(C)]` type of a **sys
+  crate**.
+- **Closure.** A field a C-reachable type holds by value or points to; either
+  side of a pointer cast (`as`, `.cast()`) or `transmute` whose other side is
+  C-reachable; and a local `#[repr(C)]` / `#[repr(transparent)]` type holding a
+  C-reachable type by value.
+
+Passing a type by value is a copy and seeds nothing. The sys crates are every
+crate in the dependency graph with a Cargo `links` key (`cargo metadata`), plus
+any named with `--sys-crates CRATE[,CRATE...]` -- for bindings without one,
+such as `libc`. The document records the set in `sys_crates`; their emissions
+are bindings and are skipped, whatever their name.
+
+### Wrappers
+
+A wrapper is a struct that is either a **handle**, a `#[repr(transparent)]`
+newtype whose one non-zero-sized field is a raw pointer, `NonNull` or
+reference, or a **layout newtype**, `#[repr(transparent)]` or `#[repr(C)]`,
+holding a C-reachable type by value (local `#[repr(C)]` fields C does not
+reach are searched through). `ty_wrapper_newtypes` counts the layout newtypes.
+A local C type C reaches itself -- a hand-written mirror, a callback payload --
+is not a wrapper of anything, but its references are checked like a layout
+newtype's. How the layout newtypes relate to ffibox's `CCell` is in the
+`--ffibox` record (`ffibox_layout_not_ccell`, `ffibox_ccell_not_layout`).
+`ty_wrapper_ref_handles` counts the handles over a Rust reference to a
+C-reachable type: handle-shaped, yet a reference into C memory. Target 0.
 
 A layout newtype's memory is C's when it is reached through a C pointer, so a
 Rust reference to it asserts `noalias`, `readonly` or validity over memory C
@@ -123,6 +152,8 @@ may write. Access goes through the handles instead.
 
 - `ty_wrapper_refs_sanctioned` and `ty_wrapper_refs_smell` partition
   the `&W` / `&mut W` positions in function signatures (the receiver included).
+  A shared `&W` over storage that holds an `UnsafeCell` is not counted: it
+  asserts neither `readonly` nor `noalias`; `&mut W` still is.
   Sanctioned are the accessors `as_ref` / `as_mut`, which hand out borrowed
   handles over a Rust-owned value, and methods of impls of the standard value
   traits `Clone`, `PartialEq`, `Eq`, `PartialOrd`, `Ord`, `Hash` and `Debug`,
@@ -264,4 +295,13 @@ and statement totals (`code_lines`, `total_stmts`, `unsafe_block_*lines`,
   statics are not positions, `NonNull` is never one, and a trait method
   declared without a default body is not counted.
 - **Pointer origin.** No counter can tell C-owned memory from Rust-owned memory
-  behind a pointer.
+  behind a pointer. C reachability is a property of a TYPE, not of a value: a
+  `Copy` value of a C-reachable type held in Rust memory (`git2::Oid`) is
+  checked like one C owns, and a pointer C only reads during a call counts
+  like one it retains.
+- **C reachability it cannot see.** Memory C reaches through an erased
+  `void *` with no visible cast in the crate, through integer round trips, or
+  through a generic wrapper (`W<T>` over a C type: only declarations are read);
+  and C types of a native library whose binding crate has no `links` key,
+  unless named with `--sys-crates`. Every `#[repr(C)]` type of a sys crate is
+  taken as C's, including ones C only passes by value.

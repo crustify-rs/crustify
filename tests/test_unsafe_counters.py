@@ -88,6 +88,26 @@ class FfiboxTests(unittest.TestCase):
         self.assertIn("ffibox_fn_owners_pub", unsafe_scan.site_counters(["all"], ffibox=True))
 
 
+class SysCrateTests(unittest.TestCase):
+    def test_emissions_of_sys_crates_are_skipped_by_name_or_links(self) -> None:
+        line = lambda crate: json.dumps({"crate": crate, "unsafe_blocks": 1, "sites": {}})
+        counts, _, seen, _ = driver._collect_emissions(
+            "\n".join([line("safe"), line("ffmpeg_sys_the_third"), line("x_sys")]),
+            {"ffmpeg_sys_the_third"})
+        self.assertEqual(seen, 1)
+        self.assertEqual(counts["unsafe_blocks"], 1)
+
+    def test_sys_crates_reads_links_keys(self) -> None:
+        from unittest import mock
+        meta = {"packages": [
+            {"name": "libgit2-sys", "links": "git2",
+             "targets": [{"name": "libgit2_sys", "kind": ["lib"]}]},
+            {"name": "git2", "links": None, "targets": [{"name": "git2", "kind": ["lib"]}]}]}
+        done = mock.Mock(returncode=0, stdout=json.dumps(meta))
+        with mock.patch("crustify_audit.driver.subprocess.run", return_value=done):
+            self.assertEqual(driver.sys_crates(Path("."), ["libc"]), ["libc", "libgit2_sys"])
+
+
 class PartitionTests(unittest.TestCase):
     def test_driver_carries_no_seam_names(self) -> None:
         src = MAIN_RS.read_text()
