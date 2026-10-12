@@ -262,6 +262,9 @@ def summarize(doc: dict) -> str:
             f"   (by hand: {keys('ffibox_impl_manual')})",
             f"  layout types         {n['ffibox_define_ctype_macro']} define_ctype! +"
             f" {n['ffibox_define_ctype_manual']} by hand",
+            f"  CCell vs shape       {n['ffibox_ccell_not_layout']} CCell without layout shape,"
+            f" {n['ffibox_layout_not_ccell']} layout without CCell"
+            f"   ({keys('ffibox_ccell_not_layout', 'ffibox_layout_not_ccell')})",
             f"  own Drop impls       {n['drop_impl']}   ({keys('drop_impl')})",
             f"  own Clone impls      {n['clone_impl']}   ({keys('clone_impl')})",
         ]

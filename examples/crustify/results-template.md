@@ -334,9 +334,6 @@ Deterministic `crustify scan-unsafe <workdir>`; no model.
 | `unsafe_fns_priv` | `<n>` | `<n>` | … |
 | `unsafe_impls` / `unsafe_traits` | `<n>` / `<n>` | `<n>` / `<n>` | … |
 | `ty_wrapper_newtypes` | `<n>` | `<n>` | … |
-| `ty_wrapper_newtypes_declared` | `<n>` | `<n>` | … |
-| `ty_wrapper_declared_nonconformant` | `<n>` | `<n>` | … |
-| `ty_wrapper_newtypes_undeclared` | `<n>` | `<n>` | … |
 | `ty_wrapper_refs_sanctioned` | `<n>` | `<n>` | … |
 | `ty_wrapper_refs_smell` | `<n>` | `<n>` | … |
 | `ty_wrapper_refs_body_smell` | `<n>` | `<n>` | … |

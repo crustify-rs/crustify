@@ -113,9 +113,9 @@ A wrapper is found by its shape alone: a struct that is either a handle, a
 `#[repr(C)]`, that embeds by value a `#[repr(C)]` type from another crate
 (the C type from the `-sys` crate). Same-crate `#[repr(C)]` fields are searched
 through, so C's own nested structs are not mistaken for wrappers.
-`ty_wrapper_newtypes` counts the layout newtypes; `ty_wrapper_newtypes_declared`,
-`_undeclared` and `ty_wrapper_declared_nonconformant` compare that set with the
-types that declare `CCell`.
+`ty_wrapper_newtypes` counts the layout newtypes. How that set relates to
+ffibox's `CCell` is in the `--ffibox` record (`ffibox_layout_not_ccell`,
+`ffibox_ccell_not_layout`).
 
 A layout newtype's memory is C's when it is reached through a C pointer, so a
 Rust reference to it asserts `noalias`, `readonly` or validity over memory C
@@ -217,6 +217,10 @@ implementing `From<A>` and `From<B>` counts once for `From`:
 - `ffibox_define_ctype_macro` / `ffibox_define_ctype_manual`: the crate's
   layout types, its `CCell` implementors, keyed by type, split by whether
   `define_ctype!` emitted the `CCell` impl or it was written by hand.
+- `ffibox_ccell_not_layout` / `ffibox_layout_not_ccell`: the crate's types,
+  keyed by type, that implement `CCell` without being layout newtypes by shape
+  (a wrapper without the layout it claims), and the layout newtypes that do
+  not implement `CCell` (wrappers written outside ffibox).
 - `drop_impl`: crate-defined types with an `impl Drop` that no ffibox macro
   emitted, keyed by type. Each is an owner written instead of using ffibox's
   `CBox` / `CArc` / `CVec`, so it deserves a look.
