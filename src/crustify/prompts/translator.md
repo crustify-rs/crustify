@@ -118,7 +118,7 @@ safety comment specified by our coding conventions.
 
 ### 1. Surface
 
-For `wrap`, include fields and lifecycle primitives published by the public API. For
+For `wrap`, only include fields and lifecycle primitives published by the public API. For
 `port`, include fields touched by targeted symbols and every lifecycle primitive. Identify
 releasers, field disposers, cloners, constructors, casts, and pointer-field semantics
 before selecting a representation.
@@ -314,7 +314,7 @@ Cover every instrument prepared by the campaign as a separate obligation:
   Write these tests like the others. BSan is the slowest instrument and reports false
   positives at the foreign boundary, so run it as the Regressions step prescribes: a
   `wrap` or `port` batch runs only the tests it expects to trigger BSan, and a `review`
-  runs the whole BSan gate.
+  runs the workspace-wide BSan gate only in its sub-campaign's last wave.
 - TSan: races reachable through safe APIs, including every asserted `Send` or `Sync`
   implementation and threaded callback.
 - Miri: Rust-side lifetime, bounds, initialization, validity, alignment, intrinsic, and
@@ -389,9 +389,13 @@ Proceed with the following steps for a `review` objective.
 
 A review batch carries one route's whole share of a translated wave: every type, or every
 symbol and callback, that the wave's batches landed, often from several translation batches.
-You own the wave's BSan gate: run it on the wave tip you start from and on the tree you
-land, as the Regressions step prescribes, and treat each report that survives its triage as a
-UB candidate of the item it touches.
+BSan follows the sub-campaign, not the wave. Your wave is the sub-campaign's last when its
+index is the highest of your subsystem's waves in
+`crustify/campaigns/<campaign-id>/schedule.json`; your working branch's name gives the link
+unit, subsystem and wave. In the last wave you own the sub-campaign's BSan gate, as the
+Regressions step prescribes. It covers everything the sub-campaign landed, so a report on an
+earlier wave's items is yours to triage and fix as well. In every other wave, run BSan only on
+the individual reproducers you emit.
 
 You also own the workspace-wide Miri gate, in every wave, as the Regressions step
 prescribes. Treat each Miri report of undefined behaviour as a UB candidate of the item it
@@ -521,10 +525,13 @@ Validate under every prepared instrument. BSan is the exception, and runs with d
 
 - `wrap` and `port` run BSan only on the tests they wrote and expect to trigger it, by
   exact name; never a whole binary or suite.
-- `review` runs the BSan gate: the whole workspace, one invocation per test binary in
-  parallel, each under a `timeout`, once on the wave tip before any fix and once on the
-  tree you land, after your last rebase. Start each run in the background and wait for it
-  to exit; do not poll or read its output while it runs. Pursue only true positives.
+- `review` in the sub-campaign's last wave runs the BSan gate: the whole workspace, one
+  invocation per test binary in parallel, each under a `timeout`, once on the wave tip
+  before any fix and once on the tree you land, after your last rebase. Start each run in
+  the background and wait for it to exit; do not poll or read its output while it runs.
+  Pursue only true positives.
+- `review` in any other wave runs BSan only on the individual reproducers it emits, each
+  alone; never a test binary, a suite or the workspace.
 - Only a true positive, a report that reproduces through the Rust side as a single test
   or standalone reproducer, becomes a UB finding with a fix.
 
