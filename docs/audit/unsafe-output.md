@@ -121,13 +121,13 @@ A layout newtype's memory is C's when it is reached through a C pointer, so a
 Rust reference to it asserts `noalias`, `readonly` or validity over memory C
 may write. Access goes through the handles instead.
 
-- `ref_to_type_wrapper_sanctioned` and `ref_to_type_wrapper_smell` partition
+- `ty_wrapper_refs_sanctioned` and `ty_wrapper_refs_smell` partition
   the `&W` / `&mut W` positions in function signatures (the receiver included).
   Sanctioned are the accessors `as_ref` / `as_mut`, which hand out borrowed
   handles over a Rust-owned value, and methods of impls of the standard value
   traits `Clone`, `PartialEq`, `Eq`, `PartialOrd`, `Ord`, `Hash` and `Debug`,
   derived or not. The smell should be 0.
-- `ref_to_type_wrapper_body_smell` counts the same hazard inside function
+- `ty_wrapper_refs_body_smell` counts the same hazard inside function
   bodies: an expression that forms a reference to a layout wrapper from a raw
   pointer -- `&*p`, `&mut *p`, `&(*p).f` (casts included), an autoref through
   `*p` for a `&self` method, or a call to a function from another crate that
@@ -190,7 +190,7 @@ raw pointers (`Option<CBox<T>>` is one `CBox`):
   elements implementing ffibox's `CPlainElem` (primitives, plain newtypes,
   `MaybeUninit<T>`, raw pointers, arrays of those) is a plain buffer, the
   expected shape, and is keyed `&[CPlainElem]` / `&mut [CPlainElem]` apart. References
-  to the crate's layout types are `ref_to_type_wrapper_*` instead.
+  to the crate's layout types are `ty_wrapper_refs_*` instead.
 
 Each splits by the fn's visibility, `_pub` and `_priv`. The
 functions read are free functions, inherent methods and the crate's own trait
@@ -237,7 +237,7 @@ non-ADT type, are not counted. The compiler's `TrivialClone` and
 in the source, as `[{"file": .., "count": N, "lines": [..]}]` per file. `count`
 is the number of increments in that file, so a counter's per-file counts sum to
 its value in `counts`; `lines` are the distinct lines they fell on, sorted. A
-signature position (raw/void pointer, `unsafe fn`, `ref_to_type_wrapper_*`) is
+signature position (raw/void pointer, `unsafe fn`, `ty_wrapper_refs_*`) is
 sited at its function's signature line; a block, dereference, projection,
 reference or call at the expression. A site inside macro output
 (`define_ctype!`, `#[derive]`) is the line in the measured crate that invoked
@@ -252,9 +252,9 @@ and statement totals (`code_lines`, `total_stmts`, `unsafe_block_*lines`,
   counted; an autoref on a field (`(*p).field.method()` with `&self`) is not
   counted; and a reference to the C type itself (`&*p` with
   `p: *const ffi::T`, or `NonNull<ffi::T>::as_ref`) is counted by no counter,
-  since `ref_to_type_wrapper_*` only cover wrapper types. See `docs/TODO.md`.
+  since `ty_wrapper_refs_*` only cover wrapper types. See `docs/TODO.md`.
 - **Signatures and fields only for pointer positions.** Raw-pointer, `c_void`
-  and `ref_to_type_wrapper_*` signature counters read the parameter and return
+  and `ty_wrapper_refs_*` signature counters read the parameter and return
   types of functions with bodies; raw-pointer and `c_void` positions also
   include struct and union fields. Raw pointers in locals, casts, closure parameters, enum variants and
   statics are not positions, `NonNull` is never one, and a trait method

@@ -226,10 +226,10 @@ def summarize(doc: dict) -> str:
             f"   (types: {c.get('void_ptr_ty_pub')} pub + {c.get('void_ptr_ty_priv')} private;"
             f" fn signatures: pub {c.get('void_ptr_fn_pub_safe')} safe + {c.get('void_ptr_fn_pub_unsafe')} unsafe,"
             f" private {c.get('void_ptr_fn_priv_safe')} safe + {c.get('void_ptr_fn_priv_unsafe')} unsafe)",
-            f"  ref to layout type   {(c.get('ref_to_type_wrapper_sanctioned') or 0) + (c.get('ref_to_type_wrapper_smell') or 0)}"
-            f"   ({c.get('ref_to_type_wrapper_sanctioned')} sanctioned, smell {c.get('ref_to_type_wrapper_smell')}"
+            f"  ref to layout type   {(c.get('ty_wrapper_refs_sanctioned') or 0) + (c.get('ty_wrapper_refs_smell') or 0)}"
+            f"   ({c.get('ty_wrapper_refs_sanctioned')} sanctioned, smell {c.get('ty_wrapper_refs_smell')}"
             f" — target 0) over {c.get('ty_wrapper_newtypes')} layout newtypes",
-            f"  ref formed in body   {c.get('ref_to_type_wrapper_body_smell')}   (target 0)",
+            f"  ref formed in body   {c.get('ty_wrapper_refs_body_smell')}   (target 0)",
             f"  Deref on wrapper     {c.get('deref_impl_on_wrapper')}   (target 0)",
             f"  ffi calls            {c.get('ffi_calls')}",
         ]
