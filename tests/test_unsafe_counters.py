@@ -102,10 +102,12 @@ class SysCrateTests(unittest.TestCase):
         meta = {"packages": [
             {"name": "libgit2-sys", "links": "git2",
              "targets": [{"name": "libgit2_sys", "kind": ["lib"]}]},
+            {"name": "pcre2-sys", "links": None,
+             "targets": [{"name": "pcre2_sys", "kind": ["lib"]}]},
             {"name": "git2", "links": None, "targets": [{"name": "git2", "kind": ["lib"]}]}]}
         done = mock.Mock(returncode=0, stdout=json.dumps(meta))
         with mock.patch("crustify_audit.driver.subprocess.run", return_value=done):
-            self.assertEqual(driver.sys_crates(Path("."), ["libc"]), ["libc", "libgit2_sys"])
+            self.assertEqual(driver.sys_crates(Path("."), ["libc"]), ["libc", "libgit2_sys", "pcre2_sys"])
 
 
 class PartitionTests(unittest.TestCase):

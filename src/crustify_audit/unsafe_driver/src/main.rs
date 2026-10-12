@@ -863,6 +863,11 @@ fn structural_wrapper(tcx: TyCtxt<'_>, did: DefId) -> Option<(bool, Vec<DefId>)>
     }
     // LAYOUT: C's bytes inline -- a type holding a C-reachable type by value,
     // or a local C type C reaches itself (a hand-written mirror, a payload).
+    // A sys crate's own aggregates (`git_diff_delta { old_file: git_diff_file,
+    // .. }`) are C types, never wrappers of one.
+    if sys_crates().contains(tcx.crate_name(did.krate).as_str()) {
+        return None;
+    }
     if def.repr().c() || def.repr().transparent() {
         let mut cs = Vec::new();
         let mut seen = HashSet::from([did]);
