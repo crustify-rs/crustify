@@ -369,7 +369,7 @@ fn with_wrappers<R>(tcx: TyCtxt<'_>, f: impl FnOnce(&Wrappers) -> R) -> R {
 }
 
 /// The `CCell` / `CLayout`-declared set. Read ONLY by
-/// `ty_wrapper_newtypes_declared` / `_nonconformant` / `_undeclared`, where the
+/// `--ffibox`'s `ffibox_ccell_not_layout` / `ffibox_layout_not_ccell`, where the
 /// declaration is the subject being measured rather than a dependency.
 fn is_declared_wrapper(tcx: TyCtxt<'_>, did: DefId) -> bool {
     DECLARED.with(|c| {
@@ -395,8 +395,8 @@ fn is_declared_wrapper(tcx: TyCtxt<'_>, did: DefId) -> bool {
 /// structural test by construction -- ffibox requires `#[repr(transparent)]`
 /// over `Self::C` -- so the structural set SUBSUMES the declared one,
 /// and a type that declares `CCell` while failing this test is a wrapper
-/// without the layout it claims: reported as `ty_wrapper_declared_nonconformant`,
-/// never silently admitted.
+/// without the layout it claims: reported by `--ffibox` as
+/// `ffibox_ccell_not_layout`, never silently admitted.
 fn peel_transparent<'tcx>(tcx: TyCtxt<'tcx>, t: Ty<'tcx>) -> Ty<'tcx> {
     let mut cur = t;
     for _ in 0..8 {
@@ -657,17 +657,11 @@ struct Counts {
     unsafe_fns_priv: u64,
     unsafe_impls: u64,
     unsafe_traits: u64,
-    // Wrapper inventory. `ty_wrapper_newtypes` is the STRUCTURAL count -- every
-    // `#[repr(transparent)]` newtype over a pointer or a `#[repr(C)]` type --
-    // split into the two roles. The `_declared` pair is the `CCell` baseline
-    // this replaces, kept so the two can be compared: `_nonconformant` is a
-    // type declaring `CCell` that fails the structural test, i.e. a wrapper
-    // without the layout it claims, and `_undeclared` is one the old keying
-    // could not see.
+    // Layout newtypes, found by shape (`structural_wrapper`): a
+    // `#[repr(C)]` / `#[repr(transparent)]` struct storing a C object's bytes
+    // inline. How these relate to ffibox's `CCell` is the `--ffibox` record's
+    // (`ffibox_layout_not_ccell` / `ffibox_ccell_not_layout`).
     ty_wrapper_newtypes: u64,
-    ty_wrapper_newtypes_declared: u64,
-    ty_wrapper_declared_nonconformant: u64,
-    ty_wrapper_newtypes_undeclared: u64,
     // `&W` / `&mut W` (incl. the receiver), W a layout newtype, partitioned:
     // sanctioned (REF_ACCESSORS / STD_VALUE_TRAITS impls) + smell (the rest)
     ty_wrapper_refs_sanctioned: u64,
@@ -1057,6 +1051,11 @@ impl<'a, 'tcx> Visitor<'tcx> for BodyVisitor<'a, 'tcx> {
 ///  - `ffibox_define_ctype_macro` / `ffibox_define_ctype_manual`: the crate's
 ///    layout types (its `CCell` implementors), keyed by type, split by whether
 ///    `define_ctype!` emitted the `CCell` impl or the author wrote it.
+///  - `ffibox_ccell_not_layout` / `ffibox_layout_not_ccell`: the crate's types,
+///    keyed by type, that implement `CCell` without being layout newtypes by
+///    shape (`structural_wrapper`) -- a wrapper without the layout it claims --
+///    and the layout newtypes that do not implement `CCell` -- wrappers written
+///    outside ffibox.
 ///  - `drop_impl`: crate-defined types with an `impl Drop` no ffibox macro
 ///    emitted, keyed by type: owners written instead of ffibox's `CBox` /
 ///    `CArc` / `CVec`.
@@ -1088,6 +1087,8 @@ const FFIBOX_COUNTERS: &[&str] = &[
     "ffibox_impl_manual",
     "ffibox_define_ctype_macro",
     "ffibox_define_ctype_manual",
+    "ffibox_ccell_not_layout",
+    "ffibox_layout_not_ccell",
     "drop_impl",
     "clone_impl",
 ];
@@ -1388,6 +1389,16 @@ fn ffibox_json(tcx: TyCtxt<'_>, krate: rustc_span::Symbol) -> String {
                 if in_generated_file(tcx, tcx.def_span(did)) {
                     continue;
                 }
+                if tcx.def_kind(did) == DefKind::Struct {
+                    let layout = matches!(structural_wrapper(tcx, did), Some((true, _)));
+                    let declared = is_declared_wrapper(tcx, did);
+                    let site = counter_site(tcx, tcx.def_span(did));
+                    if declared && !layout {
+                        ffibox_bump(&mut m, &mut sites, "ffibox_ccell_not_layout", tcx.def_path_str(did), site);
+                    } else if layout && !declared {
+                        ffibox_bump(&mut m, &mut sites, "ffibox_layout_not_ccell", tcx.def_path_str(did), site);
+                    }
+                }
                 let public = exported(did);
                 for f in tcx.adt_def(did).all_fields() {
                     let mut found: Vec<(SigKind, String)> = Vec::new();
@@ -1553,7 +1564,6 @@ impl Callbacks for MetricsCallbacks {
             match tcx.def_kind(did) {
                 DefKind::Struct => {
                     let is_layout = matches!(structural_wrapper(tcx, did), Some((true, _)));
-                    let declared = is_declared_wrapper(tcx, did);
                     // LAYOUT newtypes only. A handle is a wrapper too, but it
                     // is not the set this audit polices: `&handle` covers
                     // Rust-owned pointer storage and is ordinary, while `&W` on
@@ -1562,18 +1572,6 @@ impl Callbacks for MetricsCallbacks {
                     if is_layout {
                         c.ty_wrapper_newtypes += 1;
                         sites.add("ty_wrapper_newtypes", counter_site(tcx, tcx.def_span(did)));
-                        if !declared {
-                            c.ty_wrapper_newtypes_undeclared += 1;
-                            sites.add("ty_wrapper_newtypes_undeclared", counter_site(tcx, tcx.def_span(did)));
-                        }
-                    }
-                    if declared {
-                        c.ty_wrapper_newtypes_declared += 1;
-                        sites.add("ty_wrapper_newtypes_declared", counter_site(tcx, tcx.def_span(did)));
-                        if !is_layout {
-                            c.ty_wrapper_declared_nonconformant += 1;
-                            sites.add("ty_wrapper_declared_nonconformant", counter_site(tcx, tcx.def_span(did)));
-                        }
                     }
                 }
                 DefKind::Impl { of_trait: true } => {
@@ -1795,8 +1793,8 @@ impl Callbacks for MetricsCallbacks {
             }
         }
         println!(
-            "{{\"crate\":\"{}\",\"code_lines\":{},\"total_stmts\":{},\"safe_fns_pub\":{},\"safe_fns_priv\":{},\"unsafe_blocks\":{},\"unsafe_block_stmts\":{},\"unsafe_block_lines\":{},\"unsafe_block_code_lines\":{},\"unsafe_blocks_wrapper_impl\":{},\"unsafe_blocks_ffi_export\":{},\"unsafe_fns\":{},\"unsafe_fns_pub\":{},\"unsafe_fns_priv\":{},\"unsafe_impls\":{},\"unsafe_traits\":{},\"ty_wrapper_newtypes\":{},\"ty_wrapper_newtypes_declared\":{},\"ty_wrapper_declared_nonconformant\":{},\"ty_wrapper_newtypes_undeclared\":{},\"ty_wrapper_refs_sanctioned\":{},\"ty_wrapper_refs_smell\":{},\"ty_wrapper_refs_body_smell\":{},\"raw_ptr_ty_pub\":{},\"raw_ptr_ty_priv\":{},\"raw_ptr_fn_pub_safe\":{},\"raw_ptr_fn_pub_unsafe\":{},\"raw_ptr_fn_priv_safe\":{},\"raw_ptr_fn_priv_unsafe\":{},\"raw_ptr_has_ty_wrapper\":{},\"raw_ptr_derefs\":{},\"raw_ptr_derefs_outside_impl\":{},\"void_ptr_ty_pub\":{},\"void_ptr_ty_priv\":{},\"void_ptr_fn_pub_safe\":{},\"void_ptr_fn_pub_unsafe\":{},\"void_ptr_fn_priv_safe\":{},\"void_ptr_fn_priv_unsafe\":{},\"ty_field_proj_wrapped\":{},\"ty_field_proj_outside_impl\":{},\"ty_field_ref_wrapped\":{},\"deref_impl_on_wrapper\":{},\"ffi_calls\":{},\"sites\":{}}}",
-            krate, c.code_lines, c.total_stmts, c.safe_fns_pub, c.safe_fns_priv, c.unsafe_blocks, c.unsafe_block_stmts, c.unsafe_block_lines, c.unsafe_block_code_lines, c.unsafe_blocks_wrapper_impl, c.unsafe_blocks_ffi_export, c.unsafe_fns, c.unsafe_fns_pub, c.unsafe_fns_priv, c.unsafe_impls, c.unsafe_traits, c.ty_wrapper_newtypes, c.ty_wrapper_newtypes_declared, c.ty_wrapper_declared_nonconformant, c.ty_wrapper_newtypes_undeclared, c.ty_wrapper_refs_sanctioned, c.ty_wrapper_refs_smell, c.ty_wrapper_refs_body_smell, c.raw_ptr_ty_pub, c.raw_ptr_ty_priv, c.raw_ptr_fn_pub_safe, c.raw_ptr_fn_pub_unsafe, c.raw_ptr_fn_priv_safe, c.raw_ptr_fn_priv_unsafe, c.raw_ptr_has_ty_wrapper, c.raw_ptr_derefs, c.raw_ptr_derefs_outside_impl, c.void_ptr_ty_pub, c.void_ptr_ty_priv, c.void_ptr_fn_pub_safe, c.void_ptr_fn_pub_unsafe, c.void_ptr_fn_priv_safe, c.void_ptr_fn_priv_unsafe, c.ty_field_proj_wrapped, c.ty_field_proj_outside_impl, c.ty_field_ref_wrapped, c.deref_impl_on_wrapper, c.ffi_calls,
+            "{{\"crate\":\"{}\",\"code_lines\":{},\"total_stmts\":{},\"safe_fns_pub\":{},\"safe_fns_priv\":{},\"unsafe_blocks\":{},\"unsafe_block_stmts\":{},\"unsafe_block_lines\":{},\"unsafe_block_code_lines\":{},\"unsafe_blocks_wrapper_impl\":{},\"unsafe_blocks_ffi_export\":{},\"unsafe_fns\":{},\"unsafe_fns_pub\":{},\"unsafe_fns_priv\":{},\"unsafe_impls\":{},\"unsafe_traits\":{},\"ty_wrapper_newtypes\":{},\"ty_wrapper_refs_sanctioned\":{},\"ty_wrapper_refs_smell\":{},\"ty_wrapper_refs_body_smell\":{},\"raw_ptr_ty_pub\":{},\"raw_ptr_ty_priv\":{},\"raw_ptr_fn_pub_safe\":{},\"raw_ptr_fn_pub_unsafe\":{},\"raw_ptr_fn_priv_safe\":{},\"raw_ptr_fn_priv_unsafe\":{},\"raw_ptr_has_ty_wrapper\":{},\"raw_ptr_derefs\":{},\"raw_ptr_derefs_outside_impl\":{},\"void_ptr_ty_pub\":{},\"void_ptr_ty_priv\":{},\"void_ptr_fn_pub_safe\":{},\"void_ptr_fn_pub_unsafe\":{},\"void_ptr_fn_priv_safe\":{},\"void_ptr_fn_priv_unsafe\":{},\"ty_field_proj_wrapped\":{},\"ty_field_proj_outside_impl\":{},\"ty_field_ref_wrapped\":{},\"deref_impl_on_wrapper\":{},\"ffi_calls\":{},\"sites\":{}}}",
+            krate, c.code_lines, c.total_stmts, c.safe_fns_pub, c.safe_fns_priv, c.unsafe_blocks, c.unsafe_block_stmts, c.unsafe_block_lines, c.unsafe_block_code_lines, c.unsafe_blocks_wrapper_impl, c.unsafe_blocks_ffi_export, c.unsafe_fns, c.unsafe_fns_pub, c.unsafe_fns_priv, c.unsafe_impls, c.unsafe_traits, c.ty_wrapper_newtypes, c.ty_wrapper_refs_sanctioned, c.ty_wrapper_refs_smell, c.ty_wrapper_refs_body_smell, c.raw_ptr_ty_pub, c.raw_ptr_ty_priv, c.raw_ptr_fn_pub_safe, c.raw_ptr_fn_pub_unsafe, c.raw_ptr_fn_priv_safe, c.raw_ptr_fn_priv_unsafe, c.raw_ptr_has_ty_wrapper, c.raw_ptr_derefs, c.raw_ptr_derefs_outside_impl, c.void_ptr_ty_pub, c.void_ptr_ty_priv, c.void_ptr_fn_pub_safe, c.void_ptr_fn_pub_unsafe, c.void_ptr_fn_priv_safe, c.void_ptr_fn_priv_unsafe, c.ty_field_proj_wrapped, c.ty_field_proj_outside_impl, c.ty_field_ref_wrapped, c.deref_impl_on_wrapper, c.ffi_calls,
             sites.json()
         );
         Compilation::Continue
