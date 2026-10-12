@@ -70,7 +70,7 @@ def add_stages(sub: "argparse._SubParsersAction", *,
              "a `sites` record beside `counts` with one list per counter. Takes "
              "counters that count source locations (e.g. "
              "raw_ptr_fn_pub_safe, raw_ptr_ty_pub_fields_pub, "
-             "unsafe_fns_pub, ty_wrapper_refs_smell), or `all`. Line and statement totals have "
+             "unsafe_fns_pub, ty_wrapper_borrow_smell), or `all`. Line and statement totals have "
              "no sites.")
     m.add_argument(
         "--sys-crates", type=lambda v: [c for c in v.split(",") if c], default=None,

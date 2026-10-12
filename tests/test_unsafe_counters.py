@@ -60,32 +60,32 @@ class FfiboxTests(unittest.TestCase):
     def test_breakdowns_merge_across_crates_and_skip_sys(self) -> None:
         line = lambda crate, n: json.dumps({
             "crate": crate,
-            "ffibox": {"fn_sig_ffibox_owners_pub": {"CBox": n}, "drop_impl": {"crate::Owner": 1}},
-            "sites": {"fn_sig_ffibox_owners_pub": [{"file": "a.rs", "count": n, "lines": [1]}]}})
+            "ffibox": {"fn_sig_ffibox_owner_pub": {"CBox": n}, "drop_impl": {"crate::Owner": 1}},
+            "sites": {"fn_sig_ffibox_owner_pub": [{"file": "a.rs", "count": n, "lines": [1]}]}})
         _, sites, seen, ffibox = driver._collect_emissions(
             "\n".join([line("a", 2), line("b", 3), line("c_sys", 100)]))
         # an ffibox line is not a metrics line
         self.assertEqual(seen, 0)
-        self.assertEqual(ffibox["fn_sig_ffibox_owners_pub"], {"CBox": 5})
+        self.assertEqual(ffibox["fn_sig_ffibox_owner_pub"], {"CBox": 5})
         self.assertEqual(ffibox["drop_impl"], {"crate::Owner": 2})
-        self.assertEqual(ffibox["fn_sig_ffibox_handles_priv"], {})
-        self.assertEqual(sum(r["count"] for r in sites["fn_sig_ffibox_owners_pub"]), 5)
+        self.assertEqual(ffibox["fn_sig_ffibox_handle_priv"], {})
+        self.assertEqual(sum(r["count"] for r in sites["fn_sig_ffibox_owner_pub"]), 5)
 
     def test_record_totals_every_counter(self) -> None:
-        rec = unsafe_scan._ffibox_record({"fn_sig_ffibox_handles_pub": {"Ref": 4, "Mut": 1}})
+        rec = unsafe_scan._ffibox_record({"fn_sig_ffibox_handle_pub": {"Ref": 4, "Mut": 1}})
         self.assertEqual(set(rec["counts"]), set(driver.FFIBOX_COUNTERS))
-        self.assertEqual(rec["counts"]["fn_sig_ffibox_handles_pub"], 5)
-        self.assertEqual(rec["counts"]["fn_sig_ffibox_owners_pub"], 0)
+        self.assertEqual(rec["counts"]["fn_sig_ffibox_handle_pub"], 5)
+        self.assertEqual(rec["counts"]["fn_sig_ffibox_owner_pub"], 0)
         self.assertIsNone(unsafe_scan._ffibox_record(None))
 
     def test_ffibox_sites_need_the_flag(self) -> None:
         with self.assertRaises(SystemExit) as e:
-            unsafe_scan.site_counters(["fn_sig_ffibox_owners_pub"])
+            unsafe_scan.site_counters(["fn_sig_ffibox_owner_pub"])
         self.assertIn("--ffibox", str(e.exception))
-        self.assertEqual(unsafe_scan.site_counters(["fn_sig_ffibox_owners_pub"], ffibox=True),
-                         ["fn_sig_ffibox_owners_pub"])
-        self.assertNotIn("fn_sig_ffibox_owners_pub", unsafe_scan.site_counters(["all"]))
-        self.assertIn("fn_sig_ffibox_owners_pub", unsafe_scan.site_counters(["all"], ffibox=True))
+        self.assertEqual(unsafe_scan.site_counters(["fn_sig_ffibox_owner_pub"], ffibox=True),
+                         ["fn_sig_ffibox_owner_pub"])
+        self.assertNotIn("fn_sig_ffibox_owner_pub", unsafe_scan.site_counters(["all"]))
+        self.assertIn("fn_sig_ffibox_owner_pub", unsafe_scan.site_counters(["all"], ffibox=True))
 
 
 class SysCrateTests(unittest.TestCase):
@@ -115,7 +115,7 @@ class PartitionTests(unittest.TestCase):
         src = MAIN_RS.read_text()
         self.assertNotIn("UM_SEAM_FNS", src)
         self.assertFalse([k for k in driver._COUNTS if k.endswith(("_seam", "_smell"))
-                          and not k.startswith("ty_wrapper_refs")])
+                          and not k.startswith("ty_wrapper_borrow")])
 
     def test_raw_and_void_partitions_are_emitted(self) -> None:
         keys, _ = _emission()
@@ -133,8 +133,9 @@ class PartitionTests(unittest.TestCase):
     def test_ffibox_fn_and_ty_families_mirror(self) -> None:
         kinds = [k[len("fn_sig_"):-len("_pub")] for k in driver.FFIBOX_COUNTERS
                  if k.startswith("fn_sig_") and k.endswith("_pub")]
-        self.assertEqual(kinds, ["ffibox_owners", "ffibox_handles", "non_ffibox_owner",
-                                 "non_ffibox_borrow", "std_ty_borrow"])
+        self.assertEqual(kinds, ["ffibox_owner", "ffibox_handle", "non_ffibox_owner",
+                                 "non_ffibox_wrapper_borrow", "non_ffibox_non_wrapper_borrow",
+                                 "std_ty_borrow"])
         for k in kinds:
             for name in (f"fn_sig_{k}_priv", f"ty_pub_fields_pub_{k}",
                          f"ty_pub_fields_priv_{k}", f"ty_priv_{k}"):

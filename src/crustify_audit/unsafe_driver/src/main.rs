@@ -1003,16 +1003,16 @@ struct Counts {
     ty_wrapper_newtypes: u64,
     // `#[repr(transparent)]` newtypes over a Rust reference to a C-reachable
     // type: handle-shaped, yet a reference into C memory. Target 0.
-    ty_wrapper_ref_handles: u64,
+    ty_wrapper_borrow_handles: u64,
     // `&W` / `&mut W` (incl. the receiver), W a layout newtype, partitioned:
     // sanctioned (REF_ACCESSORS / STD_VALUE_TRAITS impls) + smell (the rest)
-    ty_wrapper_refs_sanctioned: u64,
-    ty_wrapper_refs_smell: u64,
+    ty_wrapper_borrow_sanctioned: u64,
+    ty_wrapper_borrow_smell: u64,
     // in function BODIES: a `&W` / `&mut W` (or `&[W]`, `Option<&W>`, ..) formed
     // from a raw pointer -- `&*p`, `&(*p).f`, an autoref through `*p`, or a
     // non-local call such as `p.as_ref()` / `NonNull::as_ref` /
     // `slice::from_raw_parts`. Never sanctioned: target 0.
-    ty_wrapper_refs_body_smell: u64,
+    ty_wrapper_borrow_body_smell: u64,
     // Raw-pointer positions in the items the crate defines, nested ones
     // included, each in exactly one counter by where it sits:
     //   raw_ptr_ty_pub_fields_{pub,priv}, raw_ptr_ty_priv  (fields of types)
@@ -1053,7 +1053,7 @@ struct Counts {
     ty_field_proj_outside_impl: u64,
     // `&(*p).field` / `&mut (*p).field` where `p: *C` and `C` has a wrapper --
     // a reference one level down into memory C may write. Should be 0.
-    ty_field_ref_wrapped: u64,
+    ty_field_borrow_wrapped: u64,
     // `impl Deref` / `impl DerefMut` (core) whose Self is a wrapper, layout or
     // handle. Never sanctioned: target 0.
     deref_impl_on_wrapper: u64,
@@ -1183,9 +1183,9 @@ impl<'a, 'tcx> BodyVisitor<'a, 'tcx> {
     }
 
     fn body_ref(&mut self, e: &'tcx hir::Expr<'tcx>) {
-        self.c.ty_wrapper_refs_body_smell += 1;
+        self.c.ty_wrapper_borrow_body_smell += 1;
         self.sites
-            .add("ty_wrapper_refs_body_smell", counter_site(self.tcx, e.span));
+            .add("ty_wrapper_borrow_body_smell", counter_site(self.tcx, e.span));
     }
 
     /// Count a reference to a layout newtype formed from a raw pointer at `e`.
@@ -1347,8 +1347,8 @@ impl<'a, 'tcx> Visitor<'tcx> for BodyVisitor<'a, 'tcx> {
                     if let hir::ExprKind::Unary(hir::UnOp::Deref, inner) = base.kind {
                         if let ty::TyKind::RawPtr(pointee, _) = self.typeck.expr_ty(inner).kind() {
                             if pointee_has_wrapper(self.tcx, *pointee, self.wrapped_c) {
-                                self.c.ty_field_ref_wrapped += 1;
-                                self.sites.add("ty_field_ref_wrapped", counter_site(self.tcx, e.span));
+                                self.c.ty_field_borrow_wrapped += 1;
+                                self.sites.add("ty_field_borrow_wrapped", counter_site(self.tcx, e.span));
                             }
                         }
                     }
@@ -1367,10 +1367,10 @@ impl<'a, 'tcx> Visitor<'tcx> for BodyVisitor<'a, 'tcx> {
 /// `--sites`. `_pub` / `_priv` is rustc's effective visibility, as elsewhere:
 /// of the fn for a signature position, of the implementing type for an impl.
 ///
-///  - `fn_sig_ffibox_owners_*`: an ffibox owner (`CBox`, `CArc`, `CVec`,
+///  - `fn_sig_ffibox_owner_*`: an ffibox owner (`CBox`, `CArc`, `CVec`,
 ///    `CStrBox`, `CVal`) in a parameter or return type, nested ones included,
 ///    keyed by type name, `_pub` / `_priv` by the fn's visibility.
-///  - `fn_sig_ffibox_handles_*`: likewise for ffibox-based borrowed handles: the
+///  - `fn_sig_ffibox_handle_*`: likewise for ffibox-based borrowed handles: the
 ///    crate's own, the types its `CCell` / `CGuarded` impls name as `Ref`,
 ///    `Mut` and `Locked` (keyed by that kind), and ffibox's borrowed views
 ///    (`CSlice`, `CSliceMut`, `CBorrowedPtr`, `CGuardedRef`, `CGuard`, keyed by
@@ -1379,17 +1379,21 @@ impl<'a, 'tcx> Visitor<'tcx> for BodyVisitor<'a, 'tcx> {
 ///  - `fn_sig_non_ffibox_owner_*`: likewise for the crate's own owners, the types
 ///    with an `impl Drop` no ffibox macro emitted (`drop_impl`), keyed by type:
 ///    ownership the API hands out outside ffibox's `CBox` / `CArc` / `CVec`.
-///  - `fn_sig_non_ffibox_borrow_*`: likewise for the crate's other borrowed
-///    types, those with a lifetime parameter that are neither its `CCell` /
-///    `CGuarded` handles nor its own owners (hand-written handles, iterators,
-///    views), keyed by type; a method's receiver of such a type counts too.
+///  - `fn_sig_non_ffibox_wrapper_borrow_*` / `fn_sig_non_ffibox_non_wrapper_borrow_*`:
+///    likewise for the crate's other borrowed types, those with a lifetime
+///    parameter that are neither its `CCell` / `CGuarded` handles nor its own
+///    owners, split by whether the type borrows a C object (`borrows_c`: a
+///    field points at a C-reachable type or a layout wrapper) or not
+///    (iterators and views over Rust data),
+///    keyed by type; a method's receiver of such a type counts too.
 ///  - `fn_sig_std_ty_borrow_*`: a reference to a standard borrowed view, keyed
 ///    `&CStr`, `&str`, `&mut str`, `&[T]` or `&mut [T]`; a slice of
 ///    `CPlainElem` elements, a plain buffer, is keyed `&[CPlainElem]` /
 ///    `&mut [CPlainElem]` apart, since it is the expected shape.
 ///  - `ty_pub_fields_pub_<kind>`, `ty_pub_fields_priv_<kind>`, `ty_priv_<kind>`:
-///    the same five kinds (`ffibox_owners`, `ffibox_handles`,
-///    `non_ffibox_owner`, `non_ffibox_borrow`, `std_ty_borrow`) in the fields
+///    the same six kinds (`ffibox_owner`, `ffibox_handle`,
+///    `non_ffibox_owner`, `non_ffibox_wrapper_borrow`,
+///    `non_ffibox_non_wrapper_borrow`, `std_ty_borrow`) in the fields
 ///    of the structs, unions and enums the crate defines, split as for
 ///    `raw_ptr_ty_*`: by the type's effective visibility and, in a public type,
 ///    by the field's own. What the crate's types hold, where `fn_sig_*` is what
@@ -1412,28 +1416,33 @@ impl<'a, 'tcx> Visitor<'tcx> for BodyVisitor<'a, 'tcx> {
 ///    (neither derived nor emitted by an ffibox macro), keyed by type: copies
 ///    written instead of ffibox's clone policies.
 const FFIBOX_COUNTERS: &[&str] = &[
-    "fn_sig_ffibox_owners_pub",
-    "fn_sig_ffibox_owners_priv",
-    "fn_sig_ffibox_handles_pub",
-    "fn_sig_ffibox_handles_priv",
+    "fn_sig_ffibox_owner_pub",
+    "fn_sig_ffibox_owner_priv",
+    "fn_sig_ffibox_handle_pub",
+    "fn_sig_ffibox_handle_priv",
     "fn_sig_non_ffibox_owner_pub",
     "fn_sig_non_ffibox_owner_priv",
-    "fn_sig_non_ffibox_borrow_pub",
-    "fn_sig_non_ffibox_borrow_priv",
+    "fn_sig_non_ffibox_wrapper_borrow_pub",
+    "fn_sig_non_ffibox_wrapper_borrow_priv",
+    "fn_sig_non_ffibox_non_wrapper_borrow_pub",
+    "fn_sig_non_ffibox_non_wrapper_borrow_priv",
     "fn_sig_std_ty_borrow_pub",
     "fn_sig_std_ty_borrow_priv",
-    "ty_pub_fields_pub_ffibox_owners",
-    "ty_pub_fields_priv_ffibox_owners",
-    "ty_priv_ffibox_owners",
-    "ty_pub_fields_pub_ffibox_handles",
-    "ty_pub_fields_priv_ffibox_handles",
-    "ty_priv_ffibox_handles",
+    "ty_pub_fields_pub_ffibox_owner",
+    "ty_pub_fields_priv_ffibox_owner",
+    "ty_priv_ffibox_owner",
+    "ty_pub_fields_pub_ffibox_handle",
+    "ty_pub_fields_priv_ffibox_handle",
+    "ty_priv_ffibox_handle",
     "ty_pub_fields_pub_non_ffibox_owner",
     "ty_pub_fields_priv_non_ffibox_owner",
     "ty_priv_non_ffibox_owner",
-    "ty_pub_fields_pub_non_ffibox_borrow",
-    "ty_pub_fields_priv_non_ffibox_borrow",
-    "ty_priv_non_ffibox_borrow",
+    "ty_pub_fields_pub_non_ffibox_wrapper_borrow",
+    "ty_pub_fields_priv_non_ffibox_wrapper_borrow",
+    "ty_priv_non_ffibox_wrapper_borrow",
+    "ty_pub_fields_pub_non_ffibox_non_wrapper_borrow",
+    "ty_pub_fields_priv_non_ffibox_non_wrapper_borrow",
+    "ty_priv_non_ffibox_non_wrapper_borrow",
     "ty_pub_fields_pub_std_ty_borrow",
     "ty_pub_fields_priv_std_ty_borrow",
     "ty_priv_std_ty_borrow",
@@ -1512,7 +1521,8 @@ enum SigKind {
     FfiboxOwner,
     FfiboxHandle,
     Owner,
-    Borrow,
+    WrapperBorrow,
+    NonWrapperBorrow,
     StdBorrow,
 }
 
@@ -1570,6 +1580,18 @@ impl<'tcx> PlainElems<'tcx> {
     }
 }
 
+/// True when a field of `did` points at (raw pointer, `NonNull`, reference, or
+/// a transparent handle over one, such as `CBorrowedPtr`) a C-reachable type
+/// or a layout wrapper: `did` borrows a C object.
+fn borrows_c(tcx: TyCtxt<'_>, did: DefId) -> bool {
+    tcx.adt_def(did).all_fields().any(|f| {
+        let ft = peel_transparent(tcx, tcx.type_of(f.did).instantiate_identity().skip_norm_wip());
+        let mut ps = Vec::new();
+        c_pointee_adts(tcx, ft, false, &mut ps);
+        ps.into_iter().any(|p| is_c_visible(tcx, p) || is_type_wrapper(tcx, p))
+    })
+}
+
 /// True when `did` declares a lifetime parameter of its own.
 fn has_lifetime_param(tcx: TyCtxt<'_>, did: DefId) -> bool {
     tcx.generics_of(did)
@@ -1602,7 +1624,15 @@ fn ffibox_positions<'tcx>(
             } else if owners.contains(&did) {
                 out.push((SigKind::Owner, tcx.def_path_str(did)));
             } else if did.is_local() && has_lifetime_param(tcx, did) {
-                out.push((SigKind::Borrow, tcx.def_path_str(did)));
+                // A borrow of a C object (it points at a C-reachable type or a
+                // layout wrapper, by the provenance rules) apart from the crate's
+                // other borrowed types (iterators and views over Rust data).
+                let kind = if borrows_c(tcx, did) {
+                    SigKind::WrapperBorrow
+                } else {
+                    SigKind::NonWrapperBorrow
+                };
+                out.push((kind, tcx.def_path_str(did)));
             }
             for a in args.types() {
                 ffibox_positions(tcx, a, handles, owners, plain, out);
@@ -1711,7 +1741,7 @@ fn ffibox_json(tcx: TyCtxt<'_>, krate: rustc_span::Symbol) -> String {
                 if receiver {
                     let mut recv = Vec::new();
                     ffibox_positions(tcx, sig.inputs()[0], &handles, &owners, &plain, &mut recv);
-                    found.extend(recv.into_iter().filter(|(k, _)| matches!(k, SigKind::FfiboxHandle | SigKind::Borrow)));
+                    found.extend(recv.into_iter().filter(|(k, _)| matches!(k, SigKind::FfiboxHandle | SigKind::WrapperBorrow | SigKind::NonWrapperBorrow)));
                 }
                 for t in sig
                     .inputs()
@@ -1725,14 +1755,16 @@ fn ffibox_json(tcx: TyCtxt<'_>, krate: rustc_span::Symbol) -> String {
                 let site = counter_site(tcx, span);
                 for (kind, key) in found {
                     let counter = match (kind, public) {
-                        (SigKind::FfiboxOwner, true) => "fn_sig_ffibox_owners_pub",
-                        (SigKind::FfiboxOwner, false) => "fn_sig_ffibox_owners_priv",
-                        (SigKind::FfiboxHandle, true) => "fn_sig_ffibox_handles_pub",
-                        (SigKind::FfiboxHandle, false) => "fn_sig_ffibox_handles_priv",
+                        (SigKind::FfiboxOwner, true) => "fn_sig_ffibox_owner_pub",
+                        (SigKind::FfiboxOwner, false) => "fn_sig_ffibox_owner_priv",
+                        (SigKind::FfiboxHandle, true) => "fn_sig_ffibox_handle_pub",
+                        (SigKind::FfiboxHandle, false) => "fn_sig_ffibox_handle_priv",
                         (SigKind::Owner, true) => "fn_sig_non_ffibox_owner_pub",
                         (SigKind::Owner, false) => "fn_sig_non_ffibox_owner_priv",
-                        (SigKind::Borrow, true) => "fn_sig_non_ffibox_borrow_pub",
-                        (SigKind::Borrow, false) => "fn_sig_non_ffibox_borrow_priv",
+                        (SigKind::WrapperBorrow, true) => "fn_sig_non_ffibox_wrapper_borrow_pub",
+                        (SigKind::WrapperBorrow, false) => "fn_sig_non_ffibox_wrapper_borrow_priv",
+                        (SigKind::NonWrapperBorrow, true) => "fn_sig_non_ffibox_non_wrapper_borrow_pub",
+                        (SigKind::NonWrapperBorrow, false) => "fn_sig_non_ffibox_non_wrapper_borrow_priv",
                         (SigKind::StdBorrow, true) => "fn_sig_std_ty_borrow_pub",
                         (SigKind::StdBorrow, false) => "fn_sig_std_ty_borrow_priv",
                     };
@@ -1762,18 +1794,21 @@ fn ffibox_json(tcx: TyCtxt<'_>, krate: rustc_span::Symbol) -> String {
                     let field_public = exported(f.did);
                     for (kind, key) in found {
                         let counter = match (kind, public, field_public) {
-                            (SigKind::FfiboxOwner, true, true) => "ty_pub_fields_pub_ffibox_owners",
-                            (SigKind::FfiboxOwner, true, false) => "ty_pub_fields_priv_ffibox_owners",
-                            (SigKind::FfiboxOwner, false, _) => "ty_priv_ffibox_owners",
-                            (SigKind::FfiboxHandle, true, true) => "ty_pub_fields_pub_ffibox_handles",
-                            (SigKind::FfiboxHandle, true, false) => "ty_pub_fields_priv_ffibox_handles",
-                            (SigKind::FfiboxHandle, false, _) => "ty_priv_ffibox_handles",
+                            (SigKind::FfiboxOwner, true, true) => "ty_pub_fields_pub_ffibox_owner",
+                            (SigKind::FfiboxOwner, true, false) => "ty_pub_fields_priv_ffibox_owner",
+                            (SigKind::FfiboxOwner, false, _) => "ty_priv_ffibox_owner",
+                            (SigKind::FfiboxHandle, true, true) => "ty_pub_fields_pub_ffibox_handle",
+                            (SigKind::FfiboxHandle, true, false) => "ty_pub_fields_priv_ffibox_handle",
+                            (SigKind::FfiboxHandle, false, _) => "ty_priv_ffibox_handle",
                             (SigKind::Owner, true, true) => "ty_pub_fields_pub_non_ffibox_owner",
                             (SigKind::Owner, true, false) => "ty_pub_fields_priv_non_ffibox_owner",
                             (SigKind::Owner, false, _) => "ty_priv_non_ffibox_owner",
-                            (SigKind::Borrow, true, true) => "ty_pub_fields_pub_non_ffibox_borrow",
-                            (SigKind::Borrow, true, false) => "ty_pub_fields_priv_non_ffibox_borrow",
-                            (SigKind::Borrow, false, _) => "ty_priv_non_ffibox_borrow",
+                            (SigKind::WrapperBorrow, true, true) => "ty_pub_fields_pub_non_ffibox_wrapper_borrow",
+                            (SigKind::WrapperBorrow, true, false) => "ty_pub_fields_priv_non_ffibox_wrapper_borrow",
+                            (SigKind::WrapperBorrow, false, _) => "ty_priv_non_ffibox_wrapper_borrow",
+                            (SigKind::NonWrapperBorrow, true, true) => "ty_pub_fields_pub_non_ffibox_non_wrapper_borrow",
+                            (SigKind::NonWrapperBorrow, true, false) => "ty_pub_fields_priv_non_ffibox_non_wrapper_borrow",
+                            (SigKind::NonWrapperBorrow, false, _) => "ty_priv_non_ffibox_non_wrapper_borrow",
                             (SigKind::StdBorrow, true, true) => "ty_pub_fields_pub_std_ty_borrow",
                             (SigKind::StdBorrow, true, false) => "ty_pub_fields_priv_std_ty_borrow",
                             (SigKind::StdBorrow, false, _) => "ty_priv_std_ty_borrow",
@@ -1929,15 +1964,15 @@ impl Callbacks for MetricsCallbacks {
                     // handle is a wrapper too, but it is not the set this audit
                     // polices: `&handle` covers Rust-owned pointer storage and
                     // is ordinary, while `&W` on a layout newtype is the hazard
-                    // `ty_wrapper_refs_*` exists to keep at 0.
+                    // `ty_wrapper_borrow_*` exists to keep at 0.
                     let is_layout = matches!(structural_wrapper(tcx, did), Some((true, cs)) if !cs.is_empty());
                     if is_layout {
                         c.ty_wrapper_newtypes += 1;
                         sites.add("ty_wrapper_newtypes", counter_site(tcx, tcx.def_span(did)));
                     }
                     if is_ref_handle_to_c(tcx, did) {
-                        c.ty_wrapper_ref_handles += 1;
-                        sites.add("ty_wrapper_ref_handles", counter_site(tcx, tcx.def_span(did)));
+                        c.ty_wrapper_borrow_handles += 1;
+                        sites.add("ty_wrapper_borrow_handles", counter_site(tcx, tcx.def_span(did)));
                     }
                 }
                 DefKind::Impl { of_trait: true } => {
@@ -2028,11 +2063,11 @@ impl Callbacks for MetricsCallbacks {
                     if is_ref_to_type_wrapper(tcx, t) {
                         let site = counter_site(tcx, tcx.def_span(did));
                         if ref_to_wrapper_sanctioned(tcx, did) {
-                            c.ty_wrapper_refs_sanctioned += 1;
-                            sites.add("ty_wrapper_refs_sanctioned", site);
+                            c.ty_wrapper_borrow_sanctioned += 1;
+                            sites.add("ty_wrapper_borrow_sanctioned", site);
                         } else {
-                            c.ty_wrapper_refs_smell += 1;
-                            sites.add("ty_wrapper_refs_smell", site);
+                            c.ty_wrapper_borrow_smell += 1;
+                            sites.add("ty_wrapper_borrow_smell", site);
                         }
                     }
                 }
@@ -2159,8 +2194,8 @@ impl Callbacks for MetricsCallbacks {
             }
         }
         println!(
-            "{{\"crate\":\"{}\",\"code_lines\":{},\"total_stmts\":{},\"safe_fns_pub\":{},\"safe_fns_priv\":{},\"unsafe_blocks\":{},\"unsafe_block_stmts\":{},\"unsafe_block_lines\":{},\"unsafe_block_code_lines\":{},\"unsafe_blocks_wrapper_impl\":{},\"unsafe_blocks_ffi_export\":{},\"unsafe_fns\":{},\"unsafe_fns_pub\":{},\"unsafe_fns_priv\":{},\"unsafe_impls\":{},\"unsafe_traits\":{},\"ty_wrapper_newtypes\":{},\"ty_wrapper_ref_handles\":{},\"ty_wrapper_refs_sanctioned\":{},\"ty_wrapper_refs_smell\":{},\"ty_wrapper_refs_body_smell\":{},\"raw_ptr_ty_pub_fields_pub\":{},\"raw_ptr_ty_pub_fields_priv\":{},\"raw_ptr_ty_priv\":{},\"raw_ptr_fn_pub_safe\":{},\"raw_ptr_fn_pub_unsafe\":{},\"raw_ptr_fn_priv_safe\":{},\"raw_ptr_fn_priv_unsafe\":{},\"raw_ptr_has_ty_wrapper\":{},\"raw_ptr_derefs\":{},\"raw_ptr_derefs_outside_impl\":{},\"void_ptr_ty_pub_fields_pub\":{},\"void_ptr_ty_pub_fields_priv\":{},\"void_ptr_ty_priv\":{},\"void_ptr_fn_pub_safe\":{},\"void_ptr_fn_pub_unsafe\":{},\"void_ptr_fn_priv_safe\":{},\"void_ptr_fn_priv_unsafe\":{},\"ty_field_proj_wrapped\":{},\"ty_field_proj_outside_impl\":{},\"ty_field_ref_wrapped\":{},\"deref_impl_on_wrapper\":{},\"ffi_calls\":{},\"sites\":{}}}",
-            krate, c.code_lines, c.total_stmts, c.safe_fns_pub, c.safe_fns_priv, c.unsafe_blocks, c.unsafe_block_stmts, c.unsafe_block_lines, c.unsafe_block_code_lines, c.unsafe_blocks_wrapper_impl, c.unsafe_blocks_ffi_export, c.unsafe_fns, c.unsafe_fns_pub, c.unsafe_fns_priv, c.unsafe_impls, c.unsafe_traits, c.ty_wrapper_newtypes, c.ty_wrapper_ref_handles, c.ty_wrapper_refs_sanctioned, c.ty_wrapper_refs_smell, c.ty_wrapper_refs_body_smell, c.raw_ptr_ty_pub_fields_pub, c.raw_ptr_ty_pub_fields_priv, c.raw_ptr_ty_priv, c.raw_ptr_fn_pub_safe, c.raw_ptr_fn_pub_unsafe, c.raw_ptr_fn_priv_safe, c.raw_ptr_fn_priv_unsafe, c.raw_ptr_has_ty_wrapper, c.raw_ptr_derefs, c.raw_ptr_derefs_outside_impl, c.void_ptr_ty_pub_fields_pub, c.void_ptr_ty_pub_fields_priv, c.void_ptr_ty_priv, c.void_ptr_fn_pub_safe, c.void_ptr_fn_pub_unsafe, c.void_ptr_fn_priv_safe, c.void_ptr_fn_priv_unsafe, c.ty_field_proj_wrapped, c.ty_field_proj_outside_impl, c.ty_field_ref_wrapped, c.deref_impl_on_wrapper, c.ffi_calls,
+            "{{\"crate\":\"{}\",\"code_lines\":{},\"total_stmts\":{},\"safe_fns_pub\":{},\"safe_fns_priv\":{},\"unsafe_blocks\":{},\"unsafe_block_stmts\":{},\"unsafe_block_lines\":{},\"unsafe_block_code_lines\":{},\"unsafe_blocks_wrapper_impl\":{},\"unsafe_blocks_ffi_export\":{},\"unsafe_fns\":{},\"unsafe_fns_pub\":{},\"unsafe_fns_priv\":{},\"unsafe_impls\":{},\"unsafe_traits\":{},\"ty_wrapper_newtypes\":{},\"ty_wrapper_borrow_handles\":{},\"ty_wrapper_borrow_sanctioned\":{},\"ty_wrapper_borrow_smell\":{},\"ty_wrapper_borrow_body_smell\":{},\"raw_ptr_ty_pub_fields_pub\":{},\"raw_ptr_ty_pub_fields_priv\":{},\"raw_ptr_ty_priv\":{},\"raw_ptr_fn_pub_safe\":{},\"raw_ptr_fn_pub_unsafe\":{},\"raw_ptr_fn_priv_safe\":{},\"raw_ptr_fn_priv_unsafe\":{},\"raw_ptr_has_ty_wrapper\":{},\"raw_ptr_derefs\":{},\"raw_ptr_derefs_outside_impl\":{},\"void_ptr_ty_pub_fields_pub\":{},\"void_ptr_ty_pub_fields_priv\":{},\"void_ptr_ty_priv\":{},\"void_ptr_fn_pub_safe\":{},\"void_ptr_fn_pub_unsafe\":{},\"void_ptr_fn_priv_safe\":{},\"void_ptr_fn_priv_unsafe\":{},\"ty_field_proj_wrapped\":{},\"ty_field_proj_outside_impl\":{},\"ty_field_borrow_wrapped\":{},\"deref_impl_on_wrapper\":{},\"ffi_calls\":{},\"sites\":{}}}",
+            krate, c.code_lines, c.total_stmts, c.safe_fns_pub, c.safe_fns_priv, c.unsafe_blocks, c.unsafe_block_stmts, c.unsafe_block_lines, c.unsafe_block_code_lines, c.unsafe_blocks_wrapper_impl, c.unsafe_blocks_ffi_export, c.unsafe_fns, c.unsafe_fns_pub, c.unsafe_fns_priv, c.unsafe_impls, c.unsafe_traits, c.ty_wrapper_newtypes, c.ty_wrapper_borrow_handles, c.ty_wrapper_borrow_sanctioned, c.ty_wrapper_borrow_smell, c.ty_wrapper_borrow_body_smell, c.raw_ptr_ty_pub_fields_pub, c.raw_ptr_ty_pub_fields_priv, c.raw_ptr_ty_priv, c.raw_ptr_fn_pub_safe, c.raw_ptr_fn_pub_unsafe, c.raw_ptr_fn_priv_safe, c.raw_ptr_fn_priv_unsafe, c.raw_ptr_has_ty_wrapper, c.raw_ptr_derefs, c.raw_ptr_derefs_outside_impl, c.void_ptr_ty_pub_fields_pub, c.void_ptr_ty_pub_fields_priv, c.void_ptr_ty_priv, c.void_ptr_fn_pub_safe, c.void_ptr_fn_pub_unsafe, c.void_ptr_fn_priv_safe, c.void_ptr_fn_priv_unsafe, c.ty_field_proj_wrapped, c.ty_field_proj_outside_impl, c.ty_field_borrow_wrapped, c.deref_impl_on_wrapper, c.ffi_calls,
             sites.json()
         );
         Compilation::Continue

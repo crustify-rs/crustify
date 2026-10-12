@@ -151,14 +151,14 @@ A local C type C reaches itself -- a hand-written mirror, a callback payload --
 is not a wrapper of anything, but its references are checked like a layout
 newtype's. How the layout newtypes relate to ffibox's `CCell` is in the
 `--ffibox` record (`ffibox_layout_not_ccell`, `ffibox_ccell_not_layout`).
-`ty_wrapper_ref_handles` counts the handles over a Rust reference to a
+`ty_wrapper_borrow_handles` counts the handles over a Rust reference to a
 C-reachable type: handle-shaped, yet a reference into C memory. Target 0.
 
 A layout newtype's memory is C's when it is reached through a C pointer, so a
 Rust reference to it asserts `noalias`, `readonly` or validity over memory C
 may write. Access goes through the handles instead.
 
-- `ty_wrapper_refs_sanctioned` and `ty_wrapper_refs_smell` partition
+- `ty_wrapper_borrow_sanctioned` and `ty_wrapper_borrow_smell` partition
   the `&W` / `&mut W` positions in function signatures (the receiver included).
   A shared `&W` over storage that holds an `UnsafeCell` is not counted: it
   asserts neither `readonly` nor `noalias`; `&mut W` still is.
@@ -166,7 +166,7 @@ may write. Access goes through the handles instead.
   handles over a Rust-owned value, and methods of impls of the standard value
   traits `Clone`, `PartialEq`, `Eq`, `PartialOrd`, `Ord`, `Hash` and `Debug`,
   derived or not. The smell should be 0.
-- `ty_wrapper_refs_body_smell` counts the same hazard inside function
+- `ty_wrapper_borrow_body_smell` counts the same hazard inside function
   bodies: an expression that forms a reference to a layout wrapper from a raw
   pointer -- `&*p`, `&mut *p`, `&(*p).f` (casts included), an autoref through
   `*p` for a `&self` method, or a call to a function from another crate that
@@ -177,7 +177,7 @@ may write. Access goes through the handles instead.
   sanctioned: target 0.
 - `ty_field_proj_wrapped` counts field accesses `(*p).field` through a raw pointer
   to a wrapped C type or a wrapper, and `ty_field_proj_outside_impl` the subset
-  outside any `impl` or trait body. `ty_field_ref_wrapped` counts the references
+  outside any `impl` or trait body. `ty_field_borrow_wrapped` counts the references
   `&(*p).field` / `&mut (*p).field` among them; raw borrows (`&raw const`,
   `addr_of!`) are not counted.
 
@@ -203,10 +203,10 @@ impl.
 Signature positions, parameters and return types, nested ones included as for
 raw pointers (`Option<CBox<T>>` is one `CBox`):
 
-- `fn_sig_ffibox_owners_*`: an ffibox owner (`CBox`, `CArc`, `CVec`, `CStrBox`,
+- `fn_sig_ffibox_owner_*`: an ffibox owner (`CBox`, `CArc`, `CVec`, `CStrBox`,
   `CVal`), keyed by type. Aliases are resolved, so `type FooBox = CBox<..>` is
   a `CBox`.
-- `fn_sig_ffibox_handles_*`: an ffibox-based borrowed handle: one of the crate's
+- `fn_sig_ffibox_handle_*`: an ffibox-based borrowed handle: one of the crate's
   own, keyed `Ref`, `Mut` or `Locked` (the types its `impl CCell` binds to
   `Ref` / `Mut` and its `impl CGuarded` binds to `Locked`, read off the impls
   rather than the names), or one of ffibox's borrowed views, keyed by type
@@ -217,35 +217,38 @@ raw pointers (`Option<CBox<T>>` is one `CBox`):
   crate-defined type with an `impl Drop` that no ffibox macro emitted (the
   `drop_impl` types). Together with `fn_sig_ffibox_*` it says how much of the
   ownership an API hands out goes through ffibox and how much does not.
-  (`fn_sig_ffibox_owners_*` is its ffibox counterpart.)
-- `fn_sig_non_ffibox_borrow_*`: one of the crate's other borrowed types, keyed by
-  type: a crate-defined type with a lifetime parameter of its own that is
-  neither one of its `CCell` / `CGuarded` handles nor one of its own owners.
-  These are hand-written handles, iterators and views; the key names them, so
-  an iterator is told from a handle written instead of a `CCell` one. A
-  method's receiver of such a type counts here too.
+  (`fn_sig_ffibox_owner_*` is its ffibox counterpart.)
+- `fn_sig_non_ffibox_wrapper_borrow_*` / `fn_sig_non_ffibox_non_wrapper_borrow_*`:
+  one of the crate's other borrowed types -- a type with a lifetime parameter
+  that is neither one of its `CCell` / `CGuarded` handles nor one of its own
+  owners -- keyed by type, split by whether it borrows a C object (a field
+  points, through a raw pointer, `NonNull`, a reference or a transparent
+  handle such as `CBorrowedPtr`, at a C-reachable type or a layout wrapper, by
+  the provenance rules above) or not (iterators and views over Rust data). The
+  key names the type, and a method's receiver of such a type counts too.
 - `fn_sig_std_ty_borrow_*`: a reference to a standard borrowed view, keyed `&CStr`,
   `&str`, `&mut str`, `&[T]` or `&mut [T]` (nested ones included). A slice of
   elements implementing ffibox's `CPlainElem` (primitives, plain newtypes,
   `MaybeUninit<T>`, raw pointers, arrays of those) is a plain buffer, the
   expected shape, and is keyed `&[CPlainElem]` / `&mut [CPlainElem]` apart. References
-  to the crate's layout types are `ty_wrapper_refs_*` instead.
+  to the crate's layout types are `ty_wrapper_borrow_*` instead.
 
 Each splits by the fn's visibility, `_pub` and `_priv`. The
 functions read are free functions, inherent methods and the crate's own trait
 declarations. A trait impl's methods are left out, since the trait fixes their
 signatures. A method's `self` receiver counts only when it is a borrowed handle
-(`fn_sig_ffibox_handles_*` or `fn_sig_non_ffibox_borrow_*`): `&self` on an owner or a
+(`fn_sig_ffibox_handle_*` or `fn_sig_non_ffibox_*_borrow_*`): `&self` on an owner or a
 plain value borrows a Rust value, not a C object, and is skipped.
 
 The field families -- `ty_pub_fields_pub_<kind>`, `ty_pub_fields_priv_<kind>`
-and `ty_priv_<kind>`, for the kinds `ffibox_owners`, `ffibox_handles`,
-`non_ffibox_owner`, `non_ffibox_borrow` and `std_ty_borrow` -- count the same
+and `ty_priv_<kind>`, for the kinds `ffibox_owner`, `ffibox_handle`,
+`non_ffibox_owner`, `non_ffibox_wrapper_borrow`, `non_ffibox_non_wrapper_borrow`
+and `std_ty_borrow` -- count the same
 kinds in the fields of the structs, unions and enums the crate defines, split
 as for `raw_ptr_ty_*`: by the type's visibility and, in a public type, by the
 field's own. They say what the crate's types hold, where the `fn_sig_*`
 families say what its functions take and return. `fn_sig_std_ty_borrow_*` and
-`fn_sig_non_ffibox_borrow_*` never count the same type: the first is a
+`fn_sig_non_ffibox_*_borrow_*` never count the same type: the first is a
 reference to a standard view (`&str`, `&[T]`, `&CStr`), the second a crate
 type with a lifetime parameter; a nested position such as `&[MyIter<'a>]`
 counts once in each.
@@ -285,7 +288,7 @@ non-ADT type, are not counted. The compiler's `TrivialClone` and
 in the source, as `[{"file": .., "count": N, "lines": [..]}]` per file. `count`
 is the number of increments in that file, so a counter's per-file counts sum to
 its value in `counts`; `lines` are the distinct lines they fell on, sorted. A
-signature position (raw/void pointer, `unsafe fn`, `ty_wrapper_refs_*`) is
+signature position (raw/void pointer, `unsafe fn`, `ty_wrapper_borrow_*`) is
 sited at its function's signature line; a block, dereference, projection,
 reference or call at the expression. A site inside macro output
 (`define_ctype!`, `#[derive]`) is the line in the measured crate that invoked
@@ -295,14 +298,14 @@ and statement totals (`code_lines`, `total_stmts`, `unsafe_block_*lines`,
 
 ## Known limitations
 
-- **References into C memory the counters miss.** `ty_field_ref_wrapped` matches
+- **References into C memory the counters miss.** `ty_field_borrow_wrapped` matches
   only `&(*p).field` one field deep, so `&(*p).a.b` and `&(*p).arr[i]` are not
   counted; an autoref on a field (`(*p).field.method()` with `&self`) is not
   counted; and a reference to the C type itself (`&*p` with
   `p: *const ffi::T`, or `NonNull<ffi::T>::as_ref`) is counted by no counter,
-  since `ty_wrapper_refs_*` only cover wrapper types. See `docs/TODO.md`.
+  since `ty_wrapper_borrow_*` only cover wrapper types. See `docs/TODO.md`.
 - **Signatures and fields only for pointer positions.** Raw-pointer, `c_void`
-  and `ty_wrapper_refs_*` signature counters read the parameter and return
+  and `ty_wrapper_borrow_*` signature counters read the parameter and return
   types of functions with bodies; raw-pointer and `c_void` positions also
   include struct and union fields. Raw pointers in locals, casts, closure parameters, enum variants and
   statics are not positions, `NonNull` is never one, and a trait method
