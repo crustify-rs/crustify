@@ -132,6 +132,14 @@ class PartitionTests(unittest.TestCase):
                   "ty_non_wrapper_borrow_priv_safe", "ty_non_wrapper_borrow_priv_unsafe"):
             self.assertIn(k, keys)
 
+    def test_wrapper_value_families_are_emitted(self) -> None:
+        keys, _ = _emission()
+        for fam in ("by_val", "std_owner"):
+            for part in ("fn_sig_pub", "fn_sig_priv", "ty_pub_fields_pub",
+                         "ty_pub_fields_priv", "ty_priv"):
+                self.assertIn(f"ty_wrapper_{fam}_{part}", keys)
+                self.assertIn(f"ty_wrapper_{fam}_{part}", driver.SITE_COUNTERS)
+
     def test_ffibox_fn_and_ty_families_mirror(self) -> None:
         kinds = [k[len("fn_sig_"):-len("_pub")] for k in driver.FFIBOX_COUNTERS
                  if k.startswith("fn_sig_") and k.endswith("_pub")]

@@ -239,6 +239,11 @@ def summarize(doc: dict) -> str:
             f"  borrows into C memory {(c.get('ty_wrapper_borrow_sanctioned') or 0) + (c.get('ty_wrapper_borrow_non_sanctioned') or 0)}"
             f"   ({c.get('ty_wrapper_borrow_sanctioned')} sanctioned, {c.get('ty_wrapper_borrow_non_sanctioned')} non-sanctioned"
             f" in signatures, bodies and fields -- target 0) over {c.get('ty_wrapper')} layout newtypes",
+            *(f"  wrapper {label:<13}{sum(c.get(f'ty_wrapper_{fam}_' + k) or 0 for k in ('fn_sig_pub', 'fn_sig_priv', 'ty_pub_fields_pub', 'ty_pub_fields_priv', 'ty_priv'))}"
+              f"   (fn signatures: pub {c.get(f'ty_wrapper_{fam}_fn_sig_pub')}, private {c.get(f'ty_wrapper_{fam}_fn_sig_priv')};"
+              f" pub types: {c.get(f'ty_wrapper_{fam}_ty_pub_fields_pub')} pub fields + {c.get(f'ty_wrapper_{fam}_ty_pub_fields_priv')} private fields,"
+              f" private types: {c.get(f'ty_wrapper_{fam}_ty_priv')})"
+              for label, fam in (("by value", "by_val"), ("in std owner", "std_owner"))),
             f"  Deref on wrapper     {c.get('deref_impl_on_wrapper')}   (target 0)",
             f"  ffi calls            {c.get('ffi_calls')}",
         ]

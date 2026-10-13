@@ -179,6 +179,27 @@ may write. Access goes through the handles instead.
   asserts neither `readonly` nor `noalias`; `&mut W` still is. A
   `PhantomData<&W>` marker holds no reference and is not counted.
   `ty_wrapper_borrow_non_sanctioned`'s target is 0.
+- `ty_wrapper_by_val_*` and `ty_wrapper_std_owner_*` count the layout newtypes
+  held by value outside ffibox's owners. `by_val` counts a newtype held
+  directly: `Foo`, or `Foo` inside a tuple, an array or a standard value
+  container (`Option`, `Result`, `Cell`, `RefCell`, `UnsafeCell`, `OnceCell`,
+  `Mutex`, `RwLock`, `MaybeUninit`, `ManuallyDrop`, `Pin`). `std_owner` counts
+  one under a standard heap owner (`Box`, `Rc`, `Arc`, `Vec`, `VecDeque`, so
+  `Pin<Box<Foo>>` and `Option<Arc<Foo>>` too). Each occurrence counts once,
+  in one family. Nothing behind a reference or raw pointer counts, and no
+  other type is searched: ffibox owners belong to the `--ffibox` record, and a
+  local type's fields are counted where it is declared.
+  - `_fn_sig_{pub,priv}`: parameters and returns, by the function's effective
+    visibility. A constructor's `-> Self` counts. Methods implementing another
+    crate's trait (`Clone::clone`) are left out.
+  - `_ty_{pub_fields_pub,pub_fields_priv,priv}`: fields of the crate's structs,
+    unions and enums, split as for `raw_ptr_ty_*`.
+
+  A by-value newtype is Rust-owned storage that moves, so a pointer C retained
+  into it dangles after a move, and no owner runs its C destructor. Those are
+  the cases ffibox's `CBox` and `CVal` exist for. A site is not a defect in
+  itself: a plain record C never retains is sound by value. It means "check
+  that C does not keep this address and that the value owns no C resources".
 - `ty_non_wrapper_borrow_{pub,priv}_{safe,unsafe}` are the counterpart: every
   `&T` / `&mut T` in a function signature (the receiver and nested references
   included), by the function's visibility and safety as for `raw_ptr_fn_*`,
