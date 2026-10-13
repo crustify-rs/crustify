@@ -332,8 +332,7 @@ and take the total from the union of their lines, never from summing the workloa
 After each batch, both translation and review, run `crustify cost` over the batch
 directories' `translator.usage.json` files. Use its computed cost and token counts, not
 provider-reported dollar totals. Commit each batch's `translator.usage.json` with the results
-update that cites it, and your own `orchestrator-*.usage.json` records, written when a session
-ends, with the first results update after it. Record agent wall times from usage files. Record wave
+update that cites it. Record agent wall times from usage files. Record wave
 wall time from first batch launch through final review and regression completion. Fill the
 default evaluation table or the user-provided one, matching their format exactly.
 
