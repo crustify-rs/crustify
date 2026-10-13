@@ -8,12 +8,13 @@ builds
 rust/target
 rust.bak
 
-# Campaign plans, the batches projected from them and every agent's usage record
-# are tracked: the records are the evidence behind results.md's cost cells, and
+# Campaign plans, the batches projected from them and each batch agent's usage
+# record are tracked: the records are the evidence behind results.md's cost cells, and
 # the transcripts they are recovered from do not outlive the container. The
-# agent streams are not.
+# agent streams, and for now the orchestrator's records, are not.
 campaigns/**/translator.log
 campaigns/*/orchestrator-*.log
+campaigns/*/orchestrator-*.usage.json
 
 # Review reproducers are tracked; the cargo trees their builds leave are not.
 reviews/**/target
