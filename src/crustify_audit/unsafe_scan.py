@@ -236,10 +236,9 @@ def summarize(doc: dict) -> str:
             f"   (fn-signature references to memory that is not C's: pub {c.get('ty_non_wrapper_borrow_pub_safe')} safe"
             f" + {c.get('ty_non_wrapper_borrow_pub_unsafe')} unsafe, private {c.get('ty_non_wrapper_borrow_priv_safe')} safe"
             f" + {c.get('ty_non_wrapper_borrow_priv_unsafe')} unsafe)",
-            f"  ref to layout type   {(c.get('ty_wrapper_borrow_sanctioned') or 0) + (c.get('ty_wrapper_borrow_smell') or 0)}"
-            f"   ({c.get('ty_wrapper_borrow_sanctioned')} sanctioned, smell {c.get('ty_wrapper_borrow_smell')}"
-            f" — target 0) over {c.get('ty_wrapper')} layout newtypes",
-            f"  ref formed in body   {c.get('ty_wrapper_borrow_body_smell')}   (target 0)",
+            f"  borrows into C memory {(c.get('ty_wrapper_borrow_sanctioned') or 0) + (c.get('ty_wrapper_borrow_non_sanctioned') or 0)}"
+            f"   ({c.get('ty_wrapper_borrow_sanctioned')} sanctioned, {c.get('ty_wrapper_borrow_non_sanctioned')} non-sanctioned"
+            f" in signatures, bodies and fields -- target 0) over {c.get('ty_wrapper')} layout newtypes",
             f"  Deref on wrapper     {c.get('deref_impl_on_wrapper')}   (target 0)",
             f"  ffi calls            {c.get('ffi_calls')}",
         ]

@@ -151,21 +151,34 @@ A local C type C reaches itself -- a hand-written mirror, a callback payload --
 is not a wrapper of anything, but its references are checked like a layout
 newtype's. How the layout newtypes relate to ffibox's `CCell` is in the
 `--ffibox` record (`ffibox_layout_not_ccell`, `ffibox_ccell_not_layout`).
-`ty_wrapper_borrow_handles` counts the handles over a Rust reference to a
-C-reachable type: handle-shaped, yet a reference into C memory. Target 0.
 
 A layout newtype's memory is C's when it is reached through a C pointer, so a
 Rust reference to it asserts `noalias`, `readonly` or validity over memory C
 may write. Access goes through the handles instead.
 
-- `ty_wrapper_borrow_sanctioned` and `ty_wrapper_borrow_smell` partition
-  the `&W` / `&mut W` positions in function signatures (the receiver included).
+- `ty_wrapper_borrow_sanctioned` and `ty_wrapper_borrow_non_sanctioned` count
+  the borrows into C memory -- `&W` / `&mut W` (or `&[W]`, `Option<&W>`, ..),
+  W a layout newtype or a local C type -- wherever they occur:
+  - in function signatures (the receiver included): sanctioned are the
+    accessors `as_ref` / `as_mut`, which hand out borrowed handles over a
+    Rust-owned value, and methods of impls of the standard value traits
+    `Clone`, `PartialEq`, `Eq`, `PartialOrd`, `Ord`, `Hash` and `Debug`,
+    derived or not; every other position is non-sanctioned;
+  - in function bodies: an expression that forms such a reference from a raw
+    pointer -- `&*p`, `&mut *p`, `&(*p).f` (casts included), an autoref through
+    `*p` for a `&self` method, or a call to a function from another crate that
+    takes a raw pointer or `NonNull` and returns a type holding `&W`
+    (`p.as_ref()`, `NonNull::as_ref`, `slice::from_raw_parts`). Calls to the
+    crate's own functions are not counted at the call site; their bodies are.
+    Never sanctioned;
+  - in fields of the crate's types: a field holding such a reference, or a
+    reference to any C-reachable type (a handle over `&'a ffi::T`). Never
+    sanctioned.
+
   A shared `&W` over storage that holds an `UnsafeCell` is not counted: it
-  asserts neither `readonly` nor `noalias`; `&mut W` still is.
-  Sanctioned are the accessors `as_ref` / `as_mut`, which hand out borrowed
-  handles over a Rust-owned value, and methods of impls of the standard value
-  traits `Clone`, `PartialEq`, `Eq`, `PartialOrd`, `Ord`, `Hash` and `Debug`,
-  derived or not. The smell should be 0.
+  asserts neither `readonly` nor `noalias`; `&mut W` still is. A
+  `PhantomData<&W>` marker holds no reference and is not counted.
+  `ty_wrapper_borrow_non_sanctioned`'s target is 0.
 - `ty_non_wrapper_borrow_{pub,priv}_{safe,unsafe}` are the counterpart: every
   `&T` / `&mut T` in a function signature (the receiver and nested references
   included), by the function's visibility and safety as for `raw_ptr_fn_*`,
@@ -173,15 +186,6 @@ may write. Access goes through the handles instead.
   C-reachable: `&CStr`, `&str`, `&[u8]`, `&mut Config`. These borrows stay on
   the Rust side of the boundary. A reference to a C type itself counts in
   neither family (see Known limitations).
-- `ty_wrapper_borrow_body_smell` counts the same hazard inside function
-  bodies: an expression that forms a reference to a layout wrapper from a raw
-  pointer -- `&*p`, `&mut *p`, `&(*p).f` (casts included), an autoref through
-  `*p` for a `&self` method, or a call to a function from another crate that
-  takes a raw pointer or `NonNull` and returns a type holding `&W`
-  (`p.as_ref()`, `NonNull::as_ref`, `slice::from_raw_parts`). Calls to the
-  crate's own functions are not counted at the call site; their bodies are.
-  A `PhantomData<&W>` marker holds no reference and is not counted. Nothing is
-  sanctioned: target 0.
 - `ty_field_proj_wrapped` counts field accesses `(*p).field` through a raw pointer
   to a wrapped C type or a wrapper, and `ty_field_proj_outside_impl` the subset
   outside any `impl` or trait body. `ty_field_borrow_wrapped` counts the references
