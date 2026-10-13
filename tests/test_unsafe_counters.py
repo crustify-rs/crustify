@@ -127,15 +127,15 @@ class PartitionTests(unittest.TestCase):
             for part in parts:
                 self.assertIn(f"{fam}_{part}", keys)
                 self.assertIn(f"{fam}_{part}", driver.SITE_COUNTERS)
-        for k in ("unsafe_fns", "unsafe_fns_pub", "unsafe_fns_priv"):
+        for k in ("unsafe_fns", "unsafe_fns_pub", "unsafe_fns_priv",
+                  "ty_non_wrapper_borrow_pub_safe", "ty_non_wrapper_borrow_pub_unsafe",
+                  "ty_non_wrapper_borrow_priv_safe", "ty_non_wrapper_borrow_priv_unsafe"):
             self.assertIn(k, keys)
 
     def test_ffibox_fn_and_ty_families_mirror(self) -> None:
         kinds = [k[len("fn_sig_"):-len("_pub")] for k in driver.FFIBOX_COUNTERS
                  if k.startswith("fn_sig_") and k.endswith("_pub")]
-        self.assertEqual(kinds, ["ffibox_owner", "ffibox_handle", "non_ffibox_owner",
-                                 "non_ffibox_wrapper_borrow", "non_ffibox_non_wrapper_borrow",
-                                 "std_ty_borrow"])
+        self.assertEqual(kinds, ["ffibox_owner", "ffibox_handle", "non_ffibox_owner"])
         for k in kinds:
             for name in (f"fn_sig_{k}_priv", f"ty_pub_fields_pub_{k}",
                          f"ty_pub_fields_priv_{k}", f"ty_priv_{k}"):

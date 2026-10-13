@@ -232,9 +232,13 @@ def summarize(doc: dict) -> str:
             f" private types: {c.get('void_ptr_ty_priv')};"
             f" fn signatures: pub {c.get('void_ptr_fn_pub_safe')} safe + {c.get('void_ptr_fn_pub_unsafe')} unsafe,"
             f" private {c.get('void_ptr_fn_priv_safe')} safe + {c.get('void_ptr_fn_priv_unsafe')} unsafe)",
+            f"  non-wrapper borrows  {sum(c.get('ty_non_wrapper_borrow_' + k) or 0 for k in ('pub_safe', 'pub_unsafe', 'priv_safe', 'priv_unsafe'))}"
+            f"   (fn-signature references to memory that is not C's: pub {c.get('ty_non_wrapper_borrow_pub_safe')} safe"
+            f" + {c.get('ty_non_wrapper_borrow_pub_unsafe')} unsafe, private {c.get('ty_non_wrapper_borrow_priv_safe')} safe"
+            f" + {c.get('ty_non_wrapper_borrow_priv_unsafe')} unsafe)",
             f"  ref to layout type   {(c.get('ty_wrapper_borrow_sanctioned') or 0) + (c.get('ty_wrapper_borrow_smell') or 0)}"
             f"   ({c.get('ty_wrapper_borrow_sanctioned')} sanctioned, smell {c.get('ty_wrapper_borrow_smell')}"
-            f" — target 0) over {c.get('ty_wrapper_newtypes')} layout newtypes",
+            f" — target 0) over {c.get('ty_wrapper')} layout newtypes",
             f"  ref formed in body   {c.get('ty_wrapper_borrow_body_smell')}   (target 0)",
             f"  Deref on wrapper     {c.get('deref_impl_on_wrapper')}   (target 0)",
             f"  ffi calls            {c.get('ffi_calls')}",
@@ -254,10 +258,7 @@ def summarize(doc: dict) -> str:
             return ", ".join(f"{name} {v}" for name, v in sorted(merged.items())) or "none"
 
         kinds = (("ffibox owner", "ffibox_owner"), ("ffibox handle", "ffibox_handle"),
-                 ("own owner", "non_ffibox_owner"),
-                 ("own wrapper borrow", "non_ffibox_wrapper_borrow"),
-                 ("other own borrow", "non_ffibox_non_wrapper_borrow"),
-                 ("std borrow", "std_ty_borrow"))
+                 ("own owner", "non_ffibox_owner"))
         lines.append("  ffibox")
         for name, k in kinds:
             pub, priv = f"fn_sig_{k}_pub", f"fn_sig_{k}_priv"
