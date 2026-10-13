@@ -135,7 +135,8 @@ class PartitionTests(unittest.TestCase):
     def test_ffibox_fn_and_ty_families_mirror(self) -> None:
         kinds = [k[len("fn_sig_"):-len("_pub")] for k in driver.FFIBOX_COUNTERS
                  if k.startswith("fn_sig_") and k.endswith("_pub")]
-        self.assertEqual(kinds, ["ffibox_owner", "ffibox_handle", "non_ffibox_owner"])
+        self.assertEqual(kinds, ["ffibox_owner", "ffibox_handle", "non_ffibox_owner",
+                                 "non_ffibox_handle"])
         for k in kinds:
             for name in (f"fn_sig_{k}_priv", f"ty_pub_fields_pub_{k}",
                          f"ty_pub_fields_priv_{k}", f"ty_priv_{k}"):

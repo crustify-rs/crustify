@@ -257,7 +257,7 @@ def summarize(doc: dict) -> str:
             return ", ".join(f"{name} {v}" for name, v in sorted(merged.items())) or "none"
 
         kinds = (("ffibox owner", "ffibox_owner"), ("ffibox handle", "ffibox_handle"),
-                 ("own owner", "non_ffibox_owner"))
+                 ("own owner", "non_ffibox_owner"), ("own handle", "non_ffibox_handle"))
         lines.append("  ffibox")
         for name, k in kinds:
             pub, priv = f"fn_sig_{k}_pub", f"fn_sig_{k}_priv"
