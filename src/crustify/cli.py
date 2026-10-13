@@ -125,12 +125,12 @@ def main() -> None:
         "--dry-run", action="store_true",
         help="Validate and summarize the batch without spawning an agent.")
 
-    # -- scan-unsafe / spawn-auditor (the audit stages) -------------------
+    # -- ffimap / spawn-auditor (the audit stages) ------------------------
     # Both work on any repository, crustify campaign or not; the auditor
     # carries its own model and billing options.
     from crustify_audit.cli import add_stages as _add_audit_stages
     _add_audit_stages(
-        sub, unsafe_name="scan-unsafe", ub_name="spawn-auditor",
+        sub, unsafe_name="ffimap", unsafe_aliases=("scan-unsafe",), ub_name="spawn-auditor",
         before=lambda p: (
             p.set_defaults(handler=_handle_audit_stage),
             add_workdir(p, "the repository to audit"),

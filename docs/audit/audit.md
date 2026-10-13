@@ -15,7 +15,7 @@ Requires Python 3.13 or newer:
 ```sh
 pip install -e .
 
-crustify scan-unsafe /path/to/repo
+crustify ffimap /path/to/repo
 crustify spawn-auditor /path/to/repo --model anthropic/claude-opus-5
 ```
 
@@ -52,7 +52,7 @@ runs extend the record instead of repeating completed investigations.
 ## CLI
 
 ```text
-crustify scan-unsafe WORKDIR [--json] [--ffibox]
+crustify ffimap WORKDIR [--json] [--ffibox]
                     [--sites COUNTER ... | all]
 crustify spawn-auditor WORKDIR [--objective audit|audit+patch|patch|revisit]
                        [--workset PATH ...]
@@ -83,7 +83,7 @@ crustify spawn-auditor WORKDIR [--objective audit|audit+patch|patch|revisit]
   reproduces. Use it after adding an instrument that can settle a hypothesis the earlier
   run had to leave standing.
 
-Run `crustify scan-unsafe --help`, `crustify spawn-auditor --help` or `crustify audit
+Run `crustify ffimap --help`, `crustify spawn-auditor --help` or `crustify audit
 --help` for complete flag semantics.
 
 ### Instrument scopes
@@ -172,7 +172,7 @@ under `/work`, which is also the persistent Cargo/build cache. An
 `openrouter/anthropic/<model>` route uses Claude Code with `OPENROUTER_API_KEY`; other
 OpenRouter model IDs use Codex. The deterministic scan needs no agent and no
 authentication, so it is just another command: `docker exec <name> crustify
-scan-unsafe /target`.
+ffimap /target`.
 
 `CRUSTIFY_BARE=1` still makes the mounted `TASK.md` the entire prompt, for either command.
 

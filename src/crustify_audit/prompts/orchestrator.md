@@ -35,7 +35,7 @@ Rust or C/C++ sources.
 ## Plan
 
 Verify the target revision. For `audit` and `audit+patch`, run the deterministic
-`crustify scan-unsafe` scan, then inspect the crate and existing leads and advisories. Divide
+`crustify ffimap` scan, then inspect the crate and existing leads and advisories. Divide
 the audit into disjoint module-based worksets; give a single auditor the whole
 crate when only one is configured. For `patch`, divide the existing advisories
 instead and pass each agent its advisory directories under

@@ -1,12 +1,12 @@
-# Deterministic `unsafe` output
+# ffimap: the deterministic FFI and unsafe map
 
-`crustify scan-unsafe WORKDIR` builds the workspace through a rustc driver over
+`crustify ffimap WORKDIR` (also `crustify scan-unsafe`, its earlier name) builds the workspace through a rustc driver over
 HIR and type checking. Its output is a deterministic description of the code
 that the build's active `cfg` selects—not a soundness verdict or quality score.
 
 The scan writes no file. `--json` prints the document on stdout and the caller
-redirects it wherever that run's record belongs — for a campaign, the wave or
-batch artifact directory. Where a scan is kept is the caller's decision, so
+redirects it wherever that run's record belongs — for a campaign, `ffimap.json`
+in the wave or batch artifact directory. Where a scan is kept is the caller's decision, so
 nothing here creates paths or edits a `.gitignore`.
 
 ## Availability

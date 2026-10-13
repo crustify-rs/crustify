@@ -1,4 +1,4 @@
-//! Canonical rustc driver for `crustify-audit unsafe`.
+//! Canonical rustc driver for `crustify-audit ffimap`.
 //!
 //! Changes to the deterministic safety pass belong here.
 //!
@@ -361,7 +361,7 @@ fn pointee_has_wrapper(tcx: TyCtxt<'_>, p: Ty<'_>, wrapped_c: &HashSet<DefId>) -
 // value of it lives in C memory (see docs/audit/unsafe-output.md).
 
 /// The crates whose `#[repr(C)]` types are C's, by crate name: `UM_SYS_CRATES`,
-/// comma-separated, set by `scan-unsafe` from Cargo's `links` keys plus
+/// comma-separated, set by `ffimap` from Cargo's `links` keys plus
 /// `--sys-crates`.
 fn sys_crates() -> &'static HashSet<String> {
     static SYS: std::sync::OnceLock<HashSet<String>> = std::sync::OnceLock::new();
@@ -1399,7 +1399,7 @@ impl<'a, 'tcx> Visitor<'tcx> for BodyVisitor<'a, 'tcx> {
 
 // --------------------------------------------------------------- ffibox mode
 
-/// `UM_FFIBOX` (`scan-unsafe --ffibox`) counters, each broken down by ffibox
+/// `UM_FFIBOX` (`ffimap --ffibox`) counters, each broken down by ffibox
 /// type, handle kind or trait. Every one counts source locations, so all take
 /// `--sites`. `_pub` / `_priv` is rustc's effective visibility, as elsewhere:
 /// of the fn for a signature position, of the implementing type for an impl.

@@ -68,9 +68,10 @@ class CommandShapeTests(unittest.TestCase):
         own --model does not become the harness-wide override."""
         plain = self.repo / "plain"
         plain.mkdir()
-        seen = self._run("scan-unsafe", str(plain), "--json")
-        self.assertEqual((seen["handler"], seen["args"].audit_stage),
-                         ("audit-stage", "unsafe"))
+        for verb in ("ffimap", "scan-unsafe"):  # `scan-unsafe` is ffimap's earlier name
+            seen = self._run(verb, str(plain), "--json")
+            self.assertEqual((seen["handler"], seen["args"].audit_stage),
+                             ("audit-stage", "unsafe"))
         seen = self._run("spawn-auditor", str(plain),
                          "--model", "anthropic/claude-opus-5")
         self.assertEqual(seen["args"].audit_stage, "ub")

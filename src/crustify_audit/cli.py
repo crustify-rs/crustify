@@ -1,7 +1,7 @@
-"""cli.py — the audit stages behind `crustify scan-unsafe` and
+"""cli.py — the audit stages behind `crustify ffimap` and
 `crustify spawn-auditor`.
 
-    crustify scan-unsafe   <workdir> [--json] [--ffibox] [--sys-crates CRATE,...]
+    crustify ffimap        <workdir> [--json] [--ffibox] [--sys-crates CRATE,...]
                                      [--sites COUNTER ... | all]
     crustify spawn-auditor <workdir> [--model M] [--billing B] [--effort E]
                                      [--timeout MIN] [--instruments I ...]
@@ -41,19 +41,20 @@ from crustify_audit.layout import Layout
 #: Shared by the standalone parser below and by `crustify`, so the two surfaces
 #: cannot drift: one set of stages, one set of flags, one set of help texts. The
 #: distribution has already paid once for maintaining the same job in two
-#: places. `crustify` names the stages `scan-unsafe` and `spawn-auditor` and
+#: places. `crustify` names the stages `ffimap` (alias `scan-unsafe`) and `spawn-auditor` and
 #: passes `before` to add its workdir positional ahead of each stage's own
 #: arguments; the stage a parser runs is recorded as `audit_stage`.
 def add_stages(sub: "argparse._SubParsersAction", *,
-               unsafe_name: str = "unsafe", ub_name: str = "ub",
-               before=None) -> None:
-    """Register the `unsafe` and `ub` stages on an existing subparsers object."""
+               unsafe_name: str = "ffimap", unsafe_aliases: tuple[str, ...] = ("unsafe",),
+               ub_name: str = "ub", before=None) -> None:
+    """Register the `ffimap` and `ub` stages on an existing subparsers object.
+    ``unsafe_aliases`` keep the stage's earlier names working."""
     m = sub.add_parser(
-        unsafe_name,
-        help="DETERMINISTIC unsafe metrics. No LLM.",
-        description="Measure the crate's unsafe surface with a rustc driver "
-                    "over HIR and typeck. This is the canonical deterministic "
-                    "Crustify safety pass. "
+        unsafe_name, aliases=list(unsafe_aliases),
+        help="ffimap: DETERMINISTIC map of the crate's FFI and unsafe surface. No LLM.",
+        description="ffimap: map the crate's FFI and unsafe surface with a "
+                    "rustc driver over HIR and typeck. This is the canonical "
+                    "deterministic Crustify safety pass. "
                     "Reproducible: same tree, same bytes. Needs the crate to "
                     "compile; when it does not, there are no counts rather than "
                     "approximate ones. It says HOW MUCH unsafety is there, never "
@@ -63,7 +64,8 @@ def add_stages(sub: "argparse._SubParsersAction", *,
         before(m)
     m.add_argument("--json", action="store_true",
                    help="Print the document on stdout instead of a summary. "
-                        "Redirect it to keep it; the scan writes no file.")
+                        "Redirect it to keep it (a campaign keeps it as "
+                        "ffimap.json); ffimap writes no file.")
     m.add_argument(
         "--sites", nargs="+", action="extend", default=None, metavar="COUNTER",
         help="Also report where these counters' increments are in the source: "
@@ -91,7 +93,7 @@ def add_stages(sub: "argparse._SubParsersAction", *,
         help="AGENTIC hunt for undefined behaviour. Costs money.",
         description="Drive ONE agent hunting UB reachable from safe code. It "
                     "reads the crate itself to find what is worth looking at, "
-                    "and can run the unsafe scan for the numbers. The agent builds its own "
+                    "and can run ffimap for the numbers. The agent builds its own "
                     "reproductions, checks them with the selected instruments, and writes the "
                     "advisory itself — the harness supplies a workspace and a "
                     "scratch directory and nothing else. It never writes to the "
