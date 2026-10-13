@@ -235,7 +235,8 @@ fn non_wrapper_borrows<'tcx>(tcx: TyCtxt<'tcx>, t: Ty<'tcx>) -> u64 {
 /// (nested ones included, as for signatures), counted into
 /// `raw_ptr_ty_{pub,priv}` by the effective visibility of the TYPE: every
 /// raw pointer a public type holds counts, private fields included, since it
-/// is that type's representation.
+/// is that type's representation. A field holding a borrow into C memory also
+/// counts into `ty_wrapper_borrow_non_sanctioned`.
 fn count_raw_ptr_fields(
     tcx: TyCtxt<'_>,
     did: DefId,
@@ -253,6 +254,16 @@ fn count_raw_ptr_fields(
         raw_pointees(tcx, ft, &mut pointees);
         let site = counter_site(tcx, tcx.def_span(f.did));
         let field_exported = f.did.as_local().is_some_and(|l| tcx.effective_visibilities(()).is_exported(l));
+        // A field holding a borrow into C memory: a reference to a layout
+        // wrapper, or to any C-reachable type (a handle over `&'a ffi::T`).
+        let c_ref = contains_ref_to_type_wrapper(tcx, ft)
+            || matches!(peel_transparent(tcx, ft).kind(), ty::TyKind::Ref(_, p, m)
+                if (m.is_mut() || !has_unsafe_cell(tcx, *p, 0))
+                    && matches!(peel_transparent(tcx, *p).kind(), ty::TyKind::Adt(d, _) if is_c_visible(tcx, d.did())));
+        if c_ref {
+            c.ty_wrapper_borrow_non_sanctioned += 1;
+            sites.add("ty_wrapper_borrow_non_sanctioned", site.clone());
+        }
         for p in pointees {
             count_ptr_position(tcx, p, PtrSite::Type { exported, field_exported }, wrapped_c, site.clone(), c, sites);
         }
@@ -638,18 +649,6 @@ fn has_unsafe_cell<'tcx>(tcx: TyCtxt<'tcx>, t: Ty<'tcx>, depth: u32) -> bool {
     }
 }
 
-/// A `#[repr(transparent)]` newtype over a Rust reference to a C-reachable
-/// type: a handle shape that nonetheless IS a reference into C memory.
-fn is_ref_handle_to_c(tcx: TyCtxt<'_>, did: DefId) -> bool {
-    let def = tcx.adt_def(did);
-    if !def.is_struct() || !def.repr().transparent() {
-        return false;
-    }
-    let inner = peel_transparent(tcx, tcx.type_of(did).instantiate_identity().skip_norm_wip());
-    matches!(inner.kind(), ty::TyKind::Ref(_, p, _)
-        if matches!(peel_transparent(tcx, *p).kind(), ty::TyKind::Adt(d, _) if is_c_visible(tcx, d.did())))
-}
-
 type Wrappers = HashMap<DefId, Vec<DefId>>;
 
 /// Structural inventory: every local struct `structural_wrapper` admits.
@@ -1026,18 +1025,20 @@ struct Counts {
     // bytes inline (see "C visibility"). How these relate to ffibox's `CCell` is the `--ffibox` record's
     // (`ffibox_layout_not_ccell` / `ffibox_ccell_not_layout`).
     ty_wrapper: u64,
-    // `#[repr(transparent)]` newtypes over a Rust reference to a C-reachable
-    // type: handle-shaped, yet a reference into C memory. Target 0.
-    ty_wrapper_borrow_handles: u64,
-    // `&W` / `&mut W` (incl. the receiver), W a layout newtype, partitioned:
-    // sanctioned (REF_ACCESSORS / STD_VALUE_TRAITS impls) + smell (the rest)
+    // Borrows into C memory: `&W` / `&mut W` (or `&[W]`, `Option<&W>`, ..),
+    // W a layout newtype or a local C type, wherever they occur:
+    //  * fn signatures (the receiver included): sanctioned on REF_ACCESSORS
+    //    and STD_VALUE_TRAITS impls, non-sanctioned elsewhere;
+    //  * fn bodies: formed from a raw pointer -- `&*p`, `&(*p).f`, an autoref
+    //    through `*p`, or a non-local call such as `p.as_ref()` /
+    //    `NonNull::as_ref` / `slice::from_raw_parts` -- never sanctioned;
+    //  * fields of the crate's types: a field holding such a reference, or a
+    //    reference to any C-reachable type (a handle over `&'a ffi::T`) --
+    //    never sanctioned.
+    // A shared `&W` over `UnsafeCell` storage is not a borrow here.
+    // ty_wrapper_borrow_non_sanctioned's target is 0.
     ty_wrapper_borrow_sanctioned: u64,
-    ty_wrapper_borrow_smell: u64,
-    // in function BODIES: a `&W` / `&mut W` (or `&[W]`, `Option<&W>`, ..) formed
-    // from a raw pointer -- `&*p`, `&(*p).f`, an autoref through `*p`, or a
-    // non-local call such as `p.as_ref()` / `NonNull::as_ref` /
-    // `slice::from_raw_parts`. Never sanctioned: target 0.
-    ty_wrapper_borrow_body_smell: u64,
+    ty_wrapper_borrow_non_sanctioned: u64,
     // `&T` / `&mut T` in fn signatures (the receiver and nested references
     // included), by the fn's visibility and safety as for raw_ptr_fn_*, where
     // `T` -- or a slice's element --
@@ -1219,9 +1220,9 @@ impl<'a, 'tcx> BodyVisitor<'a, 'tcx> {
     }
 
     fn body_ref(&mut self, e: &'tcx hir::Expr<'tcx>) {
-        self.c.ty_wrapper_borrow_body_smell += 1;
+        self.c.ty_wrapper_borrow_non_sanctioned += 1;
         self.sites
-            .add("ty_wrapper_borrow_body_smell", counter_site(self.tcx, e.span));
+            .add("ty_wrapper_borrow_non_sanctioned", counter_site(self.tcx, e.span));
     }
 
     /// Count a reference to a layout newtype formed from a raw pointer at `e`.
@@ -1883,10 +1884,7 @@ impl Callbacks for MetricsCallbacks {
                         c.ty_wrapper += 1;
                         sites.add("ty_wrapper", counter_site(tcx, tcx.def_span(did)));
                     }
-                    if is_ref_handle_to_c(tcx, did) {
-                        c.ty_wrapper_borrow_handles += 1;
-                        sites.add("ty_wrapper_borrow_handles", counter_site(tcx, tcx.def_span(did)));
-                    }
+
                 }
                 DefKind::Impl { of_trait: true } => {
                     // `TrivialClone` is a compiler-internal marker `#[derive(Clone)]`
@@ -1979,8 +1977,8 @@ impl Callbacks for MetricsCallbacks {
                             c.ty_wrapper_borrow_sanctioned += 1;
                             sites.add("ty_wrapper_borrow_sanctioned", site);
                         } else {
-                            c.ty_wrapper_borrow_smell += 1;
-                            sites.add("ty_wrapper_borrow_smell", site);
+                            c.ty_wrapper_borrow_non_sanctioned += 1;
+                            sites.add("ty_wrapper_borrow_non_sanctioned", site);
                         }
                     }
                 }
@@ -2126,8 +2124,8 @@ impl Callbacks for MetricsCallbacks {
             }
         }
         println!(
-            "{{\"crate\":\"{}\",\"code_lines\":{},\"total_stmts\":{},\"safe_fns_pub\":{},\"safe_fns_priv\":{},\"unsafe_blocks\":{},\"unsafe_block_stmts\":{},\"unsafe_block_lines\":{},\"unsafe_block_code_lines\":{},\"unsafe_blocks_wrapper_impl\":{},\"unsafe_blocks_ffi_export\":{},\"unsafe_fns\":{},\"unsafe_fns_pub\":{},\"unsafe_fns_priv\":{},\"unsafe_impls\":{},\"unsafe_traits\":{},\"ty_wrapper\":{},\"ty_wrapper_borrow_handles\":{},\"ty_wrapper_borrow_sanctioned\":{},\"ty_wrapper_borrow_smell\":{},\"ty_wrapper_borrow_body_smell\":{},\"ty_non_wrapper_borrow_pub_safe\":{},\"ty_non_wrapper_borrow_pub_unsafe\":{},\"ty_non_wrapper_borrow_priv_safe\":{},\"ty_non_wrapper_borrow_priv_unsafe\":{},\"raw_ptr_ty_pub_fields_pub\":{},\"raw_ptr_ty_pub_fields_priv\":{},\"raw_ptr_ty_priv\":{},\"raw_ptr_fn_pub_safe\":{},\"raw_ptr_fn_pub_unsafe\":{},\"raw_ptr_fn_priv_safe\":{},\"raw_ptr_fn_priv_unsafe\":{},\"raw_ptr_has_ty_wrapper\":{},\"raw_ptr_derefs\":{},\"raw_ptr_derefs_outside_impl\":{},\"void_ptr_ty_pub_fields_pub\":{},\"void_ptr_ty_pub_fields_priv\":{},\"void_ptr_ty_priv\":{},\"void_ptr_fn_pub_safe\":{},\"void_ptr_fn_pub_unsafe\":{},\"void_ptr_fn_priv_safe\":{},\"void_ptr_fn_priv_unsafe\":{},\"ty_field_proj_wrapped\":{},\"ty_field_proj_outside_impl\":{},\"ty_field_borrow_wrapped\":{},\"deref_impl_on_wrapper\":{},\"ffi_calls\":{},\"sites\":{}}}",
-            krate, c.code_lines, c.total_stmts, c.safe_fns_pub, c.safe_fns_priv, c.unsafe_blocks, c.unsafe_block_stmts, c.unsafe_block_lines, c.unsafe_block_code_lines, c.unsafe_blocks_wrapper_impl, c.unsafe_blocks_ffi_export, c.unsafe_fns, c.unsafe_fns_pub, c.unsafe_fns_priv, c.unsafe_impls, c.unsafe_traits, c.ty_wrapper, c.ty_wrapper_borrow_handles, c.ty_wrapper_borrow_sanctioned, c.ty_wrapper_borrow_smell, c.ty_wrapper_borrow_body_smell, c.ty_non_wrapper_borrow_pub_safe, c.ty_non_wrapper_borrow_pub_unsafe, c.ty_non_wrapper_borrow_priv_safe, c.ty_non_wrapper_borrow_priv_unsafe, c.raw_ptr_ty_pub_fields_pub, c.raw_ptr_ty_pub_fields_priv, c.raw_ptr_ty_priv, c.raw_ptr_fn_pub_safe, c.raw_ptr_fn_pub_unsafe, c.raw_ptr_fn_priv_safe, c.raw_ptr_fn_priv_unsafe, c.raw_ptr_has_ty_wrapper, c.raw_ptr_derefs, c.raw_ptr_derefs_outside_impl, c.void_ptr_ty_pub_fields_pub, c.void_ptr_ty_pub_fields_priv, c.void_ptr_ty_priv, c.void_ptr_fn_pub_safe, c.void_ptr_fn_pub_unsafe, c.void_ptr_fn_priv_safe, c.void_ptr_fn_priv_unsafe, c.ty_field_proj_wrapped, c.ty_field_proj_outside_impl, c.ty_field_borrow_wrapped, c.deref_impl_on_wrapper, c.ffi_calls,
+            "{{\"crate\":\"{}\",\"code_lines\":{},\"total_stmts\":{},\"safe_fns_pub\":{},\"safe_fns_priv\":{},\"unsafe_blocks\":{},\"unsafe_block_stmts\":{},\"unsafe_block_lines\":{},\"unsafe_block_code_lines\":{},\"unsafe_blocks_wrapper_impl\":{},\"unsafe_blocks_ffi_export\":{},\"unsafe_fns\":{},\"unsafe_fns_pub\":{},\"unsafe_fns_priv\":{},\"unsafe_impls\":{},\"unsafe_traits\":{},\"ty_wrapper\":{},\"ty_wrapper_borrow_sanctioned\":{},\"ty_wrapper_borrow_non_sanctioned\":{},\"ty_non_wrapper_borrow_pub_safe\":{},\"ty_non_wrapper_borrow_pub_unsafe\":{},\"ty_non_wrapper_borrow_priv_safe\":{},\"ty_non_wrapper_borrow_priv_unsafe\":{},\"raw_ptr_ty_pub_fields_pub\":{},\"raw_ptr_ty_pub_fields_priv\":{},\"raw_ptr_ty_priv\":{},\"raw_ptr_fn_pub_safe\":{},\"raw_ptr_fn_pub_unsafe\":{},\"raw_ptr_fn_priv_safe\":{},\"raw_ptr_fn_priv_unsafe\":{},\"raw_ptr_has_ty_wrapper\":{},\"raw_ptr_derefs\":{},\"raw_ptr_derefs_outside_impl\":{},\"void_ptr_ty_pub_fields_pub\":{},\"void_ptr_ty_pub_fields_priv\":{},\"void_ptr_ty_priv\":{},\"void_ptr_fn_pub_safe\":{},\"void_ptr_fn_pub_unsafe\":{},\"void_ptr_fn_priv_safe\":{},\"void_ptr_fn_priv_unsafe\":{},\"ty_field_proj_wrapped\":{},\"ty_field_proj_outside_impl\":{},\"ty_field_borrow_wrapped\":{},\"deref_impl_on_wrapper\":{},\"ffi_calls\":{},\"sites\":{}}}",
+            krate, c.code_lines, c.total_stmts, c.safe_fns_pub, c.safe_fns_priv, c.unsafe_blocks, c.unsafe_block_stmts, c.unsafe_block_lines, c.unsafe_block_code_lines, c.unsafe_blocks_wrapper_impl, c.unsafe_blocks_ffi_export, c.unsafe_fns, c.unsafe_fns_pub, c.unsafe_fns_priv, c.unsafe_impls, c.unsafe_traits, c.ty_wrapper, c.ty_wrapper_borrow_sanctioned, c.ty_wrapper_borrow_non_sanctioned, c.ty_non_wrapper_borrow_pub_safe, c.ty_non_wrapper_borrow_pub_unsafe, c.ty_non_wrapper_borrow_priv_safe, c.ty_non_wrapper_borrow_priv_unsafe, c.raw_ptr_ty_pub_fields_pub, c.raw_ptr_ty_pub_fields_priv, c.raw_ptr_ty_priv, c.raw_ptr_fn_pub_safe, c.raw_ptr_fn_pub_unsafe, c.raw_ptr_fn_priv_safe, c.raw_ptr_fn_priv_unsafe, c.raw_ptr_has_ty_wrapper, c.raw_ptr_derefs, c.raw_ptr_derefs_outside_impl, c.void_ptr_ty_pub_fields_pub, c.void_ptr_ty_pub_fields_priv, c.void_ptr_ty_priv, c.void_ptr_fn_pub_safe, c.void_ptr_fn_pub_unsafe, c.void_ptr_fn_priv_safe, c.void_ptr_fn_priv_unsafe, c.ty_field_proj_wrapped, c.ty_field_proj_outside_impl, c.ty_field_borrow_wrapped, c.deref_impl_on_wrapper, c.ffi_calls,
             sites.json()
         );
         Compilation::Continue
