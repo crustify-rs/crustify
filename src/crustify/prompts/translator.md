@@ -427,7 +427,7 @@ pointers that could be replaced with safe, idiomatic variants to facilitate API 
 to write less unsafe code. Exclude raw pointers that will be replaced with safe handles
 once their batches get scheduled (i.e. cut SCCs). For those API entry points that must
 legitimately stay unsafe, verify that the safety obligation stated by their `/// SAFETY`
-comment is correct and unambiguous. Use `crustify scan-unsafe` as instructed below to
+comment is correct and unambiguous. Use `crustify ffimap` as instructed below to
 locate them. Narrow those sites that belong to your target workset.
 
 Fix the affected items and file a report for each defect in
@@ -495,12 +495,12 @@ be demonstrated by measuring the coverage itself.
 
 ### 1. Static safety scan
 
-Run the static safety scan `crustify scan-unsafe` on the safe crate and fix any public
+Run the static safety scan `crustify ffimap` on the safe crate and fix any public
 `unsafe fn` or raw pointer on the safe public interface that you might have missed. Focus
 only on those sites that belong to your changeset.
 
 ```bash
-crustify scan-unsafe <workdir> --json
+crustify ffimap <workdir> --json
 ```
 
 Add `--sites unsafe_fns_pub raw_ptr_ty_pub_fields_pub raw_ptr_fn_pub_safe` to list where

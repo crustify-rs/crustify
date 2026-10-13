@@ -302,12 +302,13 @@ branch and purge its worktree.
 
 #### 5. Accounting
 
-##### Static safety scan
+##### Static safety scan (ffimap)
 
-At batch, wave, sub-campaign, and campaign end, record an unseeded scan for unsafe metrics:
+At batch, wave, sub-campaign, and campaign end, record an unseeded ffimap scan of the
+unsafe and FFI surface:
 
 ```bash
-crustify scan-unsafe <workdir> --json
+crustify ffimap <workdir> --json > <artifact dir>/ffimap.json
 ```
 
 It counts what the safe crate itself defines. The public unsafe surface is
@@ -315,7 +316,7 @@ It counts what the safe crate itself defines. The public unsafe surface is
 `raw_ptr_ty_pub_fields_pub` (in public fields of public types) plus `raw_ptr_fn_pub_safe` (in the signatures of
 public safe fns). Use `--sites` with those counters to list where they are.
 
-Record them in their respective workdirs.
+Record each as `ffimap.json` in its respective artifact directory.
 
 ##### Test coverage
 

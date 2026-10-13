@@ -297,7 +297,7 @@ Implementation `<provider>/<model>` via `<backend>`; review
 
 ## Safety audit
 
-Deterministic `crustify scan-unsafe <workdir>`; no model.
+Deterministic `crustify ffimap <workdir>` (`ffimap.json`); no model.
 
 ### Final tally overview
 

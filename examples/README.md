@@ -63,7 +63,7 @@ The deterministic scan needs no agent and no authentication, so it bypasses the
 orchestrator entirely and is just another command:
 
 ```sh
-docker exec crustify-libgit2 crustify scan-unsafe /target
+docker exec crustify-libgit2 crustify ffimap /target
 ```
 
 `--init` runs a small init process as the container's first process, so the

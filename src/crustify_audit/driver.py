@@ -187,7 +187,7 @@ def _driver_bin() -> Path:
         raise DriverUnavailable(
             "the driver is not built and `cargo` is not on PATH")
     if not bin_path.is_file():
-        # stderr: `scan-unsafe --json` owns stdout.
+        # stderr: `ffimap --json` owns stdout.
         print("[crustify-audit] building the HIR driver (first run only)…",
               file=sys.stderr)
     r = subprocess.run(["cargo", f"+{_TOOLCHAIN}", "build"], cwd=_DRIVER_CRATE,

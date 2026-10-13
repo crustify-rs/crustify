@@ -80,5 +80,5 @@ approval before spending on or promoting the next sub-campaign.
 
 After each sub-campaign, price the batches' `translator.usage.json` records with
 `crustify cost`, measure the sub-campaign branch's diff, and run
-`crustify scan-unsafe <workdir> --json` over the sub-campaign tip. Derive cost
+`crustify ffimap <workdir> --json` over the sub-campaign tip. Derive cost
 from token counts, never from provider-reported dollars.

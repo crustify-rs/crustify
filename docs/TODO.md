@@ -153,7 +153,7 @@ v8.5 silicon or a model. Use synchronous tag-check mode for testing; async batch
 and loses the faulting site. HWASan is the software fallback at 1/256 rather than 1/16,
 but it needs the C instrumented, which forfeits the reach advantage.
 
-## `scan-unsafe`: references into C memory the counters miss
+## ffimap: references into C memory the counters miss
 
 Three ways to form a Rust reference into memory C may write go uncounted
 (see Known limitations in `docs/audit/unsafe-output.md`):

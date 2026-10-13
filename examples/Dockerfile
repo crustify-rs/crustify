@@ -27,7 +27,7 @@
 #
 # `crustify audit` starts an audit campaign instead, and `--task-only` makes
 # the task file the entire prompt (the ablation control). The deterministic
-# scan needs no agent and no auth: `docker exec <name> crustify scan-unsafe
+# scan needs no agent and no auth: `docker exec <name> crustify ffimap
 # /target`. Every other choice is an option of the command; see
 # `crustify <command> --help`.
 #
