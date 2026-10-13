@@ -231,16 +231,24 @@ raw pointers (`Option<CBox<T>>` is one `CBox`):
   `drop_impl` types). Together with `fn_sig_ffibox_*` it says how much of the
   ownership an API hands out goes through ffibox and how much does not.
   (`fn_sig_ffibox_owner_*` is its ffibox counterpart.)
+- `fn_sig_non_ffibox_handle_*`: one of the crate's other handles, keyed by
+  type: a crate-defined type that points at a C object -- a raw pointer,
+  `NonNull` or reference, in a field, to a C-reachable type, a layout wrapper
+  or `c_void` -- and is none of the above nor a layout type. These are handles
+  written outside ffibox. A pointer to Rust data, or a borrow of a Rust view
+  (`&[u8]`, `&str`), does not make a handle: those types are views and
+  iterators. A method's receiver of such a type counts too.
+
 Each splits by the fn's visibility, `_pub` and `_priv`. The
 functions read are free functions, inherent methods and the crate's own trait
 declarations. A trait impl's methods are left out, since the trait fixes their
 signatures. A method's `self` receiver counts only when it is a borrowed handle
-(`fn_sig_ffibox_handle_*`): `&self` on an owner or a plain value borrows a Rust
+(`fn_sig_ffibox_handle_*` or `fn_sig_non_ffibox_handle_*`): `&self` on an owner or a plain value borrows a Rust
 value, not a C object, and is skipped.
 
 The field families -- `ty_pub_fields_pub_<kind>`, `ty_pub_fields_priv_<kind>`
-and `ty_priv_<kind>`, for the kinds `ffibox_owner`, `ffibox_handle` and
-`non_ffibox_owner` -- count the same kinds in the fields of the structs,
+and `ty_priv_<kind>`, for the kinds `ffibox_owner`, `ffibox_handle`,
+`non_ffibox_owner` and `non_ffibox_handle` -- count the same kinds in the fields of the structs,
 unions and enums the crate defines, split as for `raw_ptr_ty_*`: by the type's
 visibility and, in a public type, by the field's own. They say what the
 crate's types hold, where the `fn_sig_*` families say what its functions take

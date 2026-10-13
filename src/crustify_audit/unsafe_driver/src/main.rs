@@ -1418,8 +1418,14 @@ impl<'a, 'tcx> Visitor<'tcx> for BodyVisitor<'a, 'tcx> {
 ///  - `fn_sig_non_ffibox_owner_*`: likewise for the crate's own owners, the types
 ///    with an `impl Drop` no ffibox macro emitted (`drop_impl`), keyed by type:
 ///    ownership the API hands out outside ffibox's `CBox` / `CArc` / `CVec`.
+///  - `fn_sig_non_ffibox_handle_*`: likewise for the crate's other handles,
+///    types that point at a C object (`holds_c_pointer`: a raw pointer,
+///    `NonNull` or reference to a C-reachable type, a layout wrapper or
+///    `c_void`) without being ffibox-based, own owners or layout types: handles
+///    written outside ffibox, keyed by type; a method's receiver counts too.
 ///  - `ty_pub_fields_pub_<kind>`, `ty_pub_fields_priv_<kind>`, `ty_priv_<kind>`:
-///    the same three kinds (`ffibox_owner`, `ffibox_handle`, `non_ffibox_owner`)
+///    the same four kinds (`ffibox_owner`, `ffibox_handle`, `non_ffibox_owner`,
+///    `non_ffibox_handle`)
 ///    in the fields of the structs, unions and enums the crate defines, split
 ///    as for `raw_ptr_ty_*`: by the type's effective visibility and, in a
 ///    public type, by the field's own. What the crate's types hold, where
@@ -1450,6 +1456,8 @@ const FFIBOX_COUNTERS: &[&str] = &[
     "fn_sig_ffibox_handle_priv",
     "fn_sig_non_ffibox_owner_pub",
     "fn_sig_non_ffibox_owner_priv",
+    "fn_sig_non_ffibox_handle_pub",
+    "fn_sig_non_ffibox_handle_priv",
     "ty_pub_fields_pub_ffibox_owner",
     "ty_pub_fields_priv_ffibox_owner",
     "ty_priv_ffibox_owner",
@@ -1459,6 +1467,9 @@ const FFIBOX_COUNTERS: &[&str] = &[
     "ty_pub_fields_pub_non_ffibox_owner",
     "ty_pub_fields_priv_non_ffibox_owner",
     "ty_priv_non_ffibox_owner",
+    "ty_pub_fields_pub_non_ffibox_handle",
+    "ty_pub_fields_priv_non_ffibox_handle",
+    "ty_priv_non_ffibox_handle",
     "ffibox_impl_macro",
     "ffibox_impl_manual",
     "ffibox_define_ctype_macro",
@@ -1534,11 +1545,33 @@ enum SigKind {
     FfiboxOwner,
     FfiboxHandle,
     Owner,
+    Handle,
 }
 
 /// ffibox's owners; its other public types (`CSlice`, `CSliceMut`,
 /// `CBorrowedPtr`, `CGuardedRef`, `CGuard`) borrow.
 const FFIBOX_OWNERS: &[&str] = &["CBox", "CArc", "CVec", "CStrBox", "CVal"];
+
+/// True when a field of `did` points at a C object -- through a raw pointer,
+/// `NonNull` or a reference (nested, or behind a transparent wrapper) -- whose
+/// type is C-reachable or a layout wrapper, or is `c_void` (an opaque C
+/// object). A pointer to Rust data, or a borrow of a Rust view (`&[u8]`,
+/// `&str`), does not make a handle.
+fn holds_c_pointer(tcx: TyCtxt<'_>, did: DefId) -> bool {
+    tcx.adt_def(did).all_fields().any(|f| {
+        let ft = tcx.type_of(f.did).instantiate_identity().skip_norm_wip();
+        if is_phantom(tcx, ft) || is_zst_marker(tcx, ft) {
+            return false;
+        }
+        let ft = peel_transparent(tcx, ft);
+        let mut ps = Vec::new();
+        c_pointee_adts(tcx, ft, false, &mut ps);
+        let mut raws = Vec::new();
+        raw_pointees(tcx, ft, &mut raws);
+        ps.into_iter().any(|p| is_c_visible(tcx, p) || is_type_wrapper(tcx, p))
+            || raws.into_iter().any(|p| is_c_void(tcx, p))
+    })
+}
 
 /// True when `did` is a `#[repr(transparent)]` newtype over exactly one of
 /// ffibox's borrowed types (`CBorrowedPtr`, `CSlice`, `CSliceMut`,
@@ -1582,6 +1615,9 @@ fn ffibox_positions<'tcx>(
                 out.push((SigKind::FfiboxHandle, tcx.def_path_str(did)));
             } else if owners.contains(&did) {
                 out.push((SigKind::Owner, tcx.def_path_str(did)));
+            } else if did.is_local() && !is_type_wrapper(tcx, did) && holds_c_pointer(tcx, did) {
+                // A handle written outside ffibox: it points at a C object.
+                out.push((SigKind::Handle, tcx.def_path_str(did)));
             }
             for a in args.types() {
                 ffibox_positions(tcx, a, handles, owners, out);
@@ -1670,7 +1706,7 @@ fn ffibox_json(tcx: TyCtxt<'_>, krate: rustc_span::Symbol) -> String {
                 if receiver {
                     let mut recv = Vec::new();
                     ffibox_positions(tcx, sig.inputs()[0], &handles, &owners, &mut recv);
-                    found.extend(recv.into_iter().filter(|(k, _)| matches!(k, SigKind::FfiboxHandle)));
+                    found.extend(recv.into_iter().filter(|(k, _)| matches!(k, SigKind::FfiboxHandle | SigKind::Handle)));
                 }
                 for t in sig
                     .inputs()
@@ -1690,6 +1726,8 @@ fn ffibox_json(tcx: TyCtxt<'_>, krate: rustc_span::Symbol) -> String {
                         (SigKind::FfiboxHandle, false) => "fn_sig_ffibox_handle_priv",
                         (SigKind::Owner, true) => "fn_sig_non_ffibox_owner_pub",
                         (SigKind::Owner, false) => "fn_sig_non_ffibox_owner_priv",
+                        (SigKind::Handle, true) => "fn_sig_non_ffibox_handle_pub",
+                        (SigKind::Handle, false) => "fn_sig_non_ffibox_handle_priv",
                     };
                     ffibox_bump(&mut m, &mut sites, counter, key, site.clone());
                 }
@@ -1726,6 +1764,9 @@ fn ffibox_json(tcx: TyCtxt<'_>, krate: rustc_span::Symbol) -> String {
                             (SigKind::Owner, true, true) => "ty_pub_fields_pub_non_ffibox_owner",
                             (SigKind::Owner, true, false) => "ty_pub_fields_priv_non_ffibox_owner",
                             (SigKind::Owner, false, _) => "ty_priv_non_ffibox_owner",
+                            (SigKind::Handle, true, true) => "ty_pub_fields_pub_non_ffibox_handle",
+                            (SigKind::Handle, true, false) => "ty_pub_fields_priv_non_ffibox_handle",
+                            (SigKind::Handle, false, _) => "ty_priv_non_ffibox_handle",
                         };
                         ffibox_bump(&mut m, &mut sites, counter, key, site.clone());
                     }

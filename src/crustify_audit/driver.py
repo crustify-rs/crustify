@@ -87,14 +87,16 @@ FFIBOX_COUNTERS = (
     "fn_sig_ffibox_owner_pub", "fn_sig_ffibox_owner_priv",
     "fn_sig_ffibox_handle_pub", "fn_sig_ffibox_handle_priv",
     "fn_sig_non_ffibox_owner_pub", "fn_sig_non_ffibox_owner_priv",
+    "fn_sig_non_ffibox_handle_pub", "fn_sig_non_ffibox_handle_priv",
     "ty_pub_fields_pub_ffibox_owner", "ty_pub_fields_priv_ffibox_owner",
     "ty_priv_ffibox_owner", "ty_pub_fields_pub_ffibox_handle",
     "ty_pub_fields_priv_ffibox_handle", "ty_priv_ffibox_handle",
     "ty_pub_fields_pub_non_ffibox_owner", "ty_pub_fields_priv_non_ffibox_owner",
-    "ty_priv_non_ffibox_owner", "ffibox_impl_macro", "ffibox_impl_manual",
-    "ffibox_define_ctype_macro", "ffibox_define_ctype_manual",
-    "ffibox_ccell_not_layout", "ffibox_layout_not_ccell", "drop_impl",
-    "clone_impl",
+    "ty_priv_non_ffibox_owner", "ty_pub_fields_pub_non_ffibox_handle",
+    "ty_pub_fields_priv_non_ffibox_handle", "ty_priv_non_ffibox_handle",
+    "ffibox_impl_macro", "ffibox_impl_manual", "ffibox_define_ctype_macro",
+    "ffibox_define_ctype_manual", "ffibox_ccell_not_layout",
+    "ffibox_layout_not_ccell", "drop_impl", "clone_impl",
 )
 
 
