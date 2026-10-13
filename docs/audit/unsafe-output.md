@@ -222,8 +222,9 @@ raw pointers (`Option<CBox<T>>` is one `CBox`):
   `Ref` / `Mut` and its `impl CGuarded` binds to `Locked`, read off the impls
   rather than the names); one of ffibox's borrowed views, keyed by type
   (`CSlice`, `CSliceMut`, `CBorrowedPtr`, `CGuardedRef`, `CGuard`); or another
-  crate type holding one of those in a field -- a handle built on ffibox by
-  hand -- keyed by its path. A method's
+  newtype over one of those -- exactly one non-zero-sized field, whatever
+  its `repr`, a handle built on ffibox by hand -- keyed by its path; a record
+  holding one beside other fields is not a handle. A method's
   receiver counts here when it is such a handle, since that is where a C
   function's borrowed `T *` lands.
 - `fn_sig_non_ffibox_owner_*`: one of the crate's own owners, keyed by type: a
