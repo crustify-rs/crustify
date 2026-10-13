@@ -1552,27 +1552,41 @@ enum SigKind {
 /// `CBorrowedPtr`, `CGuardedRef`, `CGuard`) borrow.
 const FFIBOX_OWNERS: &[&str] = &["CBox", "CArc", "CVec", "CStrBox", "CVal"];
 
-/// True when a field of `did` points at a C object -- through a raw pointer,
-/// `NonNull` or a reference (nested, or behind a transparent wrapper) -- whose
-/// type is C-reachable or a layout wrapper, or is `c_void` (an opaque C
-/// object). A pointer to Rust data, or a borrow of a Rust view (`&[u8]`,
-/// `&str`), does not make a handle.
+/// True when a field of `did` itself holds a pointer to a C object -- a raw
+/// pointer, `NonNull` or reference, written in the field's type (nested in
+/// `Option`, tuples or arrays) -- whose target is C-reachable, a layout wrapper
+/// or `c_void` (an opaque C object). An ffibox type or crate handle in a field
+/// is not looked through: a record holding an `OidRef` is not a handle written
+/// outside ffibox. A pointer to Rust data, or a borrow of a Rust view
+/// (`&[u8]`, `&str`), does not make a handle.
 fn holds_c_pointer(tcx: TyCtxt<'_>, did: DefId) -> bool {
-    tcx.adt_def(did).all_fields().any(|f| {
-        let ft = tcx.type_of(f.did).instantiate_identity().skip_norm_wip();
-        if is_phantom(tcx, ft) || is_zst_marker(tcx, ft) {
-            return false;
+    fn points_at_c<'tcx>(tcx: TyCtxt<'tcx>, t: Ty<'tcx>) -> bool {
+        let target_is_c = |p: Ty<'tcx>| {
+            is_c_void(tcx, p)
+                || matches!(p.kind(), ty::TyKind::Adt(d, _)
+                    if is_c_visible(tcx, d.did()) || is_type_wrapper(tcx, d.did()))
+        };
+        match t.kind() {
+            ty::TyKind::RawPtr(p, _) | ty::TyKind::Ref(_, p, _) => target_is_c(*p) || points_at_c(tcx, *p),
+            ty::TyKind::Adt(d, args) => {
+                let name = tcx.item_name(d.did());
+                if name.as_str() == "NonNull" {
+                    return args.types().any(|a| target_is_c(a));
+                }
+                if name.as_str() == "PhantomData" || is_ffibox_crate(tcx, d.did()) || d.did().is_local() {
+                    return false;
+                }
+                args.types().any(|a| points_at_c(tcx, a))
+            }
+            ty::TyKind::Tuple(tys) => tys.iter().any(|a| points_at_c(tcx, a)),
+            ty::TyKind::Array(e, _) | ty::TyKind::Slice(e) => points_at_c(tcx, *e),
+            _ => false,
         }
-        let ft = peel_transparent(tcx, ft);
-        let mut ps = Vec::new();
-        c_pointee_adts(tcx, ft, false, &mut ps);
-        let mut raws = Vec::new();
-        raw_pointees(tcx, ft, &mut raws);
-        ps.into_iter().any(|p| is_c_visible(tcx, p) || is_type_wrapper(tcx, p))
-            || raws.into_iter().any(|p| is_c_void(tcx, p))
-    })
+    }
+    tcx.adt_def(did)
+        .all_fields()
+        .any(|f| points_at_c(tcx, tcx.type_of(f.did).instantiate_identity().skip_norm_wip()))
 }
-
 /// True when `did` is a `#[repr(transparent)]` newtype over exactly one of
 /// ffibox's borrowed types (`CBorrowedPtr`, `CSlice`, `CSliceMut`,
 /// `CGuardedRef`, `CGuard`) or of the crate's own `CCell` / `CGuarded`
