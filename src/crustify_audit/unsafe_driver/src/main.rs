@@ -231,6 +231,90 @@ fn non_wrapper_borrows<'tcx>(tcx: TyCtxt<'tcx>, t: Ty<'tcx>) -> u64 {
     }
 }
 
+/// True if `did` is a layout newtype wrapping a C type -- the set `ty_wrapper`
+/// counts.
+fn is_layout_wrapper(tcx: TyCtxt<'_>, did: DefId) -> bool {
+    matches!(structural_wrapper(tcx, did), Some((true, cs)) if !cs.is_empty())
+}
+
+/// The standard containers that hold their contents by value, inline:
+/// a layout newtype in one is still a value of it.
+const STD_VALUE_CONTAINERS: &[&str] = &[
+    "Option", "Result", "Cell", "RefCell", "UnsafeCell", "OnceCell", "Mutex", "RwLock",
+    "MaybeUninit", "ManuallyDrop", "Pin",
+];
+
+/// The standard containers that own their contents on the Rust heap.
+const STD_OWNERS: &[&str] = &["Box", "Rc", "Arc", "Vec", "VecDeque"];
+
+/// Layout newtypes held in `t` by value, outside any ffibox owner: returns
+/// `(by_val, std_owner)`, the occurrences held directly -- through tuples,
+/// arrays and `STD_VALUE_CONTAINERS` (`Option<Foo>`) -- and those under one
+/// of the `STD_OWNERS` (`Box<Foo>`, `Option<Arc<Foo>>`, `Vec<Foo>`). Nothing
+/// behind a reference or raw pointer counts (`ty_wrapper_borrow_*` and
+/// `raw_ptr_*` have those), and other ADTs are not searched: ffibox owners are
+/// the `--ffibox` record's, and a local type's fields are counted at its own
+/// definition.
+fn wrapper_values<'tcx>(tcx: TyCtxt<'tcx>, t: Ty<'tcx>, owned: bool) -> (u64, u64) {
+    let one = if owned { (0, 1) } else { (1, 0) };
+    let add = |a: (u64, u64), b: (u64, u64)| (a.0 + b.0, a.1 + b.1);
+    match t.kind() {
+        ty::TyKind::Adt(d, _) if is_layout_wrapper(tcx, d.did()) => one,
+        ty::TyKind::Adt(d, args) if matches!(tcx.crate_name(d.did().krate).as_str(), "core" | "alloc" | "std") => {
+            let name = tcx.item_name(d.did());
+            let owned = if STD_OWNERS.contains(&name.as_str()) {
+                true
+            } else if STD_VALUE_CONTAINERS.contains(&name.as_str()) {
+                owned
+            } else {
+                return (0, 0);
+            };
+            args.types().map(|a| wrapper_values(tcx, a, owned)).fold((0, 0), add)
+        }
+        ty::TyKind::Tuple(tys) => tys.iter().map(|a| wrapper_values(tcx, a, owned)).fold((0, 0), add),
+        ty::TyKind::Array(e, _) | ty::TyKind::Slice(e) => wrapper_values(tcx, *e, owned),
+        _ => (0, 0),
+    }
+}
+
+/// Count `n` occurrences into counter `k`, all at `site`.
+fn count_n(slot: &mut u64, k: &'static str, n: u64, site: &(String, usize), sites: &mut Sites) {
+    *slot += n;
+    for _ in 0..n {
+        sites.add(k, site.clone());
+    }
+}
+
+/// Layout newtypes held by value in the fields of a type the crate declares,
+/// into `ty_wrapper_{by_val,std_owner}_ty_{pub_fields_pub,pub_fields_priv,priv}`,
+/// split as `raw_ptr_ty_*`.
+fn count_wrapper_value_fields(tcx: TyCtxt<'_>, did: DefId, c: &mut Counts, sites: &mut Sites) {
+    if in_generated_file(tcx, tcx.def_span(did)) {
+        return;
+    }
+    let vis = tcx.effective_visibilities(());
+    let exported = did.as_local().is_some_and(|l| vis.is_exported(l));
+    for f in tcx.adt_def(did).all_fields() {
+        let ft = tcx.type_of(f.did).instantiate_identity().skip_norm_wip();
+        let (v, o) = wrapper_values(tcx, ft, false);
+        if v + o == 0 {
+            continue;
+        }
+        let site = counter_site(tcx, tcx.def_span(f.did));
+        let field_exported = f.did.as_local().is_some_and(|l| vis.is_exported(l));
+        let (vs, vk, os, ok) = match (exported, field_exported) {
+            (true, true) => (&mut c.ty_wrapper_by_val_ty_pub_fields_pub, "ty_wrapper_by_val_ty_pub_fields_pub",
+                             &mut c.ty_wrapper_std_owner_ty_pub_fields_pub, "ty_wrapper_std_owner_ty_pub_fields_pub"),
+            (true, false) => (&mut c.ty_wrapper_by_val_ty_pub_fields_priv, "ty_wrapper_by_val_ty_pub_fields_priv",
+                              &mut c.ty_wrapper_std_owner_ty_pub_fields_priv, "ty_wrapper_std_owner_ty_pub_fields_priv"),
+            (false, _) => (&mut c.ty_wrapper_by_val_ty_priv, "ty_wrapper_by_val_ty_priv",
+                           &mut c.ty_wrapper_std_owner_ty_priv, "ty_wrapper_std_owner_ty_priv"),
+        };
+        count_n(vs, vk, v, &site, sites);
+        count_n(os, ok, o, &site, sites);
+    }
+}
+
 /// Raw-pointer positions in the fields of a struct or union the crate declares
 /// (nested ones included, as for signatures), counted into
 /// `raw_ptr_ty_{pub,priv}` by the effective visibility of the TYPE: every
@@ -1039,6 +1123,29 @@ struct Counts {
     // ty_wrapper_borrow_non_sanctioned's target is 0.
     ty_wrapper_borrow_sanctioned: u64,
     ty_wrapper_borrow_non_sanctioned: u64,
+    // Layout newtypes held by VALUE on the crate's surface, outside ffibox
+    // owners: `by_val` directly (`Foo`, `Option<Foo>`, `(Foo, u8)`, `[Foo; N]`,
+    // `Cell<Foo>`, ..), `std_owner` under a Rust heap owner (`Box<Foo>`,
+    // `Rc`, `Arc`, `Vec`, `VecDeque`, `Pin<Box<Foo>>`). Each occurrence counts
+    // once, in one family. Nothing behind a reference or pointer counts.
+    //   _fn_sig_{pub,priv}: parameters and return of a fn, by its effective
+    //     visibility (`-> Self` on the wrapper's own constructor included);
+    //     methods implementing another crate's trait are left out;
+    //   _ty_{pub_fields_pub,pub_fields_priv,priv}: fields of the crate's
+    //     structs, unions and enums, split as raw_ptr_ty_*.
+    // A by-value layout newtype is Rust-owned storage that can be moved,
+    // so a C pointer retained into it dangles, and no owner runs its C
+    // destructor: the cases ffibox's `CBox` / `CVal` exist for.
+    ty_wrapper_by_val_fn_sig_pub: u64,
+    ty_wrapper_by_val_fn_sig_priv: u64,
+    ty_wrapper_by_val_ty_pub_fields_pub: u64,
+    ty_wrapper_by_val_ty_pub_fields_priv: u64,
+    ty_wrapper_by_val_ty_priv: u64,
+    ty_wrapper_std_owner_fn_sig_pub: u64,
+    ty_wrapper_std_owner_fn_sig_priv: u64,
+    ty_wrapper_std_owner_ty_pub_fields_pub: u64,
+    ty_wrapper_std_owner_ty_pub_fields_priv: u64,
+    ty_wrapper_std_owner_ty_priv: u64,
     // `&T` / `&mut T` in fn signatures (the receiver and nested references
     // included), by the fn's visibility and safety as for raw_ptr_fn_*, where
     // `T` -- or a slice's element --
@@ -1926,6 +2033,9 @@ impl Callbacks for MetricsCallbacks {
             if matches!(tcx.def_kind(did), DefKind::Struct | DefKind::Union) {
                 count_raw_ptr_fields(tcx, did, &wrapped_c, &mut c, &mut sites);
             }
+            if matches!(tcx.def_kind(did), DefKind::Struct | DefKind::Union | DefKind::Enum) {
+                count_wrapper_value_fields(tcx, did, &mut c, &mut sites);
+            }
             match tcx.def_kind(did) {
                 DefKind::Struct => {
                     // LAYOUT newtypes only, and only those wrapping a C type: a
@@ -1935,7 +2045,7 @@ impl Callbacks for MetricsCallbacks {
                     // polices: `&handle` covers Rust-owned pointer storage and
                     // is ordinary, while `&W` on a layout newtype is the hazard
                     // `ty_wrapper_borrow_*` exists to keep at 0.
-                    let is_layout = matches!(structural_wrapper(tcx, did), Some((true, cs)) if !cs.is_empty());
+                    let is_layout = is_layout_wrapper(tcx, did);
                     if is_layout {
                         c.ty_wrapper += 1;
                         sites.add("ty_wrapper", counter_site(tcx, tcx.def_span(did)));
@@ -2079,6 +2189,21 @@ impl Callbacks for MetricsCallbacks {
                         }
                     }
                 }
+                // Layout newtypes by value in the signature, held directly or
+                // under a std heap owner, by the fn's visibility.
+                if !foreign {
+                    let (v, o) = sig.inputs().iter().copied().chain(std::iter::once(sig.output()))
+                        .map(|t| wrapper_values(tcx, t, false))
+                        .fold((0, 0), |a, b| (a.0 + b.0, a.1 + b.1));
+                    let site = counter_site(tcx, tcx.def_span(did));
+                    if exported {
+                        count_n(&mut c.ty_wrapper_by_val_fn_sig_pub, "ty_wrapper_by_val_fn_sig_pub", v, &site, &mut sites);
+                        count_n(&mut c.ty_wrapper_std_owner_fn_sig_pub, "ty_wrapper_std_owner_fn_sig_pub", o, &site, &mut sites);
+                    } else {
+                        count_n(&mut c.ty_wrapper_by_val_fn_sig_priv, "ty_wrapper_by_val_fn_sig_priv", v, &site, &mut sites);
+                        count_n(&mut c.ty_wrapper_std_owner_fn_sig_priv, "ty_wrapper_std_owner_fn_sig_priv", o, &site, &mut sites);
+                    }
+                }
                 // Raw pointers in the signature, args and return: every
                 // position, by the fn's visibility and safety.
                 if !foreign {
@@ -2180,8 +2305,8 @@ impl Callbacks for MetricsCallbacks {
             }
         }
         println!(
-            "{{\"crate\":\"{}\",\"code_lines\":{},\"total_stmts\":{},\"safe_fns_pub\":{},\"safe_fns_priv\":{},\"unsafe_blocks\":{},\"unsafe_block_stmts\":{},\"unsafe_block_lines\":{},\"unsafe_block_code_lines\":{},\"unsafe_blocks_wrapper_impl\":{},\"unsafe_blocks_ffi_export\":{},\"unsafe_fns\":{},\"unsafe_fns_pub\":{},\"unsafe_fns_priv\":{},\"unsafe_impls\":{},\"unsafe_traits\":{},\"ty_wrapper\":{},\"ty_wrapper_borrow_sanctioned\":{},\"ty_wrapper_borrow_non_sanctioned\":{},\"ty_non_wrapper_borrow_pub_safe\":{},\"ty_non_wrapper_borrow_pub_unsafe\":{},\"ty_non_wrapper_borrow_priv_safe\":{},\"ty_non_wrapper_borrow_priv_unsafe\":{},\"raw_ptr_ty_pub_fields_pub\":{},\"raw_ptr_ty_pub_fields_priv\":{},\"raw_ptr_ty_priv\":{},\"raw_ptr_fn_pub_safe\":{},\"raw_ptr_fn_pub_unsafe\":{},\"raw_ptr_fn_priv_safe\":{},\"raw_ptr_fn_priv_unsafe\":{},\"raw_ptr_has_ty_wrapper\":{},\"raw_ptr_derefs\":{},\"raw_ptr_derefs_outside_impl\":{},\"void_ptr_ty_pub_fields_pub\":{},\"void_ptr_ty_pub_fields_priv\":{},\"void_ptr_ty_priv\":{},\"void_ptr_fn_pub_safe\":{},\"void_ptr_fn_pub_unsafe\":{},\"void_ptr_fn_priv_safe\":{},\"void_ptr_fn_priv_unsafe\":{},\"ty_field_proj_wrapped\":{},\"ty_field_proj_outside_impl\":{},\"ty_field_borrow_wrapped\":{},\"deref_impl_on_wrapper\":{},\"ffi_calls\":{},\"sites\":{}}}",
-            krate, c.code_lines, c.total_stmts, c.safe_fns_pub, c.safe_fns_priv, c.unsafe_blocks, c.unsafe_block_stmts, c.unsafe_block_lines, c.unsafe_block_code_lines, c.unsafe_blocks_wrapper_impl, c.unsafe_blocks_ffi_export, c.unsafe_fns, c.unsafe_fns_pub, c.unsafe_fns_priv, c.unsafe_impls, c.unsafe_traits, c.ty_wrapper, c.ty_wrapper_borrow_sanctioned, c.ty_wrapper_borrow_non_sanctioned, c.ty_non_wrapper_borrow_pub_safe, c.ty_non_wrapper_borrow_pub_unsafe, c.ty_non_wrapper_borrow_priv_safe, c.ty_non_wrapper_borrow_priv_unsafe, c.raw_ptr_ty_pub_fields_pub, c.raw_ptr_ty_pub_fields_priv, c.raw_ptr_ty_priv, c.raw_ptr_fn_pub_safe, c.raw_ptr_fn_pub_unsafe, c.raw_ptr_fn_priv_safe, c.raw_ptr_fn_priv_unsafe, c.raw_ptr_has_ty_wrapper, c.raw_ptr_derefs, c.raw_ptr_derefs_outside_impl, c.void_ptr_ty_pub_fields_pub, c.void_ptr_ty_pub_fields_priv, c.void_ptr_ty_priv, c.void_ptr_fn_pub_safe, c.void_ptr_fn_pub_unsafe, c.void_ptr_fn_priv_safe, c.void_ptr_fn_priv_unsafe, c.ty_field_proj_wrapped, c.ty_field_proj_outside_impl, c.ty_field_borrow_wrapped, c.deref_impl_on_wrapper, c.ffi_calls,
+            "{{\"crate\":\"{}\",\"code_lines\":{},\"total_stmts\":{},\"safe_fns_pub\":{},\"safe_fns_priv\":{},\"unsafe_blocks\":{},\"unsafe_block_stmts\":{},\"unsafe_block_lines\":{},\"unsafe_block_code_lines\":{},\"unsafe_blocks_wrapper_impl\":{},\"unsafe_blocks_ffi_export\":{},\"unsafe_fns\":{},\"unsafe_fns_pub\":{},\"unsafe_fns_priv\":{},\"unsafe_impls\":{},\"unsafe_traits\":{},\"ty_wrapper\":{},\"ty_wrapper_borrow_sanctioned\":{},\"ty_wrapper_borrow_non_sanctioned\":{},\"ty_wrapper_by_val_fn_sig_pub\":{},\"ty_wrapper_by_val_fn_sig_priv\":{},\"ty_wrapper_by_val_ty_pub_fields_pub\":{},\"ty_wrapper_by_val_ty_pub_fields_priv\":{},\"ty_wrapper_by_val_ty_priv\":{},\"ty_wrapper_std_owner_fn_sig_pub\":{},\"ty_wrapper_std_owner_fn_sig_priv\":{},\"ty_wrapper_std_owner_ty_pub_fields_pub\":{},\"ty_wrapper_std_owner_ty_pub_fields_priv\":{},\"ty_wrapper_std_owner_ty_priv\":{},\"ty_non_wrapper_borrow_pub_safe\":{},\"ty_non_wrapper_borrow_pub_unsafe\":{},\"ty_non_wrapper_borrow_priv_safe\":{},\"ty_non_wrapper_borrow_priv_unsafe\":{},\"raw_ptr_ty_pub_fields_pub\":{},\"raw_ptr_ty_pub_fields_priv\":{},\"raw_ptr_ty_priv\":{},\"raw_ptr_fn_pub_safe\":{},\"raw_ptr_fn_pub_unsafe\":{},\"raw_ptr_fn_priv_safe\":{},\"raw_ptr_fn_priv_unsafe\":{},\"raw_ptr_has_ty_wrapper\":{},\"raw_ptr_derefs\":{},\"raw_ptr_derefs_outside_impl\":{},\"void_ptr_ty_pub_fields_pub\":{},\"void_ptr_ty_pub_fields_priv\":{},\"void_ptr_ty_priv\":{},\"void_ptr_fn_pub_safe\":{},\"void_ptr_fn_pub_unsafe\":{},\"void_ptr_fn_priv_safe\":{},\"void_ptr_fn_priv_unsafe\":{},\"ty_field_proj_wrapped\":{},\"ty_field_proj_outside_impl\":{},\"ty_field_borrow_wrapped\":{},\"deref_impl_on_wrapper\":{},\"ffi_calls\":{},\"sites\":{}}}",
+            krate, c.code_lines, c.total_stmts, c.safe_fns_pub, c.safe_fns_priv, c.unsafe_blocks, c.unsafe_block_stmts, c.unsafe_block_lines, c.unsafe_block_code_lines, c.unsafe_blocks_wrapper_impl, c.unsafe_blocks_ffi_export, c.unsafe_fns, c.unsafe_fns_pub, c.unsafe_fns_priv, c.unsafe_impls, c.unsafe_traits, c.ty_wrapper, c.ty_wrapper_borrow_sanctioned, c.ty_wrapper_borrow_non_sanctioned, c.ty_wrapper_by_val_fn_sig_pub, c.ty_wrapper_by_val_fn_sig_priv, c.ty_wrapper_by_val_ty_pub_fields_pub, c.ty_wrapper_by_val_ty_pub_fields_priv, c.ty_wrapper_by_val_ty_priv, c.ty_wrapper_std_owner_fn_sig_pub, c.ty_wrapper_std_owner_fn_sig_priv, c.ty_wrapper_std_owner_ty_pub_fields_pub, c.ty_wrapper_std_owner_ty_pub_fields_priv, c.ty_wrapper_std_owner_ty_priv, c.ty_non_wrapper_borrow_pub_safe, c.ty_non_wrapper_borrow_pub_unsafe, c.ty_non_wrapper_borrow_priv_safe, c.ty_non_wrapper_borrow_priv_unsafe, c.raw_ptr_ty_pub_fields_pub, c.raw_ptr_ty_pub_fields_priv, c.raw_ptr_ty_priv, c.raw_ptr_fn_pub_safe, c.raw_ptr_fn_pub_unsafe, c.raw_ptr_fn_priv_safe, c.raw_ptr_fn_priv_unsafe, c.raw_ptr_has_ty_wrapper, c.raw_ptr_derefs, c.raw_ptr_derefs_outside_impl, c.void_ptr_ty_pub_fields_pub, c.void_ptr_ty_pub_fields_priv, c.void_ptr_ty_priv, c.void_ptr_fn_pub_safe, c.void_ptr_fn_pub_unsafe, c.void_ptr_fn_priv_safe, c.void_ptr_fn_priv_unsafe, c.ty_field_proj_wrapped, c.ty_field_proj_outside_impl, c.ty_field_borrow_wrapped, c.deref_impl_on_wrapper, c.ffi_calls,
             sites.json()
         );
         Compilation::Continue

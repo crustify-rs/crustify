@@ -336,6 +336,16 @@ Deterministic `crustify ffimap <workdir>` (`ffimap.json`); no model.
 | `ty_wrapper` | `<n>` | `<n>` | … |
 | `ty_wrapper_borrow_sanctioned` | `<n>` | `<n>` | … |
 | **`ty_wrapper_borrow_non_sanctioned`** | **`<n>`** | `<n>` | … |
+| `ty_wrapper_by_val_fn_sig_pub` | `<n>` | `<n>` | … |
+| `ty_wrapper_by_val_fn_sig_priv` | `<n>` | `<n>` | … |
+| `ty_wrapper_by_val_ty_pub_fields_pub` | `<n>` | `<n>` | … |
+| `ty_wrapper_by_val_ty_pub_fields_priv` | `<n>` | `<n>` | … |
+| `ty_wrapper_by_val_ty_priv` | `<n>` | `<n>` | … |
+| `ty_wrapper_std_owner_fn_sig_pub` | `<n>` | `<n>` | … |
+| `ty_wrapper_std_owner_fn_sig_priv` | `<n>` | `<n>` | … |
+| `ty_wrapper_std_owner_ty_pub_fields_pub` | `<n>` | `<n>` | … |
+| `ty_wrapper_std_owner_ty_pub_fields_priv` | `<n>` | `<n>` | … |
+| `ty_wrapper_std_owner_ty_priv` | `<n>` | `<n>` | … |
 | `ty_non_wrapper_borrow_pub_safe` | `<n>` | `<n>` | … |
 | `ty_non_wrapper_borrow_pub_unsafe` | `<n>` | `<n>` | … |
 | `ty_non_wrapper_borrow_priv_safe` | `<n>` | `<n>` | … |
