@@ -1411,8 +1411,8 @@ impl<'a, 'tcx> Visitor<'tcx> for BodyVisitor<'a, 'tcx> {
 ///    crate's own, the types its `CCell` / `CGuarded` impls name as `Ref`,
 ///    `Mut` and `Locked` (keyed by that kind); ffibox's borrowed views
 ///    (`CSlice`, `CSliceMut`, `CBorrowedPtr`, `CGuardedRef`, `CGuard`, keyed by
-///    type); and a hand-built handle over one of those, a
-///    `#[repr(transparent)]` newtype over exactly one (keyed by its path). A
+///    type); and a hand-built handle over one of those, a newtype whose one
+///    non-zero-sized field is such a type (keyed by its path). A
 ///    method's receiver counts here when it is such a handle: that is where a
 ///    C function's borrowed `T *` lands.
 ///  - `fn_sig_non_ffibox_owner_*`: likewise for the crate's own owners, the types
@@ -1587,14 +1587,15 @@ fn holds_c_pointer(tcx: TyCtxt<'_>, did: DefId) -> bool {
         .all_fields()
         .any(|f| points_at_c(tcx, tcx.type_of(f.did).instantiate_identity().skip_norm_wip()))
 }
-/// True when `did` is a `#[repr(transparent)]` newtype over exactly one of
+/// True when `did` is a newtype -- exactly one non-zero-sized field, whatever
+/// its `repr` -- over one of
 /// ffibox's borrowed types (`CBorrowedPtr`, `CSlice`, `CSliceMut`,
 /// `CGuardedRef`, `CGuard`) or of the crate's own `CCell` / `CGuarded`
 /// handles: a handle built on ffibox by hand, not one its `CCell` impls name.
 /// A record holding such a handle beside other fields is not a handle.
 fn holds_ffibox_borrow(tcx: TyCtxt<'_>, did: DefId, handles: &HashMap<DefId, &'static str>) -> bool {
     let def = tcx.adt_def(did);
-    if !def.is_struct() || !def.repr().transparent() {
+    if !def.is_struct() {
         return false;
     }
     let mut inner = def.all_fields().map(|f| tcx.type_of(f.did).instantiate_identity().skip_norm_wip())
