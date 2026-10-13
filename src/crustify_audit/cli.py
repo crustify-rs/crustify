@@ -86,7 +86,8 @@ def add_stages(sub: "argparse._SubParsersAction", *,
              "crate's Ref/Mut/Locked handles in fn signatures (pub or private, "
              "by kind), and the crate's types implementing ffibox traits "
              "and other traits (ffibox-macro, derived and hand-written). Adds an "
-             "`ffibox` record; its counters also take --sites.")
+             "`ffibox` record; its counters also take --sites, whole or "
+             "for one key of their breakdown (fn_sig_ffibox_owner_pub:CVal).")
 
     h = sub.add_parser(
         ub_name,
