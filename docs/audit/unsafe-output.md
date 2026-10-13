@@ -228,7 +228,7 @@ from".
 `--ffibox` adds an `ffibox` record, `{"counts": {counter: N}, "by": {counter:
 {key: N}}}`: each counter's total, and its breakdown by ffibox type, handle
 kind or trait. Every counter is present, zeros included, and each takes
-`--sites` alongside `--ffibox`. `_pub` / `_priv` is the effective visibility of
+`--sites` alongside `--ffibox`, whole or for one key of its breakdown as `<counter>:<key>` (`fn_sig_ffibox_owner_pub:CVal`). `_pub` / `_priv` is the effective visibility of
 the function for a signature position, and of the implementing type for an
 impl.
 

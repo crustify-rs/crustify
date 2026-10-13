@@ -1238,11 +1238,11 @@ impl Counts {
 /// output name: every increment of a location-counting counter records where it
 /// happened. Line and statement totals have none. Aggregated by `Sites::json`.
 #[derive(Default)]
-struct Sites(std::collections::BTreeMap<&'static str, Vec<(String, usize)>>);
+struct Sites(std::collections::BTreeMap<String, Vec<(String, usize)>>);
 
 impl Sites {
-    fn add(&mut self, counter: &'static str, site: (String, usize)) {
-        self.0.entry(counter).or_default().push(site);
+    fn add(&mut self, counter: impl Into<String>, site: (String, usize)) {
+        self.0.entry(counter.into()).or_default().push(site);
     }
 
     /// `{"<counter>": [{"file":..,"count":N,"lines":[..]}], ..}`, where `count`
@@ -1785,6 +1785,9 @@ fn own_owners(tcx: TyCtxt<'_>) -> HashSet<DefId> {
 type FfiboxTally = std::collections::BTreeMap<&'static str, std::collections::BTreeMap<String, u64>>;
 
 fn ffibox_bump(m: &mut FfiboxTally, sites: &mut Sites, counter: &'static str, key: String, site: (String, usize)) {
+    // Also under `<counter>:<key>`, so `--sites fn_sig_ffibox_owner_pub:CVal`
+    // can list one type's positions.
+    sites.add(format!("{counter}:{key}"), site.clone());
     *m.entry(counter).or_default().entry(key).or_default() += 1;
     sites.add(counter, site);
 }

@@ -114,14 +114,18 @@ def site_counters(requested: list[str], ffibox: bool = False) -> list[str]:
     valid = driver.SITE_COUNTERS + (driver.FFIBOX_COUNTERS if ffibox else ())
     if "all" in requested:
         return list(valid)
-    unknown = [n for n in requested if n not in valid]
+    # An ffibox counter takes a key from its breakdown, `<counter>:<key>`
+    # (`fn_sig_ffibox_owner_pub:CVal`), for that key's positions alone.
+    keyed = lambda n: ffibox and n.partition(":")[0] in driver.FFIBOX_COUNTERS and ":" in n
+    unknown = [n for n in requested if n not in valid and not keyed(n)]
     if unknown:
         hint = (" (the --ffibox counters need --ffibox)"
-                if any(n in driver.FFIBOX_COUNTERS for n in unknown) else "")
+                if any(n.partition(":")[0] in driver.FFIBOX_COUNTERS for n in unknown) else "")
         raise SystemExit(
             "unsafe: --sites takes counters that count source locations; "
             f"unknown or siteless: {' '.join(unknown)}{hint}. Valid: "
-            + " ".join(valid) + ", or all")
+            + " ".join(valid) + ", or all; an --ffibox counter also takes "
+            "<counter>:<key> for one key of its breakdown")
     return list(dict.fromkeys(requested))
 
 

@@ -85,6 +85,12 @@ class FfiboxTests(unittest.TestCase):
         self.assertEqual(unsafe_scan.site_counters(["fn_sig_ffibox_owner_pub"], ffibox=True),
                          ["fn_sig_ffibox_owner_pub"])
         self.assertNotIn("fn_sig_ffibox_owner_pub", unsafe_scan.site_counters(["all"]))
+        self.assertEqual(unsafe_scan.site_counters(["fn_sig_ffibox_owner_pub:CVal"], ffibox=True),
+                         ["fn_sig_ffibox_owner_pub:CVal"])
+        with self.assertRaises(SystemExit):
+            unsafe_scan.site_counters(["fn_sig_ffibox_owner_pub:CVal"])
+        with self.assertRaises(SystemExit):
+            unsafe_scan.site_counters(["raw_ptr_fn_pub_safe:x"], ffibox=True)
         self.assertIn("fn_sig_ffibox_owner_pub", unsafe_scan.site_counters(["all"], ffibox=True))
 
 
