@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import json
 import re
+from sys import stderr
 from pathlib import Path
 
 from crustify_audit import driver
@@ -153,7 +154,8 @@ def compose(layout: Layout, sites: list[str] | None = None,
         doc["counts"] = None
         doc["counts_unavailable"] = str(e)
         breakdowns = None
-        print(f"[crustify-audit] no counts: {e}".rstrip())
+        # stderr: `--json` owns stdout, and the document records the failure.
+        print(f"[crustify-audit] no counts: {e}".rstrip(), file=stderr)
     if ffibox:
         doc["ffibox"] = _ffibox_record(breakdowns)
     if wanted is not None:

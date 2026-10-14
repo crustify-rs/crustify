@@ -201,8 +201,12 @@ def _driver_bin() -> Path:
         # stderr: `ffimap --json` owns stdout.
         print("[crustify-audit] building the HIR driver (first run only)…",
               file=sys.stderr)
+    # The caller's CARGO_TARGET_DIR is for the audited workspace. Inherited
+    # here, it would build the driver somewhere other than `bin_path` -- a
+    # full rebuild that needs `rustc-dev`, then a stale binary run anyway.
+    env = {k: v for k, v in os.environ.items() if k != "CARGO_TARGET_DIR"}
     r = subprocess.run(["cargo", f"+{_TOOLCHAIN}", "build"], cwd=_DRIVER_CRATE,
-                       capture_output=True, text=True)
+                       env=env, capture_output=True, text=True)
     if r.returncode != 0:
         raise DriverUnavailable(f"driver build failed:\n{r.stderr[-1500:]}")
     return bin_path
