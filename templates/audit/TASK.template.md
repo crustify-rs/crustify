@@ -52,8 +52,8 @@ Unanswered optional questions are decided by the orchestrator.
 ## Review
 
 7. **Which objectives should the reviewers review for? By default, the objective above
-   decides: `ub`, `equiv` when `equivalence` is an instrument, and `disclose` for
-   `audit`; `revisit` and `disclose` for `revisit`; plus `fix` for `fix`.**
+   decides: `ub`, `contracts`, `equiv` when `equivalence` is an instrument, and
+   `disclose` for `audit`; `revisit` and `disclose` for `revisit`; plus `fix` for `fix`.**
    - Answer: `<default | any of: unsafety, contracts, ub, equiv, internal, misc,
      coverage, revisit, disclose, fix>`
 

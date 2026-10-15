@@ -24,7 +24,7 @@ headless run needs every mandatory answer. Rerunning the command resumes the aud
 
 | task objective | reviewer objectives |
 |---|---|
-| `audit` | `ub`, `equiv` when `equivalence` is selected, and `disclose` |
+| `audit` | `ub`, `contracts`, `equiv` when `equivalence` is selected, and `disclose` |
 | `revisit` | `revisit` and `disclose`, over the reports the task names or every report filed so far |
 | `fix` | adds `fix` to the batches of `audit` and `revisit` |
 

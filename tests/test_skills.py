@@ -6,19 +6,23 @@ import re
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 from unittest import mock
 
 from crustify import deps
 from crustify.agents.base import _PKG_ROOT
-from crustify.agents.orchestrate import OrchestrateAgent
+from crustify.agents.orchestrate import AUDIT_SKILLS, OrchestrateAgent
 from crustify.agents.review import ReviewAgent
 from crustify.agents.bind import BindAgent
 from crustify.agents.translate import TranslateAgent
 
-_ROLES = (BindAgent, TranslateAgent, ReviewAgent, OrchestrateAgent)
+_ROLES = (BindAgent, TranslateAgent, ReviewAgent, OrchestrateAgent,
+          SimpleNamespace(name="audit-orchestrator", SKILLS=AUDIT_SKILLS))
 _ROLE_NAMES = ((BindAgent, "binder"), (TranslateAgent, "translator"),
                (ReviewAgent, "reviewer"),
-               (OrchestrateAgent, "orchestrator"))
+               (OrchestrateAgent, "translate-orchestrator"),
+               (SimpleNamespace(name="audit-orchestrator", SKILLS=AUDIT_SKILLS),
+                "audit-orchestrator"))
 
 
 class DeclaredPathTests(unittest.TestCase):
@@ -213,7 +217,7 @@ class DiscoveryTests(unittest.TestCase):
         """The role header is one file under prompts/skills/, and deleting it
         removes the skill from that role even with its checkout installed."""
         real = Path.is_file
-        header = _PKG_ROOT / "prompts" / "skills/wavefront/orchestrator.md"
+        header = _PKG_ROOT / "prompts" / "skills/wavefront/translate-orchestrator.md"
         with mock.patch.object(
                 Path, "is_file",
                 lambda p: False if p == header else real(p)):

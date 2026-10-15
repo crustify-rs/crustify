@@ -83,8 +83,18 @@ git -C <repo> checkout -b crustify/campaign
 
 #### 3. Prebuilds and test baselines
 
-Verify the target revision. Create immutable builds of the audited crate and its C/C++
-dependencies so that reviewers can reuse them:
+Verify the target revision.
+
+A build compiles only the files its configuration selects: Cargo features, targets,
+`cfg`s, and the C sources the build script compiles. A defect in a file no build compiles
+cannot be reproduced, and no ffimap scan sees it. Choose the configuration that covers the
+most of the crate, typically every feature that builds on this platform, and list the
+files it leaves out with the reason. When a part of the crate left out is worth auditing,
+add a variant for the configuration that compiles it, or rebuild with it included, and
+record the files no build covers in the audit dashboard as unaudited.
+
+Create immutable builds of the audited crate and its C/C++ dependencies in that
+configuration, so that reviewers can reuse them:
 
 - **plain** build for the functional baseline;
 - **coverage-instrumented** build, when `coverage` is among the review objectives;
@@ -114,7 +124,8 @@ Refresh the builds after a review wave whose reviewers fixed the Rust or C/C++ s
 
 The task's objectives map onto the reviewer's objectives:
 
-- `audit`: `ub`, plus `equiv` when `equivalence` is among the instruments, and `disclose`;
+- `audit`: `ub` and `contracts`, plus `equiv` when `equivalence` is among the instruments,
+  and `disclose`;
 - `revisit`: `revisit` and `disclose`, over the reports the task names, or every report
   filed so far;
 - `fix`: adds `fix` to the batches of `audit` and `revisit`, so that reviewers patch what
@@ -124,8 +135,8 @@ The task's review objectives, when given, replace this mapping.
 
 ##### Worksets
 
-For `audit`, inspect the crate and the reports
-filed so far. Divide the crate into disjoint worksets of modules, one per review batch;
+For `audit`, inspect the crate and the reports filed so far, and prioritize the sites
+the ffimap skill names. Divide the crate into disjoint worksets of modules, one per review batch;
 give a single reviewer the whole crate when only one is configured.
 
 For `revisit`, divide the reports into their own batches, grouped so that reports

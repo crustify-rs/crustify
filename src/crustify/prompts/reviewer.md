@@ -86,9 +86,17 @@ with safe, idiomatic variants, so that API consumers write less unsafe code.
 
 #### Contracts (`contracts`)
 
-Public entry points of your workset that must legitimately stay unsafe, but whose
-`# Safety` obligation is incorrect, incomplete or ambiguous: a caller who honours it can
-still reach undefined behaviour, or it asks for something the implementation does not need.
+Safety contracts in your workset that are incorrect, incomplete or ambiguous:
+
+- the `# Safety` obligation of a public entry point that must legitimately stay unsafe: a
+  caller who honours it can still reach undefined behaviour, or it asks for something the
+  implementation does not need;
+- the `// SAFETY:` justification of an `unsafe` block: the invariant it claims does not
+  hold on every path that reaches the block, or no comment justifies the block at all.
+
+Try to break each contract: look for an input, a call sequence or an interleaving that
+honours the obligation, or reaches the block through safe code, and still violates what
+the `unsafe` relies on.
 
 #### UB (`ub`)
 
@@ -136,7 +144,12 @@ File every finding in its own `<slug>` directory in its objective's dir, with a 
 describes it: what is wrong, where, the evidence that proves it, and, when `fix` is
 enabled, how it was fixed.
 
-A `ub` or `equiv` candidate becomes a finding only once a reproducer proves it:
+A `ub` or `equiv` candidate becomes a finding only once a reproducer proves it, and so
+does a `contracts` candidate that claims a contract can be broken: its reproducer honours
+the `# Safety` obligation, or reaches the `unsafe` block through safe code, and still
+triggers a sanitizer, as a UB reproducer on the unsafe or the safe interface does. A
+contract that merely asks for more than the implementation needs, or a missing
+justification, is a finding without one:
 
 - a UB reproducer triggers one of the available sanitizers from Rust code, and its report
   carries a trace of the sanitizer crash. One targeting the safe public API is annotated
@@ -186,7 +199,9 @@ and for the gates in Regressions below: change nothing in the Rust tree outside
 If `fix` is enabled, patch every finding of your objectives:
 
 - `unsafety`: make the entry point safe;
-- `contracts`: correct its `# Safety` obligation;
+- `contracts`: correct the `# Safety` obligation or `// SAFETY:` justification, or, when
+  the contract can be broken, the code it guards, and turn the reproducer into a UB
+  regression test;
 - `ub`, `equiv` and `internal`: patch the defect, and turn the reproducer into a regression
   test of the same kind: a UB test, an equivalence test, or, for an internal defect, a
   unit test. A UB regression test either compiles and runs without triggering a sanitizer,

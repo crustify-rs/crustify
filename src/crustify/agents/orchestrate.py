@@ -17,30 +17,41 @@ from crustify.agents.base import (
     CrustifyAgent, SkillSpec, _PKG_ROOT, expand_includes,
 )
 
-#: Every skill an orchestrator can carry, in prompt order. Which of them it
-#: actually carries is decided by discovery: a skill whose files are on disk
-#: is rendered, one whose files are not is silently absent. Each lives at
-#: `prompts/skills/<skill>/orchestrator.md` — one directory per skill, one file
-#: per role — so deleting the file ablates it here and deleting the
-#: directory ablates it everywhere. There is no role skill: it existed to
-#: route the orchestrator to its playbook, and the playbook is now this
-#: agent's prompt.
+#: Every skill an orchestrator can carry, per campaign kind, in prompt order.
+#: Which of them it actually carries is decided by discovery: a skill whose
+#: files are on disk is rendered, one whose files are not is silently absent.
+#: Each lives at `prompts/skills/<skill>/<kind>-orchestrator.md`, named like
+#: the kind's prompt — one directory per skill, one file per role — so
+#: deleting the file ablates it for that kind and deleting the directory
+#: ablates it everywhere.
 #:
 #: The coding conventions are not a skill: the prompt includes them whole.
-_SKILLS = (
+TRANSLATE_SKILLS = (
     SkillSpec(
         "crustify", "src/crustify/prompts/skills/ffimap/SKILL.md",
         capability="ffimap",
-        role_header="skills/ffimap/orchestrator.md",
+        role_header="skills/ffimap/translate-orchestrator.md",
     ),
     #: One wavefront skill, two role overlays. The oracle a translator queries
     #: and the oracle an orchestrator plans with are the same tool used for
     #: different work, so the metadata is shared and only the guidance splits.
     SkillSpec(
         "wavefront", "SKILL.md", capability="wavefront",
-        role_header="skills/wavefront/orchestrator.md",
+        role_header="skills/wavefront/translate-orchestrator.md",
     ),
 )
+
+#: An audit plans from the crate's unsafe surface, which is ffimap's; it has
+#: no C decomposition to plan, so it carries no wavefront.
+AUDIT_SKILLS = (
+    SkillSpec(
+        "crustify", "src/crustify/prompts/skills/ffimap/SKILL.md",
+        capability="ffimap",
+        role_header="skills/ffimap/audit-orchestrator.md",
+    ),
+)
+
+SKILLS_BY_KIND = {"translate": TRANSLATE_SKILLS, "audit": AUDIT_SKILLS}
 
 
 class OrchestrateAgent(CrustifyAgent):
@@ -49,13 +60,14 @@ class OrchestrateAgent(CrustifyAgent):
     name = "orchestrator"
     stage = "orchestrate"
     prompt_in_system_slot = True
-    SKILLS = _SKILLS
+    SKILLS = TRANSLATE_SKILLS
 
     def __init__(self, workdir: Path, *, kind: str, task: Path,
                  model: str, task_only: bool = False,
                  interactive: bool = False,
                  **kwargs) -> None:
         self.kind = kind
+        self.SKILLS = SKILLS_BY_KIND[kind]
         self.task = Path(task)
         self.model = model
         self.task_only = task_only
