@@ -25,9 +25,10 @@ headless run needs every mandatory answer. `--campaign <id>` resumes an earlier 
 | task objective | reviewer objectives |
 |---|---|
 | `audit` | `ub`, `equiv` when `equivalence` is selected, and `disclose` |
-| `audit+fix` | the same, plus `fix` |
 | `revisit` | `revisit` and `disclose`, over the reports the task names or every report filed so far |
-| `revisit+fix` | the same, plus `fix` |
+| `fix` | adds `fix` to the batches of `audit` and `revisit` |
+
+A task selects `audit`, `revisit` or both, and `fix` optionally.
 
 Without `fix`, reviewers change nothing but their reviews dirs.
 

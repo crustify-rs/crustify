@@ -112,23 +112,23 @@ Refresh the builds after a review wave whose reviewers fixed the Rust or C/C++ s
 
 ##### Review objectives
 
-The task's objective maps onto the reviewer's objectives:
+The task's objectives map onto the reviewer's objectives:
 
 - `audit`: `ub`, plus `equiv` when `equivalence` is among the instruments, and `disclose`;
-- `audit+fix`: the same, plus `fix`;
 - `revisit`: `revisit` and `disclose`, over the reports the task names, or every report
   filed so far;
-- `revisit+fix`: the same, plus `fix`.
+- `fix`: adds `fix` to the batches of `audit` and `revisit`, so that reviewers patch what
+  they find or revisit.
 
 The task's review objectives, when given, replace this mapping.
 
 ##### Worksets
 
-For `audit` and `audit+fix`, run the ffimap scan, then inspect the crate and the reports
+For `audit`, run the ffimap scan, then inspect the crate and the reports
 filed so far. Divide the crate into disjoint worksets of modules, one per review batch;
 give a single reviewer the whole crate when only one is configured.
 
-For `revisit` and `revisit+fix`, divide the reports instead, grouped so that reports
+For `revisit`, divide the reports into their own batches, grouped so that reports
 needing the same instrument or the same build land on the same reviewer.
 
 Each round of reviewers, up to the configured concurrency, is one review wave.

@@ -6,9 +6,12 @@ Optional answers may be left unresolved for the orchestrator to decide.
 
 ## Audit
 
-1. **Should the reviewers only report, also fix what they confirm, or revisit
-   reports an earlier audit filed?**
-   - Answer: `<audit | audit+fix | revisit | revisit+fix>`
+1. **Should the reviewers hunt for new defects, revisit reports an earlier audit
+   filed, or both, and should they fix what they confirm?**
+   - Answer: `<any of: audit, revisit, fix>`, with `audit`, `revisit` or both
+   - `audit` hunts for new defects in the crate.
+   - `fix` patches what `audit` confirms and what `revisit` still reproduces;
+     without it, reviewers only report.
    - `revisit` hunts nothing new: it reruns the reproducers of the reports an
      earlier audit filed, which is what you want after a fix lands or an
      instrument that can now decide one is added. Name the reports, or leave
@@ -49,8 +52,8 @@ Unanswered optional questions are decided by the orchestrator.
 ## Review
 
 7. **Which objectives should the reviewers review for? By default, the objective above
-   decides: `ub`, `equiv` when `equivalence` is an instrument, and `disclose`, plus
-   `fix` for `audit+fix`; `revisit` and `disclose`, plus `fix` for `revisit+fix`.**
+   decides: `ub`, `equiv` when `equivalence` is an instrument, and `disclose` for
+   `audit`; `revisit` and `disclose` for `revisit`; plus `fix` for `fix`.**
    - Answer: `<default | any of: unsafety, contracts, ub, equiv, internal, misc,
      coverage, revisit, disclose, fix>`
 
