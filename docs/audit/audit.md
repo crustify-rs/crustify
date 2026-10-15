@@ -1,12 +1,8 @@
 # crustify-audit
 
-Audit Rust repositories—especially wrappers over C—for unsafe surface area and undefined
-behavior reachable from safe code.
-
-| command | kind | result |
-|---|---|---|
-| `unsafe` | deterministic rustc analysis | unsafe and raw-pointer metrics |
-| `ub` | agentic audit | investigated leads and reproducible advisories |
+Audit Rust repositories—especially wrappers over C—for undefined behavior reachable from
+safe code. `crustify spawn-auditor` runs an agentic audit whose result is investigated
+leads and reproducible advisories.
 
 ## Quick start
 
@@ -15,16 +11,10 @@ Requires Python 3.13 or newer:
 ```sh
 pip install -e .
 
-crustify ffimap /path/to/repo
 crustify spawn-auditor /path/to/repo --model anthropic/claude-opus-5
 ```
 
-Pass the repository root. The audited Cargo workspace is the root when it has a
-`Cargo.toml`; otherwise it is `crustify/rust/` for a Crustify campaign.
-
-`unsafe` requires the dated nightly pinned by its rustc driver
-(`src/crustify_audit/unsafe_driver/rust-toolchain.toml`) with `rustc-dev` and
-`llvm-tools`, plus a workspace that compiles. `ub` requires the selected Claude or Codex CLI and the instrumentation
+Pass the repository root. `ub` requires the selected Claude or Codex CLI and the instrumentation
 appropriate to each finding. It warns when Miri or BorrowSanitizer is unavailable.
 
 ## Output
@@ -52,8 +42,6 @@ runs extend the record instead of repeating completed investigations.
 ## CLI
 
 ```text
-crustify ffimap WORKDIR [--json] [--ffibox]
-                    [--sites COUNTER ... | all]
 crustify spawn-auditor WORKDIR [--objective audit|audit+patch|patch|revisit]
                        [--workset PATH ...]
                        [--instruments miri|asan/ubsan|bsan|msan|tsan|equivalence ...]
@@ -62,9 +50,6 @@ crustify spawn-auditor WORKDIR [--objective audit|audit+patch|patch|revisit]
                        [--timeout MINUTES]
 ```
 
-- `unsafe --json` prints the document on stdout; redirect it to keep it.
-- `unsafe --sites` adds where the named counters' increments are, as a `sites` record
-  beside `counts`; `all` selects every counter that counts source locations.
 - `ub --workset` confines an auditor to specified work items. For audit objectives these
   are source files; omit it for the whole crate. Under `--objective patch` it carries
   advisory directories under `crustify/audit/advisories/` instead of source files; omit it
@@ -83,8 +68,8 @@ crustify spawn-auditor WORKDIR [--objective audit|audit+patch|patch|revisit]
   reproduces. Use it after adding an instrument that can settle a hypothesis the earlier
   run had to leave standing.
 
-Run `crustify ffimap --help`, `crustify spawn-auditor --help` or `crustify audit
---help` for complete flag semantics.
+Run `crustify spawn-auditor --help` or `crustify audit --help` for complete flag
+semantics.
 
 ### Instrument scopes
 
@@ -170,15 +155,12 @@ orchestrator asks for mandatory decisions. A headless run therefore needs a comp
 provider. OpenRouter requires `api`; `subscription` uses Claude or Codex credentials saved
 under `/work`, which is also the persistent Cargo/build cache. An
 `openrouter/anthropic/<model>` route uses Claude Code with `OPENROUTER_API_KEY`; other
-OpenRouter model IDs use Codex. The deterministic scan needs no agent and no
-authentication, so it is just another command: `docker exec <name> crustify
-ffimap /target`.
+OpenRouter model IDs use Codex.
 
 `CRUSTIFY_BARE=1` still makes the mounted `TASK.md` the entire prompt, for either command.
 
 ## Reference
 
-- [Deterministic output: counters, visibility and safety, sites and known limitations](unsafe-output.md)
 - [Task questionnaire](../../examples/crustify_audit/TASK.md.template)
 - [Example results and report format](../../examples/crustify_audit/results.md)
 - [`ub` auditor prompt](../../src/crustify_audit/prompts/ub.md)

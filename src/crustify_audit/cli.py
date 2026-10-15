@@ -1,36 +1,22 @@
-"""cli.py — the audit stages behind `crustify ffimap` and
-`crustify spawn-auditor`.
+"""cli.py — the audit stage behind `crustify spawn-auditor`.
 
-    crustify ffimap        <workdir> [--json] [--ffibox] [--sys-crates CRATE,...]
-                                     [--sites COUNTER ... | all]
     crustify spawn-auditor <workdir> [--model M] [--billing B] [--effort E]
                                      [--timeout MIN] [--instruments I ...]
 
-TWO VERBS, AND THE SPLIT IS THE POINT.
-
-`unsafe` is deterministic: a rustc HIR/typeck pass over the crate's unsafe
-surface. No LLM or network. Two runs over one tree agree exactly, so a diff
-between them is a change in the crate.
-
 `ub` is agentic: one agent reading the crate, hunting undefined behaviour
 reachable from safe code and authoring the advisory itself.
-
-Separate verbs rather than one command with a flag, because a caller must always
-know whether the answer in front of them is reproducible. Hiding that behind a
-flag makes "did an LLM decide this?" unanswerable from the command line.
 
 There is no `report` verb. Writing the advisory is the agent's job, not a
 formatter's -- a template the harness fills in would flatten exactly the
 judgement the agent is there to exercise.
 
-Neither stage needs a ``crustify/`` directory in the repository it is given:
+The stage needs no ``crustify/`` directory in the repository it is given:
 this tool's most valuable use is auditing a crate that has never heard of
 crustify.
 """
 from __future__ import annotations
 
 import argparse
-import json
 import os
 import sys
 from pathlib import Path
@@ -39,56 +25,13 @@ from crustify_audit.layout import Layout
 
 
 #: Shared by the standalone parser below and by `crustify`, so the two surfaces
-#: cannot drift: one set of stages, one set of flags, one set of help texts. The
-#: distribution has already paid once for maintaining the same job in two
-#: places. `crustify` names the stages `ffimap` (alias `scan-unsafe`) and `spawn-auditor` and
-#: passes `before` to add its workdir positional ahead of each stage's own
-#: arguments; the stage a parser runs is recorded as `audit_stage`.
+#: cannot drift: one set of flags, one set of help texts. `crustify` names the
+#: stage `spawn-auditor` and passes `before` to add its workdir positional ahead
+#: of the stage's own arguments; the stage a parser runs is recorded as
+#: `audit_stage`.
 def add_stages(sub: "argparse._SubParsersAction", *,
-               unsafe_name: str = "ffimap", unsafe_aliases: tuple[str, ...] = ("unsafe",),
                ub_name: str = "ub", before=None) -> None:
-    """Register the `ffimap` and `ub` stages on an existing subparsers object.
-    ``unsafe_aliases`` keep the stage's earlier names working."""
-    m = sub.add_parser(
-        unsafe_name, aliases=list(unsafe_aliases),
-        help="ffimap: DETERMINISTIC map of the crate's FFI and unsafe surface. No LLM.",
-        description="ffimap: map the crate's FFI and unsafe surface with a "
-                    "rustc driver over HIR and typeck. This is the canonical "
-                    "deterministic Crustify safety pass. "
-                    "Reproducible: same tree, same bytes. Needs the crate to "
-                    "compile; when it does not, there are no counts rather than "
-                    "approximate ones. It says HOW MUCH unsafety is there, never "
-                    "which of it is wrong.")
-    m.set_defaults(audit_stage="unsafe")
-    if before is not None:
-        before(m)
-    m.add_argument("--json", action="store_true",
-                   help="Print the document on stdout instead of a summary. "
-                        "Redirect it to keep it (a campaign keeps it as "
-                        "ffimap.json); ffimap writes no file.")
-    m.add_argument(
-        "--sites", nargs="+", action="extend", default=None, metavar="COUNTER",
-        help="Also report where these counters' increments are in the source: "
-             "a `sites` record beside `counts` with one list per counter. Takes "
-             "counters that count source locations (e.g. "
-             "raw_ptr_fn_pub_safe, raw_ptr_ty_pub_fields_pub, "
-             "unsafe_fns_pub, ty_wrapper_borrow_non_sanctioned), or `all`. Line and statement totals have "
-             "no sites.")
-    m.add_argument(
-        "--sys-crates", type=lambda v: [c for c in v.split(",") if c], default=None,
-        metavar="CRATE[,CRATE...]",
-        help="Crates whose #[repr(C)] types are C's, beside the ones found "
-             "automatically (every crate with a Cargo `links` key or named "
-             "`*-sys`). Use it for bindings that are neither, such as `libc`.")
-    m.add_argument(
-        "--ffibox", action="store_true",
-        help="Also count the crate's ffibox surface: ffibox types and the "
-             "crate's Ref/Mut/Locked handles in fn signatures (pub or private, "
-             "by kind), and the crate's types implementing ffibox traits "
-             "and other traits (ffibox-macro, derived and hand-written). Adds an "
-             "`ffibox` record; its counters also take --sites, whole or "
-             "for one key of their breakdown (fn_sig_ffibox_owner_pub:CVal).")
-
+    """Register the `ub` stage on an existing subparsers object."""
     h = sub.add_parser(
         ub_name,
         help="AGENTIC hunt for undefined behaviour. Costs money.",
@@ -188,9 +131,8 @@ def add_stages(sub: "argparse._SubParsersAction", *,
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="crustify-audit",
-        description="Find soundness bugs and safety trade-offs in Rust that wraps C. "
-                    "`unsafe` is deterministic; `ub` drives one LLM agent over "
-                    "its output.")
+        description="Find soundness bugs in Rust that wraps C. `ub` drives "
+                    "one LLM agent over the crate.")
     p.add_argument("workspace", metavar="REPO",
                    help="Path to the REPOSITORY to audit. The root is the "
                         "subject; the agent locates the Rust within it. The "
@@ -202,20 +144,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 def dispatch(layout, args, command: str) -> int:
     """Run one audit stage. Shared by both entry points."""
-    return {"unsafe": _cmd_unsafe, "ub": _cmd_ub}[command](layout, args)
-
-
-def _cmd_unsafe(layout: Layout, args) -> int:
-    from crustify_audit import unsafe_scan as M
-    doc = M.compose(layout, sites=args.sites, ffibox=args.ffibox,
-                    sys_crates=args.sys_crates)
-    if args.json:
-        print(json.dumps(doc, indent=2))
-    else:
-        print(M.summarize(doc))
-        print(f"\n  Counts, not judgement. Next: crustify spawn-auditor "
-              f"{layout.repo}")
-    return 0
+    return {"ub": _cmd_ub}[command](layout, args)
 
 
 def _cmd_ub(layout: Layout, args) -> int:

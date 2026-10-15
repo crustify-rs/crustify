@@ -59,13 +59,6 @@ docker exec -it audit-zstd \
 Add `--task-only` to either for the ablation control: the task file becomes the
 entire prompt. See [`crustify_audit/BARE.md`](crustify_audit/BARE.md).
 
-The deterministic scan needs no agent and no authentication, so it bypasses the
-orchestrator entirely and is just another command:
-
-```sh
-docker exec crustify-libgit2 crustify ffimap /target
-```
-
 `--init` runs a small init process as the container's first process, so the
 processes the agents leave behind are reaped instead of piling up as zombies
 under `sleep infinity`.

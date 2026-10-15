@@ -26,9 +26,8 @@
 #       --model openrouter/anthropic/claude-opus-5 --billing api
 #
 # `crustify audit` starts an audit campaign instead, and `--task-only` makes
-# the task file the entire prompt (the ablation control). The deterministic
-# scan needs no agent and no auth: `docker exec <name> crustify ffimap
-# /target`. Every other choice is an option of the command; see
+# the task file the entire prompt (the ablation control). Every other choice
+# is an option of the command; see
 # `crustify <command> --help`.
 #
 # `--security-opt seccomp=unconfined` lets the TSan and BSan runtimes call

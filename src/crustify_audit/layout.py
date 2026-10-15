@@ -45,25 +45,6 @@ class Layout(_Layout):
         """The audited checkout. ``workdir`` under the shared name."""
         return self.workdir
 
-    @property
-    def workspace(self) -> Path:
-        """Cargo workspace used by the deterministic scanner.
-
-        Ordinary Rust repositories are scanned at their root. Crustify
-        campaigns keep the generated workspace at ``crustify/rust`` while the
-        command still receives the repository root so audit artifacts land
-        beside campaign state. Unknown layouts stay rooted at the supplied
-        repository and fail with Cargo's useful metadata error.
-        """
-        if (self.workdir / "Cargo.toml").is_file():
-            return self.workdir
-        campaign = self.workdir / "crustify" / "rust"
-        if (campaign / "Cargo.toml").is_file():
-            return campaign
-        return self.workdir
-
-    # ---- `unsafe`: the deterministic half
-
     # ---- `ub`: the agentic half
     @property
     def advisories(self) -> Path:

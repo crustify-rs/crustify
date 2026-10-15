@@ -12,8 +12,8 @@ agents with the tools and skills the job actually requires:
   dependency oracle that resolves the semantic order of a closure
 - [ffibox](https://github.com/crustify-rs/ffibox): a crate of smart pointers
   and lifetime traits for safe interop across the FFI boundary
-- [crustify-audit](docs/audit/audit.md): a compiled Rust safety auditor with an
-  optional undefined-behavior agentic pass.
+- [crustify-audit](docs/audit/audit.md): an agentic undefined-behavior
+  auditor.
 
 Agents write and review code inside isolated worktrees, behind build, test, and
 safety gates.
@@ -48,7 +48,7 @@ as skills.
 |---|---|
 | `crustify` | Agent execution, isolated worktrees, crate placement, logging, and campaign artifacts |
 | [`wavefront`](https://github.com/crustify-rs/wavefront) | CodeQL-backed dependency analysis, scope selection, and deterministic scheduling |
-| [`crustify-audit`](docs/audit/audit.md) | Compiled Rust safety analysis and optional UB review, shipped in this repository |
+| [`crustify-audit`](docs/audit/audit.md) | Agentic UB review, shipped in this repository |
 | [`ffibox`](https://github.com/crustify-rs/ffibox) | Safe FFI smart pointers and lifetime traits used by generated wrappers |
 
 Claude Code and OpenAI Codex are supported as agent backends with access to latest

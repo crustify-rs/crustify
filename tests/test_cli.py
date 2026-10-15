@@ -86,15 +86,11 @@ class CommandShapeTests(unittest.TestCase):
             self._run("spawn-reviewer", str(bare), "batch.json",
                       "--base-branch", "wave", "--output", "out")
 
-    def test_audit_stages_take_any_repository(self) -> None:
-        """Neither audit stage needs a crustify/ directory, and the auditor's
+    def test_audit_stage_takes_any_repository(self) -> None:
+        """The audit stage needs no crustify/ directory, and the auditor's
         own --model does not become the harness-wide override."""
         plain = self.repo / "plain"
         plain.mkdir()
-        for verb in ("ffimap", "scan-unsafe"):  # `scan-unsafe` is ffimap's earlier name
-            seen = self._run(verb, str(plain), "--json")
-            self.assertEqual((seen["handler"], seen["args"].audit_stage),
-                             ("audit-stage", "unsafe"))
         seen = self._run("spawn-auditor", str(plain),
                          "--model", "anthropic/claude-opus-5")
         self.assertEqual(seen["args"].audit_stage, "ub")
