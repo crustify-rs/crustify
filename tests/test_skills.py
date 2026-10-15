@@ -131,13 +131,14 @@ class IncludeTests(unittest.TestCase):
                 if f"<!-- INCLUDE {path} -->" in text}
 
     def test_each_prompt_includes_the_documents_it_follows(self) -> None:
-        """The reviewer reads the conventions on demand, from its inputs, so
-        it can review a codebase with other conventions or none."""
+        """The reviewer is told to ignore the conventions outside a
+        Crustify-generated batch."""
         self.assertEqual(self._included("translator.md"),
                          {"conventions", "bindings", "porting", "testing",
                           "landing"})
         self.assertEqual(self._included("reviewer.md"),
-                         {"bindings", "porting", "testing", "landing"})
+                         {"conventions", "bindings", "porting", "testing",
+                          "landing"})
         self.assertEqual(self._included("orchestrator.md"), {"conventions"})
 
     def test_included_documents_are_plain_markdown(self) -> None:
@@ -285,7 +286,7 @@ class PromptArgumentTests(unittest.TestCase):
             self.repo, route="type",
             items=[{"name": "T", "defined_in": "a.h", "kind": "type",
                     "field_anchors": [], "home": "crustify/rust/x/src/a.rs"}],
-            objectives=None, conventions=None, git_base="review-wave-0",
+            objectives=None, git_base="review-wave-0",
             artifact_dir=self.repo, log_stem="x")
         self._check(agent)
 

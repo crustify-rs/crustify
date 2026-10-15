@@ -37,7 +37,7 @@ Both are required and no other root field is accepted.
 ## Review batches
 
 A review batch carries the same `items` and, instead of `objective`, an optional
-`objectives` array and an optional `conventions` document:
+`objectives` array:
 
 ```json
 {
@@ -49,13 +49,12 @@ A review batch carries the same `items` and, instead of `objective`, an optional
 | root field | meaning |
 |---|---|
 | `objectives` | the review objectives to run; optional, every one the reviewer offers when absent |
-| `conventions` | the reviewed codebase's conventions document, relative to the workdir unless absolute; optional, Crustify's own when absent, none when `null` |
 | `items` | as above |
 
 `items` is required and no other root field is accepted. The reviewer's prompt offers
 `unsafety`, `contracts`, `ub`, `equiv`, `internal`, `conventions`, `misc`, `coverage` and
-`fix`; `conventions` only when the batch has a conventions document, which the reviewer
-reads on demand. Its skills add their own, such as `lifecycle` (wavefront). A batch naming an objective the installed skills do not offer is rejected.
+`fix`, with `conventions` applying to a Crustify-generated batch only. Its skills add their
+own, such as `lifecycle` (wavefront). A batch naming an objective the installed skills do not offer is rejected.
 Without `fix`, the reviewer reports and reproduces what it finds but patches nothing.
 
 ## items[*]

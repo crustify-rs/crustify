@@ -5,7 +5,6 @@ import json
 import re
 from pathlib import Path
 
-from crustify import deps
 from crustify.agents.base import (
     CrustifyAgent, SkillSpec, _PKG_ROOT, expand_includes,
 )
@@ -29,10 +28,10 @@ _SKILLS = (
     ),
 )
 
-#: The objectives the reviewer's prompt describes, each in a section headed
-#: by its id, in the order they are listed. `fix` has no section: it decides,
-#: in each section's prose, whether a finding is patched. `conventions` needs
-#: a conventions document to review against.
+#: The objectives the reviewer's prompt describes, each under a heading named
+#: by its id, in the order they are listed. `fix` has no heading: it decides
+#: whether the Fixes step runs. `conventions` applies to a Crustify-generated
+#: batch only, which the prompt states.
 OBJECTIVES = (
     "unsafety", "contracts", "ub", "equiv", "internal", "conventions", "misc",
     "coverage", "fix",
@@ -49,11 +48,6 @@ OBJECTIVE_ORDER = (
     *(o for objectives in SKILL_OBJECTIVES.values() for o in objectives),
     *OBJECTIVES,
 )
-
-#: The conventions a Crustify-generated codebase follows: what a reviewer
-#: judges by when its batch names no other document.
-CRUSTIFY_CONVENTIONS = deps.CHECKOUT / "docs" / "translate" / "coding-conventions.md"
-
 
 def _ordered(keys: set[str]) -> list[str]:
     rank = {key: i for i, key in enumerate(OBJECTIVE_ORDER)}
@@ -78,7 +72,6 @@ class ReviewAgent(CrustifyAgent):
         route: str,
         items: list[dict],
         objectives: list[str] | None,
-        conventions: Path | None,
         git_base: str,
         artifact_dir: Path,
         log_stem: str,
@@ -89,12 +82,6 @@ class ReviewAgent(CrustifyAgent):
         )
         self._route = route
         self._items = [dict(item) for item in items]
-        #: The codebase's conventions document, read on demand, or None when
-        #: the reviewed codebase has none; then `conventions` is not offered.
-        if conventions is not None and not Path(conventions).is_file():
-            raise SystemExit(
-                f"review: conventions document does not exist: {conventions}")
-        self._conventions = conventions
         available = set(self.available_objectives())
         if objectives is None:
             self._objectives = frozenset(available)
@@ -109,13 +96,10 @@ class ReviewAgent(CrustifyAgent):
 
     def available_objectives(self) -> list[str]:
         """Every objective this reviewer can run: those its prompt describes,
-        plus those of the skills it carries. ``conventions`` needs a
-        conventions document to review against."""
+        plus those of the skills it carries."""
         keys = set(OBJECTIVES)
         for spec in self.skill_specs():
             keys |= set(SKILL_OBJECTIVES.get(spec.capability or "", ()))
-        if self._conventions is None:
-            keys.discard("conventions")
         return _ordered(keys)
 
     @property
@@ -139,6 +123,5 @@ class ReviewAgent(CrustifyAgent):
         return {
             **super()._arguments(),
             "objectives": ", ".join(self.objectives),
-            "conventions": str(self._conventions) if self._conventions else "none",
             "worklist": json.dumps({"route": self._route, "items": self._items}),
         }
