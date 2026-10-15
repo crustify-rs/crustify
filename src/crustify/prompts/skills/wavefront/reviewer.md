@@ -6,8 +6,8 @@ Read wavefront's CLI helpstring via `--help` to learn how to use it.
 
 Verify Wavefront's analysis findings submitted by an earlier run for your workset:
 ownership, access, nullability, cardinality and keepalive. File a report describing each
-defect in `crustify/reviews/<artifact-dir>/wavefront/<defect-slug>`, including evidence
-that proves the previous finding was wrong or incomplete.
+defect in `wavefront-dir`, including evidence that proves the previous finding was wrong or
+incomplete.
 
 If `fix` is enabled, resubmit each corrected set of findings through the CLI's `--update`.
 If `fix` is not enabled, do not.
@@ -21,7 +21,7 @@ constructor, and that every ownership variant the analysis found has a represent
 Leverage Wavefront's `--schema` CLI flag for hints on identifying lifecycle primitives and
 compare them with the findings submitted earlier.
 
-File a report for each gap in `crustify/reviews/<artifact-dir>/lifecycle/<item-slug>`.
+File a report for each gap in `lifecycle-dir`.
 
 If `fix` is enabled, add each missing lifecycle representation, and resubmit the corrected
 lifecycle findings through the CLI's `--update`. If `fix` is not enabled, do not.

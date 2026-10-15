@@ -41,6 +41,30 @@ If `fix` is not enabled, report and reproduce the defects you find, but do not p
 change nothing in the Rust tree outside `crustify/reviews/`, except for tests that another
 objective tells you to add.
 
+## Artifact dirs
+
+Your artifact dir is the part of your working branch's name after
+`crustify/review-batches/`: `<campaign-id>/<link-unit>/<subsystem>/<wave>/<batch>`.
+
+You file each finding in its own `<slug>` directory, holding its report and, when it has
+one, its reproducer, under one of the following dirs, referred to by id in the rest of this
+prompt:
+
+- `unsafe-dir`: `crustify/reviews/<artifact-dir>/unsafe/`
+- `contracts-dir`: `crustify/reviews/<artifact-dir>/contracts/`
+- `ub-safe-dir`: `crustify/reviews/<artifact-dir>/ub_safe/`
+- `ub-unsafe-dir`: `crustify/reviews/<artifact-dir>/ub_unsafe/`
+- `equiv-dir`: `crustify/reviews/<artifact-dir>/equiv/`
+- `internal-dir`: `crustify/reviews/<artifact-dir>/internal/`
+- `conventions-dir`: `crustify/reviews/<artifact-dir>/conventions/`
+- `misc-dir`: `crustify/reviews/<artifact-dir>/misc/`
+- `lifecycle-dir`: `crustify/reviews/<artifact-dir>/lifecycle/`
+- `wavefront-dir`: `crustify/reviews/<artifact-dir>/wavefront/`
+- `ffibox-dir`: `crustify/reviews/<artifact-dir>/ffibox/`
+
+A report describes one finding: what is wrong, where, the evidence that proves it, and,
+when `fix` is enabled, how it was fixed.
+
 ---
 
 ## Workflow - base
@@ -59,16 +83,7 @@ against the porting instructions. A representation, lifecycle, field accessor, f
 global or callback that departs from them, without a reason the code documents, is a
 finding of the objective it falls under.
 
-### 2. Artifact dir
-
-For homing reports and reproducers, use as your artifact dir the part of your working
-branch's name after `crustify/review-batches/`:
-`<campaign-id>/<link-unit>/<subsystem>/<wave>/<batch>`.
-
-A report describes one finding: what is wrong, where, the evidence that proves it, and,
-when `fix` is enabled, how it was fixed.
-
-### 3. Reproducers
+### 2. Reproducers
 
 Each reproducer is a standalone Cargo package: its `Cargo.toml` declares an empty
 `[workspace]` table and depends on the affected crate through a relative `path` under
@@ -76,7 +91,7 @@ Each reproducer is a standalone Cargo package: its `Cargo.toml` declares an empt
 on the affected commit: a UB reproducer through the sanitizer it names in its report, an
 equivalence reproducer through a failed comparison.
 
-### 4. Tests
+### 3. Tests
 
 Classify every test you add as the testing instructions describe, and place it where the
 conventions place tests of its kind. If `fix` is enabled, a reproducer you turn into a
@@ -94,7 +109,7 @@ is not enabled, turn no reproducer into a regression test.
 Review the public API of your workset for unsafe annotations and raw pointers that could be
 replaced with safe, idiomatic variants, so that API consumers write less unsafe code.
 
-File a report for each defect in `crustify/reviews/<artifact-dir>/unsafe/<defect-slug>`.
+File a report for each defect in `unsafe-dir`.
 
 If `fix` is enabled, make each reported entry point safe. If `fix` is not enabled, do not.
 <!-- /OBJECTIVE -->
@@ -107,7 +122,7 @@ the obligation their `# Safety` section states is correct, complete and unambigu
 caller who honours it cannot reach undefined behaviour, and that it asks for nothing the
 implementation does not need.
 
-File a report for each defect in `crustify/reviews/<artifact-dir>/contracts/<defect-slug>`.
+File a report for each defect in `contracts-dir`.
 
 If `fix` is enabled, correct each reported obligation. If `fix` is not enabled, do not.
 <!-- /OBJECTIVE -->
@@ -123,7 +138,7 @@ targeting the unsafe API must honor its safety requirement. The unsafe surface i
 only the API your workset adds; if it made no API item unsafe, there is nothing to evaluate
 there.
 
-Place each reproducer in `crustify/reviews/<artifact-dir>/ub_<safe or unsafe>/<defect-slug>`
+File each reproducer in `ub-safe-dir` or `ub-unsafe-dir`, by the interface it targets,
 along with a report that describes your finding, including a trace of the sanitizer crash.
 
 If `fix` is enabled, emit a patch for every true UB defect, and turn its reproducer into a
@@ -140,9 +155,8 @@ that its equivalence tests might have missed. Prove that a candidate is a true
 equivalence defect by emitting a reproducer that fails at least one of the testing instructions'
 equivalence comparisons while executing the raw C and the public Rust APIs.
 
-Place the reproducer in `crustify/reviews/<artifact-dir>/equiv/<defect-slug>` along with a
-report that describes your finding, including a trace of the failing equivalence
-assertion.
+File the reproducer in `equiv-dir` along with a report that describes your finding,
+including a trace of the failing equivalence assertion.
 
 If `fix` is enabled, emit a patch for every true equivalence defect, and turn its
 reproducer into an equivalence regression test. If `fix` is not enabled, do
@@ -153,8 +167,7 @@ not.
 ### Internal
 
 Review your workset's private implementation for defects that its unit tests might have
-missed. File a brief report for each in
-`crustify/reviews/<artifact-dir>/internal/<defect-slug>`.
+missed. File a brief report for each in `internal-dir`.
 
 If `fix` is enabled, emit a patch for every true defect, and add a unit regression test.
 If `fix` is not enabled, do not.
@@ -164,7 +177,7 @@ If `fix` is not enabled, do not.
 ### Conventions
 
 Check your workset against the conventions document your inputs name. File a report for
-each deviation in `crustify/reviews/<artifact-dir>/conventions/<defect-slug>`.
+each deviation in `conventions-dir`.
 
 If `fix` is enabled, fix each deviation you report. If `fix` is not enabled, do not.
 <!-- /OBJECTIVE -->
@@ -172,8 +185,7 @@ If `fix` is enabled, fix each deviation you report. If `fix` is not enabled, do 
 <!-- OBJECTIVE misc -->
 ### Misc
 
-File a report for any other defect you find in your workset in
-`crustify/reviews/<artifact-dir>/misc/<defect-slug>`.
+File a report for any other defect you find in your workset in `misc-dir`.
 
 If `fix` is enabled, fix each one. If `fix` is not enabled, do not.
 <!-- /OBJECTIVE -->
