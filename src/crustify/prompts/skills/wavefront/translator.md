@@ -2,11 +2,9 @@
 
 Read wavefront's CLI helpstring via `--help` to learn how to use it.
 
-## Workflow - base
+Each section below augments the how-to section it names, as `<how-to> › <section>`.
 
-The following steps augment your base workflow.
-
-### 1. Item analysis
+## bindings › Item analysis
 
 Leverage the repo-wide Wavefront configuration prepared by the orchestrator
 at `crustify/wavefront/configs/wavefront-config.json` to emit queries that will
@@ -17,22 +15,14 @@ you need to consult these findings again.
 
 ---
 
-## Workflow - type route
-
-The following steps augment your workflow for a type route.
-
-### 1. Surface
+## bindings › Type route › Surface
 
 Leverage Wavefront's `--schema` CLI flag to get hints on identifying a type's lifecycle
 primitives and submit your findings through the CLI's `--update`.
 
 ---
 
-## Workflow - symbol route
-
-The following steps augment your workflow for a symbol route.
-
-### 3. Raw lifetime strategies
+## bindings › Symbol route › Raw lifetime strategies
 
 Leverage Wavefront's `--schema` CLI flag to get hints on identifying raw lifecycle
 primitives for void and string and submit your findings through the CLI's `--update`.

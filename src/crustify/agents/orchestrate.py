@@ -34,7 +34,7 @@ _SKILLS = (
     SkillSpec(
         "crustify", "docs/translate/coding-conventions.md",
         capability="conventions",
-        role_header="skills/conventions/orchestrator.md",
+        role_header="skills/conventions/orchestrator.md", inline=True,
     ),
     SkillSpec(
         "crustify", "src/crustify/prompts/skills/ffimap/SKILL.md",

@@ -12,18 +12,23 @@ from crustify.agents.base import (
 #: Every skill a reviewer can carry, in prompt order; discovery decides which
 #: it actually carries, exactly as for the translator. A skill's reviewer
 #: header may contribute objectives of its own: `lifecycle` comes from
-#: wavefront's and `conventions` from the conventions skill's, so a reviewer
+#: wavefront's and `conventions` from the conventions', so a reviewer
 #: pointed at a crate that neither describes is never asked for them.
 _SKILLS = (
     SkillSpec(
         "crustify", "docs/translate/coding-conventions.md",
         capability="conventions",
-        role_header="skills/conventions/reviewer.md",
+        role_header="skills/conventions/reviewer.md", inline=True,
     ),
     SkillSpec(
-        "crustify", "src/crustify/prompts/skills/testing/SKILL.md",
+        "crustify", "docs/translate/howto/bindings.md",
+        capability="bindings",
+        role_header="skills/bindings/reviewer.md", inline=True,
+    ),
+    SkillSpec(
+        "crustify", "docs/translate/howto/testing.md",
         capability="testing",
-        role_header="skills/testing/reviewer.md",
+        role_header="skills/testing/reviewer.md", inline=True,
     ),
     SkillSpec(
         "crustify", "src/crustify/prompts/skills/ffimap/SKILL.md",

@@ -132,13 +132,26 @@ class ReviewAgentTests(unittest.TestCase):
                 self.assertIn("If `fix` is enabled, emit a patch for every true UB", pre)
                 self.assertIn("If `fix` is not enabled", pre)
 
-    def test_gates_and_regressions_live_in_the_testing_skill(self) -> None:
+    def test_gates_and_regressions_live_in_the_testing_how_to(self) -> None:
         _Checkouts(self)
-        pre = self.agent(None).system_preamble()
-        body, _, skills = pre.partition("## Skills")
+        agent = self.agent(None)
+        body = agent._body()
         self.assertNotIn("Miri gate", body)
         self.assertIn("run any regression tests that might be available", body)
-        self.assertIn("Miri gate", skills)
+        self.assertIn("Miri gate", agent.system_preamble())
+
+    def test_the_reviewer_is_handed_the_conventions_and_how_tos(self) -> None:
+        """Inline, like the translator: the standard a reviewer judges by is
+        the one the translator followed, word for word."""
+        _Checkouts(self)
+        pre = self.agent(None).system_preamble()
+        index = pre[pre.index("## Skills"):]
+        for heading in ("# Crustify coding conventions",
+                        "# Generating safe bindings", "# Testing"):
+            with self.subTest(heading=heading):
+                self.assertIn(heading, pre)
+                self.assertNotIn(heading, index)
+        self.assertNotIn("name: bindings", pre)  # frontmatter is dropped
 
     def test_the_stage_keeps_the_review_cost_buckets(self) -> None:
         _Checkouts(self)

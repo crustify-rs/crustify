@@ -16,21 +16,27 @@ from crustify.agents.base import CrustifyAgent, SkillSpec, _PKG_ROOT
 #: route the translator to its playbook, and the playbook is now this agent's
 #: prompt.
 #:
-#: Three of them ship with crustify itself: the coding conventions (the doc
-#: under `docs/` is the skill file, with its own frontmatter), testing and
-#: ffimap. `crustify ffimap` stays on the agent's PATH whether or not its
-#: skill is carried, so ablating that skill removes the instructions, not
-#: the tool.
+#: Four of them ship with crustify itself. The coding conventions and the
+#: bindings and testing how-tos are documents under `docs/translate/`, each
+#: its own skill file, and inline: their bodies ride the system slot, since
+#: the translator follows them throughout. ffimap is listed in the index;
+#: `crustify ffimap` stays on the agent's PATH whether or not its skill is
+#: carried, so ablating that skill removes the instructions, not the tool.
 _SKILLS = (
     SkillSpec(
         "crustify", "docs/translate/coding-conventions.md",
         capability="conventions",
-        role_header="skills/conventions/translator.md",
+        role_header="skills/conventions/translator.md", inline=True,
     ),
     SkillSpec(
-        "crustify", "src/crustify/prompts/skills/testing/SKILL.md",
+        "crustify", "docs/translate/howto/bindings.md",
+        capability="bindings",
+        role_header="skills/bindings/translator.md", inline=True,
+    ),
+    SkillSpec(
+        "crustify", "docs/translate/howto/testing.md",
         capability="testing",
-        role_header="skills/testing/translator.md",
+        role_header="skills/testing/translator.md", inline=True,
     ),
     SkillSpec(
         "crustify", "src/crustify/prompts/skills/ffimap/SKILL.md",

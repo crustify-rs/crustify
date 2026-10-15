@@ -35,10 +35,11 @@ Open questions:
 
 ## Ship `docs/` so a non-editable install keeps its conventions
 
-The conventions skill resolves `docs/translate/coding-conventions.md` under
-`deps.CHECKOUT`, which is the source checkout, and so do the `testing` and `ffimap`
-skills' `SKILL.md` files. A wheel install has no `docs/` there, and discovery drops a skill
-whose file is absent — so every agent runs without its conventions, silently. Only the
+The conventions and the how-tos (`docs/translate/coding-conventions.md`,
+`docs/translate/howto/*.md`) resolve under `deps.CHECKOUT`, which is the source checkout,
+and so does the `ffimap` skill's `SKILL.md`. A wheel install has no `docs/` there, and
+discovery drops a skill whose file is absent — so every agent runs without its conventions
+and how-tos, silently. Only the
 editable install the Dockerfile performs hides this.
 
 Ship `docs/` as data-files to `share/crustify/`, the way Wavefront ships its schemas to

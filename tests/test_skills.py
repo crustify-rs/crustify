@@ -127,6 +127,44 @@ class DeclaredPathTests(unittest.TestCase):
                         governing)
 
 
+class InlineSkillTests(unittest.TestCase):
+    """The conventions and how-tos ride the system slot; their sections are
+    what role headers name when they augment them."""
+
+    _REF = re.compile(r"^## ([a-z]+) › (.+?)(?:, for `[a-z]+`)?$", re.M)
+
+    def test_inline_skills_are_documents_with_a_body(self) -> None:
+        for cls in _ROLES:
+            for spec in cls.SKILLS:
+                if not spec.inline:
+                    continue
+                with self.subTest(role=cls.name, path=spec.path):
+                    self.assertEqual(spec.dep, "crustify")
+                    self.assertTrue(
+                        (deps.CHECKOUT / spec.path).read_text().startswith("---"))
+
+    def test_every_how_to_section_a_header_names_exists(self) -> None:
+        """A header augments `<how-to> › <section> [› <subsection>]`. Renaming
+        a section would otherwise leave the augmentation pointing nowhere."""
+        docs = {
+            spec.capability: (deps.CHECKOUT / spec.path).read_text()
+            for cls in _ROLES for spec in cls.SKILLS if spec.inline
+        }
+        headings = {
+            cap: {line.lstrip("#").strip() for line in text.splitlines()
+                  if line.startswith("#")}
+            for cap, text in docs.items()
+        }
+        for header in (_PKG_ROOT / "prompts" / "skills").glob("*/*.md"):
+            for doc, path in self._REF.findall(header.read_text()):
+                with self.subTest(header=str(header.relative_to(_PKG_ROOT)),
+                                  ref=f"{doc} › {path}"):
+                    self.assertIn(doc, headings)
+                    for part in path.split(" and "):
+                        for name in part.split(" › "):
+                            self.assertIn(name.strip(), headings[doc])
+
+
 class DiscoveryTests(unittest.TestCase):
     def setUp(self) -> None:
         self.repo = Path(__file__).resolve().parent

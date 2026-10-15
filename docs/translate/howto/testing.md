@@ -9,7 +9,7 @@ description: >-
 
 # Testing
 
-Classify tests by what they target, and place each where the conventions skill places
+Classify tests by what they target, and place each where the conventions' Testing section places
 tests of its kind:
 
 - UB tests on the safe public interface ensure it does not reach UB, mainly by not

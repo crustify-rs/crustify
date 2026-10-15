@@ -1,7 +1,8 @@
 <!-- SKILL -->
 
-Classify every test you add as the skill describes, place it where the conventions skill
-places tests of its kind, and run it under the instruments the skill names. If `fix` is
+Classify every test you add as this how-to describes, place it where the conventions'
+Testing section places tests of its kind, and run it under the instruments this how-to
+names. If `fix` is
 enabled, a reproducer you turn into a regression test keeps its kind: a UB reproducer
 becomes a UB test, an equivalence reproducer an equivalence test, and an internal defect's
 regression a unit test. If `fix` is not enabled, turn no reproducer into a regression
@@ -18,7 +19,7 @@ triage as well. In every other wave, run BSan only on the individual reproducers
 
 You also own the workspace-wide Miri gate, in every wave. Treat each Miri report of
 undefined behaviour as a UB candidate of the item it touches, and give a test that Miri
-stops at the foreign boundary the attribute the skill prescribes when it lacks one.
+stops at the foreign boundary the attribute this how-to prescribes when it lacks one.
 
 ## Regressions
 

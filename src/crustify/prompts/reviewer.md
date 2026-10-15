@@ -47,7 +47,8 @@ objective tells you to add.
 ### 1. Item analysis
 
 For each item, read its C declarations and definitions, its Rust implementation and tests,
-and its existing Rust consumers. Judge the Rust against the conventions skill throughout.
+and its existing Rust consumers. Judge the Rust against the conventions and the bindings
+how-to that follow this prompt throughout.
 
 ### 2. Artifact dir
 
@@ -119,7 +120,7 @@ patch removed the safe path that reached the defect. If `fix` is not enabled, do
 
 Review your workset's implementation for functional equivalence defects in the public API
 that its equivalence tests might have missed. Prove that a candidate is a true
-equivalence defect by emitting a reproducer that fails at least one of the testing skill's
+equivalence defect by emitting a reproducer that fails at least one of the testing how-to's
 equivalence comparisons while executing the raw C and the public Rust APIs.
 
 Place the reproducer in `crustify/reviews/<artifact-dir>/equiv/<defect-slug>` along with a
@@ -155,7 +156,7 @@ If `fix` is enabled, fix each one. If `fix` is not enabled, do not.
 ### Coverage
 
 Identify the coverage gaps that the existing external and inline suites leave in your
-workset's C and Rust execution paths, measured as the testing skill describes, and add
+workset's C and Rust execution paths, measured as the testing how-to describes, and add
 tests that fill them. Coverage gaps need no report: the delta shows in the coverage
 measurement itself.
 <!-- /OBJECTIVE -->
@@ -197,7 +198,7 @@ Also, do not remove the worktree after landing; that is the orchestrator's job.
 
 ---
 
-Reach for the skills advertised by the headers in the following skill index and leverage
-them to conduct your workflow:
+The conventions and how-tos you follow come after this prompt, then the index of skills
+you can reach for to conduct your workflow:
 
 <!-- SKILLS -->

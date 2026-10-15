@@ -1,7 +1,6 @@
 <!-- SKILL -->
 
-Read the conventions before reviewing your workset, and follow them in every change you
-make.
+Follow these conventions in every change you make.
 
 <!-- OBJECTIVE conventions -->
 ### Conventions

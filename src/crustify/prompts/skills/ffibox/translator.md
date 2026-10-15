@@ -1,8 +1,10 @@
 <!-- SKILL -->
 
+Each section below augments the how-to section it names, as `<how-to> › <section>`.
+
 ---
 
-## Workflow - types and symbols - wrap objective 
+## bindings › Type route and Symbol route, for `wrap`
 
 Read each primitive provided by ffibox and use them where
 applicable to implement safe bindings for your worklist's types and symbols that need
@@ -15,9 +17,7 @@ account it later.
 
 ---
 
-## Workflow - symbols
-
-### 3. Raw lifetime strategies
+## bindings › Symbol route › Raw lifetime strategies
 
 `CBox` and `CArc` own only `CCell` layout types: a single C struct is a `CBox<Foo, P>` with matching
 constructor / destructor pairs, which asserts the right validity claim based on the allocator (e.g. zeroed
@@ -29,9 +29,7 @@ destructor.
 
 ---
 
-## Tests
-
-### UB tests
+## testing › UB tests
 
 There is no need to add UB tests on the public seam interface exported by ffibox on a type, as
 these are only meant to be exercised internally by the crate, while acting as escape hatches for

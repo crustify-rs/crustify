@@ -159,7 +159,7 @@ For a `port` campaign:
 See `docs/translate/schemas/batch.md` for schema format, field meaning, routing and the
 raw-lifetime rule. Every field shown is required.
 
-Home each batch's set of items using the conventions skill; scaffold
+Home each batch's set of items using the conventions; scaffold
 them lazily on disk only before launch.
 
 Note: although raw and typed lifecycle primitives are discovered on the fly during the raw sub-campaigns
@@ -173,8 +173,8 @@ Scaffold the top-level manifest, raw `-sys` and safe crates according to the con
 skill. Do this only for the link units included in the scope established by the
 user. Scaffold source files and modules lazily before spawning translator agents.
 
-Create the integration test suites for the public interface that the conventions skill's
-Testing section describes, so translators and reviewers can emit tests into them.
+Create the integration test suites for the public interface that the conventions' Testing
+section describes, so translators and reviewers can emit tests into them.
 
 For each `-sys` package, author the build scripts required by bindgen so that translator
 agents can reuse them; each  `-sys` crate needs `Cargo.toml`, `src/lib.rs`, `build.rs`,
@@ -208,7 +208,7 @@ Create the sub-campaign branch at `crustify/subcampaigns/<campaign-id>/<link-uni
 artifact dir in its campaign sub-dir at `.../<campaign-id>/<link-unit>/<subsystem>`.
 Keep the sub-scampaign branch checked out on the repo's base dir without creating a new workdir for it.
 
-Scaffold the Rust subsystem root on disk according to the conventions skill. Emit TU and
+Scaffold the Rust subsystem root on disk according to the conventions. Emit TU and
 header modules lazily before scheduling their first units. Commit the canonical tip as the
 sub-campaign's base. Promote completed sub-campaigns in the canonical campaign integration branch.
 
@@ -350,7 +350,7 @@ validate the reusable fix there; do not mix it into campaign translation commits
 
 ---
 
-Reach for the skills advertised by the headers in the following skill index and leverage
-them to conduct your workflow:
+The conventions you follow come after this prompt, then the index of skills you can reach
+for to conduct your workflow:
 
 <!-- SKILLS -->
