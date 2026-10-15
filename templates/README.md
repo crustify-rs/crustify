@@ -9,7 +9,7 @@ Two kinds of campaign, one image, one directory of templates each.
 
 Copy a task template to start a request.
 
-The files beside them seed a translate campaign's `crustify/` dir, which the
+The files beside them seed a translate campaign's `crustify/artifacts/` dir, which the
 orchestrator creates from them: [`gitignore`](gitignore),
 [`build.json`](build.json), [`subsystems.json`](subsystems.json) and
 [`schedule.json`](schedule.json). Derived artifacts such as `subsystems.json`

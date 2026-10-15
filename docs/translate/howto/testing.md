@@ -27,7 +27,7 @@ a workset adds, its inputs built through the safe API wherever one exists. A wor
 adds no public unsafe API has no UB tests on the unsafe interface.
 
 The sanitizers available are those the campaign built: the instrumented variants of
-`crustify/build.json`, where `asan-ubsan` provides ASan and UBSan, `msan` MSan, `tsan` TSan
+`crustify/artifacts/build.json`, where `asan-ubsan` provides ASan and UBSan, `msan` MSan, `tsan` TSan
 and `bsan` BSan. A sanitizer without a variant is not available, so no test is written for
 it and none runs under it. Miri needs no C build and is always available.
 

@@ -98,7 +98,7 @@ Create immutable builds of the target so that binder and translator agents can r
 A Rust- or bindgen-only change may reuse a matching build. A change to the compiled target
 requires a private build; refresh shared builds after that change lands.
 
-Create `crustify/build.json` from `templates/build.json`. Record each prebuild above as one
+Create `crustify/artifacts/build.json` from `templates/build.json`. Record each prebuild above as one
 of its `variants`, naming the sanitizer builds `asan-ubsan`, `msan`, `tsan` and `bsan`: binders,
 translators and reviewers take the sanitizers available to them from these variants, so a
 sanitizer the campaign does not build is one they neither test for nor run. Each variant is an
@@ -109,7 +109,7 @@ disabled test in the campaign dashboard. Post-campaign results must match this b
 
 #### 4. Subsystem decomposition
 
-Create `crustify/subsystems.json` from `templates/subsystems.json`; see
+Create `crustify/artifacts/subsystems.json` from `templates/subsystems.json`; see
 `docs/translate/schemas/subsystems.md`.
 
 Use actual linker outputs to identify link units. Cover the selected target and its

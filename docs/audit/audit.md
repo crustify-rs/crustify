@@ -49,7 +49,7 @@ review waves use.
 
 ## Instruments
 
-Each selected sanitizer is a variant of `crustify/build.json`, which the orchestrator
+Each selected sanitizer is a variant of `crustify/artifacts/build.json`, which the orchestrator
 prepares before the first review wave; the reviewers use only those variants. Miri and
 `equivalence` need no build. [`testing.md`](../translate/howto/testing.md) gives the bug
 classes each sanitizer covers.

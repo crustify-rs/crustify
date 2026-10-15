@@ -61,7 +61,7 @@ When a raw binding is missing:
 5. build and test the affected `-sys` crate.
 
 Before rebuilding C, check for the orchestrator's reusable build and runner. Reuse it only
-when the C revision, the version in `crustify/build.json`, the compiler and the
+when the C revision, the version in `crustify/artifacts/build.json`, the compiler and the
 instrumentation all match. Treat it as immutable and use agent-unique logs and outputs.
 
 Create private builds when no matching build exists or the batch changes compiled C or a

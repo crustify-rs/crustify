@@ -45,8 +45,14 @@ subsystem and wave.
 Every level of a campaign has an artifact dir under `crustify/artifacts/`:
 
 ```text
-crustify/artifacts/                             the campaign: schedule.json, the orchestrator's logs
+crustify/artifacts/                             the campaign
+├── build.json                                  the prebuilt variants of the target
+├── subsystems.json                             the subsystem decomposition
+├── schedule.json                               the waves and batches of every subsystem
+├── dashboard.md                                the campaign dashboard; audit-dashboard.md for an audit
+├── orchestrator-<timestamp>.log                one per orchestrator run
 └── <link-unit>/<subsystem>/                    a subsystem
+    ├── TASK.md                                 the settings the subsystem ran under
     ├── wave-<index>/                           a wave
     │   └── batch-<index>/                      a batch
     │       ├── batch.json                      the thin batch, written out from schedule.json
@@ -62,6 +68,12 @@ An audit's review waves sit directly in the campaign's artifact dir, as
 Each level also holds its `ffimap.json` once the orchestrator records it. A batch's artifact
 dir is what its `--output` names, and holds everything about that batch: its input and the
 artifacts its agent produced.
+
+## Scratch
+
+`crustify/tmp/` is gitignored and holds anything residual that is no artifact: downloads,
+scratch builds and experiments, intermediate outputs. Residual files go nowhere else in the
+repository.
 
 ## Reviews
 

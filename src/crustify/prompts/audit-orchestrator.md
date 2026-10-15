@@ -98,7 +98,7 @@ dependencies so that reviewers can reuse them:
 
 Miri and `equivalence` need no build.
 
-Create `crustify/build.json` from `templates/build.json`. Record each prebuild above as one
+Create `crustify/artifacts/build.json` from `templates/build.json`. Record each prebuild above as one
 of its `variants`, naming the sanitizer builds `asan-ubsan`, `msan`, `tsan` and `bsan`:
 reviewers take the sanitizers available to them from these variants, so a sanitizer the
 audit does not build is one they neither test for nor run. Each variant is an out-of-tree

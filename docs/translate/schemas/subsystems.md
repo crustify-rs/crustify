@@ -1,6 +1,6 @@
 # subsystems.json schema
 
-Field meaning for `<workdir>/crustify/subsystems.json`, the orchestrator's campaign
+Field meaning for `<workdir>/crustify/artifacts/subsystems.json`, the orchestrator's campaign
 decomposition. Layout example: [`templates/subsystems.json`](../../templates/subsystems.json).
 
 The orchestrator emits this repo-tier artifact. It describes the subsystem span
