@@ -33,7 +33,7 @@ CHECKOUT = Path(__file__).resolve().parent.parent.parent
 
 #: Dependencies that are separate checkouts. The value is the share directory
 #: name, which is also the environment-variable suffix.
-_SHARED_DEPS = ("wavefront", "ffibox", "ffimap")
+_SHARED_DEPS = ("wavefront", "ffibox")
 
 
 def bin_dir() -> Path:

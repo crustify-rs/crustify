@@ -9,7 +9,8 @@ from crustify.agents.worklist import WorklistAgent
 #: `prompts/skills/<skill>/binder.md`.
 _SKILLS = (
     SkillSpec(
-        "ffimap", "SKILL.md", capability="ffimap",
+        "crustify", "src/crustify/prompts/skills/ffimap/SKILL.md",
+        capability="ffimap",
         role_header="skills/ffimap/binder.md",
     ),
     SkillSpec(

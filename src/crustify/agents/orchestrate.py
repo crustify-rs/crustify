@@ -32,7 +32,8 @@ _TASK_ANCHOR = "<!-- TASK -->"
 #: The coding conventions are not a skill: the prompt includes them whole.
 _SKILLS = (
     SkillSpec(
-        "ffimap", "SKILL.md", capability="ffimap",
+        "crustify", "src/crustify/prompts/skills/ffimap/SKILL.md",
+        capability="ffimap",
         role_header="skills/ffimap/orchestrator.md",
     ),
     #: One wavefront skill, two role overlays. The oracle a translator queries
