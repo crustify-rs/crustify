@@ -1,8 +1,7 @@
 # Generating safe bindings
 
-How a scheduled C item becomes a safe Rust binding. The conventions say what the result
-looks like; this says how it is arrived at. A binding keeps the C implementation and puts a
-safe Rust API in front of it.
+How a scheduled C item becomes a safe Rust binding.
+A binding keeps the C implementation and puts a safe Rust API in front of it.
 
 ## Item analysis
 
