@@ -33,6 +33,7 @@ docker run -d --init --name crustify-libgit2 \
     -e ANTHROPIC_API_KEY \
     -v "$(dirname "$PWD")/wavefront:/opt/venv/share/wavefront" \
     -v "$(dirname "$PWD")/ffibox:/opt/venv/share/ffibox" \
+    -v "$(dirname "$PWD")/ffimap:/opt/venv/share/ffimap" \
     -v /absolute/path/to/your/target-fork:/target \
     -v "$PWD/examples/crustify/libgit2/src-port/TASK.md:/campaign/TASK.md:ro" \
     -v crustify-libgit2-work:/work \
@@ -74,10 +75,11 @@ uses its checked-out revision and existing `crustify/` state directly, which is
 what makes resuming a partial campaign on a personal fork work. It does not
 clone or replace the target checkout.
 
-`/opt/venv/share/wavefront` and `/opt/venv/share/ffibox` are optional and used
-only by a translate run. The image carries a build-time clone of each; a mount
-replaces it, so a campaign runs against the trees being developed. An audit run
-touches neither.
+`/opt/venv/share/wavefront`, `/opt/venv/share/ffibox` and `/opt/venv/share/ffimap`
+are optional. The image carries a build-time clone of each; a mount replaces it,
+so a campaign runs against the trees being developed. ffimap is installed
+editable, so the `ffimap` command on `PATH` runs the mounted tree. An audit run
+uses only ffimap.
 
 The harness is baked into the image, so `/opt/crustify` is a mount only when
 testing live harness changes.
@@ -115,6 +117,7 @@ Set with `--build-arg` on `docker build`.
 | `/opt/crustify` | read-write, optional | both | baked into the image; mount a checkout to run live harness sources |
 | `/opt/venv/share/wavefront` | read-write, optional | translate | replaces the build-time clone, which is installed editable |
 | `/opt/venv/share/ffibox` | read-write, optional | translate | replaces the build-time clone used by generated Cargo manifests |
+| `/opt/venv/share/ffimap` | read-write, optional | both | replaces the build-time clone, which is installed editable as the `ffimap` command |
 | `/work` | named volume, optional | both | `HOME`: the agents' session transcripts, the C libraries they build, the cargo registry. Outlives `docker rm`, so a re-created container keeps them. Not the artifacts — those land in the target checkout |
 
 ## Results

@@ -51,12 +51,14 @@
 #                      distribution, so this single tree serves both roles.
 #   /opt/venv/share/{wavefront,ffibox,ffimap}
 #                      Optional read-write host checkouts. This is where
-#                      crustify LOOKS for them -- `<prefix>/share/<name>` for
-#                      the environment it is installed in -- so nothing
-#                      configures a path. The image carries a clone of each
-#                      from build time; a mount replaces it, so a campaign runs
-#                      against the trees under development. An audit touches
-#                      neither.
+#                      crustify LOOKS for wavefront and ffibox --
+#                      `<prefix>/share/<name>` for the environment it is
+#                      installed in -- so nothing configures a path. ffimap
+#                      sits beside them and is installed editable, so its
+#                      `ffimap` command on PATH runs whatever tree is there.
+#                      The image carries a clone of each from build time; a
+#                      mount replaces it, so a campaign runs against the trees
+#                      under development. An audit uses only ffimap.
 #   /work              Named volume, and `HOME`: the agents' session
 #                      transcripts, the C libraries they build, the cargo
 #                      registry. It outlives `docker rm`, so a container
@@ -221,13 +223,17 @@ RUN if [ "${INSTALL_CLAUDE}" = "1" ]; then \
     && { [ "${INSTALL_CLAUDE}" = "1" ] && claude --version || true; } \
     && { [ "${INSTALL_CODEX}" = "1" ] && codex --version || true; }
 
-# The three capability checkouts a translate campaign uses, cloned where
-# crustify looks for them: `<prefix>/share/<name>`. wavefront and ffimap are
-# Python distributions and are installed editable, so a checkout mounted over
-# the clone is what runs; ffibox is a path dependency the emitted crates point
+# The three tool checkouts, cloned under `<prefix>/share/<name>`, which is
+# where crustify looks for wavefront and ffibox. wavefront and ffimap are
+# Python distributions installed editable, so their commands (`wavefront`,
+# `ffimap`) land in /opt/venv/bin, on PATH, and run whatever checkout is
+# mounted over the clone; ffibox is a path dependency the emitted crates point
 # at, so a checkout is all it needs. ffimap's rustc driver is pinned to a dated
-# nightly of its own, installed here; the driver itself is built on first scan. Docker caches this layer by instruction text, so bump DEPS_REFRESH
-# to re-clone `main`: `--build-arg DEPS_REFRESH=$(date +%s)`.
+# nightly of its own, installed here; the driver itself is built on first
+# scan. A mounted ffimap that pins a different nightly needs
+# `rustup toolchain install` run in its driver directory. Docker caches this
+# layer by instruction text, so bump DEPS_REFRESH to re-clone `main`:
+# `--build-arg DEPS_REFRESH=$(date +%s)`.
 ARG DEPS_REFRESH=0
 RUN echo "DEPS_REFRESH=${DEPS_REFRESH}" \
     && git clone --depth 1 https://github.com/crustify-rs/wavefront.git /opt/venv/share/wavefront \
@@ -235,7 +241,8 @@ RUN echo "DEPS_REFRESH=${DEPS_REFRESH}" \
     && git clone --depth 1 https://github.com/crustify-rs/ffimap.git /opt/venv/share/ffimap \
     && uv pip install --python /opt/venv/bin/python \
          -e /opt/venv/share/wavefront -e /opt/venv/share/ffimap \
-    && (cd /opt/venv/share/ffimap/src/ffimap/driver && rustup toolchain install)
+    && (cd /opt/venv/share/ffimap/src/ffimap/driver && rustup toolchain install) \
+    && ffimap --help > /dev/null
 
 # Bake in a runnable harness -- the WHOLE repository, not just `src`. One
 # distribution ships both packages, and the orchestrators are told to read
