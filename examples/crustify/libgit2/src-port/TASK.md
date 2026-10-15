@@ -50,7 +50,7 @@ Unanswered optional questions use their defaults.
 10. **Should I wait for your approval before starting the translation phase?**
     (`id: gates.translation`)
     - Answer: `yes`, after setup identifies and proposes the bottom-up subsystem plan
-11. **Should I wait for your approval between sub-campaigns?** (`id: gates.sub-campaign`)
+11. **Should I wait for your approval between subsystems?** (`id: gates.subsystem`)
     - Answer: `no`
 12. **Should I wait for your approval before starting review passes?** (`id: gates.review`)
     - Answer: `no`

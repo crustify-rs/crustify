@@ -72,7 +72,7 @@ Selection rules:
 - Leverage the per-subsystem `wavefront-config.json` when emitting `schedule.json` to form
   dependency-ordered DAGs over link units, subsystems, and type/symbol batches.
 
-- Prefer `--transitive` so the sub-campaign includes the selected surface's in-scope
+- Prefer `--transitive` so the subsystem includes the selected surface's in-scope
   producer dependencies. Use an exact non-transitive selection only when those
   dependencies are already satisfied or intentionally excluded.
 

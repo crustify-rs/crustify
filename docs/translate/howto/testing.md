@@ -110,12 +110,12 @@ cargo test --workspace
 Every FFI, UB, and equivalence test runs against the matching reusable sanitized C library
 or a private sanitized replacement, and under every available sanitizer.
 
-BSan, when available, is run for every batch and at sub-campaign end:
+BSan, when available, is run for every batch and at subsystem end:
 
 - For a batch, it runs only on the individual tests or reproducers the batch expects to
   trigger it, each by exact name and alone; never on a whole test binary, a suite or the
   workspace.
-- At sub-campaign end, it runs as a gate over everything the sub-campaign landed: the
+- At subsystem end, it runs as a gate over everything the subsystem landed: the
   whole workspace, one invocation per test binary in parallel, each under a `timeout`.
 
 Miri is run after every wave, as a gate over the whole workspace: one

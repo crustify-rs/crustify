@@ -86,7 +86,7 @@ item of your worklist, and close the coverage gaps of your worklist's C and Rust
 
 Validate the tree you land as the testing instructions' Regressions section describes. Run
 BSan only on the tests you wrote and expect to trigger it, and run your own tests under
-Miri; the wave's and the sub-campaign's gates belong to the review that follows.
+Miri; the wave's and the subsystem's gates belong to the review that follows.
 
 ### 2. Commit
 

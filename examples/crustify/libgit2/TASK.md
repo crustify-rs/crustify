@@ -14,7 +14,7 @@
    subset of functions and types, or the whole target repo? You can define them
    now or we can brainstorm them during the live session. You can also let the
    orchestrator decide.** (`id: scope`)
-   - Answer: named functions and types, as three sub-campaigns run in this order:
+   - Answer: named functions and types, as three subsystems run in this order:
      - `import-type-closure`: the whole imported type and callback closure of `src/`,
        in dependency order;
      - `import-symbols-l0-l2`: the imported functions and globals reached by target
@@ -54,8 +54,8 @@ Unanswered optional questions use their defaults.
 10. **Should I wait for your approval before starting the translation phase?**
     (`id: gates.translation`)
     - Answer: `no`
-11. **Should I wait for your approval between sub-campaigns?** (`id: gates.sub-campaign`)
-    - Answer: `yes`, before promoting each sub-campaign branch
+11. **Should I wait for your approval between subsystems?** (`id: gates.subsystem`)
+    - Answer: `yes`, before promoting each subsystem branch
 12. **Should I wait for your approval before starting review passes?** (`id: gates.review`)
     - Answer: `not applicable`
 
@@ -76,10 +76,10 @@ toolchain installation when the required tools are already installed.
 ## Selection and recording
 
 The orchestrator chooses the internal waves, reports each dry-run plan, and waits for
-approval before spending on or promoting the next sub-campaign.
+approval before spending on or promoting the next subsystem.
 
-After each sub-campaign, price the batches' `binder.usage.json` and
+After each subsystem, price the batches' `binder.usage.json` and
 `reviewer.usage.json` records with
-`crustify cost`, measure the sub-campaign branch's diff, and run
-`crustify ffimap <workdir> --json` over the sub-campaign tip. Derive cost
+`crustify cost`, measure the subsystem branch's diff, and run
+`crustify ffimap <workdir> --json` over the subsystem tip. Derive cost
 from token counts, never from provider-reported dollars.

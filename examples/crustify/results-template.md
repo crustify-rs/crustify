@@ -45,13 +45,14 @@ the campaign's.
 - `objective` — what the batch's agents were told to do: `wrap`, `port`, or
   `raw lifetime`. The Types tables are split by it, so it appears as a column
   only in the Symbols `Batches` table, which mixes the two
-- `subsystem` — in the Types and Symbols tables, the batch's sub-campaign as
-  `<link-unit>/<subsystem>`, the same name as its Overview row; with `wave` and `batch`
-  it keys the row to `schedule.json`
-- `wave` / `batch` — the batch's position in its sub-campaign's plan: the index
+- `subsystem` — `<link-unit>/<subsystem>`, or `raw-lifetime-void` /
+  `raw-lifetime-string`. In the Types and Symbols tables it names the batch's subsystem,
+  the same name as its Overview row, and with `wave` and `batch` keys the row to
+  `schedule.json`
+- `wave` / `batch` — the batch's position in its subsystem's plan: the index
   of its wave in `waves` and of the batch within that wave's `batches`, so a
   batch row joins to `schedule.json`, to the agent that landed it, and to its
-  Overview sub-campaign row. Schema-v2 plans carry `steps` and `plan_items`
+  Overview subsystem row. Schema-v2 plans carry `steps` and `plan_items`
   rather than indexed waves and batches, so historical rows leave both blank
 - `types` / `symbols` — scheduler units in the batch. Callbacks are scheduled
   in symbol batches and counted there
@@ -68,11 +69,9 @@ the campaign's.
   tokens behind the `$` cell to their left, in millions: input + output + cache read +
   cache write, summed over the agent's `usage.json` requests (the figure `crustify cost`
   reports). Cache reads dominate it
-- `sub-campaign` — the Overview row's `<link-unit>/<subsystem>`, or
-  `raw-lifetime-void` / `raw-lifetime-string`
-- `sub-campaign wall` — from its first batch launch through its final review
+- `subsystem wall` — from its first batch launch through its final review
   and regression gate
-- `batch` / `review` — in the Overview, the computed cost of the sub-campaign's
+- `batch` / `review` — in the Overview, the computed cost of the subsystem's
   translation batches and of its review batches; `—` where it ran none
 - `total` — `batch` + `review`; for the orchestrator, its own cost
 - `orchestrator` — the Overview row for every orchestrator session of the campaign, priced
@@ -81,13 +80,13 @@ the campaign's.
 - `Σ recorded agents` / `Σ campaign` — the batch and review agents alone, then those plus the
   orchestrator. `$/type` and `$/sym` are given for the agents only, since the orchestrator's
   cost cannot be split by unit kind
-- `$/type` / `$/sym` — in the Overview, a sub-campaign's cost over the types or
+- `$/type` / `$/sym` — in the Overview, a subsystem's cost over the types or
   symbols it was scheduled for; `—` where it was scheduled for none
 - `+LoC` — the landed batch's Rust-source insertions/deletions relative to its
   wave's base
 - `cov (C/Rust)` — in a `Batches` table, the absolute line coverage right after
   that batch landed, from ONE run of all four test workloads together (their
-  union): C over the sub-campaign link unit's TUs in the `coverage` prebuild,
+  union): C over the subsystem link unit's TUs in the `coverage` prebuild,
   Rust over the authored non-test sources. Its **Σ** cell is the coverage at the
   table's last landing, not a sum
 - `+UB safe tests` / `+UB unsafe tests` / `+equiv tests` / `+unit tests` — in a
@@ -159,7 +158,7 @@ in Notes.
 Implementation `<provider>/<model>` via `<backend>`; review
 `<provider>/<model>` via `<backend>`.
 
-| sub-campaign | nr types | nr symbols | sub-campaign wall | batch | batch tokens | review | review tokens | total | total tokens | $/type | $/sym |
+| subsystem | nr types | nr symbols | subsystem wall | batch | batch tokens | review | review tokens | total | total tokens | $/type | $/sym |
 |---|---:|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|
 | `raw-lifetime-void` | `0` | `<n>` | `<n>m<n>s` | `$<n>` | `<n>M` | `$<n>` | `<n>M` | `$<n>` | `<n>M` | — | `$<n>` |
 | `raw-lifetime-string` | `0` | `<n>` | `<n>m<n>s` | `$<n>` | `<n>M` | `$<n>` | `<n>M` | `$<n>` | `<n>M` | — | `$<n>` |
@@ -425,6 +424,6 @@ both paths. Callbacks count with symbols.
 
 Some of it is structural and belongs here every time: whether a review wave
 reused the translation batches or the oracle re-batched it under distinct caps;
-which units a review schedule dropped and why; which sub-campaigns the Overview
+which units a review schedule dropped and why; which subsystems the Overview
 lists but no table details, and the cost that leaves unaccounted; and any column
 a campaign could not fill, said once rather than left as a field of em-dashes.

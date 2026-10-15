@@ -1,6 +1,6 @@
 <!-- SKILL -->
 
-At batch, wave, sub-campaign, and campaign end, record an unseeded ffimap scan of the
+At batch, wave, subsystem, and campaign end, record an unseeded ffimap scan of the
 unsafe and FFI surface in the respective artifact directory:
 
 ```bash

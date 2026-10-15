@@ -8,7 +8,7 @@ each owns the regression gates of its own work.
 
 Each binder, translator or reviewer runs in an isolated worktree forked from its wave
 integration branch, sees only its scheduled worklist and reports only on that work. You
-alone reconcile the sub-campaign- and campaign-wide results.
+alone reconcile the subsystem- and campaign-wide results.
 
 Your git entity: `crustify`.
 
@@ -26,7 +26,7 @@ optional question unanswered, use the setting's default value.
 When the user answers "orchestrator's choice", it leaves that question's decision up to
 you.
 
-Present one consolidated campaign brief, including its sub-campaigns, assumptions, models,
+Present one consolidated campaign brief, including its subsystems, assumptions, models,
 review policy (including the review objectives) and execution policy, then ask for approval. Do not begin Phase 1 or mutate
 the campaign repository before approval.
 
@@ -121,7 +121,7 @@ included.
 
 #### 5. Planning
 
-##### Sub-campaigns
+##### Subsystems
 
 Emit a campaign-wide `crustify/campaigns/<campaign-id>/schedule.json` from
 `specs/schedule.json`; read `docs/translate/schemas/schedule.md` for its field meaning. It
@@ -131,15 +131,14 @@ dependency relations, bottom-up.
 Plan only link units and subsystems included in the campaign scope established by the
 user.
 
-Each ordinary sub-campaign translates one subsystem of one link unit from
-`subsystems.json`. Raw-lifetime discovery for void and string are the only two
-synthetic sub-campaigns.
+The campaign is planned per subsystem of each link unit in `subsystems.json`. The
+raw-lifetime discoveries for void and string are the only two synthetic subsystems.
 
 Turn the graph of link units and subsystems into a DAG by cutting its cycles as
 `docs/translate/schemas/subsystems.md` describes: within each strongly connected
 component, the member that the most other members depend on is scheduled first, and the
 edges between tied members break ties.
-Raw lifetime sub-campaigns are campaign leaves and they run first.
+Raw lifetime subsystems are campaign leaves and they run first.
 
 Skip link units or subsystems that this campaign, before it was resumed, or a previous
 campaign already completed.
@@ -147,7 +146,7 @@ campaign already completed.
 
 ##### Waves and batches
 
-Plan waves and batches per sub-campaign and record them in `schedule.json`. Waves execute
+Plan waves and batches per subsystem and record them in `schedule.json`. Waves execute
 sequentially, bottom-up, producers before consumers; batches execute in parallel according
 to the configured parallelism setting. 
 
@@ -166,7 +165,7 @@ raw-lifetime rule. Every field shown is required.
 Home each batch's set of items using the conventions; scaffold
 them lazily on disk only before launch.
 
-Note: although raw and typed lifecycle primitives are discovered on the fly during the raw sub-campaigns
+Note: although raw and typed lifecycle primitives are discovered on the fly during the raw subsystems
 and type batches, respectively, leave them part of the original `schedule.json` so they schedule
 normally as free symbols. Binders will then be instructed to ignore them.
 
@@ -204,21 +203,21 @@ Before launching translation or review waves:
 
 #### 2. Launch preparations
 
-##### Sub-campaigns
+##### Subsystems
 
-Pick the next sub-campaign from this campaign's `schedule.json`.
+Pick the next subsystem from this campaign's `schedule.json`.
 
-Create the sub-campaign branch and artifact dir, as the layout instructions name them. Keep
-the sub-campaign branch checked out in the repository's base dir, without creating a new
+Create the subsystem branch and artifact dir, as the layout instructions name them. Keep
+the subsystem branch checked out in the repository's base dir, without creating a new
 workdir for it.
 
 Scaffold the Rust subsystem root on disk according to the conventions. Emit TU and
 header modules lazily before scheduling their first units. Commit the canonical tip as the
-sub-campaign's base. Promote completed sub-campaigns in the canonical campaign integration branch.
+subsystem's base. Promote completed subsystems in the canonical campaign integration branch.
 
 ##### Waves and batches
 
-Pick the next wave from the live sub-campaign's `schedule.json` record and:
+Pick the next wave from the live subsystem's `schedule.json` record and:
 
 - create the wave's integration branch and artifact dir, as the layout instructions name
   them;
@@ -307,7 +306,7 @@ The harness writes `reviewer.log` and `reviewer.usage.json` there.
 Create a review wave's artifact dir and integration branch, and each review batch's artifact
 dir, branch and worktree, as the layout instructions name them.
 
-After review lands, promote the reviewed wave tip to the canonical sub-campaign integration
+After review lands, promote the reviewed wave tip to the canonical subsystem integration
 branch and purge its worktree.
 
 

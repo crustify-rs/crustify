@@ -168,10 +168,10 @@ you patched something, run any regression suites that might be available for it.
 In a Crustify campaign, your review wave follows a translated wave, so you own its gates:
 
 - Miri, in every wave: run its gate on the wave tip before any change.
-- BSan at sub-campaign end, when your wave is the sub-campaign's last: its index is the
+- BSan at subsystem end, when your wave is the subsystem's last: its index is the
   highest of your subsystem's waves in `crustify/campaigns/<campaign-id>/schedule.json`,
   and your branch's name gives the link unit, subsystem and wave. Run its gate on the wave
-  tip before any change. It covers everything the sub-campaign landed, so a report on an
+  tip before any change. It covers everything the subsystem landed, so a report on an
   earlier wave's items is yours to triage as well. In every other wave, run BSan only on
   the individual reproducers you emit.
 

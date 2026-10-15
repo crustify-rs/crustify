@@ -23,7 +23,7 @@ safety gates.
 Crustify uses a **two-agent architecture**:
 
 - The **orchestrator** configures campaigns, scaffolds repositories, schedules
-  sub-campaigns, creates wave branches, invokes batch harnesses, verifies
+  subsystems, creates wave branches, invokes batch harnesses, verifies
   landings, and runs regression gates.
 - The **translator** agent ports or wraps scheduled types and symbols, writes
   tests, validates its work, and commits the result. Translator instances can
@@ -105,14 +105,14 @@ For a reproducible container environment or a pre-filled campaign manifest, see
 
 ## Campaign lifecycle
 
-1. **Scope:** choose a target and objective, then define sub-campaigns now or
+1. **Scope:** choose a target and objective, then define subsystems now or
    brainstorm them with the orchestrator.
 2. **Setup:** establish the build and test baseline, extract CodeQL data,
    configure the campaign-wide oracle target, decompose its targeted and
    imported translation units into `subsystems.json`, and scaffold compiling
    Rust crates.
-3. **Plan:** each ordinary sub-campaign mirrors one subsystem, plus separate raw
-   `void` and raw `string` lifetime sub-campaigns. Each gets a narrow
+3. **Plan:** each subsystem of `subsystems.json` is planned on its own, plus the
+   synthetic raw `void` and raw `string` lifetime subsystems. Each gets a narrow
    `wavefront-config.json`; Wavefront computes its exact imported-producer
    closure, waves and batches. Wrap campaigns select the public API graph with
    `--api-headers-only`.

@@ -71,7 +71,7 @@ def main() -> None:
     _orch_blurbs = {
         "translate": (
             "Start a translation campaign's orchestrator. It reads the "
-            "campaign task, plans the sub-campaigns and waves, and spawns the "
+            "campaign task, plans the subsystems and waves, and spawns the "
             "translators itself."),
         "audit": (
             "Start an audit campaign's orchestrator. It reads the campaign "

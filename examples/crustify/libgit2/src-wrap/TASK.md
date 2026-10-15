@@ -22,7 +22,7 @@
 
 5. **Do you want agentic review after translated work lands? If so, which
    model and billing should perform each review?** (`id: review-agent`)
-   - Answer: `openrouter/anthropic/claude-opus-5, api`, after each sub-campaign
+   - Answer: `openrouter/anthropic/claude-opus-5, api`, after each subsystem
 
 6. **Should I run fully autonomously end to end?** (`id: autonomy`)
    - Answer: `yes`
@@ -50,5 +50,5 @@ Unanswered optional questions use their defaults.
 # Additional instructions
 
 - Work in `/target` in place. Do not clone, reset, replace, or discard its existing
-  branches or partial `crustify/` work. Continue where the previous sub-campaigns left
+  branches or partial `crustify/` work. Continue where the previous subsystems left
   off.

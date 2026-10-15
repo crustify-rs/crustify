@@ -61,7 +61,7 @@ from there. Emit `subsystems.json` after the campaign-wide oracle target is popu
 Skip toolchain installation when the required tools are already installed.
 
 Raw `void` and `string` lifetime discovery is required preparation owned by the
-orchestrator. It is not a user-facing sub-campaign.
+orchestrator. It is not a user-facing subsystem.
 
 ## Selection
 
@@ -109,5 +109,5 @@ The god-object selection is `record_layer_st`, `quic_stream_st`, and
 ## Recording
 
 The orchestrator derives internal waves and schedule files from these selections.
-Record token-derived cost, the sub-campaign branch's diff, and the deterministic
-`crustify ffimap <workdir>` scan after the sub-campaign completes.
+Record token-derived cost, the subsystem branch's diff, and the deterministic
+`crustify ffimap <workdir>` scan after the subsystem completes.

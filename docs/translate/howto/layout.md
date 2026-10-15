@@ -8,12 +8,15 @@ index. Nothing records a path; each name below is spelled from those coordinates
 
 | branch | name | checked out |
 |---|---|---|
-| campaign | `crustify/campaigns/<campaign-id>` | in the repository's base dir, between sub-campaigns |
-| sub-campaign | `crustify/subcampaigns/<campaign-id>/<link-unit>/<subsystem>` | in the repository's base dir, while live |
+| campaign | `crustify/campaigns/<campaign-id>` | in the repository's base dir, between subsystems |
+| subsystem | `crustify/subsystems/<campaign-id>/<link-unit>/<subsystem>` | in the repository's base dir, while live |
 | wave | `crustify/waves/<campaign-id>/<link-unit>/<subsystem>/wave-<index>` | never |
 | batch | `crustify/batches/<campaign-id>/<link-unit>/<subsystem>/wave-<index>/batch-<index>` | in its worktree |
 | review wave | `crustify/reviews/<campaign-id>/<link-unit>/<subsystem>/wave-<index>` | never |
 | review batch | `crustify/review-batches/<campaign-id>/<link-unit>/<subsystem>/wave-<index>/batch-<index>` | in its worktree |
+
+A campaign begun before subsystems were named so has `crustify/subcampaigns/` subsystem
+branches; resuming it keeps them.
 
 A wave or review wave branch is the integration branch its batches land on. It is never
 checked out: a landing push to a checked-out branch fails, and one to a missing branch
@@ -35,7 +38,7 @@ Every level of a campaign has an artifact dir under `crustify/campaigns/`:
 
 ```text
 crustify/campaigns/<campaign-id>/               the campaign: schedule.json, the orchestrator's log
-└── <link-unit>/<subsystem>/                    a sub-campaign
+└── <link-unit>/<subsystem>/                    a subsystem
     ├── wave-<index>/                           a wave
     │   └── batch-<index>/                      a batch
     │       ├── batch.json                      the thin batch, written out from schedule.json

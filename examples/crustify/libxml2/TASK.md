@@ -14,7 +14,7 @@
    subset of functions and types, or the whole target repo? You can define them
    now or we can brainstorm them during the live session. You can also let the
    orchestrator decide.** (`id: scope`)
-   - Answer: the whole target, as seven sub-campaigns run in this order. Unless noted,
+   - Answer: the whole target, as seven subsystems run in this order. Unless noted,
      derive each one's implementation paths from the declaration inventory and cover
      the whole subsystem.
      - `public-api-types`: the whole published type and callback closure of
@@ -25,7 +25,7 @@
      - `catalog-resolution`: `include/libxml/catalog.h`;
      - `sax2`: `include/libxml/SAX2.h`;
      - `public-api-remainder`: everything in `include/libxml/` not completed by the
-       earlier sub-campaigns.
+       earlier subsystems.
 
 4. **Which model and billing should do the translation work?**
    (`id: translate-agent`)
@@ -59,8 +59,8 @@ Unanswered optional questions use their defaults.
 10. **Should I wait for your approval before starting the translation phase?**
     (`id: gates.translation`)
     - Answer: `no`
-11. **Should I wait for your approval between sub-campaigns?** (`id: gates.sub-campaign`)
-    - Answer: `yes`; never promote a sub-campaign branch without approval
+11. **Should I wait for your approval between subsystems?** (`id: gates.subsystem`)
+    - Answer: `yes`; never promote a subsystem branch without approval
 12. **Should I wait for your approval before starting review passes?** (`id: gates.review`)
     - Answer: `not applicable`
 
@@ -77,7 +77,7 @@ The historical safe-FFI measurement found that `libxml` 0.3.21 safely covered
 113 of 1,649 exported functions. The uncovered surface included the XML writer
 (81 functions), DTD validation (71), XPath internals (117), catalog resolution
 (37), and SAX2 (36). At v2.15.3, `xmlunicode.h` is fully deprecated and empty;
-do not treat it as a sub-campaign. The current tag has 1,416 `XMLPUBFUN`
+do not treat it as a subsystem. The current tag has 1,416 `XMLPUBFUN`
 declarations after deprecation removal.
 
 Libxml2's global memory management is documented as not thread-safe. Generated
@@ -103,5 +103,5 @@ spending.
 
 Record coverage using safe functions in call position with documentation
 comments stripped, so it remains comparable to the 113/1,649 baseline. After
-each sub-campaign, record token-derived cost, the sub-campaign branch's diff, and the
+each subsystem, record token-derived cost, the subsystem branch's diff, and the
 deterministic `crustify ffimap <workdir>` scan over the selected names.
