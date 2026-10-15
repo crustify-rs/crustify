@@ -117,7 +117,7 @@ If `fix` is enabled, correct each reported obligation. If `fix` is not enabled, 
 
 Review your workset's implementation for UB in the public API that its UB tests might have
 missed. Prove that a candidate is a true UB defect by emitting a reproducer that triggers
-one of the enabled sanitizers from Rust code. Annotate
+one of the available sanitizers from Rust code. Annotate
 reproducers targeting the safe public API with `#[forbid(unsafe_code)]`; reproducers
 targeting the unsafe API must honor its safety requirement. The unsafe surface includes
 only the API your workset adds; if it made no API item unsafe, there is nothing to evaluate

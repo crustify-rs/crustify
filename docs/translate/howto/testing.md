@@ -26,7 +26,12 @@ Test the unsafe public interface with one suite per public unsafe function or me
 workset adds, with its inputs built through the safe API wherever one exists. A workset
 that adds no public unsafe API adds no UB tests on the unsafe interface.
 
-Cover every instrument prepared by the campaign as a separate obligation:
+The sanitizers available are those the campaign built: the instrumented variants of
+`crustify/build.json`, where `asan-ubsan` provides ASan and UBSan, `tsan` TSan and `bsan`
+BSan. A sanitizer without a variant is not available, so no test is written for it and
+none runs under it. Miri needs no C build and is always available.
+
+Each available sanitizer is a separate obligation:
 
 - ASan/UBSan: bounds errors, use-after-free, use-after-return, invalid free,
   double free, leak, pointer/alignment UB, and integer/division/shift UB.
@@ -105,8 +110,8 @@ cargo test --workspace
 ```
 
 Every FFI, UB, and equivalence test runs against the matching reusable sanitized C library
-or a private sanitized replacement, and under every prepared instrument. BSan is the
-exception, and runs with discipline:
+or a private sanitized replacement, and under every available sanitizer. BSan, when
+available, is the exception, and runs with discipline:
 
 - A translation batch runs BSan only on the tests it wrote and expects to trigger it, by
   exact name; never a whole binary or suite. It runs its own tests under Miri.

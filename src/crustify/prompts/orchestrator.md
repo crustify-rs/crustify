@@ -67,18 +67,22 @@ Create immutable builds of the target so that translator agents can reuse them:
 
 - **plain** build for the functional baseline;
 - **coverage-instrumented** build for campaign measurements;
-- **ASan + UBSan** — the general build. FFI and lifecycle tests use it;
-- **TSan** — a separate build, for race tests. Do not combine it with ASan:
-  the two instrument the same memory operations and their runtimes conflict;
-- **BSan** — when `cargo bsan --version` succeeds (BorrowSanitizer's bsan rustup toolchain);
-  it instruments the C through its own matched clang.
+- one build per sanitizer the campaign enables (`id: sanitizers`; by default, every one
+  below the toolchain supports):
+  - **ASan + UBSan** — the general build. FFI and lifecycle tests use it;
+  - **TSan** — a separate build, for race tests. Do not combine it with ASan:
+    the two instrument the same memory operations and their runtimes conflict;
+  - **BSan** — when `cargo bsan --version` succeeds (BorrowSanitizer's bsan rustup
+    toolchain); it instruments the C through its own matched clang.
 
 A Rust- or bindgen-only change may reuse a matching build. A change to the compiled target
 requires a private build; refresh shared builds after that change lands.
 
 Create `crustify/build.json` from `specs/build.json`. Record each prebuild above as one
-of its `variants`: an out-of-tree `dir` plus the `configure` and `build` commands run
-from it. Increment `version` whenever any command changes. Disable deprecated features unless otherwise instructed by the user. Use
+of its `variants`, naming the sanitizer builds `asan-ubsan`, `tsan` and `bsan`: translators
+and reviewers take the sanitizers available to them from these variants, so a sanitizer
+the campaign does not build is one they neither test for nor run. Each variant is an
+out-of-tree `dir` plus the `configure` and `build` commands run from it. Increment `version` whenever any command changes. Disable deprecated features unless otherwise instructed by the user. Use
 parallel builds. Disable unstable baseline tests as needed, record pass/total and every
 disabled test in the campaign results. Post-campaign results must match this baseline.
 
