@@ -8,7 +8,7 @@ from pathlib import Path
 from unittest import mock
 
 from crustify import deps, review, translate
-from crustify.agents.review import ReviewAgent
+from crustify.agents.review import CRUSTIFY_CONVENTIONS, ReviewAgent
 
 _ITEM = {"name": "T", "defined_in": "include/t.h", "kind": "type",
          "field_anchors": [], "home": "crustify/rust/demo/src/t.rs"}
@@ -67,6 +67,16 @@ class ReviewBatchTests(unittest.TestCase):
                     self.assertRaises(SystemExit):
                 self.load({"objectives": objectives, "items": [_ITEM]})
 
+    def test_conventions_default_to_crustify_and_may_be_null(self) -> None:
+        self.assertIs(self.load({"items": [_ITEM]}).conventions, ...)
+        self.assertIsNone(
+            self.load({"conventions": None, "items": [_ITEM]}).conventions)
+        self.assertEqual(
+            self.load({"conventions": "docs/STYLE.md",
+                       "items": [_ITEM]}).conventions, "docs/STYLE.md")
+        with self.assertRaises(SystemExit):
+            self.load({"conventions": 3, "items": [_ITEM]})
+
     def test_items_are_validated_as_for_a_translator(self) -> None:
         with self.assertRaisesRegex(SystemExit, "mixed agent routes"):
             self.load({"items": [_ITEM, dict(_ITEM, name="f", kind="symbol")]})
@@ -84,9 +94,11 @@ class ReviewAgentTests(unittest.TestCase):
         self.repo = Path(tmp.name)
         (self.repo / "crustify").mkdir()
 
-    def agent(self, objectives: list[str] | None) -> ReviewAgent:
+    def agent(self, objectives: list[str] | None,
+              conventions: Path | None = CRUSTIFY_CONVENTIONS) -> ReviewAgent:
         return ReviewAgent(self.repo, route="type", items=[_ITEM],
-                           objectives=objectives, git_base="review-wave-0",
+                           objectives=objectives, conventions=conventions,
+                           git_base="review-wave-0",
                            artifact_dir=self.repo, log_stem="reviewer")
 
     def test_skills_contribute_their_objectives(self) -> None:
@@ -134,24 +146,35 @@ class ReviewAgentTests(unittest.TestCase):
 
     def test_gates_and_regressions_live_in_the_testing_how_to(self) -> None:
         _Checkouts(self)
-        agent = self.agent(None)
-        body = agent._body()
-        self.assertNotIn("Miri gate", body)
-        self.assertIn("run any regression tests that might be available", body)
-        self.assertIn("Miri gate", agent.system_preamble())
+        from crustify.agents.base import _PKG_ROOT
+        prompt = (_PKG_ROOT / "prompts" / "reviewer.md").read_text()
+        self.assertNotIn("Miri gate", prompt)
+        self.assertIn("run any regression tests that might be available", prompt)
+        self.assertIn("Miri gate", self.agent(None).system_preamble())
 
-    def test_the_reviewer_is_handed_the_conventions_and_how_tos(self) -> None:
-        """Inline, like the translator: the standard a reviewer judges by is
-        the one the translator followed, word for word."""
+    def test_the_reviewer_is_handed_the_how_tos(self) -> None:
+        """The standard a reviewer judges by is the text the translator
+        followed, word for word; the conventions it reads on demand."""
         _Checkouts(self)
         pre = self.agent(None).system_preamble()
-        index = pre[pre.index("## Skills"):]
-        for heading in ("# Crustify coding conventions",
-                        "# Generating safe bindings", "# Testing"):
+        for heading in ("# Generating safe bindings", "# Porting", "# Testing"):
             with self.subTest(heading=heading):
                 self.assertIn(heading, pre)
-                self.assertNotIn(heading, index)
-        self.assertNotIn("name: bindings", pre)  # frontmatter is dropped
+        self.assertNotIn("# Crustify coding conventions", pre)
+        self.assertIn(f"conventions: `{CRUSTIFY_CONVENTIONS}`", pre)
+
+    def test_a_codebase_without_conventions_offers_no_conventions_review(self) -> None:
+        _Checkouts(self)
+        agent = self.agent(None, conventions=None)
+        self.assertNotIn("conventions", agent.available_objectives())
+        self.assertIn("conventions: `none`", agent.system_preamble())
+        with self.assertRaisesRegex(SystemExit, "conventions"):
+            self.agent(["conventions"], conventions=None)
+
+    def test_a_missing_conventions_document_is_an_error(self) -> None:
+        _Checkouts(self)
+        with self.assertRaisesRegex(SystemExit, "does not exist"):
+            self.agent(None, conventions=self.repo / "CONVENTIONS.md")
 
     def test_the_stage_keeps_the_review_cost_buckets(self) -> None:
         _Checkouts(self)
@@ -186,6 +209,21 @@ class ExecuteTests(unittest.TestCase):
         with self.assertRaisesRegex(SystemExit, "nonesuch"):
             review.execute(self.repo, self.batch, base_branch="review-wave-0",
                            output=self.output, dry_run=True)
+
+    def test_a_relative_conventions_document_resolves_in_the_workdir(self) -> None:
+        (self.repo / "STYLE.md").write_text("# Style\n")
+        self.batch.write_text(json.dumps(
+            {"conventions": "STYLE.md", "items": [_ITEM]}))
+        seen = {}
+
+        def run(agent):
+            seen["conventions"] = agent._arguments()["conventions"]
+
+        with mock.patch.object(ReviewAgent, "run", run), \
+                mock.patch("builtins.print"):
+            review.execute(self.repo, self.batch, base_branch="review-wave-0",
+                           output=self.output)
+        self.assertEqual(seen["conventions"], str(self.repo.resolve() / "STYLE.md"))
 
     def test_artifacts_take_the_reviewer_names(self) -> None:
         self.batch.write_text(json.dumps({"items": [_ITEM]}))

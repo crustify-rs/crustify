@@ -5,36 +5,18 @@ import json
 import re
 from pathlib import Path
 
+from crustify import deps
 from crustify.agents.base import (
-    CrustifyAgent, SkillSpec, _PKG_ROOT, filter_objectives, objective_keys,
+    CrustifyAgent, SkillSpec, _PKG_ROOT, expand_includes, filter_objectives,
+    objective_keys,
 )
 
 #: Every skill a reviewer can carry, in prompt order; discovery decides which
 #: it actually carries, exactly as for the translator. A skill's reviewer
 #: header may contribute objectives of its own: `lifecycle` comes from
-#: wavefront's and `conventions` from the conventions', so a reviewer
-#: pointed at a crate that neither describes is never asked for them.
+#: wavefront's, so a reviewer pointed at a crate wavefront does not describe
+#: is never asked for it.
 _SKILLS = (
-    SkillSpec(
-        "crustify", "docs/translate/coding-conventions.md",
-        capability="conventions",
-        role_header="skills/conventions/reviewer.md", inline=True,
-    ),
-    SkillSpec(
-        "crustify", "docs/translate/howto/bindings.md",
-        capability="bindings",
-        role_header="skills/bindings/reviewer.md", inline=True,
-    ),
-    SkillSpec(
-        "crustify", "docs/translate/howto/porting.md",
-        capability="porting",
-        role_header="skills/porting/reviewer.md", inline=True,
-    ),
-    SkillSpec(
-        "crustify", "docs/translate/howto/testing.md",
-        capability="testing",
-        role_header="skills/testing/reviewer.md", inline=True,
-    ),
     SkillSpec(
         "crustify", "src/crustify/prompts/skills/ffimap/SKILL.md",
         capability="ffimap",
@@ -58,6 +40,10 @@ OBJECTIVE_ORDER = (
     "conventions", "misc", "coverage", "fix",
 )
 
+
+#: The conventions a Crustify-generated codebase follows: what a reviewer
+#: judges by when its batch names no other document.
+CRUSTIFY_CONVENTIONS = deps.CHECKOUT / "docs" / "translate" / "coding-conventions.md"
 
 #: Objectives that own no section. `fix` decides whether the others patch
 #: what they find, which each section states in prose, so it is offered
@@ -88,6 +74,7 @@ class ReviewAgent(CrustifyAgent):
         route: str,
         items: list[dict],
         objectives: list[str] | None,
+        conventions: Path | None,
         git_base: str,
         artifact_dir: Path,
         log_stem: str,
@@ -98,6 +85,12 @@ class ReviewAgent(CrustifyAgent):
         )
         self._route = route
         self._items = [dict(item) for item in items]
+        #: The codebase's conventions document, read on demand, or None when
+        #: the reviewed codebase has none; then `conventions` is not offered.
+        if conventions is not None and not Path(conventions).is_file():
+            raise SystemExit(
+                f"review: conventions document does not exist: {conventions}")
+        self._conventions = conventions
         available = set(self.available_objectives())
         if objectives is None:
             self._objectives = frozenset(available)
@@ -112,17 +105,21 @@ class ReviewAgent(CrustifyAgent):
 
     @staticmethod
     def _template() -> str:
-        return (_PKG_ROOT / "prompts" / "reviewer.md").read_text()
+        return expand_includes(
+            (_PKG_ROOT / "prompts" / "reviewer.md").read_text())
 
     def available_objectives(self) -> list[str]:
         """Every objective this reviewer can run: ``fix``, those its prompt
         has sections for, and those the role headers of the skills it carries
-        have sections for. A skill that is not installed contributes none."""
+        have sections for. A skill that is not installed contributes none,
+        and ``conventions`` needs a conventions document to review against."""
         keys = set(_UNGATED) | objective_keys(self._template())
         for spec in self.skill_specs():
             if spec.role_header:
                 keys |= objective_keys(
                     (_PKG_ROOT / "prompts" / spec.role_header).read_text())
+        if self._conventions is None:
+            keys.discard("conventions")
         return _ordered(keys)
 
     @property
@@ -148,5 +145,6 @@ class ReviewAgent(CrustifyAgent):
         return {
             **super()._arguments(),
             "objectives": ", ".join(self.objectives),
+            "conventions": str(self._conventions) if self._conventions else "none",
             "worklist": json.dumps({"route": self._route, "items": self._items}),
         }

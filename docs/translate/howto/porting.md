@@ -1,12 +1,3 @@
----
-name: porting
-description: >-
-  How Crustify ports C to safe Rust: what a ported type's surface covers, when
-  its layout and storage pass to Rust, how its lifecycle becomes native, and
-  how a ported symbol is reimplemented and re-exported to the C that still
-  consumes it.
----
-
 # Porting
 
 How a scheduled C item is reimplemented in safe Rust. A port builds on the bindings how-to:

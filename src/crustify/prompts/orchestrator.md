@@ -350,7 +350,15 @@ validate the reusable fix there; do not mix it into campaign translation commits
 
 ---
 
-The conventions you follow come after this prompt, then the index of skills you can reach
-for to conduct your workflow:
+The following describes the conventions of the codebase the campaign generates. Follow them
+wherever they apply: when you scaffold crates, subsystem roots, modules and test suites,
+and when you home each batch's items.
+
+<!-- INCLUDE docs/translate/coding-conventions.md -->
+
+---
+
+Reach for the skills advertised by the headers in the following skill index and leverage
+them to conduct your workflow:
 
 <!-- SKILLS -->

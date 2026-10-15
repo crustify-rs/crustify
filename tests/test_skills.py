@@ -127,42 +127,67 @@ class DeclaredPathTests(unittest.TestCase):
                         governing)
 
 
-class InlineSkillTests(unittest.TestCase):
-    """The conventions and how-tos ride the system slot; their sections are
-    what role headers name when they augment them."""
+class IncludeTests(unittest.TestCase):
+    """crustify's documents are spliced into the prompts that follow them;
+    role headers name their sections when they augment them."""
 
+    _DOCS = {
+        "conventions": "docs/translate/coding-conventions.md",
+        "bindings": "docs/translate/howto/bindings.md",
+        "porting": "docs/translate/howto/porting.md",
+        "testing": "docs/translate/howto/testing.md",
+    }
     _REF = re.compile(r"^## ([a-z]+) › (.+?)(?:, for `[a-z]+`)?$", re.M)
 
-    def test_inline_skills_are_documents_with_a_body(self) -> None:
-        for cls in _ROLES:
-            for spec in cls.SKILLS:
-                if not spec.inline:
-                    continue
-                with self.subTest(role=cls.name, path=spec.path):
-                    self.assertEqual(spec.dep, "crustify")
-                    self.assertTrue(
-                        (deps.CHECKOUT / spec.path).read_text().startswith("---"))
+    def _included(self, prompt: str) -> set[str]:
+        text = (_PKG_ROOT / "prompts" / prompt).read_text()
+        return {name for name, path in self._DOCS.items()
+                if f"<!-- INCLUDE {path} -->" in text}
+
+    def test_each_prompt_includes_the_documents_it_follows(self) -> None:
+        """The reviewer reads the conventions on demand, from its inputs, so
+        it can review a codebase with other conventions or none."""
+        self.assertEqual(self._included("translator.md"),
+                         {"conventions", "bindings", "porting", "testing"})
+        self.assertEqual(self._included("reviewer.md"),
+                         {"bindings", "porting", "testing"})
+        self.assertEqual(self._included("orchestrator.md"), {"conventions"})
+
+    def test_included_documents_are_plain_markdown(self) -> None:
+        """Public documents, not skills: no frontmatter for an agent to see."""
+        for name, path in self._DOCS.items():
+            with self.subTest(doc=name):
+                self.assertFalse(
+                    (deps.CHECKOUT / path).read_text().startswith("---"))
+
+    def test_an_included_document_survives_formatting(self) -> None:
+        """The conventions carry literal braces (`{{.<field>}}`), and the body
+        is formatted after the include."""
+        from crustify.agents.base import expand_includes
+        body = expand_includes(
+            "<!-- INCLUDE docs/translate/coding-conventions.md -->")
+        self.assertIn("{.<field>}", body.format())
 
     def test_every_how_to_section_a_header_names_exists(self) -> None:
         """A header augments `<how-to> › <section> [› <subsection>]`. Renaming
         a section would otherwise leave the augmentation pointing nowhere."""
-        docs = {
-            spec.capability: (deps.CHECKOUT / spec.path).read_text()
-            for cls in _ROLES for spec in cls.SKILLS if spec.inline
-        }
         headings = {
-            cap: {line.lstrip("#").strip() for line in text.splitlines()
-                  if line.startswith("#")}
-            for cap, text in docs.items()
+            name: {line.lstrip("#").strip()
+                   for line in (deps.CHECKOUT / path).read_text().splitlines()
+                   if line.startswith("#")}
+            for name, path in self._DOCS.items()
         }
+        refs = 0
         for header in (_PKG_ROOT / "prompts" / "skills").glob("*/*.md"):
             for doc, path in self._REF.findall(header.read_text()):
+                refs += 1
                 with self.subTest(header=str(header.relative_to(_PKG_ROOT)),
                                   ref=f"{doc} › {path}"):
                     self.assertIn(doc, headings)
                     for part in path.split(" and "):
                         for name in part.split(" › "):
                             self.assertIn(name.strip(), headings[doc])
+        self.assertGreater(refs, 0)
 
 
 class DiscoveryTests(unittest.TestCase):
@@ -228,19 +253,6 @@ class PromptRenderTests(unittest.TestCase):
             with self.subTest(prompt=path.name):
                 path.read_text().format_map(collections.defaultdict(str))
 
-    def test_every_role_carries_the_conventions_skill(self) -> None:
-        """The conventions doc is the skill file itself. Discovery drops a
-        skill whose file is missing, so a rename that misses the spec would
-        delete the conventions from every role and nothing would raise."""
-        from crustify.agents.base import _skill_meta
-        for cls in _ROLES:
-            specs = [s for s in cls.SKILLS if s.capability == "conventions"]
-            with self.subTest(role=cls.name):
-                self.assertEqual(len(specs), 1)
-                path = deps.CHECKOUT / specs[0].path
-                self.assertTrue(path.is_file())
-                self.assertEqual(_skill_meta(path)[0], "conventions")
-
 
 class PromptArgumentTests(unittest.TestCase):
     """Every supplied argument is used, and every used one is supplied.
@@ -286,7 +298,7 @@ class PromptArgumentTests(unittest.TestCase):
             self.repo, route="type",
             items=[{"name": "T", "defined_in": "a.h", "kind": "type",
                     "field_anchors": [], "home": "crustify/rust/x/src/a.rs"}],
-            objectives=None, git_base="review-wave-0",
+            objectives=None, conventions=None, git_base="review-wave-0",
             artifact_dir=self.repo, log_stem="x")
         self._check(agent)
 

@@ -59,6 +59,29 @@ def filter_objectives(text: str, enabled: frozenset[str] | set[str]) -> str:
     return _re.sub(r"\n{3,}", "\n\n", _OBJECTIVE_RE.sub(keep, text))
 
 
+#: `<!-- INCLUDE docs/translate/howto/bindings.md -->`: a crustify document,
+#: by its path in the checkout, spliced whole into a stage prompt.
+_INCLUDE_RE = _re.compile(r"<!-- INCLUDE ([^ ]+) -->")
+
+
+def expand_includes(text: str) -> str:
+    """Splice every included document into a stage prompt template.
+
+    The documents are the conventions and the how-tos under ``docs/``:
+    public, human-readable descriptions that an agent follows throughout,
+    so the prompt hands them over whole rather than naming a file the agent
+    may skip reading. Braces are escaped, because the template is formatted
+    with the agent's arguments afterwards and the documents are not
+    templates. A missing document is an error, not an ablation."""
+    def splice(m: _re.Match) -> str:
+        path = deps.CHECKOUT / m.group(1)
+        if not path.is_file():
+            raise SystemExit(f"included document does not exist: {path}")
+        return (path.read_text().strip()
+                .replace("{", "{{").replace("}", "}}"))
+    return _INCLUDE_RE.sub(splice, text)
+
+
 @dataclass(frozen=True)
 class SkillSpec:
     """A generic skill plus optional role-specific prompt guidance.
@@ -80,12 +103,6 @@ class SkillSpec:
     path: str
     capability: str | None = None
     role_header: str | None = None
-    #: Render the skill's body into the system slot instead of listing it in
-    #: the index. For a document the role must follow throughout -- the
-    #: conventions, a how-to -- rather than one it may reach for: an
-    #: instruction behind a read the agent can skip is followed less reliably
-    #: than one it is handed. Discovery and ablation are unchanged.
-    inline: bool = False
 
 
 def _skill_meta(path: Path) -> tuple[str, str, str | None, Path | None]:
@@ -372,8 +389,6 @@ class CrustifyAgent:
         index rather than to any one skill."""
         blocks = []
         for spec in self.skill_specs():
-            if spec.inline:
-                continue  # rendered whole by _render_inline_skills
             # Paths are derived, never configured: see crustify.deps. Both
             # files are known to exist -- skill_specs() dropped any spec whose
             # did not, which is how an ablation is expressed.
@@ -433,29 +448,6 @@ class CrustifyAgent:
         return self._role_guidance(
             template.replace(_GENERIC_SKILL_ANCHOR, "")).strip()
 
-    def _render_inline_skills(self) -> list[str]:
-        """The bodies of this agent's inline skills, each followed by its
-        role guidance, in :attr:`SKILLS` order. An inline skill must carry
-        its body in frontmatter form; its metadata is dropped, since there is
-        nothing to route to."""
-        parts = []
-        for spec in self.skill_specs():
-            if not spec.inline:
-                continue
-            p = deps.dep_root(spec.dep) / spec.path
-            text = p.read_text()
-            if not text.startswith("---"):
-                raise SystemExit(
-                    f"inline skill {spec.capability or spec.path!r} has no "
-                    f"frontmatter body to inline: {p}")
-            body = text.split("---", 2)[2].strip()
-            if spec.role_header:
-                guidance = self._header_guidance(spec)
-                if guidance:
-                    body += "\n\n" + guidance
-            parts.append(body)
-        return parts
-
     def _role_guidance(self, text: str) -> str:
         """A role header's guidance as this agent renders it. Identity here;
         an agent that runs with objectives drops the sections it disabled."""
@@ -481,14 +473,12 @@ class CrustifyAgent:
         agent's own chain, while compaction reaching the procedure costs the
         run itself.
 
-        The coding conventions and the how-tos are skills like any other
-        (each doc under ``docs/translate/`` carries its own frontmatter), but
-        inline ones: their bodies follow the stage prompt here, ahead of the
-        index of the skills an agent reaches for on demand. They are ablated
-        the way every skill is: by deleting the role's header."""
+        The coding conventions and the how-tos are not skills: they are
+        crustify's own documents, which a stage prompt includes whole with
+        ``<!-- INCLUDE <path> -->`` (see :func:`expand_includes`). Skills are
+        for the external tools an agent reaches for on demand."""
         parts = []
         if self.prompt_in_system_slot:
             parts.append(self._body().format(**self._arguments()))
-        parts += self._render_inline_skills()
         parts.append(self._render_skills())
         return "\n\n---\n\n".join(part for part in parts if part)

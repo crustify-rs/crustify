@@ -5,7 +5,9 @@ import json
 import re
 from pathlib import Path
 
-from crustify.agents.base import CrustifyAgent, SkillSpec, _PKG_ROOT
+from crustify.agents.base import (
+    CrustifyAgent, SkillSpec, _PKG_ROOT, expand_includes,
+)
 
 #: Every skill a translator can carry, in prompt order. Which of them it
 #: actually carries is decided by discovery: a skill whose files are on disk
@@ -16,33 +18,13 @@ from crustify.agents.base import CrustifyAgent, SkillSpec, _PKG_ROOT
 #: route the translator to its playbook, and the playbook is now this agent's
 #: prompt.
 #:
-#: Five of them ship with crustify itself. The coding conventions and the
-#: bindings, porting and testing how-tos are documents under `docs/translate/`, each
-#: its own skill file, and inline: their bodies ride the system slot, since
-#: the translator follows them throughout. ffimap is listed in the index;
-#: `crustify ffimap` stays on the agent's PATH whether or not its skill is
-#: carried, so ablating that skill removes the instructions, not the tool.
+#: Skills are for the external tools a translator reaches for on demand.
+#: crustify's own documents -- the coding conventions and the how-tos -- are
+#: not skills: the prompt includes them whole. ffimap ships with crustify
+#: for now; `crustify ffimap` stays on the agent's PATH whether or not its
+#: skill is carried, so ablating that skill removes the instructions, not
+#: the tool.
 _SKILLS = (
-    SkillSpec(
-        "crustify", "docs/translate/coding-conventions.md",
-        capability="conventions",
-        role_header="skills/conventions/translator.md", inline=True,
-    ),
-    SkillSpec(
-        "crustify", "docs/translate/howto/bindings.md",
-        capability="bindings",
-        role_header="skills/bindings/translator.md", inline=True,
-    ),
-    SkillSpec(
-        "crustify", "docs/translate/howto/porting.md",
-        capability="porting",
-        role_header="skills/porting/translator.md", inline=True,
-    ),
-    SkillSpec(
-        "crustify", "docs/translate/howto/testing.md",
-        capability="testing",
-        role_header="skills/testing/translator.md", inline=True,
-    ),
     SkillSpec(
         "crustify", "src/crustify/prompts/skills/ffimap/SKILL.md",
         capability="ffimap",
@@ -103,7 +85,8 @@ class TranslateAgent(CrustifyAgent):
                 f"{re.sub(r'[^A-Za-z0-9_]+', '_', key or 'batch')}")
 
     def _body(self) -> str:
-        return (_PKG_ROOT / "prompts" / "translator.md").read_text()
+        return expand_includes(
+            (_PKG_ROOT / "prompts" / "translator.md").read_text())
 
     def _arguments(self) -> dict:
         common = {

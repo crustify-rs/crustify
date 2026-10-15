@@ -1,13 +1,3 @@
----
-name: bindings
-description: >-
-  How Crustify generates safe Rust bindings over C: how each item's ownership,
-  access and lifetimes are analysed, how macros are bound, where the safe
-  boundary sits, and how the type and symbol routes are expressed (layouts,
-  lifecycles, field accessors, functions, globals, callbacks and raw lifetime
-  strategies).
----
-
 # Generating safe bindings
 
 How a scheduled C item becomes a safe Rust binding. The conventions say what the result

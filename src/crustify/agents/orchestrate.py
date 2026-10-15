@@ -13,7 +13,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from crustify.agents.base import CrustifyAgent, SkillSpec, _PKG_ROOT
+from crustify.agents.base import (
+    CrustifyAgent, SkillSpec, _PKG_ROOT, expand_includes,
+)
 
 #: Where the campaign task is spliced into the stage prompt.
 _TASK_ANCHOR = "<!-- TASK -->"
@@ -27,15 +29,10 @@ _TASK_ANCHOR = "<!-- TASK -->"
 #: route the orchestrator to its playbook, and the playbook is now this
 #: agent's prompt.
 #:
-#: The coding conventions and ffimap ship with crustify itself; ablating
-#: ffimap's skill removes its instructions, while `crustify ffimap` stays on
-#: the agent's PATH.
+#: ffimap ships with crustify for now; ablating its skill removes its
+#: instructions, while `crustify ffimap` stays on the agent's PATH. The
+#: coding conventions are not a skill: the prompt includes them whole.
 _SKILLS = (
-    SkillSpec(
-        "crustify", "docs/translate/coding-conventions.md",
-        capability="conventions",
-        role_header="skills/conventions/orchestrator.md", inline=True,
-    ),
     SkillSpec(
         "crustify", "src/crustify/prompts/skills/ffimap/SKILL.md",
         capability="ffimap",
@@ -101,7 +98,7 @@ class OrchestrateAgent(CrustifyAgent):
                     / "orchestrator.md")
         else:
             path = _PKG_ROOT / "prompts" / "orchestrator.md"
-        body = path.read_text()
+        body = expand_includes(path.read_text())
         if body.count(_TASK_ANCHOR) != 1:
             raise SystemExit(
                 f"{path}: expected exactly one {_TASK_ANCHOR} anchor")

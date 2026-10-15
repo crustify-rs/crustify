@@ -41,8 +41,8 @@ A targeted dependency outside a partial port's selected migration set may use `w
 
 ## Workflow
 
-The bindings how-to that follows this prompt describes how to produce each part; its
-section names are cited below.
+The bindings instructions below describe how to produce each part; their section names are
+cited here.
 
 ### 1. Item analysis
 
@@ -76,14 +76,15 @@ library.
 
 Emit your worklist's Rust for your route and objective: Macros and Safe boundary for every
 route, then the Type route or the Symbol route. A `raw-lifetime` worklist follows the
-Symbol route's Raw lifetime strategies. For `port`, the porting how-to that follows this
-prompt applies on top.
+Symbol route's Raw lifetime strategies. For `port`, the porting instructions below apply
+on top.
 
 ---
 
 ## Tests
 
-Test your worklist as the testing how-to that follows this prompt describes.
+Emit the UB, equivalence and unit tests the testing instructions below describe for every
+item of your worklist, and close the coverage gaps of your worklist's C and Rust paths.
 
 ---
 
@@ -91,28 +92,8 @@ Test your worklist as the testing how-to that follows this prompt describes.
 
 ### 1. Regressions
 
-Run:
-
-```bash
-cargo check --workspace
-cargo clippy --workspace
-cargo test --workspace
-```
-
-Every FFI, UB, and equivalence test must use the matching reusable sanitized C library or
-a private sanitized replacement.
-
-Validate under every prepared instrument. BSan is the exception, and runs with discipline:
-run it only on the tests you wrote and expect to trigger it, by exact name; never a whole
-binary or suite. Only a true positive, a report that reproduces through the Rust side as a
-single test, becomes a UB finding with a fix.
-
-Run your own tests under Miri.
-
-If C changed, run the configured C build and baseline with the Rust feature off. For
-`port`, repeat with the feature on. A wrap-only batch with no C change does not need the
-full C baseline.
-
+Validate the tree you land as the testing instructions' Regressions section describes for a
+translation batch.
 
 ### 2. Commit
 
@@ -142,7 +123,35 @@ Also, do not remove the worktree after landing; its the orchestrator job.
 
 ---
 
-The conventions and how-tos you follow come after this prompt, then the index of skills
-you can reach for to conduct your workflow:
+The following describes the conventions of the codebase you generate. Follow them throughout
+your workflow wherever they apply: where your items are homed, how they are named and laid
+out, where their tests are placed, and how every unsafe block is documented.
+
+<!-- INCLUDE docs/translate/coding-conventions.md -->
+
+---
+
+Here are additional instructions on how to generate safe bindings. Generate your worklist's
+bindings as they describe, following the Type route or the Symbol route for your route.
+
+<!-- INCLUDE docs/translate/howto/bindings.md -->
+
+---
+
+Here are additional instructions on how to port C to safe Rust. They apply on top of the
+bindings instructions for the `port` objective only.
+
+<!-- INCLUDE docs/translate/howto/porting.md -->
+
+---
+
+Here are additional instructions on how to test what you generate.
+
+<!-- INCLUDE docs/translate/howto/testing.md -->
+
+---
+
+Reach for the skills advertised by the headers in the following skill index and leverage
+them to conduct your workflow:
 
 <!-- SKILLS -->

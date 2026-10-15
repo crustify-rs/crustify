@@ -1,12 +1,3 @@
----
-name: testing
-description: >-
-  How Crustify tests a safe binding: UB tests on the safe and unsafe public
-  interface, equivalence tests against C, and unit tests; which instruments
-  they must pass (ASan/UBSan, BSan, TSan, Miri); and how coverage is
-  measured. Read it before writing any test.
----
-
 # Testing
 
 Classify tests by what they target, and place each where the conventions' Testing section places
@@ -41,7 +32,7 @@ Cover every instrument prepared by the campaign as a separate obligation:
   double free, leak, pointer/alignment UB, and integer/division/shift UB.
 - BSan: conflicting foreign writes and retained foreign pointers across Rust reborrows.
   Write these tests like the others. BSan is the slowest instrument and reports false
-  positives at the foreign boundary, so run it only as your Regressions step prescribes.
+  positives at the foreign boundary, so it runs only as Regressions below describes.
 - TSan: races reachable through safe APIs, including every asserted `Send` or `Sync`
   implementation and threaded callback.
 - Miri: Rust-side lifetime, bounds, initialization, validity, alignment, intrinsic, and
@@ -102,3 +93,47 @@ coverage for the C and Rust execution paths belonging to the worklist. Add focus
 to maximize coverage on the reachable uncovered paths triggered by your worklist. Report
 paths that remain uncovered because they are unreachable, environment-dependent, or
 intentionally nondeterministic.
+
+## Regressions
+
+Every batch checks, lints and tests the workspace on the tree it lands:
+
+```bash
+cargo check --workspace
+cargo clippy --workspace
+cargo test --workspace
+```
+
+Every FFI, UB, and equivalence test runs against the matching reusable sanitized C library
+or a private sanitized replacement, and under every prepared instrument. BSan is the
+exception, and runs with discipline:
+
+- A translation batch runs BSan only on the tests it wrote and expects to trigger it, by
+  exact name; never a whole binary or suite. It runs its own tests under Miri.
+- A review batch in its sub-campaign's last wave owns the sub-campaign's BSan gate. Its
+  wave is the last when its index is the highest of its subsystem's waves in
+  `crustify/campaigns/<campaign-id>/schedule.json`; its branch's name gives the link unit,
+  subsystem and wave. The gate covers everything the sub-campaign landed, so a report on an
+  earlier wave's items is that batch's to triage as well. It runs over the whole
+  workspace, one invocation per test binary in parallel, each under a `timeout`, on the
+  wave tip before any change. Each run starts in the background and is waited on to exit;
+  its output is neither polled nor read while it runs. Only true positives are pursued.
+- A review batch in any other wave runs BSan only on the individual reproducers it emits,
+  each alone; never on a test binary, a suite or the workspace.
+- Only a true positive, a report that reproduces through the Rust side as a single test or
+  standalone reproducer, becomes a UB finding.
+
+Every review batch also owns the workspace-wide Miri gate, in every wave: one
+`cargo +nightly miri test` per test binary (`--lib`, and `--test <name>` for each
+integration binary), in parallel, each with `-- --skip compile_fail`, on the wave tip
+before any change. Each run starts in the background and is waited on to exit. The gate
+passes only with no Miri error: a test that stops at the foreign boundary without the
+attribute gets it, and any other Miri error is a UB candidate of the item it touches.
+
+A review batch that patches what it finds runs both gates again on the tree it lands,
+after its last rebase. One that patches nothing files each true positive either gate finds
+as a UB report.
+
+When C changed, the configured C build and baseline run with the Rust feature off, and for
+`port` again with it on. A wrap-only batch with no C change does not need the full C
+baseline.

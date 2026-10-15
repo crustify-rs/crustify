@@ -15,6 +15,7 @@ Your git entity: `crustify`
 - repository: `{workdir}`
 - worklist: `{worklist}`
 - objectives: `{objectives}`
+- conventions: `{conventions}`
 - unchecked-out review integration branch: `{git_base}`
 
 ## Routes and objectives
@@ -47,8 +48,16 @@ objective tells you to add.
 ### 1. Item analysis
 
 For each item, read its C declarations and definitions, its Rust implementation and tests,
-and its existing Rust consumers. Judge the Rust against the conventions and the bindings
-how-to that follow this prompt throughout.
+and its existing Rust consumers.
+
+If your inputs name a conventions document, read it in full before you start: judge the
+Rust against it, and follow it in every change you make. If they name none, the reviewed
+codebase has no conventions to judge by.
+
+Judge the Rust against the bindings instructions below as well, and its ported items
+against the porting instructions. A representation, lifecycle, field accessor, function,
+global or callback that departs from them, without a reason the code documents, is a
+finding of the objective it falls under.
 
 ### 2. Artifact dir
 
@@ -66,6 +75,14 @@ Each reproducer is a standalone Cargo package: its `Cargo.toml` declares an empt
 `[dependencies]`. Its `src/main.rs` runs one scenario, so that `cargo run` exits non-zero
 on the affected commit: a UB reproducer through the sanitizer it names in its report, an
 equivalence reproducer through a failed comparison.
+
+### 4. Tests
+
+Classify every test you add as the testing instructions describe, and place it where the
+conventions place tests of its kind. If `fix` is enabled, a reproducer you turn into a
+regression test keeps its kind: a UB reproducer becomes a UB test, an equivalence
+reproducer an equivalence test, and an internal defect's regression a unit test. If `fix`
+is not enabled, turn no reproducer into a regression test.
 
 ---
 
@@ -99,8 +116,8 @@ If `fix` is enabled, correct each reported obligation. If `fix` is not enabled, 
 ### UB
 
 Review your workset's implementation for UB in the public API that its UB tests might have
-missed. Prove that a candidate is a true UB defect by emitting
-a reproducer that triggers one of the enabled sanitizers from Rust code. Annotate
+missed. Prove that a candidate is a true UB defect by emitting a reproducer that triggers
+one of the enabled sanitizers from Rust code. Annotate
 reproducers targeting the safe public API with `#[forbid(unsafe_code)]`; reproducers
 targeting the unsafe API must honor its safety requirement. The unsafe surface includes
 only the API your workset adds; if it made no API item unsafe, there is nothing to evaluate
@@ -120,7 +137,7 @@ patch removed the safe path that reached the defect. If `fix` is not enabled, do
 
 Review your workset's implementation for functional equivalence defects in the public API
 that its equivalence tests might have missed. Prove that a candidate is a true
-equivalence defect by emitting a reproducer that fails at least one of the testing how-to's
+equivalence defect by emitting a reproducer that fails at least one of the testing instructions'
 equivalence comparisons while executing the raw C and the public Rust APIs.
 
 Place the reproducer in `crustify/reviews/<artifact-dir>/equiv/<defect-slug>` along with a
@@ -143,6 +160,15 @@ If `fix` is enabled, emit a patch for every true defect, and add a unit regressi
 If `fix` is not enabled, do not.
 <!-- /OBJECTIVE -->
 
+<!-- OBJECTIVE conventions -->
+### Conventions
+
+Check your workset against the conventions document your inputs name. File a report for
+each deviation in `crustify/reviews/<artifact-dir>/conventions/<defect-slug>`.
+
+If `fix` is enabled, fix each deviation you report. If `fix` is not enabled, do not.
+<!-- /OBJECTIVE -->
+
 <!-- OBJECTIVE misc -->
 ### Misc
 
@@ -156,7 +182,7 @@ If `fix` is enabled, fix each one. If `fix` is not enabled, do not.
 ### Coverage
 
 Identify the coverage gaps that the existing external and inline suites leave in your
-workset's C and Rust execution paths, measured as the testing how-to describes, and add
+workset's C and Rust execution paths, measured as the testing instructions describe, and add
 tests that fill them. Coverage gaps need no report: the delta shows in the coverage
 measurement itself.
 <!-- /OBJECTIVE -->
@@ -198,7 +224,28 @@ Also, do not remove the worktree after landing; that is the orchestrator's job.
 
 ---
 
-The conventions and how-tos you follow come after this prompt, then the index of skills
-you can reach for to conduct your workflow:
+Here are additional instructions on how Crustify generates safe bindings, which your workset
+is judged against.
+
+<!-- INCLUDE docs/translate/howto/bindings.md -->
+
+---
+
+Here are additional instructions on how Crustify ports C to safe Rust, which the ported items
+of your workset are judged against.
+
+<!-- INCLUDE docs/translate/howto/porting.md -->
+
+---
+
+Here are additional instructions on how to test, including the gates and regressions a
+review batch owns.
+
+<!-- INCLUDE docs/translate/howto/testing.md -->
+
+---
+
+Reach for the skills advertised by the headers in the following skill index and leverage
+them to conduct your workflow:
 
 <!-- SKILLS -->
