@@ -208,9 +208,9 @@ Before launching translation or review waves:
 
 Pick the next sub-campaign from this campaign's `schedule.json`.
 
-Create the sub-campaign branch at `crustify/subcampaigns/<campaign-id>/<link-unit>/<subsystem>` and
-artifact dir in its campaign sub-dir at `.../<campaign-id>/<link-unit>/<subsystem>`.
-Keep the sub-scampaign branch checked out on the repo's base dir without creating a new workdir for it.
+Create the sub-campaign branch and artifact dir, as the layout instructions name them. Keep
+the sub-campaign branch checked out in the repository's base dir, without creating a new
+workdir for it.
 
 Scaffold the Rust subsystem root on disk according to the conventions. Emit TU and
 header modules lazily before scheduling their first units. Commit the canonical tip as the
@@ -220,25 +220,21 @@ sub-campaign's base. Promote completed sub-campaigns in the canonical campaign i
 
 Pick the next wave from the live sub-campaign's `schedule.json` record and:
 
-- create the unchecked-out wave integration branch
-  `crustify/waves/<campaign-id>/<link-unit>/<subsystem>/wave-<index>`;
-- create the wave's artifact dir in its subsystem sub-dir `.../<subsystem>/wave-<index>`
+- create the wave's integration branch and artifact dir, as the layout instructions name
+  them;
 - record the canonical tip as the wave's base.
 
-Create the wave branch before launching its batches and never check it out: a landing
-push to a checked-out branch fails after the batch has been paid for, and one to a missing
-branch silently creates it.
+Create the wave branch before launching its batches, and never check it out: a failed
+landing push has already been paid for.
 
 You, the binders, the translators and the reviewers share one agent memory directory, and
 every agent reads it at startup. Before launching each wave, curate it: merge duplicate or overlapping
 notes, and correct or delete those the campaign has made stale.
 
 For each scheduled batch:
-- create its artifact sub-dir in its wave sub-dir at `.../wave-<index>/batch-<index>`, and
-  write its `schedule.json` entry out verbatim as `batch.json` inside it;
-- create its batch branch at
-  `crustify/batches/<campaign-id>/<link-unit>/<subsystem>/wave-<index>/batch-<index>`;
-- fork a worktree at `crustify/.worktrees/<same-as-branch>`
+- create its artifact dir, and write its `schedule.json` entry out verbatim as `batch.json`
+  inside it;
+- create its batch branch and fork its worktree, as the layout instructions name them;
 - symlink any gitignored state from the main checkout that is shared and required for a
   complete crustify tree: `crustify/.providers`, etc.
 
@@ -308,16 +304,8 @@ crustify spawn-reviewer <batch worktree> <batch dir>/batch.json \
 
 The harness writes `reviewer.log` and `reviewer.usage.json` there.
 
-Create a review wave's artifact dir and integration branch similarly to a translation's:
-- artifact dir: `.../<link-unit>/<subsystem>/review-wave-<index>/`;
-- integration branch:
-  `crustify/reviews/<campaign-id>/<link-unit>/<subsystem>/wave-<index>`
-
-Prepare an artifact dir, branch, and worktree for each:
-- artifact dir: `.../review-wave-<index>/batch-<index>`;
-- batch branch:
-  `crustify/review-batches/<campaign-id>/<link-unit>/<subsystem>/wave-<index>/batch-<index>`;
-- worktree: `crustify/.worktrees/<same-as-branch>`.
+Create a review wave's artifact dir and integration branch, and each review batch's artifact
+dir, branch and worktree, as the layout instructions name them.
 
 After review lands, promote the reviewed wave tip to the canonical sub-campaign integration
 branch and purge its worktree.
@@ -355,6 +343,13 @@ default evaluation table or the user-provided one, matching their format exactly
 When a campaign exposes a defect in Crustify or enabled skills with a local checkout,
 create a dedicated branch and worktree in that component's repository. Implement and
 validate the reusable fix there; do not mix it into campaign translation commits.
+
+---
+
+Here are additional instructions on how a campaign is laid out: its branches, worktrees and
+artifact dirs.
+
+<!-- INCLUDE docs/translate/howto/layout.md -->
 
 ---
 

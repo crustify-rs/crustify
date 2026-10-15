@@ -116,6 +116,13 @@ Here are additional instructions on how to test what you generate.
 
 ---
 
+Here are additional instructions on how a campaign is laid out: its branches, worktrees and
+artifact dirs.
+
+<!-- INCLUDE docs/translate/howto/layout.md -->
+
+---
+
 Here are additional instructions on how to land your commits.
 
 <!-- INCLUDE docs/translate/howto/landing.md -->

@@ -65,21 +65,8 @@ removed.
 
 ## Derived paths
 
-Every index also addresses the filesystem, so nothing records a path:
+Every index also addresses the filesystem and the branch namespace, so nothing records a
+path: `docs/translate/howto/layout.md` spells each branch, worktree and artifact dir from
+the campaign id, link unit, subsystem, wave index and batch index. A batch's artifact dir
+is what its `--output` names.
 
-```text
-crustify/campaigns/<campaign-id>/<link_unit>/<subsystem>/wave-<index>/
-└── batch-<n>/                  n is the batch's position in `batches`
-    ├── batch.json              the thin batch, written out from this entry
-    ├── <role>.log              binder, translator or reviewer
-    └── <role>.usage.json
-```
-
-A batch's directory holds everything about that batch: its input, and both artifacts the
-agent writing it produced. That directory is what `--output` names.
-
-The integration branch `crustify/waves/<campaign-id>/<link_unit>/<subsystem>/wave-<index>`
-carries the same coordinates, and so does each batch branch
-`crustify/batches/<campaign-id>/<link_unit>/<subsystem>/wave-<index>/batch-<n>`. A review
-wave mirrors all three under `review-wave-<index>/`, `crustify/reviews/` and
-`crustify/review-batches/`.

@@ -124,6 +124,7 @@ class IncludeTests(unittest.TestCase):
         "porting": "docs/translate/howto/porting.md",
         "testing": "docs/translate/howto/testing.md",
         "landing": "docs/translate/howto/landing.md",
+        "layout": "docs/translate/howto/layout.md",
     }
     _REF = re.compile(r"^## ([a-z]+) › (.+?)(?:, for `[a-z]+`)?$", re.M)
 
@@ -136,14 +137,16 @@ class IncludeTests(unittest.TestCase):
         """The reviewer is told to ignore the conventions outside a
         Crustify-generated batch."""
         self.assertEqual(self._included("binder.md"),
-                         {"conventions", "binding", "testing", "landing"})
+                         {"conventions", "binding", "testing", "landing",
+                          "layout"})
         self.assertEqual(self._included("translator.md"),
                          {"conventions", "binding", "porting", "testing",
-                          "landing"})
+                          "landing", "layout"})
         self.assertEqual(self._included("reviewer.md"),
                          {"conventions", "binding", "porting", "testing",
-                          "landing"})
-        self.assertEqual(self._included("orchestrator.md"), {"conventions"})
+                          "landing", "layout"})
+        self.assertEqual(self._included("orchestrator.md"),
+                         {"conventions", "layout"})
 
     def test_included_documents_are_plain_markdown(self) -> None:
         """Public documents, not skills: no frontmatter for an agent to see."""

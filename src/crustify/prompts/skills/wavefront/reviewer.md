@@ -7,10 +7,10 @@ Read wavefront's CLI helpstring via `--help` to learn how to use it.
 File each finding on a flaw in wavefront's findings in its own `<slug>` directory, holding
 its report, under one of the following dirs:
 
-- `ownership-dir`: `crustify/reviews/<artifact-dir>/wavefront/ownership/`, for flaws in the
+- `ownership-dir`: `<reviews-dir>/wavefront/ownership/`, for flaws in the
   pointer-related findings: a wrong inference of ownership, access, nullability,
   cardinality or keepalive;
-- `lifecycle-dir`: `crustify/reviews/<artifact-dir>/wavefront/lifecycle/`, for incomplete
+- `lifecycle-dir`: `<reviews-dir>/wavefront/lifecycle/`, for incomplete
   lifecycles: a releaser, disposer, cloner or constructor the submitted lifecycle findings
   missed.
 

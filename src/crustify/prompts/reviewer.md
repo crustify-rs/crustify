@@ -40,27 +40,26 @@ the objectives listed in your inputs, and skip what the steps say about the othe
 
 ## Artifact dirs
 
-Your artifact dir is the part of your working branch's name after
-`crustify/review-batches/`: `<campaign-id>/<link-unit>/<subsystem>/<wave>/<batch>`.
+`<reviews-dir>` is your reviews dir, `crustify/reviews/<batch id>/`, with your batch id
+taken from your working branch's name as the layout instructions describe.
 
 You file each finding in its own `<slug>` directory, holding its report and, when it has
 one, its reproducer, under one of the following dirs, referred to by id in the rest of this
 prompt:
 
-- `unsafe-dir`: `crustify/reviews/<artifact-dir>/unsafe/`, for `unsafety`
-- `contracts-dir`: `crustify/reviews/<artifact-dir>/contracts/`, for `contracts`
-- `ub-safe-dir`: `crustify/reviews/<artifact-dir>/ub_safe/`, for `ub` on the safe interface
-- `ub-unsafe-dir`: `crustify/reviews/<artifact-dir>/ub_unsafe/`, for `ub` on the unsafe
-  interface
-- `equiv-dir`: `crustify/reviews/<artifact-dir>/equiv/`, for `equiv`
-- `internal-dir`: `crustify/reviews/<artifact-dir>/internal/`, for `internal`
-- `conventions-dir`: `crustify/reviews/<artifact-dir>/conventions/`, for `conventions`
-- `misc-dir`: `crustify/reviews/<artifact-dir>/misc/`, for `misc`
+- `unsafe-dir`: `<reviews-dir>/unsafe/`, for `unsafety`
+- `contracts-dir`: `<reviews-dir>/contracts/`, for `contracts`
+- `ub-safe-dir`: `<reviews-dir>/ub_safe/`, for `ub` on the safe interface
+- `ub-unsafe-dir`: `<reviews-dir>/ub_unsafe/`, for `ub` on the unsafe interface
+- `equiv-dir`: `<reviews-dir>/equiv/`, for `equiv`
+- `internal-dir`: `<reviews-dir>/internal/`, for `internal`
+- `conventions-dir`: `<reviews-dir>/conventions/`, for `conventions`
+- `misc-dir`: `<reviews-dir>/misc/`, for `misc`
 
 A skill may define dirs of its own for findings on its tool's output.
 
 A defect in a tool rather than in the reviewed codebase (crustify, or from your skill index)
-is not filed in an artifact dir. Emit its reproducer and
+is not filed in your reviews dir. Emit its reproducer and
 report on a dedicated branch and worktree of that tool's local checkout. If `fix` is
 enabled, add the patch there too. If `fix` is not enabled, do not.
 
@@ -213,6 +212,13 @@ Here are additional instructions on how to test, including the gates and regress
 review batch owns.
 
 <!-- INCLUDE docs/translate/howto/testing.md -->
+
+---
+
+Here are additional instructions on how a campaign is laid out: its branches, worktrees and
+artifact dirs, and your reviews dir.
+
+<!-- INCLUDE docs/translate/howto/layout.md -->
 
 ---
 
