@@ -47,7 +47,7 @@ compare it with the copy the previous subsystem ran under:
 
 The user's edits are their decisions: apply them without asking for approval, unless an
 answer is invalid or ambiguous. Then, in an interactive session, ask; otherwise keep the
-previous answer and report it. Log every change you apply, and note it in the results.
+previous answer and report it. Log every change you apply, and note it in the dashboard.
 
 ---
 
@@ -104,7 +104,7 @@ translators and reviewers take the sanitizers available to them from these varia
 sanitizer the campaign does not build is one they neither test for nor run. Each variant is an
 out-of-tree `dir` plus the `configure` and `build` commands run from it. Increment `version` whenever any command changes. Disable deprecated features unless otherwise instructed by the user. Use
 parallel builds. Disable unstable baseline tests as needed, record pass/total and every
-disabled test in the campaign results. Post-campaign results must match this baseline.
+disabled test in the campaign dashboard. Post-campaign results must match this baseline.
 
 
 #### 4. Subsystem decomposition
@@ -354,10 +354,11 @@ and take the total from the union of their lines, never from summing the workloa
 After each batch, both translation and review, run `crustify cost` over the batch
 directories' usage records: `binder.usage.json` for a `wrap` batch,
 `translator.usage.json` for a `port` batch, and `reviewer.usage.json` for a review batch. Use its computed cost and token counts, not
-provider-reported dollar totals. Commit each batch's usage record with the results update
+provider-reported dollar totals. Commit each batch's usage record with the dashboard update
 that cites it. Record agent wall times from usage files. Record wave
 wall time from first batch launch through final review and regression completion. Fill the
-default evaluation table or the user-provided one, matching their format exactly.
+dashboard the task names, by default `crustify/artifacts/dashboard.md` from
+`templates/translate/dashboard.template.md`, matching its format exactly.
 
 ---
 

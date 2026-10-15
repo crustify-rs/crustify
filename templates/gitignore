@@ -9,7 +9,7 @@ rust/target
 rust.bak
 
 # Campaign plans, the batches projected from them and each batch agent's usage
-# record are tracked: the records are the evidence behind results.md's cost cells, and
+# record are tracked: the records are the evidence behind dashboard.md's cost cells, and
 # the transcripts they are recovered from do not outlive the container. The
 # agent streams, and for now the orchestrator's records, are not.
 artifacts/**/binder.log

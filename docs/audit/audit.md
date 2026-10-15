@@ -64,9 +64,9 @@ maximum it launches no further reviewers.
 
 Each reviewer files its findings under its reviews dir, `crustify/reviews/<batch id>/`, and
 lands them on its review wave's branch. With `disclose`, every finding carries a
-`disclosure.md` ready to send to the project's maintainers. The orchestrator writes the
-audit's report from
-[`results.template.md`](../../templates/audit/results.template.md).
+`disclosure.md` ready to send to the project's maintainers. The orchestrator fills the
+audit's dashboard from
+[`dashboard.template.md`](../../templates/audit/dashboard.template.md).
 
 ## Reference
 

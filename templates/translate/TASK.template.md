@@ -83,10 +83,10 @@ Answer these approval-gate questions only if question 6 is answered `no`.
 
 # Benchmark recording questions
 
-15. **Where and in what format should results be recorded?** (`id: results`)
-    - Answer: `<results path>, <standard | custom template>`
+15. **Where and in what format should the dashboard be recorded?** (`id: dashboard`)
+    - Answer: `<dashboard path>, <standard | custom template>`
 
 # Additional instructions
 
-Unless otherwise stated, preserve the format of the results doc exactly.
+Unless otherwise stated, preserve the format of the dashboard exactly.
 

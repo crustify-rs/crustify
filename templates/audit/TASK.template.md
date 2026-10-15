@@ -59,16 +59,16 @@ Unanswered optional questions are decided by the orchestrator.
 
 ## Reporting
 
-8. **Where and in what format should results be recorded?**
-   - Answer: `<results path>, <templates/audit/results.template.md | custom template>`
+8. **Where and in what format should the dashboard be recorded?**
+   - Answer: `<dashboard path>, <templates/audit/dashboard.template.md | custom template>`
 
 
 ## Additional instructions
 
-Unless otherwise stated, match the structure of the given results table exactly.
+Unless otherwise stated, match the structure of the given dashboard exactly.
 
 If the user provided a centralized audit tracker at `optcrustify-audit-tracker`,
 then copy into it all the artifacts that are not gitignored from
 `<target repo>/crustify/reviews/` and `<target repo>/crustify/artifacts/`
 into `<tracker>/targets/<target>/`
-and record the results in the tracker's aggregate `README.md`.
+and record the dashboard in the tracker's aggregate `README.md`.

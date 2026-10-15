@@ -47,7 +47,7 @@ compare it with the copy the previous wave ran under:
 
 The user's edits are their decisions: apply them without asking for approval, unless an
 answer is invalid or ambiguous. Then, in an interactive session, ask; otherwise keep the
-previous answer and report it. Log every change you apply, and note it in the results.
+previous answer and report it. Log every change you apply, and note it in the dashboard.
 
 ---
 
@@ -104,7 +104,7 @@ reviewers take the sanitizers available to them from these variants, so a saniti
 audit does not build is one they neither test for nor run. Each variant is an out-of-tree
 `dir` plus the `configure` and `build` commands run from it.
 Increment `version` whenever any command changes. Use parallel builds. Smoke-test each
-build, and record the baseline's pass/total and every disabled test in the audit results.
+build, and record the baseline's pass/total and every disabled test in the audit dashboard.
 
 Refresh the builds after a review wave whose reviewers fixed the Rust or C/C++ sources.
 
@@ -222,18 +222,18 @@ worktrees.
 
 After each review batch, run `crustify cost` over its `reviewer.usage.json`. Use its
 computed cost and token counts, not provider-reported dollar totals. Commit each batch's
-usage record with the results update that cites it. Record agent wall times from usage
+usage record with the dashboard update that cites it. Record agent wall times from usage
 files, and review wave wall time from first batch launch through its landing.
 
 Before launching each reviewer, price every usage record the audit has written so far.
 Once that total reaches the maximum spend, launch no further reviewers: let the running
-ones land, then fill the results and state that the budget was reached.
+ones land, then fill the dashboard and state that the budget was reached.
 
-##### Results
+##### Dashboard
 
-After the last review wave, summarize the reports the reviewers filed in the requested
-results, by default `crustify/artifacts/audit-results.md` filled from
-`templates/audit/results.template.md`, matching its format exactly. The results preserve
+After the last review wave, summarize the reports the reviewers filed in the dashboard the
+task names, by default `crustify/artifacts/audit-dashboard.md` filled from
+`templates/audit/dashboard.template.md`, matching its format exactly. The dashboard preserves
 the approved instrument-to-bug-class scope and mark selected instruments that were
 unavailable as untested, never clean.
 

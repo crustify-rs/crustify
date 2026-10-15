@@ -2,10 +2,10 @@
 
 Two kinds of campaign, one image, one directory of templates each.
 
-| directory | campaign | task template | report template |
+| directory | campaign | task template | dashboard template |
 |---|---|---|---|
-| [`translate/`](translate) | translate C to Rust, or wrap it | [`TASK.template.md`](translate/TASK.template.md) | [`results.template.md`](translate/results.template.md) |
-| [`audit/`](audit) | hunt UB in an existing Rust crate with reviewers | [`TASK.template.md`](audit/TASK.template.md) | [`results.template.md`](audit/results.template.md) |
+| [`translate/`](translate) | translate C to Rust, or wrap it | [`TASK.template.md`](translate/TASK.template.md) | [`dashboard.template.md`](translate/dashboard.template.md) |
+| [`audit/`](audit) | hunt UB in an existing Rust crate with reviewers | [`TASK.template.md`](audit/TASK.template.md) | [`dashboard.template.md`](audit/dashboard.template.md) |
 
 Copy a task template to start a request.
 
@@ -129,10 +129,10 @@ Set with `--build-arg` on `docker build`.
 | `/opt/venv/share/ffimap` | read-write, optional | both | replaces the build-time clone, which is installed editable as the `ffimap` command |
 | `/work` | named volume, optional | both | `HOME`: the agents' session transcripts, the C libraries they build, the cargo registry. Outlives `docker rm`, so a re-created container keeps them. Not the artifacts — those land in the target checkout |
 
-## Results
+## Dashboards
 
-Campaign reports are written into the target checkout, at the path the task
-names, filled from [`results.template.md`](translate/results.template.md).
+Campaign dashboards are written into the target checkout, at the path the task
+names, filled from [`dashboard.template.md`](translate/dashboard.template.md).
 
 The Dockerfile header documents the rest: what each mount buys and why the base
 image is pinned by digest.

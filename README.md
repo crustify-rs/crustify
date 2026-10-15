@@ -98,8 +98,8 @@ it, where the campaign should start, which models to use, and how much autonomy
 it has. It presents a consolidated campaign brief for approval before mutating
 the target repository.
 
-Campaign reports follow the
-[`templates/translate/results.template.md`](templates/translate/results.template.md)
+Campaign dashboards follow the
+[`templates/translate/dashboard.template.md`](templates/translate/dashboard.template.md)
 template.
 
 For a reproducible container environment and the campaign templates, see
@@ -179,8 +179,8 @@ Below is an overview of the campaign's stats:
   subsystem decomposition artifact
 - [`templates/translate/TASK.template.md`](templates/translate/TASK.template.md): optional pre-filled
   campaign questionnaire
-- [`templates/translate/results.template.md`](templates/translate/results.template.md): campaign
-  results template
+- [`templates/translate/dashboard.template.md`](templates/translate/dashboard.template.md): campaign
+  dashboard template
 
 ## Acknowledgements
 
