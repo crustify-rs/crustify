@@ -68,8 +68,8 @@ exactly when `revisit` is among the objectives, and an absent `objectives` inclu
 
 The reviewer's prompt offers `unsafety`, `contracts`, `ub`, `equiv`, `internal`,
 `conventions`, `misc`, `coverage`, `revisit`, `disclose` and `fix`, with `conventions`
-applying to a Crustify-generated batch only. Its skills add their own, such as `lifecycle`
-(wavefront). A batch naming an objective the installed skills do not offer is rejected.
+applying to a Crustify-generated batch only. Its skills add their own. A batch naming
+an objective the installed skills do not offer is rejected.
 Without `fix`, the reviewer reports and reproduces what it finds but patches nothing.
 
 ## items[*]

@@ -17,7 +17,7 @@ Your git entity: `crustify`.
 ## Task
 
 The campaign's task and settings are in `{workdir}/crustify/TASK.md`, which the user
-configured. Read it now.
+configured. Read it.
 
 It is similar to a questionnaire that the user filled by answering questions that have
 fixed labels and ids, split in mandatory and optional. If the user left any mandatory
@@ -102,7 +102,8 @@ Create `crustify/artifacts/build.json` from `templates/build.json`. Record each 
 of its `variants`, naming the sanitizer builds `asan-ubsan`, `msan`, `tsan` and `bsan`: binders,
 translators and reviewers take the sanitizers available to them from these variants, so a
 sanitizer the campaign does not build is one they neither test for nor run. Each variant is an
-out-of-tree `dir` plus the `configure` and `build` commands run from it. Increment `version` whenever any command changes. Disable deprecated features unless otherwise instructed by the user. Use
+out-of-tree `dir` plus the `configure` and `build` commands run from it.
+Increment `version` whenever any command changes. Disable deprecated features unless otherwise instructed by the user. Use
 parallel builds. Disable unstable baseline tests as needed, record pass/total and every
 disabled test in the campaign dashboard. Post-campaign results must match this baseline.
 
@@ -336,10 +337,6 @@ branch and purge its worktree.
 
 #### 5. Accounting
 
-##### Static safety scan (ffimap)
-
-Record the static safety scans the ffimap skill describes.
-
 ##### Test coverage
 
 When you measure test coverage, exclude the tests themselves. Rust coverage counts only
@@ -362,10 +359,10 @@ dashboard the task names, by default `crustify/artifacts/dashboard.md` from
 
 ---
 
-## Recursive self improvement
+## Self repair
 
 When a campaign exposes a defect in Crustify or enabled skills with a local checkout,
-create a dedicated branch and worktree in that component's repository. Implement and
+create a dedicated branch and worktree in that component's repository, implement and
 validate the reusable fix there; do not mix it into campaign translation commits.
 
 ---

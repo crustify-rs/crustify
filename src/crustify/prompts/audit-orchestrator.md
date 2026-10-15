@@ -124,7 +124,7 @@ The task's review objectives, when given, replace this mapping.
 
 ##### Worksets
 
-For `audit`, run the ffimap scan, then inspect the crate and the reports
+For `audit`, inspect the crate and the reports
 filed so far. Divide the crate into disjoint worksets of modules, one per review batch;
 give a single reviewer the whole crate when only one is configured.
 
