@@ -58,12 +58,16 @@ prompt:
 - `internal-dir`: `crustify/reviews/<artifact-dir>/internal/`
 - `conventions-dir`: `crustify/reviews/<artifact-dir>/conventions/`
 - `misc-dir`: `crustify/reviews/<artifact-dir>/misc/`
-- `lifecycle-dir`: `crustify/reviews/<artifact-dir>/lifecycle/`
-- `wavefront-dir`: `crustify/reviews/<artifact-dir>/wavefront/`
-- `ffibox-dir`: `crustify/reviews/<artifact-dir>/ffibox/`
+
+A skill may define dirs of its own for findings on its tool's output.
 
 A report describes one finding: what is wrong, where, the evidence that proves it, and,
 when `fix` is enabled, how it was fixed.
+
+A defect in a tool rather than in the reviewed codebase (crustify, or a skill's tool such
+as wavefront, ffibox or ffimap) is not filed in an artifact dir. Emit its reproducer and
+report on a dedicated branch and worktree of that tool's local checkout. If `fix` is
+enabled, add the patch there too. If `fix` is not enabled, do not.
 
 ---
 
