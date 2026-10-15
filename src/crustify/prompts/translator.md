@@ -35,21 +35,24 @@ wraps it.
 ## Workflow
 
 The porting instructions below describe how to port each part, on top of the binding
-instructions; their section names are cited here.
+instructions.
 
-### 1. Item analysis
+### 1. Analysis
 
-Analyse every item of your worklist as the binding instructions' Item analysis describes,
-before you edit anything.
+Analyze your worklist's items in the C code, as well as their dependencies. Use the hints
+given in the binding how-to's Item analysis.
 
-### 2. Prerequisites
+### 2. Rust home
 
-Every item in the worklist names the authored `.rs` file it belongs in. Use it.
+Every item in the worklist names the authored `.rs` file it belongs in. Use it. Use the
+conventions below for homing un-homed items.
 
 Use filled anchors as context. A `Wraps:` anchor on an item of your worklist marks the
 binding your port replaces with a `Replaces:` one.
 
-When a binding is missing:
+### 3. Raw binding synthesis
+
+When a raw binding is missing:
 
 1. extend only the affected `-sys` crate's agent-owned allowlist;
 2. add only required FFI items;
@@ -65,30 +68,24 @@ Create private builds when no matching build exists or the batch changes compile
 compiled shim. A bindgen allowlist or input-header change alone does not invalidate the C
 library.
 
-### 3. Emission
+### 4. Porting
 
-Port your worklist's items for your route: the binding instructions' Macros and Safe
-boundary apply to every route, then the porting instructions' Surface, Storage and layout
-and Lifecycle for the type route, or their Symbols for the symbol route.
+Port your worklist's items for your route using the porting how-to below, on top of the
+binding how-to's Macros and Safe boundary.
 
----
-
-## Tests
+### 5. Testing
 
 Emit the UB, equivalence and unit tests the testing instructions below describe for every
 item of your worklist, and close the coverage gaps of your worklist's C and Rust paths.
 
----
-
-## Completion
-
-### 1. Regressions
+#### Regressions
 
 Validate the tree you land as the testing instructions' Regressions section describes. Run
-BSan only on the tests you wrote and expect to trigger it, and run your own tests under
-Miri; the wave's and the subsystem's gates belong to the review that follows.
+the sanitizer-instrumented builds described by `build.json` and fix any issues. If BSan is
+available, run it only on the tests you wrote and expect to trigger it, and run your own
+tests under Miri; the wave's and the subsystem's gates belong to the review that follows.
 
-### 2. Commit
+### 6. Landing
 
 Commit one changeset, and land it on `{git_base}` as the landing instructions below
 describe.
