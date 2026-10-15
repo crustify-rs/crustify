@@ -9,9 +9,8 @@ ownership, access, nullability, cardinality and keepalive. File a report describ
 defect in `crustify/reviews/<artifact-dir>/wavefront/<defect-slug>`, including evidence
 that proves the previous finding was wrong or incomplete.
 
-<!-- OBJECTIVE fix -->
-Resubmit each corrected set of findings through the CLI's `--update`.
-<!-- /OBJECTIVE -->
+If `fix` is enabled, resubmit each corrected set of findings through the CLI's `--update`.
+If `fix` is not enabled, do not.
 
 <!-- OBJECTIVE lifecycle -->
 ### Lifecycle
@@ -23,10 +22,9 @@ Leverage Wavefront's `--schema` CLI flag for hints on identifying lifecycle prim
 compare them with the findings submitted earlier.
 
 File a report for each gap in `crustify/reviews/<artifact-dir>/lifecycle/<item-slug>`.
-<!-- /OBJECTIVE -->
-<!-- OBJECTIVE lifecycle+fix -->
-Add each missing lifecycle representation, and resubmit the corrected lifecycle findings
-through the CLI's `--update`.
+
+If `fix` is enabled, add each missing lifecycle representation, and resubmit the corrected
+lifecycle findings through the CLI's `--update`. If `fix` is not enabled, do not.
 <!-- /OBJECTIVE -->
 
 <!-- OBJECTIVE unsafety -->

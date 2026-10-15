@@ -120,15 +120,25 @@ class ReviewAgentTests(unittest.TestCase):
         self.assertNotIn("OBJECTIVE", pre)
         self.assertIn("objectives: `lifecycle, ub`", pre)
 
-    def test_without_fix_the_reviewer_patches_nothing(self) -> None:
+    def test_fix_is_decided_in_prose(self) -> None:
+        """`fix` gates no section: the prompt states both cases, and the
+        objectives line tells the agent which one holds."""
         _Checkouts(self)
-        without = self.agent(["ub"]).system_preamble()
-        self.assertIn("`fix` is not enabled", without)
-        self.assertNotIn("Emit a patch for every true UB defect", without)
-        self.assertNotIn("Rerun both gates", without)
-        with_fix = self.agent(["ub", "fix"]).system_preamble()
-        self.assertIn("Emit a patch for every true UB defect", with_fix)
-        self.assertNotIn("`fix` is not enabled", with_fix)
+        for objectives, line in ((["ub"], "objectives: `ub`"),
+                                 (["ub", "fix"], "objectives: `ub, fix`")):
+            with self.subTest(objectives=objectives):
+                pre = self.agent(objectives).system_preamble()
+                self.assertIn(line, pre)
+                self.assertIn("If `fix` is enabled, emit a patch for every true UB", pre)
+                self.assertIn("If `fix` is not enabled", pre)
+
+    def test_gates_and_regressions_live_in_the_testing_skill(self) -> None:
+        _Checkouts(self)
+        pre = self.agent(None).system_preamble()
+        body, _, skills = pre.partition("## Skills")
+        self.assertNotIn("Miri gate", body)
+        self.assertIn("run any regression tests that might be available", body)
+        self.assertIn("Miri gate", skills)
 
     def test_the_stage_keeps_the_review_cost_buckets(self) -> None:
         _Checkouts(self)

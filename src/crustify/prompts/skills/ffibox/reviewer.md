@@ -8,9 +8,8 @@ or its unsafe FFI seams, emit a reproducer and file a report in
 `crustify/reviews/<artifact-dir>/ffibox/<defect-slug>` to demonstrate the flaw, like you
 would for a defect in the target repo.
 
-<!-- OBJECTIVE fix -->
-Then emit a patch in a separate branch and worktree of the local ffibox checkout.
-<!-- /OBJECTIVE -->
+If `fix` is enabled, then emit a patch in a separate branch and worktree of the local ffibox
+checkout. If `fix` is not enabled, do not.
 
 ## Tests
 

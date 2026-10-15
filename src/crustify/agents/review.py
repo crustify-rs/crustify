@@ -49,6 +49,12 @@ OBJECTIVE_ORDER = (
 )
 
 
+#: Objectives that own no section. `fix` decides whether the others patch
+#: what they find, which each section states in prose, so it is offered
+#: whatever the prompt and skills gate.
+_UNGATED = frozenset({"fix"})
+
+
 def _ordered(keys: set[str]) -> list[str]:
     rank = {key: i for i, key in enumerate(OBJECTIVE_ORDER)}
     return sorted(keys, key=lambda k: (rank.get(k, len(rank)), k))
@@ -99,10 +105,10 @@ class ReviewAgent(CrustifyAgent):
         return (_PKG_ROOT / "prompts" / "reviewer.md").read_text()
 
     def available_objectives(self) -> list[str]:
-        """Every objective this reviewer can run: those its prompt gates,
-        plus those the role headers of the skills it carries gate. A skill
-        that is not installed contributes none."""
-        keys = objective_keys(self._template())
+        """Every objective this reviewer can run: ``fix``, those its prompt
+        has sections for, and those the role headers of the skills it carries
+        have sections for. A skill that is not installed contributes none."""
+        keys = set(_UNGATED) | objective_keys(self._template())
         for spec in self.skill_specs():
             if spec.role_header:
                 keys |= objective_keys(

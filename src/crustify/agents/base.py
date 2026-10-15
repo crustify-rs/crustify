@@ -33,37 +33,31 @@ _MD_FIELD_RE = _re.compile(
 # Keeping the anchor in the header makes that composition explicit in source.
 _GENERIC_SKILL_ANCHOR = "<!-- SKILL -->"
 
-#: An objective-gated section: `<!-- OBJECTIVE ub -->` ... `<!-- /OBJECTIVE -->`.
-#: Terms joined by `+` (`ub+fix`) must all hold; a term prefixed with `!`
-#: (`!fix`) holds when that objective is disabled. Sections do not nest: a
-#: section that applies only under two objectives says so in its key rather
-#: than inside another section.
+#: An objective's section: `<!-- OBJECTIVE ub -->` ... `<!-- /OBJECTIVE -->`.
+#: Sections do not nest. Anything that depends on a second objective, such as
+#: whether `fix` patches what a section finds, is stated in the section's
+#: prose rather than gated.
 _OBJECTIVE_RE = _re.compile(
-    r"<!-- OBJECTIVE (!?[a-z]+(?:\+!?[a-z]+)*) -->\n?(.*?)<!-- /OBJECTIVE -->\n?",
-    _re.DOTALL)
+    r"<!-- OBJECTIVE ([a-z]+) -->\n?(.*?)<!-- /OBJECTIVE -->\n?", _re.DOTALL)
 
 
 def objective_keys(text: str) -> set[str]:
-    """Every objective a template's gated sections name, negated or not."""
-    return {term.lstrip("!") for m in _OBJECTIVE_RE.finditer(text)
-            for term in m.group(1).split("+")}
+    """Every objective a template has a section for."""
+    return {m.group(1) for m in _OBJECTIVE_RE.finditer(text)}
 
 
 def filter_objectives(text: str, enabled: frozenset[str] | set[str]) -> str:
-    """Keep the gated sections whose terms all hold, unwrapped, and drop the
-    rest. A disabled objective leaves no trace in the prompt: the agent is
-    not told to skip it, it is never told about it."""
-    def holds(term: str) -> bool:
-        return (term[1:] not in enabled) if term.startswith("!") \
-            else term in enabled
-
+    """Keep the sections of enabled objectives, unwrapped, and drop the rest.
+    A disabled objective leaves no trace in the prompt: the agent is not told
+    to skip it, it is never told about it."""
     def keep(m: _re.Match) -> str:
-        if not all(map(holds, m.group(1).split("+"))):
+        if m.group(1) not in enabled:
             return ""
         # A kept section is a paragraph of its own, even when the source
-        # writes it flush against the section before it.
+        # writes it flush against what precedes it.
         return m.group(2).rstrip("\n") + "\n\n"
     return _re.sub(r"\n{3,}", "\n\n", _OBJECTIVE_RE.sub(keep, text))
+
 
 @dataclass(frozen=True)
 class SkillSpec:
