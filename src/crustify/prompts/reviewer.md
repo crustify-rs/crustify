@@ -32,8 +32,9 @@ A review worklist carries one route's whole share of a translated wave: every ty
 every symbol and callback, that the wave's batches landed, often from several translation
 batches.
 
-Your objectives are listed in your inputs. Each one has a section below, or in the role
-guidance of the skill that contributes it; review only for those.
+Your objectives are listed in your inputs. Each objective has a section below, or in the
+role guidance of the skill that contributes it, headed by its id. Review only for the
+objectives listed in your inputs, and skip the sections of the others.
 
 `fix` decides whether you patch what you find. If `fix` is enabled, patch every true defect
 you find, turn its reproducer into a regression test, and land the fixes with your reports.
@@ -107,8 +108,7 @@ is not enabled, turn no reproducer into a regression test.
 
 ## Workflow - objectives
 
-<!-- OBJECTIVE unsafety -->
-### Unsafety
+### Unsafety (`unsafety`)
 
 Review the public API of your workset for unsafe annotations and raw pointers that could be
 replaced with safe, idiomatic variants, so that API consumers write less unsafe code.
@@ -116,10 +116,8 @@ replaced with safe, idiomatic variants, so that API consumers write less unsafe 
 File a report for each defect in `unsafe-dir`.
 
 If `fix` is enabled, make each reported entry point safe. If `fix` is not enabled, do not.
-<!-- /OBJECTIVE -->
 
-<!-- OBJECTIVE contracts -->
-### Contracts
+### Contracts (`contracts`)
 
 For the public entry points of your workset that must legitimately stay unsafe, verify that
 the obligation their `# Safety` section states is correct, complete and unambiguous: that a
@@ -129,10 +127,8 @@ implementation does not need.
 File a report for each defect in `contracts-dir`.
 
 If `fix` is enabled, correct each reported obligation. If `fix` is not enabled, do not.
-<!-- /OBJECTIVE -->
 
-<!-- OBJECTIVE ub -->
-### UB
+### UB (`ub`)
 
 Review your workset's implementation for UB in the public API that its UB tests might have
 missed. Prove that a candidate is a true UB defect by emitting a reproducer that triggers
@@ -149,10 +145,8 @@ If `fix` is enabled, emit a patch for every true UB defect, and turn its reprodu
 regression test: a UB test on the safe or unsafe public interface. The regression test
 either compiles and runs without triggering a sanitizer, or fails to compile because the
 patch removed the safe path that reached the defect. If `fix` is not enabled, do not.
-<!-- /OBJECTIVE -->
 
-<!-- OBJECTIVE equiv -->
-### Equivalence
+### Equivalence (`equiv`)
 
 Review your workset's implementation for functional equivalence defects in the public API
 that its equivalence tests might have missed. Prove that a candidate is a true
@@ -165,43 +159,34 @@ including a trace of the failing equivalence assertion.
 If `fix` is enabled, emit a patch for every true equivalence defect, and turn its
 reproducer into an equivalence regression test. If `fix` is not enabled, do
 not.
-<!-- /OBJECTIVE -->
 
-<!-- OBJECTIVE internal -->
-### Internal
+### Internal (`internal`)
 
 Review your workset's private implementation for defects that its unit tests might have
 missed. File a brief report for each in `internal-dir`.
 
 If `fix` is enabled, emit a patch for every true defect, and add a unit regression test.
 If `fix` is not enabled, do not.
-<!-- /OBJECTIVE -->
 
-<!-- OBJECTIVE conventions -->
-### Conventions
+### Conventions (`conventions`)
 
 Check your workset against the conventions document your inputs name. File a report for
 each deviation in `conventions-dir`.
 
 If `fix` is enabled, fix each deviation you report. If `fix` is not enabled, do not.
-<!-- /OBJECTIVE -->
 
-<!-- OBJECTIVE misc -->
-### Misc
+### Misc (`misc`)
 
 File a report for any other defect you find in your workset in `misc-dir`.
 
 If `fix` is enabled, fix each one. If `fix` is not enabled, do not.
-<!-- /OBJECTIVE -->
 
-<!-- OBJECTIVE coverage -->
-### Coverage
+### Coverage (`coverage`)
 
 Identify the coverage gaps that the existing external and inline suites leave in your
 workset's C and Rust execution paths, measured as the testing instructions describe, and add
 tests that fill them. Coverage gaps need no report: the delta shows in the coverage
 measurement itself.
-<!-- /OBJECTIVE -->
 
 ---
 

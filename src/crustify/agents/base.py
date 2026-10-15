@@ -33,32 +33,6 @@ _MD_FIELD_RE = _re.compile(
 # Keeping the anchor in the header makes that composition explicit in source.
 _GENERIC_SKILL_ANCHOR = "<!-- SKILL -->"
 
-#: An objective's section: `<!-- OBJECTIVE ub -->` ... `<!-- /OBJECTIVE -->`.
-#: Sections do not nest. Anything that depends on a second objective, such as
-#: whether `fix` patches what a section finds, is stated in the section's
-#: prose rather than gated.
-_OBJECTIVE_RE = _re.compile(
-    r"<!-- OBJECTIVE ([a-z]+) -->\n?(.*?)<!-- /OBJECTIVE -->\n?", _re.DOTALL)
-
-
-def objective_keys(text: str) -> set[str]:
-    """Every objective a template has a section for."""
-    return {m.group(1) for m in _OBJECTIVE_RE.finditer(text)}
-
-
-def filter_objectives(text: str, enabled: frozenset[str] | set[str]) -> str:
-    """Keep the sections of enabled objectives, unwrapped, and drop the rest.
-    A disabled objective leaves no trace in the prompt: the agent is not told
-    to skip it, it is never told about it."""
-    def keep(m: _re.Match) -> str:
-        if m.group(1) not in enabled:
-            return ""
-        # A kept section is a paragraph of its own, even when the source
-        # writes it flush against what precedes it.
-        return m.group(2).rstrip("\n") + "\n\n"
-    return _re.sub(r"\n{3,}", "\n\n", _OBJECTIVE_RE.sub(keep, text))
-
-
 #: `<!-- INCLUDE docs/translate/howto/bindings.md -->`: a crustify document,
 #: by its path in the checkout, spliced whole into a stage prompt.
 _INCLUDE_RE = _re.compile(r"<!-- INCLUDE ([^ ]+) -->")
@@ -445,13 +419,7 @@ class CrustifyAgent:
                 f"prompt capability {spec.capability or spec.path!r}: "
                 f"role header must contain one "
                 f"{_GENERIC_SKILL_ANCHOR} anchor: {header}")
-        return self._role_guidance(
-            template.replace(_GENERIC_SKILL_ANCHOR, "")).strip()
-
-    def _role_guidance(self, text: str) -> str:
-        """A role header's guidance as this agent renders it. Identity here;
-        an agent that runs with objectives drops the sections it disabled."""
-        return text
+        return template.replace(_GENERIC_SKILL_ANCHOR, "").strip()
 
     def system_preamble(self) -> str:
         """What the backend puts in its system slot, above the stage prompt.

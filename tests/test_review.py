@@ -122,15 +122,33 @@ class ReviewAgentTests(unittest.TestCase):
         with self.assertRaisesRegex(SystemExit, "boundary"):
             self.agent(["boundary"])
 
-    def test_a_disabled_objective_leaves_no_trace(self) -> None:
+    def test_enabling_is_decided_in_prose(self) -> None:
+        """Every section stays in the prompt; the objectives line tells the
+        agent which ones to review for."""
         _Checkouts(self)
         pre = self.agent(["ub", "lifecycle"]).system_preamble()
-        self.assertIn("### UB", pre)
-        self.assertIn("### Lifecycle", pre)
-        self.assertNotIn("### Equivalence", pre)
-        self.assertNotIn("### Conventions", pre)
-        self.assertNotIn("OBJECTIVE", pre)
         self.assertIn("objectives: `lifecycle, ub`", pre)
+        self.assertIn("skip the sections of the others", pre)
+        self.assertIn("### Equivalence (`equiv`)", pre)
+        self.assertNotIn("OBJECTIVE", pre)
+
+    def test_every_objective_has_a_section_headed_by_its_id(self) -> None:
+        """The objectives are declared in code and described in prose; this
+        keeps the two in step."""
+        from crustify.agents.base import _PKG_ROOT
+        from crustify.agents.review import OBJECTIVES, SKILL_OBJECTIVES
+        text = (_PKG_ROOT / "prompts" / "reviewer.md").read_text()
+        for objective in OBJECTIVES:
+            if objective == "fix":
+                continue
+            with self.subTest(objective=objective):
+                self.assertRegex(text, rf"\n### .+ \(`{objective}`\)\n")
+        for skill, objectives in SKILL_OBJECTIVES.items():
+            header = (_PKG_ROOT / "prompts" / "skills" / skill
+                      / "reviewer.md").read_text()
+            for objective in objectives:
+                with self.subTest(skill=skill, objective=objective):
+                    self.assertRegex(header, rf"\n### .+ \(`{objective}`\)\n")
 
     def test_fix_is_decided_in_prose(self) -> None:
         """`fix` gates no section: the prompt states both cases, and the

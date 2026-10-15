@@ -10,7 +10,6 @@ from unittest import mock
 
 from crustify import deps
 from crustify.agents.base import _PKG_ROOT
-from crustify.agents.base import objective_keys
 from crustify.agents.orchestrate import OrchestrateAgent
 from crustify.agents.review import ReviewAgent
 from crustify.agents.translate import TranslateAgent
@@ -93,20 +92,6 @@ class DeclaredPathTests(unittest.TestCase):
         on_disk = {(f.parent.name, f.stem) for f in root.glob("*/*.md")
                    if f.name != "SKILL.md"}
         self.assertEqual(on_disk, declared)
-
-    def test_only_reviewer_headers_gate_objectives(self) -> None:
-        """Only the reviewer filters objective sections; in any other role's
-        header the markers would reach the agent verbatim."""
-        for cls, role in _ROLE_NAMES:
-            if cls is ReviewAgent:
-                continue
-            for spec in cls.SKILLS:
-                if spec.role_header is None:
-                    continue
-                with self.subTest(role=role, header=spec.role_header):
-                    text = (_PKG_ROOT / "prompts" / spec.role_header).read_text()
-                    self.assertEqual(objective_keys(text), set())
-                    self.assertNotIn("OBJECTIVE", text)
 
     def test_every_capability_is_ablatable_by_deleting_one_file(self) -> None:
         """Each optional skill is governed by exactly one file under

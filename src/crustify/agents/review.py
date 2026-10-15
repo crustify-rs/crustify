@@ -7,15 +7,12 @@ from pathlib import Path
 
 from crustify import deps
 from crustify.agents.base import (
-    CrustifyAgent, SkillSpec, _PKG_ROOT, expand_includes, filter_objectives,
-    objective_keys,
+    CrustifyAgent, SkillSpec, _PKG_ROOT, expand_includes,
 )
 
 #: Every skill a reviewer can carry, in prompt order; discovery decides which
 #: it actually carries, exactly as for the translator. A skill's reviewer
-#: header may contribute objectives of its own: `lifecycle` comes from
-#: wavefront's, so a reviewer pointed at a crate wavefront does not describe
-#: is never asked for it.
+#: header may describe objectives of its own (see `SKILL_OBJECTIVES`).
 _SKILLS = (
     SkillSpec(
         "crustify", "src/crustify/prompts/skills/ffimap/SKILL.md",
@@ -32,28 +29,35 @@ _SKILLS = (
     ),
 )
 
-#: The order objectives are listed in, whichever of them a run carries. One
-#: not named here sorts after these, so a skill can add one without touching
-#: this module.
-OBJECTIVE_ORDER = (
-    "lifecycle", "unsafety", "contracts", "ub", "equiv", "internal",
-    "conventions", "misc", "coverage", "fix",
+#: The objectives the reviewer's prompt describes, each in a section headed
+#: by its id, in the order they are listed. `fix` has no section: it decides,
+#: in each section's prose, whether a finding is patched. `conventions` needs
+#: a conventions document to review against.
+OBJECTIVES = (
+    "unsafety", "contracts", "ub", "equiv", "internal", "conventions", "misc",
+    "coverage", "fix",
 )
 
+#: Objectives a skill's reviewer header describes, offered only while that
+#: skill is carried: a reviewer pointed at a crate wavefront does not
+#: describe is never asked about its lifecycles.
+SKILL_OBJECTIVES = {"wavefront": ("lifecycle",)}
+
+#: Listing order: the skills' objectives lead, since they review the
+#: analysis every binding was built from.
+OBJECTIVE_ORDER = (
+    *(o for objectives in SKILL_OBJECTIVES.values() for o in objectives),
+    *OBJECTIVES,
+)
 
 #: The conventions a Crustify-generated codebase follows: what a reviewer
 #: judges by when its batch names no other document.
 CRUSTIFY_CONVENTIONS = deps.CHECKOUT / "docs" / "translate" / "coding-conventions.md"
 
-#: Objectives that own no section. `fix` decides whether the others patch
-#: what they find, which each section states in prose, so it is offered
-#: whatever the prompt and skills gate.
-_UNGATED = frozenset({"fix"})
-
 
 def _ordered(keys: set[str]) -> list[str]:
     rank = {key: i for i, key in enumerate(OBJECTIVE_ORDER)}
-    return sorted(keys, key=lambda k: (rank.get(k, len(rank)), k))
+    return sorted(keys, key=rank.__getitem__)
 
 
 class ReviewAgent(CrustifyAgent):
@@ -103,21 +107,13 @@ class ReviewAgent(CrustifyAgent):
                     + "; available: " + ", ".join(_ordered(available)))
             self._objectives = frozenset(objectives)
 
-    @staticmethod
-    def _template() -> str:
-        return expand_includes(
-            (_PKG_ROOT / "prompts" / "reviewer.md").read_text())
-
     def available_objectives(self) -> list[str]:
-        """Every objective this reviewer can run: ``fix``, those its prompt
-        has sections for, and those the role headers of the skills it carries
-        have sections for. A skill that is not installed contributes none,
-        and ``conventions`` needs a conventions document to review against."""
-        keys = set(_UNGATED) | objective_keys(self._template())
+        """Every objective this reviewer can run: those its prompt describes,
+        plus those of the skills it carries. ``conventions`` needs a
+        conventions document to review against."""
+        keys = set(OBJECTIVES)
         for spec in self.skill_specs():
-            if spec.role_header:
-                keys |= objective_keys(
-                    (_PKG_ROOT / "prompts" / spec.role_header).read_text())
+            keys |= set(SKILL_OBJECTIVES.get(spec.capability or "", ()))
         if self._conventions is None:
             keys.discard("conventions")
         return _ordered(keys)
@@ -136,10 +132,8 @@ class ReviewAgent(CrustifyAgent):
                 f"{re.sub(r'[^A-Za-z0-9_]+', '_', key or 'batch')}")
 
     def _body(self) -> str:
-        return filter_objectives(self._template(), self._objectives)
-
-    def _role_guidance(self, text: str) -> str:
-        return filter_objectives(text, self._objectives)
+        return expand_includes(
+            (_PKG_ROOT / "prompts" / "reviewer.md").read_text())
 
     def _arguments(self) -> dict:
         return {

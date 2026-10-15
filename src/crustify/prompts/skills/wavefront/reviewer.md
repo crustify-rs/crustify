@@ -27,8 +27,7 @@ wrong.
 If `fix` is enabled, resubmit each corrected set of findings through the CLI's `--update`.
 If `fix` is not enabled, do not.
 
-<!-- OBJECTIVE lifecycle -->
-### Lifecycle
+### Lifecycle (`lifecycle`)
 
 For a workset that contains `type` or `raw-lifetime` items, verify that the lifecycles
 submitted to Wavefront are complete: that the earlier runs missed no releaser, disposer,
@@ -40,12 +39,9 @@ File a report for each incomplete lifecycle in `lifecycle-dir`.
 If `fix` is enabled, resubmit the completed lifecycle findings through the CLI's
 `--update`, and add the lifecycle representations the Rust is missing for them. If `fix`
 is not enabled, do not.
-<!-- /OBJECTIVE -->
 
-<!-- OBJECTIVE unsafety -->
-### Unsafety
+### Cycle cuts
 
-Wavefront's plan cuts the cycles between subsystems and types. A raw pointer that stands in
-for a dependency that a later scheduled batch wraps is such a cut, not a finding: leave it
-out of your unsafety review.
-<!-- /OBJECTIVE -->
+When `unsafety` is among your objectives: Wavefront's plan cuts the cycles between
+subsystems and types. A raw pointer that stands in for a dependency that a later scheduled
+batch wraps is such a cut, not a finding: leave it out of your unsafety review.
