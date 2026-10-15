@@ -15,8 +15,8 @@ rust.bak
 artifacts/**/binder.log
 artifacts/**/translator.log
 artifacts/**/reviewer.log
-artifacts/*/orchestrator-*.log
-artifacts/*/orchestrator-*.usage.json
+artifacts/orchestrator-*.log
+artifacts/orchestrator-*.usage.json
 
 # Review reproducers are tracked; the cargo trees their builds leave are not.
 reviews/**/target

@@ -16,7 +16,7 @@ crustify audit /path/to/repo /path/to/TASK.md --model anthropic/claude-opus-5
 ```
 
 Fill in [`TASK.template.md`](../../templates/audit/TASK.template.md) first; a
-headless run needs every mandatory answer. `--campaign <id>` resumes an earlier audit, and
+headless run needs every mandatory answer. Rerunning the command resumes the audit, and
 `--task-only` runs the ablation control described in
 [`BARE.md`](../../templates/audit/BARE.md).
 

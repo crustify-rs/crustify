@@ -95,11 +95,6 @@ def main() -> None:
             help="Ablation control: the task file is the entire prompt and "
                  "the harness contributes nothing -- no conventions, no skill "
                  "index, no stage prompt.")
-        orch_p.add_argument(
-            "--campaign", metavar="ID",
-            help="Resume the campaign crustify/artifacts/<ID>/ (or, for one "
-                 "begun before the rename, crustify/campaigns/<ID>/) instead "
-                 "of starting a new one. Its directory must exist.")
 
     # -- spawn-binder / spawn-translator (one agent over one projected batch)
     # A binder runs `wrap` batches, raw-lifetime ones included; a translator
@@ -214,20 +209,10 @@ def main() -> None:
     args.handler(args)
 
 
-#: Where a campaign's artifact tree lives, under `<workdir>/crustify/`. Before
-#: it was named for what it stores, it was `campaigns/`; a campaign begun then
-#: is still found there when resumed.
+#: Where a campaign's artifact tree lives, under `<workdir>/crustify/`. A
+#: repository holds one campaign, whose work is cumulative, so the tree is not
+#: keyed by any campaign id: a later run resumes it.
 ARTIFACTS = "artifacts"
-_LEGACY_ARTIFACTS = "campaigns"
-
-
-def campaign_artifacts(workdir: Path, campaign_id: str) -> Path:
-    """The artifact dir of campaign ``campaign_id``: under `artifacts/`, or
-    under the legacy `campaigns/` when only that one exists."""
-    root = workdir / "crustify"
-    current = root / ARTIFACTS / campaign_id
-    legacy = root / _LEGACY_ARTIFACTS / campaign_id
-    return legacy if not current.is_dir() and legacy.is_dir() else current
 
 
 # -- dispatch -------------------------------------------------------------
@@ -281,28 +266,19 @@ def _handle_orchestrate(args: argparse.Namespace) -> None:
     workdir = Path(args.workdir).resolve()
     task = canonical_task(workdir, args.task)
     run_start = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
-    if getattr(args, "campaign", None) is not None:
-        campaign_dir = campaign_artifacts(workdir, args.campaign)
-        if Path(args.campaign).name != args.campaign or not campaign_dir.is_dir():
-            raise SystemExit(f"no campaign to resume at {campaign_dir}")
-        campaign_id = args.campaign
-    else:
-        # A new campaign is named by when it started. Minted here, not by the
-        # agent, so the orchestrator's log and usage record land in the
-        # campaign directory from its first turn.
-        campaign_id = run_start
-        campaign_dir = workdir / "crustify" / ARTIFACTS / campaign_id
-        campaign_dir.mkdir(parents=True, exist_ok=False)
-    print(f"[crustify {args.kind}] campaign: {campaign_dir}")
-    # One log per run, so resuming never overwrites an earlier session's.
-    campaign = {"campaign_id": campaign_id, "artifact_dir": campaign_dir,
-                "log_stem": f"orchestrator-{run_start}"}
+    # Created here, not by the agent, so the orchestrator's log and usage
+    # record land in it from its first turn.
+    artifact_dir = workdir / "crustify" / ARTIFACTS
+    artifact_dir.mkdir(parents=True, exist_ok=True)
+    print(f"[crustify {args.kind}] artifacts: {artifact_dir}")
     # Interactive whenever a person is at the terminal: the orchestrator asks
     # for approval and waits, which a headless run cannot do.
     interactive = sys.stdin.isatty() and sys.stdout.isatty()
+    # One log per run, so resuming never overwrites an earlier session's.
     OrchestrateAgent(workdir, kind=args.kind, task=task, model=model,
                      task_only=args.task_only, interactive=interactive,
-                     **campaign).run()
+                     artifact_dir=artifact_dir,
+                     log_stem=f"orchestrator-{run_start}").run()
 
 
 def _handle_spawn_worklist(args: argparse.Namespace) -> None:

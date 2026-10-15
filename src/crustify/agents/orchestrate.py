@@ -53,26 +53,17 @@ class OrchestrateAgent(CrustifyAgent):
 
     def __init__(self, workdir: Path, *, kind: str, task: Path,
                  model: str, task_only: bool = False,
-                 campaign_id: str = "", interactive: bool = False,
+                 interactive: bool = False,
                  **kwargs) -> None:
         self.kind = kind
         self.task = Path(task)
         self.model = model
         self.task_only = task_only
-        #: Minted by the CLI for a new campaign, or named by `--campaign` to
-        #: resume one. Either way `crustify/artifacts/<id>/`
-        #: (`crustify/campaigns/<id>/` for a campaign begun before the
-        #: rename) exists and is this agent's artifact dir, so the
-        #: orchestrator's log sits with the campaign it runs.
-        self.campaign_id = campaign_id
         #: The orchestrator presents a brief and waits at approval gates, so
         #: with a person at the terminal it runs in the CLI's own interface.
         self.interactive = interactive
         self.stage_suffix = kind
         super().__init__(workdir, **kwargs)
-
-    def _arguments(self) -> dict:
-        return {**super()._arguments(), "campaign_id": self.campaign_id}
 
     def _task_text(self) -> str:
         text = self.task.read_text().strip()

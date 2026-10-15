@@ -42,10 +42,9 @@ class CommandShapeTests(unittest.TestCase):
     def test_translate_starts_the_translation_orchestrator(self) -> None:
         seen = self._run("translate", str(self.repo), str(self.task),
                          "--model", "openrouter/anthropic/claude-opus-5",
-                         "--billing", "api", "--campaign", "x")
+                         "--billing", "api")
         self.assertEqual(seen["handler"], "orchestrate")
         self.assertEqual(seen["args"].kind, "translate")
-        self.assertEqual(seen["args"].campaign, "x")
         self.assertEqual(config.MODEL_OVERRIDE, "openrouter/anthropic/claude-opus-5")
         self.assertEqual(config.BILLING, "api")
 
@@ -89,10 +88,11 @@ class CommandShapeTests(unittest.TestCase):
         with mock.patch("sys.stderr"), self.assertRaises(SystemExit):
             self._run("spawn-auditor", str(self.repo))
 
-    def test_an_audit_can_be_resumed(self) -> None:
-        seen = self._run("audit", str(self.repo), str(self.task),
-                         "--campaign", "a1")
-        self.assertEqual(seen["args"].campaign, "a1")
+    def test_there_is_no_campaign_id(self) -> None:
+        """A repository holds one cumulative campaign: rerunning resumes it."""
+        with mock.patch("sys.stderr"), self.assertRaises(SystemExit):
+            self._run("translate", str(self.repo), str(self.task),
+                      "--campaign", "x")
 
     def test_cost_needs_no_workdir(self) -> None:
         seen = self._run("cost", "a.usage.json", "b.usage.json")
@@ -148,25 +148,3 @@ class CanonicalTaskTests(unittest.TestCase):
     def test_no_task_at_all_is_an_error(self) -> None:
         with self.assertRaisesRegex(SystemExit, "no campaign task"):
             cli.canonical_task(self.repo, None)
-
-
-class CampaignArtifactsTests(unittest.TestCase):
-    """A campaign's artifact tree lives under `crustify/artifacts/`; one begun
-    before the rename is still found under `crustify/campaigns/`."""
-
-    def setUp(self) -> None:
-        self.tmp = tempfile.TemporaryDirectory()
-        self.addCleanup(self.tmp.cleanup)
-        self.repo = Path(self.tmp.name)
-
-    def test_new_and_resumed_campaigns_live_under_artifacts(self) -> None:
-        (self.repo / "crustify/artifacts/c1").mkdir(parents=True)
-        self.assertEqual(cli.campaign_artifacts(self.repo, "c1"),
-                         self.repo / "crustify/artifacts/c1")
-        self.assertEqual(cli.campaign_artifacts(self.repo, "missing"),
-                         self.repo / "crustify/artifacts/missing")
-
-    def test_a_campaign_begun_before_the_rename_is_found(self) -> None:
-        (self.repo / "crustify/campaigns/old").mkdir(parents=True)
-        self.assertEqual(cli.campaign_artifacts(self.repo, "old"),
-                         self.repo / "crustify/campaigns/old")

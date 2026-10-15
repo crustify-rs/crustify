@@ -69,6 +69,6 @@ Unless otherwise stated, match the structure of the given results table exactly.
 
 If the user provided a centralized audit tracker at `optcrustify-audit-tracker`,
 then copy into it all the artifacts that are not gitignored from
-`<target repo>/crustify/reviews/` and `<target repo>/crustify/artifacts/<campaign-id>/`
+`<target repo>/crustify/reviews/` and `<target repo>/crustify/artifacts/`
 into `<tracker>/targets/<target>/`
 and record the results in the tracker's aggregate `README.md`.

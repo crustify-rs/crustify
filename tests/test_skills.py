@@ -311,8 +311,7 @@ class PromptArgumentTests(unittest.TestCase):
         task = self.repo / "TASK.md"
         task.write_text("- Answer: none")
         agent = OrchestrateAgent(self.repo, kind="translate", task=task,
-                                 model="anthropic/claude-opus-5",
-                                 campaign_id="20260928-000000")
+                                 model="anthropic/claude-opus-5")
         self._check(agent)
 
 

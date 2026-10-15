@@ -1,22 +1,20 @@
 # Campaign layout
 
-A campaign's branches, worktrees and artifact dirs are all derived from the same
-coordinates: the campaign id, the link unit, the subsystem, the wave index and the batch
+A repository holds one campaign, and its work is cumulative: a later run resumes it and
+skips what it already completed. Its branches, worktrees and artifact dirs are all derived
+from the same coordinates: the link unit, the subsystem, the wave index and the batch
 index. Nothing records a path; each name below is spelled from those coordinates.
 
 ## Branches
 
 | branch | name | checked out |
 |---|---|---|
-| campaign | `crustify/campaigns/<campaign-id>` | in the repository's base dir, between subsystems |
-| subsystem | `crustify/subsystems/<campaign-id>/<link-unit>/<subsystem>` | in the repository's base dir, while live |
-| wave | `crustify/waves/<campaign-id>/<link-unit>/<subsystem>/wave-<index>` | never |
-| batch | `crustify/batches/<campaign-id>/<link-unit>/<subsystem>/wave-<index>/batch-<index>` | in its worktree |
-| review wave | `crustify/reviews/<campaign-id>/<link-unit>/<subsystem>/wave-<index>` | never |
-| review batch | `crustify/review-batches/<campaign-id>/<link-unit>/<subsystem>/wave-<index>/batch-<index>` | in its worktree |
-
-A campaign begun before subsystems were named so has `crustify/subcampaigns/` subsystem
-branches; resuming it keeps them.
+| campaign | `crustify/campaign` | in the repository's base dir, between subsystems |
+| subsystem | `crustify/subsystems/<link-unit>/<subsystem>` | in the repository's base dir, while live |
+| wave | `crustify/waves/<link-unit>/<subsystem>/wave-<index>` | never |
+| batch | `crustify/batches/<link-unit>/<subsystem>/wave-<index>/batch-<index>` | in its worktree |
+| review wave | `crustify/reviews/<link-unit>/<subsystem>/wave-<index>` | never |
+| review batch | `crustify/review-batches/<link-unit>/<subsystem>/wave-<index>/batch-<index>` | in its worktree |
 
 A wave or review wave branch is the integration branch its batches land on. It is never
 checked out: a landing push to a checked-out branch fails, and one to a missing branch
@@ -27,9 +25,9 @@ under the campaign, and each is promoted to the campaign branch once it lands.
 
 | branch | name | checked out |
 |---|---|---|
-| campaign | `crustify/campaigns/<campaign-id>` | in the repository's base dir |
-| review wave | `crustify/reviews/<campaign-id>/wave-<index>` | never |
-| review batch | `crustify/review-batches/<campaign-id>/wave-<index>/batch-<index>` | in its worktree |
+| campaign | `crustify/campaign` | in the repository's base dir |
+| review wave | `crustify/reviews/wave-<index>` | never |
+| review batch | `crustify/review-batches/wave-<index>/batch-<index>` | in its worktree |
 
 ## Worktrees
 
@@ -38,8 +36,8 @@ Each batch and review batch has its own worktree at `crustify/.worktrees/<its br
 ## Batch ids
 
 A batch's id is the part of its branch name after `crustify/batches/` or
-`crustify/review-batches/`: `<campaign-id>/<link-unit>/<subsystem>/wave-<index>/batch-<index>`, or
-`<campaign-id>/wave-<index>/batch-<index>` in an audit. It gives the batch's link unit,
+`crustify/review-batches/`: `<link-unit>/<subsystem>/wave-<index>/batch-<index>`, or
+`wave-<index>/batch-<index>` in an audit. It gives the batch's link unit,
 subsystem and wave.
 
 ## Artifact dirs
@@ -47,7 +45,7 @@ subsystem and wave.
 Every level of a campaign has an artifact dir under `crustify/artifacts/`:
 
 ```text
-crustify/artifacts/<campaign-id>/               the campaign: schedule.json, the orchestrator's log
+crustify/artifacts/                             the campaign: schedule.json, the orchestrator's logs
 └── <link-unit>/<subsystem>/                    a subsystem
     ├── wave-<index>/                           a wave
     │   └── batch-<index>/                      a batch
@@ -58,11 +56,10 @@ crustify/artifacts/<campaign-id>/               the campaign: schedule.json, the
         └── batch-<index>/                      a review batch, laid out as a batch
 ```
 
-An audit's review waves sit directly in its campaign dir, as
-`crustify/artifacts/<campaign-id>/review-wave-<index>/batch-<index>/`.
+An audit's review waves sit directly in the campaign's artifact dir, as
+`crustify/artifacts/review-wave-<index>/batch-<index>/`.
 
-Each level also holds its `ffimap.json` once the orchestrator records it. A campaign begun
-before the artifact tree was named so keeps it under `crustify/campaigns/`. A batch's artifact
+Each level also holds its `ffimap.json` once the orchestrator records it. A batch's artifact
 dir is what its `--output` names, and holds everything about that batch: its input and the
 artifacts its agent produced.
 

@@ -62,20 +62,20 @@ task's target repo.
 
 #### 2. Artifact tree scaffolding
 
-This campaign's `<campaign-id>` is `{campaign_id}`. The harness has already created its
-artifact dir, `<repo>/crustify/artifacts/<campaign_id>/`, and writes your log there. If
-that dir already holds the campaign's earlier artifacts, you are resuming it: continue
-from them and its existing branches instead of starting over.
+The campaign's artifact dir is `<repo>/crustify/artifacts/`, which the harness has already
+created and writes your log in. A repository holds one campaign, and its work is
+cumulative: if the artifact dir already holds earlier artifacts, you are resuming it, so
+continue from them and the existing branches instead of starting over.
 
 ```bash
 cp templates/gitignore <repo>/crustify/.gitignore
 ```
 
-If you're working in a git repo, create the campaign branch, and commit
-`crustify/TASK.md` on it:
+If you're working in a git repo, create the campaign branch, unless it exists, and
+commit `crustify/TASK.md` on it:
 
 ```bash
-git -C <repo> checkout -b crustify/campaigns/<campaign-id>
+git -C <repo> checkout -b crustify/campaign
 ```
 
 
@@ -143,7 +143,7 @@ included.
 
 ##### Subsystems
 
-Emit a campaign-wide `crustify/artifacts/<campaign-id>/schedule.json` from
+Emit a campaign-wide `crustify/artifacts/schedule.json` from
 `templates/schedule.json`; read `docs/translate/schemas/schedule.md` for its field meaning. It
 will state a total ordering of this campaign's link units and subsystems based on
 dependency relations, bottom-up.

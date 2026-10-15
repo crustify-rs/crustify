@@ -1,6 +1,6 @@
 # schedule.json schema
 
-Field meaning for `<workdir>/crustify/artifacts/<campaign-id>/schedule.json`, the
+Field meaning for `<workdir>/crustify/artifacts/schedule.json`, the
 campaign's total execution order. Layout example:
 [`templates/schedule.json`](../../templates/schedule.json).
 
@@ -67,6 +67,6 @@ removed.
 
 Every index also addresses the filesystem and the branch namespace, so nothing records a
 path: `docs/translate/howto/layout.md` spells each branch, worktree and artifact dir from
-the campaign id, link unit, subsystem, wave index and batch index. A batch's artifact dir
+the link unit, subsystem, wave index and batch index. A batch's artifact dir
 is what its `--output` names.
 

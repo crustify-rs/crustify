@@ -66,19 +66,19 @@ to the guidelines in the official repo: https://github.com/borrowSanitizer/bsan
 
 #### 2. Artifact tree scaffolding
 
-This audit's `<campaign-id>` is `{campaign_id}`. The harness has already created its
-artifact dir, `<repo>/crustify/artifacts/<campaign-id>/`, and writes your log there. If
-that dir already holds the audit's earlier artifacts, you are resuming it: continue from
-them and its existing branches instead of starting over.
+The audit's artifact dir is `<repo>/crustify/artifacts/`, which the harness has already
+created and writes your log in. A repository holds one campaign, and its work is
+cumulative: if the artifact dir already holds earlier artifacts, you are resuming it, so
+continue from them and the existing branches instead of starting over.
 
 ```bash
 cp templates/gitignore <repo>/crustify/.gitignore
 ```
 
-Create the campaign branch, and commit `crustify/TASK.md` on it:
+Create the campaign branch, unless it exists, and commit `crustify/TASK.md` on it:
 
 ```bash
-git -C <repo> checkout -b crustify/campaigns/<campaign-id>
+git -C <repo> checkout -b crustify/campaign
 ```
 
 #### 3. Prebuilds and test baselines
@@ -232,7 +232,7 @@ ones land, then fill the results and state that the budget was reached.
 ##### Results
 
 After the last review wave, summarize the reports the reviewers filed in the requested
-results, by default `crustify/artifacts/<campaign-id>/results.md` filled from
+results, by default `crustify/artifacts/audit-results.md` filled from
 `templates/audit/results.template.md`, matching its format exactly. The results preserve
 the approved instrument-to-bug-class scope and mark selected instruments that were
 unavailable as untested, never clean.

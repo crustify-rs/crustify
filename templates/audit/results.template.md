@@ -7,7 +7,6 @@ prose belongs in Notes.
 
 - **target repo** — `<repo>` @ `<commit>`
 - **crate** — `<name>` `<version>`
-- **campaign** — `<campaign-id>`
 - **objectives** — `<any of: audit, revisit, fix>`
 - **reviewer objectives** — `<ub, equiv, disclose, fix, ...>`
 - **agent backend** — `<claude | codex>`
