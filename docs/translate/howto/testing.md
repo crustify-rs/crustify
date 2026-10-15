@@ -27,14 +27,23 @@ a workset adds, its inputs built through the safe API wherever one exists. A wor
 adds no public unsafe API has no UB tests on the unsafe interface.
 
 The sanitizers available are those the campaign built: the instrumented variants of
-`crustify/build.json`, where `asan-ubsan` provides ASan and UBSan, `tsan` TSan and `bsan`
-BSan. A sanitizer without a variant is not available, so no test is written for it and
-none runs under it. Miri needs no C build and is always available.
+`crustify/build.json`, where `asan-ubsan` provides ASan and UBSan, `msan` MSan, `tsan` TSan
+and `bsan` BSan. A sanitizer without a variant is not available, so no test is written for
+it and none runs under it. Miri needs no C build and is always available.
+
+A target that ships its own sanitizers, because the standard ones cannot run against it,
+is tested with those instead: the Linux kernel's KASAN, KMSAN, KCSAN and kernel UBSAN each
+stand for the sanitizer they implement.
 
 Each available sanitizer is a separate obligation:
 
 - ASan/UBSan: bounds errors, use-after-free, use-after-return, invalid free, double free,
   leak, pointer/alignment UB, and integer/division/shift UB.
+- MSan: use of uninitialized memory, including branches and addresses computed from it,
+  uninitialized bytes crossing the FFI boundary, and struct tails or buffers a foreign
+  initializer left partly unwritten. Its build instruments every component, the standard
+  library through `-Zbuild-std` included: memory written by uninstrumented code reads as
+  uninitialized, so a partial build reports falsely.
 - BSan: conflicting foreign writes and retained foreign pointers across Rust reborrows.
   These tests are written like the others. BSan is the slowest instrument and reports
   false positives at the foreign boundary, so it runs only as Regressions below describes.

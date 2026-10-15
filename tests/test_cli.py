@@ -35,7 +35,6 @@ class CommandShapeTests(unittest.TestCase):
               mock.patch.object(cli, "_handle_orchestrate", record("orchestrate")),
               mock.patch.object(cli, "_handle_spawn_worklist", record("spawn-worklist")),
               mock.patch.object(cli, "_handle_spawn_reviewer", record("spawn-reviewer")),
-              mock.patch.object(cli, "_handle_audit_stage", record("audit-stage")),
               mock.patch.object(cli, "_handle_cost", record("cost"))):
             cli.main()
         return seen
@@ -86,16 +85,14 @@ class CommandShapeTests(unittest.TestCase):
             self._run("spawn-reviewer", str(bare), "batch.json",
                       "--base-branch", "wave", "--output", "out")
 
-    def test_audit_stage_takes_any_repository(self) -> None:
-        """The audit stage needs no crustify/ directory, and the auditor's
-        own --model does not become the harness-wide override."""
-        plain = self.repo / "plain"
-        plain.mkdir()
-        seen = self._run("spawn-auditor", str(plain),
-                         "--model", "anthropic/claude-opus-5")
-        self.assertEqual(seen["args"].audit_stage, "ub")
-        self.assertEqual(seen["args"].model, "anthropic/claude-opus-5")
-        self.assertIsNone(config.MODEL_OVERRIDE)
+    def test_spawn_auditor_is_gone(self) -> None:
+        with mock.patch("sys.stderr"), self.assertRaises(SystemExit):
+            self._run("spawn-auditor", str(self.repo))
+
+    def test_an_audit_can_be_resumed(self) -> None:
+        seen = self._run("audit", str(self.repo), str(self.task),
+                         "--campaign", "a1")
+        self.assertEqual(seen["args"].campaign, "a1")
 
     def test_cost_needs_no_workdir(self) -> None:
         seen = self._run("cost", "a.usage.json", "b.usage.json")

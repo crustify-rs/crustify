@@ -18,4 +18,3 @@ include = ["crustify*"]
 
 [tool.setuptools.package-data]
 crustify = ["prompts/*.md", "prompts/skills/*/*.md"]
-crustify_audit = ["prompts/*.md", "SKILL.md"]

@@ -5,7 +5,7 @@ Two kinds of campaign, one image, one directory of templates each.
 | directory | campaign | task template | report template |
 |---|---|---|---|
 | [`crustify/`](crustify) | translate C to Rust, or wrap it | [`TASK.template.md`](crustify/TASK.template.md) | [`results.template.md`](crustify/results.template.md) |
-| [`crustify_audit/`](crustify_audit) | hunt UB in an existing Rust crate | [`TASK.template.md`](crustify_audit/TASK.template.md) | [`results.template.md`](crustify_audit/results.template.md) |
+| [`crustify_audit/`](crustify_audit) | hunt UB in an existing Rust crate with reviewers | [`TASK.template.md`](crustify_audit/TASK.template.md) | [`results.template.md`](crustify_audit/results.template.md) |
 
 Copy a task template to start a request.
 

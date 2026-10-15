@@ -37,8 +37,8 @@ Both are required and no other root field is accepted.
 
 ## Review batches
 
-A review batch carries the same `items` and, instead of `objective`, an optional
-`objectives` array:
+A review batch carries, instead of `objective`, an optional `objectives` array, and reviews
+either the same `items` or, in an audit, `modules`:
 
 ```json
 {
@@ -47,15 +47,29 @@ A review batch carries the same `items` and, instead of `objective`, an optional
 }
 ```
 
+```json
+{
+  "objectives": ["ub", "equiv", "disclose"],
+  "modules": ["src/frame.rs", "src/codec/"]
+}
+```
+
 | root field | meaning |
 |---|---|
-| `objectives` | the review objectives to run; optional, every one the reviewer offers when absent |
+| `objectives` | the review objectives to run; optional, every one the reviewer offers that applies when absent |
 | `items` | as above |
+| `modules` | repo-relative source files and directories of a crate wavefront does not describe; route `modules` |
+| `reports` | repo-relative report dirs, `crustify/reviews/<batch id>/<kind>/<slug>`, to revisit |
 
-`items` is required and no other root field is accepted. The reviewer's prompt offers
-`unsafety`, `contracts`, `ub`, `equiv`, `internal`, `conventions`, `misc`, `coverage` and
-`fix`, with `conventions` applying to a Crustify-generated batch only. Its skills add their
-own, such as `lifecycle` (wavefront). A batch naming an objective the installed skills do not offer is rejected.
+A batch carries `items` or `modules`, not both, and needs at least one of `items`,
+`modules` and `reports`; one with only `reports` has route `reports`. `reports` is given
+exactly when `revisit` is among the objectives, and an absent `objectives` includes
+`revisit` exactly when `reports` is given. No other root field is accepted.
+
+The reviewer's prompt offers `unsafety`, `contracts`, `ub`, `equiv`, `internal`,
+`conventions`, `misc`, `coverage`, `revisit`, `disclose` and `fix`, with `conventions`
+applying to a Crustify-generated batch only. Its skills add their own, such as `lifecycle`
+(wavefront). A batch naming an objective the installed skills do not offer is rejected.
 Without `fix`, the reviewer reports and reproduces what it finds but patches nothing.
 
 ## items[*]

@@ -75,7 +75,7 @@ def main() -> None:
             "translators itself."),
         "audit": (
             "Start an audit campaign's orchestrator. It reads the campaign "
-            "task and spawns the auditors itself."),
+            "task and spawns the reviewers itself."),
     }
     for kind, blurb in _orch_blurbs.items():
         orch_p = sub.add_parser(kind, parents=[agent_opts],
@@ -92,12 +92,11 @@ def main() -> None:
             help="Ablation control: the task file is the entire prompt and "
                  "the harness contributes nothing -- no conventions, no skill "
                  "index, no stage prompt.")
-        if kind == "translate":
-            orch_p.add_argument(
-                "--campaign", metavar="ID",
-                help="Resume the campaign crustify/artifacts/<ID>/ (or, for one "
-                     "begun before the rename, crustify/campaigns/<ID>/) instead "
-                     "of starting a new one. Its directory must exist.")
+        orch_p.add_argument(
+            "--campaign", metavar="ID",
+            help="Resume the campaign crustify/artifacts/<ID>/ (or, for one "
+                 "begun before the rename, crustify/campaigns/<ID>/) instead "
+                 "of starting a new one. Its directory must exist.")
 
     # -- spawn-binder / spawn-translator (one agent over one projected batch)
     # A binder runs `wrap` batches, raw-lifetime ones included; a translator
@@ -136,9 +135,11 @@ def main() -> None:
     _spawn_reviewer_blurb = (
         "Run one reviewer over one review batch. The workdir is the isolated "
         "worktree the orchestrator forked for it; the harness neither creates "
-        "nor purges that tree. The batch carries the translator's thin "
-        "worklist and, optionally, the objectives to review for; without "
-        "them, every objective the reviewer's prompt and skills offer runs.")
+        "nor purges that tree. The batch carries a binder's or translator's "
+        "thin worklist, or the modules of a crate to audit, the reports to "
+        "revisit, and, optionally, the objectives to review for; without "
+        "them, every objective the reviewer's prompt and skills offer that "
+        "applies to the batch runs.")
     review_p = sub.add_parser(
         "spawn-reviewer", parents=[agent_opts],
         help=_spawn_reviewer_blurb, description=_spawn_reviewer_blurb,
@@ -147,7 +148,8 @@ def main() -> None:
     add_workdir(review_p, "the batch's worktree, forked by the orchestrator")
     review_p.add_argument(
         "batch", type=Path,
-        help="Review batch JSON containing the items and optional objectives.")
+        help="Review batch JSON containing items or modules, reports, and "
+             "optional objectives.")
     review_p.add_argument(
         "--base-branch", required=True, metavar="BRANCH",
         help="Unchecked-out review wave integration branch the batch lands on.")
@@ -159,18 +161,6 @@ def main() -> None:
     review_p.add_argument(
         "--dry-run", action="store_true",
         help="Validate and summarize the batch without spawning an agent.")
-
-    # -- spawn-auditor (the audit stage) ----------------------------------
-    # Works on any repository, crustify campaign or not, and carries its own
-    # model and billing options.
-    from crustify_audit.cli import add_stages as _add_audit_stages
-    _add_audit_stages(
-        sub, ub_name="spawn-auditor",
-        before=lambda p: (
-            p.set_defaults(handler=_handle_audit_stage),
-            add_workdir(p, "the repository to audit"),
-        ),
-    )
 
     # -- cost (accounting over the usage records) ------------------------
     _cost_blurb = (
@@ -196,9 +186,9 @@ def main() -> None:
         if not workdir.exists():
             print(f"error: workdir does not exist: {workdir}", file=sys.stderr)
             sys.exit(1)
-        # A translator or reviewer works inside a campaign the orchestrator
-        # set up; an orchestrator may be the first thing to run in a
-        # checkout, and the audit stages take any repository.
+        # A binder, translator or reviewer works inside a campaign the
+        # orchestrator set up; an orchestrator may be the first thing to run
+        # in a checkout.
         if args.command in ("spawn-binder", "spawn-translator",
                             "spawn-reviewer") \
                 and not (workdir / "crustify").is_dir():
@@ -211,9 +201,9 @@ def main() -> None:
 
     if getattr(args, "no_console", False):
         crustify_config.LOG_TO_CONSOLE = False
-    if getattr(args, "model", None) and args.command != "spawn-auditor":
+    if getattr(args, "model", None):
         crustify_config.MODEL_OVERRIDE = args.model
-    if getattr(args, "billing", None) and args.command != "spawn-auditor":
+    if getattr(args, "billing", None):
         crustify_config.BILLING = args.billing
     if getattr(args, "override_base_prompt", None) is not None:
         crustify_config.OVERRIDE_BASE_PROMPT = args.override_base_prompt
@@ -247,15 +237,6 @@ def _handle_cost(args: argparse.Namespace) -> None:
                             price_cache=args.price_cache))
 
 
-def _handle_audit_stage(args: argparse.Namespace) -> None:
-    """Run one audit stage against this repository."""
-    from crustify_audit.cli import dispatch
-    from crustify_audit.layout import Layout as AuditLayout
-
-    raise SystemExit(dispatch(AuditLayout(Path(args.workdir)), args,
-                              args.audit_stage))
-
-
 def _handle_orchestrate(args: argparse.Namespace) -> None:
     """Spawn the campaign orchestrator for this checkout."""
     from crustify import config as _cfg
@@ -266,24 +247,22 @@ def _handle_orchestrate(args: argparse.Namespace) -> None:
     model = _cfg.MODEL_OVERRIDE or "anthropic/claude-opus-5"
     workdir = Path(args.workdir).resolve()
     run_start = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
-    campaign = {}
     if getattr(args, "campaign", None) is not None:
         campaign_dir = campaign_artifacts(workdir, args.campaign)
         if Path(args.campaign).name != args.campaign or not campaign_dir.is_dir():
             raise SystemExit(f"no campaign to resume at {campaign_dir}")
         campaign_id = args.campaign
-    elif args.kind == "translate":
+    else:
         # A new campaign is named by when it started. Minted here, not by the
         # agent, so the orchestrator's log and usage record land in the
         # campaign directory from its first turn.
         campaign_id = run_start
         campaign_dir = workdir / "crustify" / ARTIFACTS / campaign_id
         campaign_dir.mkdir(parents=True, exist_ok=False)
-    if args.kind == "translate":
-        print(f"[crustify translate] campaign: {campaign_dir}")
-        # One log per run, so resuming never overwrites an earlier session's.
-        campaign = {"campaign_id": campaign_id, "artifact_dir": campaign_dir,
-                    "log_stem": f"orchestrator-{run_start}"}
+    print(f"[crustify {args.kind}] campaign: {campaign_dir}")
+    # One log per run, so resuming never overwrites an earlier session's.
+    campaign = {"campaign_id": campaign_id, "artifact_dir": campaign_dir,
+                "log_stem": f"orchestrator-{run_start}"}
     # Interactive whenever a person is at the terminal: the orchestrator asks
     # for approval and waits, which a headless run cannot do.
     interactive = sys.stdin.isatty() and sys.stdout.isatty()

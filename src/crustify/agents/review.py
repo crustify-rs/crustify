@@ -31,10 +31,11 @@ _SKILLS = (
 #: The objectives the reviewer's prompt describes, each under a heading named
 #: by its id, in the order they are listed. `fix` has no heading: it decides
 #: whether the Fixes step runs. `conventions` applies to a Crustify-generated
-#: batch only, which the prompt states.
+#: batch only, which the prompt states. `revisit` applies to a batch that
+#: names reports, and only to one.
 OBJECTIVES = (
     "unsafety", "contracts", "ub", "equiv", "internal", "conventions", "misc",
-    "coverage", "fix",
+    "coverage", "revisit", "disclose", "fix",
 )
 
 #: Objectives a skill's reviewer header describes, offered only while that
@@ -70,7 +71,9 @@ class ReviewAgent(CrustifyAgent):
         workdir: Path,
         *,
         route: str,
-        items: list[dict],
+        items: list[dict] = (),
+        modules: list[str] = (),
+        reports: list[str] = (),
         objectives: list[str] | None,
         git_base: str,
         artifact_dir: Path,
@@ -82,9 +85,14 @@ class ReviewAgent(CrustifyAgent):
         )
         self._route = route
         self._items = [dict(item) for item in items]
+        self._modules = list(modules)
+        self._reports = list(reports)
         available = set(self.available_objectives())
         if objectives is None:
-            self._objectives = frozenset(available)
+            # Every objective that applies: `revisit` exactly when there are
+            # reports to revisit.
+            self._objectives = frozenset(
+                available - {"revisit"} | ({"revisit"} if reports else set()))
         else:
             missing = sorted(set(objectives) - available)
             if missing:
@@ -110,8 +118,14 @@ class ReviewAgent(CrustifyAgent):
     def stage(self) -> str:  # type: ignore[override]
         """``review-<route>_<key>``, the record ``crustify cost`` buckets as
         ``review-type`` / ``review-symbol`` / ``review-raw-lifetime``, as it
-        did when review ran under the translator."""
-        key = self._items[0]["name"] if self._items else "batch"
+        did when review ran under the translator, and ``review-modules`` /
+        ``review-reports`` for an audit."""
+        if self._items:
+            key = self._items[0]["name"]
+        elif self._modules:
+            key = self._modules[0]
+        else:
+            key = "batch"
         return (f"review-{self._route}_"
                 f"{re.sub(r'[^A-Za-z0-9_]+', '_', key or 'batch')}")
 
@@ -123,5 +137,9 @@ class ReviewAgent(CrustifyAgent):
         return {
             **super()._arguments(),
             "objectives": ", ".join(self.objectives),
-            "worklist": json.dumps({"route": self._route, "items": self._items}),
+            "worklist": json.dumps(
+                {"route": self._route, "modules": self._modules}
+                if self._modules else
+                {"route": self._route, "items": self._items}),
+            "reports": ", ".join(self._reports) or "none",
         }

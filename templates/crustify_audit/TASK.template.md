@@ -6,23 +6,24 @@ Optional answers may be left unresolved for the orchestrator to decide.
 
 ## Audit
 
-1. **Should the auditors only report, also repair what they confirm, only
-   repair advisories that are already there, or re-investigate open leads?**
-   - Answer: `<audit | audit+patch | patch | revisit>`
-   - `revisit` hunts nothing new: it re-opens the leads an earlier campaign
-     could not settle, which is what you want after adding an instrument that
-     can now decide one. The worksets are lead files, not source files.
-2. **How many auditors should run at once?**
+1. **Should the reviewers only report, also fix what they confirm, or revisit
+   reports an earlier audit filed?**
+   - Answer: `<audit | audit+fix | revisit | revisit+fix>`
+   - `revisit` hunts nothing new: it reruns the reproducers of the reports an
+     earlier audit filed, which is what you want after a fix lands or an
+     instrument that can now decide one is added. Name the reports, or leave
+     them to the orchestrator to take every report filed so far.
+2. **How many reviewers should run at once?**
    - Answer: `<N>`
-3. **What is the wall-clock budget per auditor, in minutes? Spend is roughly
-   this times the number of auditors.**
-   - Answer: `<minutes>`
-4. **Which backend and model should the auditors use?**
+3. **What is the maximum spend, in USD? Once the audit's priced usage reaches
+   it, the orchestrator launches no further reviewers.**
+   - Answer: `<USD>`
+4. **Which backend and model should the reviewers use?**
    - Answer: `<backend, model>`
 5. **Which billing mode should agentic stages use?**
    - Answer: `<api | subscription>`
-6. **Which instruments should the auditors hunt with?**
-   - Answer: `<miri | asan/ubsan | bsan (borrowsanitizer) | msan (memorysanitizer) | tsan (threadsanitizer) | and-separated combination>`
+6. **Which instruments should the reviewers hunt with?**
+   - Answer: `<miri | asan/ubsan | bsan (borrowsanitizer) | msan (memorysanitizer) | tsan (threadsanitizer) | equivalence | and-separated combination>`
    - `miri`: Rust-side memory, value-validity, alignment, aliasing, intrinsic,
      and data-race UB in code Miri can execute.
    - `asan/ubsan`: native out-of-bounds, lifetime/free, pointer/alignment,
@@ -36,8 +37,10 @@ Optional answers may be left unresolved for the orchestrator to decide.
    - `tsan`: data races across Rust and foreign threads, and unsynchronized use
      of types whose `Send`/`Sync` is asserted by hand. Reports only the
      interleavings that actually run.
+   - `equivalence`: functional drift between the safe wrapper and the C API it
+     binds, decided by a failing assertion rather than a sanitizer.
    - `msan` and `tsan` each need their own build and cannot share a binary with
-     `asan/ubsan`, so selecting them costs an extra build per auditor.
+     `asan/ubsan`, so selecting them costs an extra build.
 
 # Optional questions
 
@@ -55,5 +58,6 @@ Unless otherwise stated, match the structure of the given results table exactly.
 
 If the user provided a centralized audit tracker at `optcrustify-audit-tracker`,
 then copy into it all the artifacts that are not gitignored from
-`<target repo>/crustify/audit/*` into `<tracker>/targets/<target>/`
+`<target repo>/crustify/reviews/` and `<target repo>/crustify/artifacts/<campaign-id>/`
+into `<tracker>/targets/<target>/`
 and record the results in the tracker's aggregate `README.md`.

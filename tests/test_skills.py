@@ -145,8 +145,10 @@ class IncludeTests(unittest.TestCase):
         self.assertEqual(self._included("reviewer.md"),
                          {"conventions", "binding", "porting", "testing",
                           "landing", "layout"})
-        self.assertEqual(self._included("orchestrator.md"),
+        self.assertEqual(self._included("translate-orchestrator.md"),
                          {"conventions", "layout"})
+        self.assertEqual(self._included("audit-orchestrator.md"),
+                         {"layout", "testing"})
 
     def test_included_documents_are_plain_markdown(self) -> None:
         """Public documents, not skills: no frontmatter for an agent to see."""

@@ -22,6 +22,11 @@
       "configure": "../../../Configure no-deprecated --strict-warnings enable-asan enable-ubsan",
       "build": "make -j8"
     },
+    "msan": {
+      "dir": "crustify/builds/msan",
+      "configure": "CC=clang CFLAGS='-fsanitize=memory -fsanitize-memory-track-origins' LDFLAGS=-fsanitize=memory ../../../Configure no-deprecated --strict-warnings no-asm",
+      "build": "make -j8"
+    },
     "tsan": {
       "dir": "crustify/builds/tsan",
       "configure": "CFLAGS=-fsanitize=thread LDFLAGS=-fsanitize=thread ../../../Configure no-deprecated --strict-warnings",

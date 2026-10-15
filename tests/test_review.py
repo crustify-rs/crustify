@@ -71,6 +71,35 @@ class ReviewBatchTests(unittest.TestCase):
         with self.assertRaisesRegex(SystemExit, "mixed agent routes"):
             self.load({"items": [_ITEM, dict(_ITEM, name="f", kind="symbol")]})
 
+    def test_an_audit_reviews_modules(self) -> None:
+        batch = self.load({"modules": ["src/frame.rs", "src/codec/"]})
+        self.assertEqual(batch.route, "modules")
+        self.assertEqual(batch.modules, ["src/frame.rs", "src/codec/"])
+        self.assertEqual(batch.items, [])
+
+    def test_items_and_modules_are_exclusive(self) -> None:
+        with self.assertRaisesRegex(SystemExit, "not both"):
+            self.load({"items": [_ITEM], "modules": ["src/a.rs"]})
+
+    def test_a_batch_needs_a_worklist_or_reports(self) -> None:
+        with self.assertRaisesRegex(SystemExit, "items, modules or reports"):
+            self.load({"objectives": ["ub"]})
+
+    def test_modules_are_repo_relative(self) -> None:
+        for modules in ([], ["/abs.rs"], ["../out.rs"], ["a.rs", "a.rs"], [""]):
+            with self.subTest(modules=modules), self.assertRaises(SystemExit):
+                self.load({"modules": modules})
+
+    def test_reports_come_exactly_with_revisit(self) -> None:
+        report = "crustify/reviews/b/ub_safe/x"
+        batch = self.load({"objectives": ["revisit", "fix"], "reports": [report]})
+        self.assertEqual((batch.route, batch.reports), ("reports", [report]))
+        with self.assertRaisesRegex(SystemExit, "revisit"):
+            self.load({"objectives": ["ub"], "modules": ["a.rs"],
+                       "reports": [report]})
+        with self.assertRaisesRegex(SystemExit, "revisit"):
+            self.load({"objectives": ["revisit"], "modules": ["a.rs"]})
+
     def test_the_translator_no_longer_reviews(self) -> None:
         self.path.write_text(json.dumps({"objective": "review", "items": [_ITEM]}))
         with self.assertRaisesRegex(SystemExit, "spawn-reviewer"):
@@ -94,7 +123,17 @@ class ReviewAgentTests(unittest.TestCase):
         self.assertEqual(
             self.agent(None).available_objectives(),
             ["lifecycle", "unsafety", "contracts", "ub", "equiv", "internal",
-             "conventions", "misc", "coverage", "fix"])
+             "conventions", "misc", "coverage", "revisit", "disclose", "fix"])
+
+    def test_revisit_runs_by_default_only_with_reports(self) -> None:
+        _Checkouts(self)
+        self.assertNotIn("revisit", self.agent(None).objectives)
+        agent = ReviewAgent(self.repo, route="reports",
+                            reports=["crustify/reviews/b/ub_safe/x"],
+                            objectives=None, git_base="review-wave-0",
+                            artifact_dir=self.repo, log_stem="reviewer")
+        self.assertIn("revisit", agent.objectives)
+        self.assertIn("crustify/reviews/b/ub_safe/x", agent.system_preamble())
 
     def test_an_absent_skill_takes_its_objective_with_it(self) -> None:
         """A reviewer pointed at a crate wavefront does not describe is never
@@ -181,6 +220,10 @@ class ReviewAgentTests(unittest.TestCase):
         stage = self.agent(None).stage
         self.assertEqual(stage, "review-type_T")
         self.assertEqual(kind(stage), "review-type")
+        modules = ReviewAgent(self.repo, route="modules", modules=["src/a.rs"],
+                              objectives=None, git_base="w",
+                              artifact_dir=self.repo, log_stem="reviewer")
+        self.assertEqual(kind(modules.stage), "review-modules")
 
 
 class ExecuteTests(unittest.TestCase):

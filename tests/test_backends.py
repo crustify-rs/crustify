@@ -123,32 +123,6 @@ class ProviderRoutingTests(unittest.TestCase):
             self.assertEqual(_REASONING_EFFORT.get(route.model), "high", model)
             self.assertEqual(_REASONING_EFFORT.get(model), "high", model)
 
-    def test_auditor_resolves_the_shared_backend_registry(self) -> None:
-        from crustify_audit.agents.base import AuditAgent
-        from crustify_audit.layout import Layout
-
-        calls: list[dict] = []
-
-        class Backend:
-            def run(self, **kwargs):
-                calls.append(kwargs)
-
-        with tempfile.TemporaryDirectory() as tmp:
-            layout = Layout(Path(tmp))
-            with mock.patch(
-                    "crustify.agents.backends.get_backend",
-                    return_value=Backend()) as shared:
-                AuditAgent(
-                    layout,
-                    model="openrouter/anthropic/claude-opus-5",
-                    timeout_s=None,
-                    billing="api",
-                ).run()
-
-        shared.assert_called_once_with("claude_cli")
-        self.assertEqual(calls[0]["route"].provider, "openrouter")
-        self.assertEqual(calls[0]["billing"], "api")
-
     def test_translator_resolves_the_same_backend_registry(self) -> None:
         from crustify.agents.translate import TranslateAgent
 

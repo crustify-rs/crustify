@@ -1,167 +1,73 @@
-# crustify-audit
+# Audit campaigns
 
-Audit Rust repositories—especially wrappers over C—for undefined behavior reachable from
-safe code. `crustify spawn-auditor` runs an agentic audit whose result is investigated
-leads and reproducible advisories.
+An audit campaign hunts undefined behavior reachable from safe code in a Rust repository,
+especially a crate that wraps C, and, when the `equivalence` instrument is selected,
+functional drift between the safe wrapper and the C library it binds. It needs no earlier
+Crustify campaign: the target is any repository.
 
-## Quick start
+An audit runs the same reviewers a translation campaign does. Its orchestrator plans the
+audit, prepares the instrumented builds and spawns the reviewers, and each reviewer files
+a report and a reproducer for every finding it confirms.
 
-Requires Python 3.13 or newer:
+## Running one
 
 ```sh
-pip install -e .
-
-crustify spawn-auditor /path/to/repo --model anthropic/claude-opus-5
+crustify audit /path/to/repo /path/to/TASK.md --model anthropic/claude-opus-5
 ```
 
-Pass the repository root. `ub` requires the selected Claude or Codex CLI and the instrumentation
-appropriate to each finding. It warns when Miri or BorrowSanitizer is unavailable.
+Fill in [`TASK.template.md`](../../templates/crustify_audit/TASK.template.md) first; a
+headless run needs every mandatory answer. `--campaign <id>` resumes an earlier audit, and
+`--task-only` runs the ablation control described in
+[`BARE.md`](../../templates/crustify_audit/BARE.md).
+
+## Objectives
+
+| task objective | reviewer objectives |
+|---|---|
+| `audit` | `ub`, `equiv` when `equivalence` is selected, and `disclose` |
+| `audit+fix` | the same, plus `fix` |
+| `revisit` | `revisit` and `disclose`, over the reports the task names or every report filed so far |
+| `revisit+fix` | the same, plus `fix` |
+
+Without `fix`, reviewers change nothing but their reviews dirs.
+
+## Batches
+
+An audit's review batches carry `modules`, the source files and directories of the crate
+a reviewer covers, instead of a translation's `items`. A revisit batch carries the
+`reports` it reruns:
+
+```json
+{"objectives": ["ub", "equiv", "disclose"], "modules": ["src/frame.rs", "src/codec/"]}
+{"objectives": ["revisit", "disclose", "fix"], "reports": ["crustify/reviews/<batch id>/ub_safe/<slug>"]}
+```
+
+[`batch.md`](../translate/schemas/batch.md) gives the fields, and
+[`layout.md`](../translate/howto/layout.md) the branches and artifact dirs an audit's
+review waves use.
+
+## Instruments
+
+Each selected sanitizer is a variant of `crustify/build.json`, which the orchestrator
+prepares before the first review wave; the reviewers use only those variants. Miri and
+`equivalence` need no build. [`testing.md`](../translate/howto/testing.md) gives the bug
+classes each sanitizer covers.
+
+## Spending
+
+The task sets a maximum spend. Before each launch, the orchestrator prices every usage
+record the audit has written with `crustify cost`, and once the total reaches the
+maximum it launches no further reviewers.
 
 ## Output
 
-Every run uses `<repo>/crustify/audit/`:
-
-```text
-advisories/        confirmed bugs and their reproducers
-leads/             every investigated candidate, including cleared ones
-scratch/           disposable experiments
-logs/              agent logs and usage records
-```
-
-An advisory requires a reproducer that depends on the audited crate and reaches the
-behaviour through its public API. For every instrument but `equivalence` the reproducer
-writes no `unsafe` at all and must trigger the instrument. An `equivalence` reproducer
-needs `unsafe` to invoke the C reference it compares against; confine it to that call,
-reach the Rust side only through the safe API, and its verdict is the failing comparison
-rather than an instrument diagnostic. Anything short of that is a lead — and a `revisit`
-run exists to settle leads once an instrument that can decide them is available.
-
-Runs accumulate. Auditors read existing advisories and leads before starting, so later
-runs extend the record instead of repeating completed investigations.
-
-## CLI
-
-```text
-crustify spawn-auditor WORKDIR [--objective audit|audit+patch|patch|revisit]
-                       [--workset PATH ...]
-                       [--instruments miri|asan/ubsan|bsan|msan|tsan|equivalence ...]
-                       [--model PROVIDER/MODEL]
-                       [--billing subscription|api]
-                       [--timeout MINUTES]
-```
-
-- `ub --workset` confines an auditor to specified work items. For audit objectives these
-  are source files; omit it for the whole crate. Under `--objective patch` it carries
-  advisory directories under `crustify/audit/advisories/` instead of source files; omit it
-  to repair every advisory. Under `--objective revisit` it carries lead notes under
-  `crustify/audit/leads/` instead of source files.
-- `ub --instruments` constrains the hunt and advisory evidence; omit it to select every
-  one. Before spending, the command prints the exact selected instruments, their bug
-  classes, and their reach limitations. `equivalence` is the odd one out: it decides by
-  comparing against the C reference rather than by instrumentation, so it needs no
-  sanitizer build and its advisories carry a failing assertion instead of a crash.
-- `ub --timeout` is a wall-clock budget, not a kill deadline. The current agent finishes
-  even when that overshoots the budget; `0` runs one agent.
-- `audit` never edits target source. `audit+patch` and `patch` develop repairs in Git
-  worktrees. `revisit` hunts nothing new: it re-investigates leads an earlier campaign
-  left open, appends a dated verdict to each, and promotes one to an advisory if it now
-  reproduces. Use it after adding an instrument that can settle a hypothesis the earlier
-  run had to leave standing.
-
-Run `crustify spawn-auditor --help` or `crustify audit --help` for complete flag
-semantics.
-
-### Instrument scopes
-
-| selection | bug classes the auditor hunts |
-|---|---|
-| `miri` | Rust-side bounds and lifetime errors, uninitialized or invalid values, alignment and intrinsic violations, aliasing under Stacked/Tree Borrows, and data races |
-| `asan/ubsan` | native bounds errors, use-after-free/return/scope and invalid frees, pointer/alignment UB, integer/division/shift UB, and invalid C/C++ runtime values |
-| `bsan` | Tree Borrows aliasing across Rust and foreign code, including conflicting foreign-pointer writes and pointers invalidated by reborrows |
-| `msan` | use of uninitialized memory: branches and addresses computed from it, uninitialized bytes crossing the FFI boundary, and struct tails or buffers a foreign initializer left partly unwritten |
-| `equivalence` | functional drift from the bound C API: mapped or swallowed errors, differing out-parameters and buffers, state that diverges only across a multi-call sequence, boundary-input handling, option defaults, callback contracts, and lossy conversions. Its verdict is a failing assertion against the C reference, not an instrument, so it needs no sanitizer build and says nothing about UB |
-| `tsan` | data races between Rust and foreign threads, unsynchronized access through `&T` where `Send`/`Sync` is hand-written, and use of an object being destroyed on another thread |
-
-These are execution-based scopes, not promises of exhaustive detection. Miri usually
-cannot execute foreign code; ASan/UBSan require the relevant native code and final
-executable to be instrumented; BorrowSanitizer specifically checks Rust aliasing rules.
-The same definitions are injected into each auditor prompt, so CLI selection, displayed
-plan, and hunt scope cannot drift.
-
-MemorySanitizer and ThreadSanitizer each need a build of their own and cannot share a
-binary with ASan/UBSan, so selecting them costs an extra build per auditor.
-MemorySanitizer additionally needs every component instrumented — the standard library via
-`-Zbuild-std` and the foreign code it links — because memory written by uninstrumented
-code reads as uninitialized; a partial build reports falsely rather than cleanly. They
-cover the two classes the other three cannot reach at all: ASan/UBSan does not model
-uninitialized memory, and no other instrument can decide a hand-written `unsafe impl
-Sync`.
-
-## Container
-
-The container starts an orchestrator that resolves the run plan and launches auditors
-against the checkout mounted at `/target`.
-
-```sh
-docker build -t crustify -f templates/Dockerfile .
-
-docker run --rm -it --name audit-target \
-  -e ANTHROPIC_API_KEY \
-  -e CRUSTIFY_BACKEND=claude \
-  -e CRUSTIFY_MODEL=claude-opus-5 \
-  -v /path/to/target-repo:/target \
-  -v /host/campaign/TASK.md:/campaign/TASK.md:ro \
-  -e CRUSTIFY_COMMAND=audit \
-  -v audit-target-work:/work \
-  crustify
-```
-
-One image serves the auditor and the translator; they differ in one thing only, which
-orchestrator prompt they load, and `CRUSTIFY_COMMAND` selects it. It has no default. The
-harness is installed in the image. During harness development, mount this checkout at
-`/opt/crustify` to run its live sources instead.
-
-For Codex against OpenAI, use `CRUSTIFY_BACKEND=codex`, pass the model ID exactly as Codex
-expects it, and provide `OPENAI_API_KEY`. To drive an Anthropic model through OpenRouter
-instead, add:
-
-```sh
--e OPENROUTER_API_KEY \
--e CRUSTIFY_BACKEND=codex \
--e CRUSTIFY_PROVIDER=openrouter \
--e CRUSTIFY_MODEL=anthropic/claude-sonnet-5
-```
-
-OpenRouter must support the Responses API for the selected model. Model IDs are passed
-verbatim to both CLIs.
-
-Before running, complete
-[`templates/crustify_audit/TASK.template.md`](../../templates/crustify_audit/TASK.template.md) and
-place it at the host path mounted as `/campaign/TASK.md` above. Without that mount, the
-orchestrator asks for mandatory decisions. A headless run therefore needs a complete task.
-
-| variable | values | default |
-|---|---|---|
-| `CRUSTIFY_BACKEND` | `claude`, `codex` | `claude` |
-| `CRUSTIFY_PROVIDER` | `anthropic`, `openai`, `openrouter` | derived from backend |
-| `CRUSTIFY_MODEL` | backend-specific model ID | `claude-opus-5` |
-| `CRUSTIFY_BILLING` | `api`, `subscription` | `api` |
-| `CRUSTIFY_HEADLESS` | `0`, `1` | `0` |
-| `CRUSTIFY_TIMEOUT` | minutes per auditor; `0` runs one | `60` |
-| `CRUSTIFY_EFFORT` | Codex orchestrator and auditor reasoning effort | `high` |
-| `CRUSTIFY_COMMAND` | `translate`, `audit` | none; required |
-
-`api` uses `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, or `OPENROUTER_API_KEY` for the selected
-provider. OpenRouter requires `api`; `subscription` uses Claude or Codex credentials saved
-under `/work`, which is also the persistent Cargo/build cache. An
-`openrouter/anthropic/<model>` route uses Claude Code with `OPENROUTER_API_KEY`; other
-OpenRouter model IDs use Codex.
-
-`CRUSTIFY_BARE=1` still makes the mounted `TASK.md` the entire prompt, for either command.
+Each reviewer files its findings under its reviews dir, `crustify/reviews/<batch id>/`, and
+lands them on its review wave's branch. With `disclose`, every finding carries a
+`disclosure.md` ready to send to the project's maintainers. The orchestrator writes the
+audit's report from
+[`results.template.md`](../../templates/crustify_audit/results.template.md).
 
 ## Reference
 
-- [Task questionnaire](../../templates/crustify_audit/TASK.template.md)
-- [Example results and report format](../../templates/crustify_audit/results.template.md)
-- [`ub` auditor prompt](../../src/crustify_audit/prompts/ub.md)
-- [Orchestrator prompt](../../src/crustify_audit/prompts/orchestrator.md)
+- [Audit orchestrator prompt](../../src/crustify/prompts/audit-orchestrator.md)
+- [Reviewer prompt](../../src/crustify/prompts/reviewer.md)

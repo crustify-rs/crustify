@@ -80,6 +80,8 @@ def kind(stage):
                  ("review-symbol", "review-symbol"),
                  ("wrap-raw-lifetime", "wrap-raw-lifetime"),
                  ("review-raw-lifetime", "review-raw-lifetime"),
+                 ("review-modules", "review-modules"),
+                 ("review-reports", "review-reports"),
                  # Historical pre-`translate` log prefixes remain bucketed so
                  # existing campaign measurements stay readable.
                  ("port_", "port"), ("wrap_", "wrap"), ("merge", "merge"),

@@ -14,8 +14,8 @@ agents with the tools and skills the job actually requires:
   and lifetime traits for safe interop across the FFI boundary
 - [ffimap](https://github.com/crustify-rs/ffimap): a deterministic map of a
   Rust crate's FFI and unsafe surface
-- [crustify-audit](docs/audit/audit.md): an agentic undefined-behavior
-  auditor.
+- [audit campaigns](docs/audit/audit.md): reviewers hunting undefined behavior
+  in any Rust crate that wraps C.
 
 Agents write and review code inside isolated worktrees, behind build, test, and
 safety gates.
@@ -41,7 +41,7 @@ The harness supports two complementary reliability mechanisms:
   code, challenge unsafe assumptions and behavioral equivalence, and repair
   confirmed defects.
 
-The oracle, ffibox, ffimap, and the auditor serve both the orchestrator and translators
+The oracle, ffibox, and ffimap serve both the orchestrator and its agents
 as skills.
 
 ## Components
@@ -50,7 +50,7 @@ as skills.
 |---|---|
 | `crustify` | Agent execution, isolated worktrees, crate placement, logging, and campaign artifacts |
 | [`wavefront`](https://github.com/crustify-rs/wavefront) | CodeQL-backed dependency analysis, scope selection, and deterministic scheduling |
-| [`crustify-audit`](docs/audit/audit.md) | Agentic UB review, shipped in this repository |
+| [audit campaigns](docs/audit/audit.md) | UB review of any Rust crate that wraps C, by the same reviewers a translation uses |
 | [`ffibox`](https://github.com/crustify-rs/ffibox) | Safe FFI smart pointers and lifetime traits used by generated wrappers |
 | [`ffimap`](https://github.com/crustify-rs/ffimap) | Deterministic unsafe and FFI surface counts, recorded per batch, wave, subsystem and campaign |
 
@@ -126,8 +126,11 @@ For a reproducible container environment and the campaign templates, see
    regression and deterministic safety gates, then promotes the reviewed wave.
 
 Each role's authoritative procedure is its own prompt:
-[`orchestrator`](src/crustify/prompts/orchestrator.md) and
-[`translator`](src/crustify/prompts/translator.md).
+[`translate-orchestrator`](src/crustify/prompts/translate-orchestrator.md),
+[`audit-orchestrator`](src/crustify/prompts/audit-orchestrator.md),
+[`binder`](src/crustify/prompts/binder.md),
+[`translator`](src/crustify/prompts/translator.md) and
+[`reviewer`](src/crustify/prompts/reviewer.md).
 
 ## CLI
 

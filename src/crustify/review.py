@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import NoReturn
 
 from crustify.translate import check_fields, parse_items, read_object
@@ -16,11 +16,18 @@ _LOG_STEM = "reviewer"
 
 @dataclass(frozen=True)
 class ReviewBatch:
-    """Validated review-batch input. ``objectives`` is None when the batch
-    names none, which enables every objective the reviewer offers."""
+    """Validated review-batch input.
+
+    A batch reviews either wavefront ``items`` of one route or ``modules``,
+    the source files and directories of a crate wavefront does not describe,
+    and may also carry ``reports`` to revisit. ``objectives`` is None when the
+    batch names none, which enables every objective the reviewer offers that
+    applies to it."""
 
     route: str
     items: list[dict]
+    modules: list[str]
+    reports: list[str]
     objectives: list[str] | None
 
 
@@ -28,15 +35,35 @@ def _fail(message: str) -> NoReturn:
     raise SystemExit(f"review: {message}")
 
 
+def _paths(raw: object, field: str) -> list[str]:
+    """A non-empty array of distinct repo-relative paths."""
+    if (not isinstance(raw, list) or not raw
+            or any(not isinstance(p, str) or not p for p in raw)):
+        _fail(f"{field} must be a non-empty array of paths")
+    for p in raw:
+        if PurePosixPath(p).is_absolute() or ".." in PurePosixPath(p).parts:
+            _fail(f"{field} must hold repo-relative paths: {p}")
+    if len(set(raw)) != len(raw):
+        _fail(f"{field} contains duplicates")
+    return list(raw)
+
+
 def load_batch(path: Path) -> ReviewBatch:
     """Load and strictly validate a review batch.
 
-    Its items are a translator's thin worklist; ``objectives`` replaces the
-    translator's single ``objective``. Which objective names exist depends on
-    the skills the reviewer carries, so they are checked against the agent,
-    not here."""
+    Its ``items`` are a binder's or translator's thin worklist, and
+    ``modules`` replace them for a crate wavefront does not describe;
+    ``objectives`` replaces their single ``objective``. ``reports`` names the
+    report dirs a ``revisit`` batch re-examines, and is given exactly when
+    ``revisit`` is. Which objective names exist depends on the skills the
+    reviewer carries, so they are checked against the agent, not here."""
     raw = read_object(path, _fail)
-    check_fields(raw, {"items"}, {"objectives"}, _fail)
+    check_fields(raw, set(), {"items", "modules", "reports", "objectives"},
+                 _fail)
+    if "items" in raw and "modules" in raw:
+        _fail("a batch carries items or modules, not both")
+    if not {"items", "modules", "reports"} & set(raw):
+        _fail("a batch needs items, modules or reports")
     objectives = raw.get("objectives")
     if objectives is not None:
         if (not isinstance(objectives, list) or not objectives
@@ -45,8 +72,16 @@ def load_batch(path: Path) -> ReviewBatch:
             _fail("objectives must be a non-empty array of objective names")
         if len(set(objectives)) != len(objectives):
             _fail("objectives contains duplicates")
-    route, items = parse_items(raw["items"], _fail)
-    return ReviewBatch(route=route, items=items, objectives=objectives)
+        if ("revisit" in objectives) != ("reports" in raw):
+            _fail("reports are given exactly when revisit is an objective")
+    reports = _paths(raw["reports"], "reports") if "reports" in raw else []
+    route, items, modules = "reports", [], []
+    if "items" in raw:
+        route, items = parse_items(raw["items"], _fail)
+    elif "modules" in raw:
+        route, modules = "modules", _paths(raw["modules"], "modules")
+    return ReviewBatch(route=route, items=items, modules=modules,
+                       reports=reports, objectives=objectives)
 
 
 def execute(
@@ -76,6 +111,8 @@ def execute(
         workdir.resolve(),
         route=batch.route,
         items=batch.items,
+        modules=batch.modules,
+        reports=batch.reports,
         objectives=batch.objectives,
         git_base=base_branch.removeprefix("refs/heads/"),
         artifact_dir=output,
@@ -84,7 +121,8 @@ def execute(
     if dry_run:
         print(
             f"[review dry-run] one {batch.route} agent; "
-            f"{len(batch.items)} item(s); objectives "
+            f"{len(batch.items)} item(s), {len(batch.modules)} module(s), "
+            f"{len(batch.reports)} report(s); objectives "
             f"{', '.join(agent.objectives)}; landing on {base_branch}; "
             "no agent spawned."
         )

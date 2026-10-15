@@ -22,6 +22,15 @@ A wave or review wave branch is the integration branch its batches land on. It i
 checked out: a landing push to a checked-out branch fails, and one to a missing branch
 silently creates it.
 
+An audit has no link units, subsystems or translated waves: its review waves sit directly
+under the campaign, and each is promoted to the campaign branch once it lands.
+
+| branch | name | checked out |
+|---|---|---|
+| campaign | `crustify/campaigns/<campaign-id>` | in the repository's base dir |
+| review wave | `crustify/reviews/<campaign-id>/wave-<index>` | never |
+| review batch | `crustify/review-batches/<campaign-id>/wave-<index>/batch-<index>` | in its worktree |
+
 ## Worktrees
 
 Each batch and review batch has its own worktree at `crustify/.worktrees/<its branch name>`.
@@ -29,8 +38,9 @@ Each batch and review batch has its own worktree at `crustify/.worktrees/<its br
 ## Batch ids
 
 A batch's id is the part of its branch name after `crustify/batches/` or
-`crustify/review-batches/`: `<campaign-id>/<link-unit>/<subsystem>/wave-<index>/batch-<index>`.
-It gives the batch's link unit, subsystem and wave.
+`crustify/review-batches/`: `<campaign-id>/<link-unit>/<subsystem>/wave-<index>/batch-<index>`, or
+`<campaign-id>/wave-<index>/batch-<index>` in an audit. It gives the batch's link unit,
+subsystem and wave.
 
 ## Artifact dirs
 
@@ -47,6 +57,9 @@ crustify/artifacts/<campaign-id>/               the campaign: schedule.json, the
     └── review-wave-<index>/                    a review wave
         └── batch-<index>/                      a review batch, laid out as a batch
 ```
+
+An audit's review waves sit directly in its campaign dir, as
+`crustify/artifacts/<campaign-id>/review-wave-<index>/batch-<index>/`.
 
 Each level also holds its `ffimap.json` once the orchestrator records it. A campaign begun
 before the artifact tree was named so keeps it under `crustify/campaigns/`. A batch's artifact

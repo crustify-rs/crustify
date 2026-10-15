@@ -51,7 +51,7 @@ def resolve(model: str) -> Route:
     # alone cannot pick a CLI. Anthropic weights are driven by Claude Code,
     # which speaks to the gateway through ANTHROPIC_BASE_URL; everything else
     # goes to Codex. Without this an `openrouter/anthropic/...` orchestrator
-    # would spawn Codex auditors -- a different CLI, tools and system prompt
+    # would spawn Codex reviewers -- a different CLI, tools and system prompt
     # from the one the run was configured with, and nothing would say so.
     if provider == "openrouter" and model_id.startswith("anthropic/"):
         backend = "claude_cli"

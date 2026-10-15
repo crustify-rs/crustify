@@ -3,7 +3,7 @@
 # is a machine, and `crustify` is run inside it.
 #
 # One image serves both kinds because they want the same machine. The translator
-# needs the sanitizers to check what it emitted; the auditor needs a C
+# needs the sanitizers to check what it emitted; an audit needs a C
 # toolchain to build what it audits. Two images meant the translate side had
 # no miri, no BorrowSanitizer and no MemorySanitizer -- the instruments its
 # own prompt asks for -- while the audit side had no CodeQL and no bindgen.

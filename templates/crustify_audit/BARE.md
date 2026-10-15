@@ -18,5 +18,5 @@ orchestrator role, no conventions, no skill index.
         crustify audit /target /campaign/TASK.md --task-only \
         --model openrouter/anthropic/claude-opus-5 --billing api
 
-Nothing spawns auditors in bare mode, so there is no per-auditor budget: the run
+Nothing spawns reviewers in bare mode, so there is no maximum spend: the run
 takes whatever the single agent takes. Cap it from outside if you need one.

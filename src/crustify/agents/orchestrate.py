@@ -62,12 +62,11 @@ class OrchestrateAgent(CrustifyAgent):
         self.task = Path(task)
         self.model = model
         self.task_only = task_only
-        #: Minted by the CLI for a new translate campaign, or named by
-        #: `--campaign` to resume one. Either way `crustify/artifacts/<id>/`
+        #: Minted by the CLI for a new campaign, or named by `--campaign` to
+        #: resume one. Either way `crustify/artifacts/<id>/`
         #: (`crustify/campaigns/<id>/` for a campaign begun before the
-        #: rename) exists and is this agent's artifact dir, so the orchestrator's log
-        #: sits with the campaign it runs. Empty for an audit campaign, which
-        #: has no campaign tree.
+        #: rename) exists and is this agent's artifact dir, so the
+        #: orchestrator's log sits with the campaign it runs.
         self.campaign_id = campaign_id
         #: The orchestrator presents a brief and waits at approval gates, so
         #: with a person at the terminal it runs in the CLI's own interface.
@@ -92,11 +91,7 @@ class OrchestrateAgent(CrustifyAgent):
     def _body(self) -> str:
         """The stage prompt, with the campaign task at its ``<!-- TASK -->``
         anchor."""
-        if self.kind == "audit":
-            path = (_PKG_ROOT.parent / "crustify_audit" / "prompts"
-                    / "orchestrator.md")
-        else:
-            path = _PKG_ROOT / "prompts" / "orchestrator.md"
+        path = _PKG_ROOT / "prompts" / f"{self.kind}-orchestrator.md"
         body = expand_includes(path.read_text())
         if body.count(_TASK_ANCHOR) != 1:
             raise SystemExit(
