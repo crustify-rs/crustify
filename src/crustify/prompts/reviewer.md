@@ -29,12 +29,15 @@ Each worklist has one homogeneous route:
 | `symbol` | functions, globals, callback typedefs | safe wrapper or native implementation |
 | `raw-lifetime` | one `void` or `string` marker | reusable release and clone strategies |
 | `modules` | source files and directories of a crate | everything they define |
+| `sites` | ffimap sites: a counter, a file and its lines | the code each site sits in, and what it reaches |
 | `reports` | none: the batch only revisits reports | the code the reports name |
 
 If you are on a Crustify-generated crate, a review worklist carries one route's whole share of
 a translated wave: every type, or every symbol and callback, that the wave's batches landed,
 often from several translation batches. In an audit, a `modules` worklist names the
-part of the crate you review.
+part of the crate you review, and a `sites` worklist the ffimap sites to start from: each
+names the counter that flagged it and the lines it fell on. Review the function, or the
+type and its impls, that each site sits in, and follow it as far as it reaches.
 
 Your objectives are listed in your inputs. The workflow's steps describe each objective by
 its id, and a skill's role guidance describes the objectives it contributes. Review only for

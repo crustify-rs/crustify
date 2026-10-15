@@ -78,17 +78,36 @@ class ReviewBatchTests(unittest.TestCase):
         self.assertEqual(batch.items, [])
 
     def test_items_and_modules_are_exclusive(self) -> None:
-        with self.assertRaisesRegex(SystemExit, "not both"):
+        with self.assertRaisesRegex(SystemExit, "items and modules"):
             self.load({"items": [_ITEM], "modules": ["src/a.rs"]})
 
     def test_a_batch_needs_a_worklist_or_reports(self) -> None:
-        with self.assertRaisesRegex(SystemExit, "items, modules or reports"):
+        with self.assertRaisesRegex(SystemExit, "items, modules, sites or reports"):
             self.load({"objectives": ["ub"]})
 
     def test_modules_are_repo_relative(self) -> None:
         for modules in ([], ["/abs.rs"], ["../out.rs"], ["a.rs", "a.rs"], [""]):
             with self.subTest(modules=modules), self.assertRaises(SystemExit):
                 self.load({"modules": modules})
+
+    def test_an_audit_reviews_ffimap_sites(self) -> None:
+        site = {"counter": "drop_impl", "file": "src/ctx.rs", "lines": [42, 7]}
+        batch = self.load({"sites": [site]})
+        self.assertEqual((batch.route, batch.sites), ("sites", [site]))
+
+    def test_sites_are_validated(self) -> None:
+        good = {"counter": "drop_impl", "file": "src/ctx.rs", "lines": [42]}
+        for sites in ([], [dict(good, count=1)], [dict(good, counter="Bad")],
+                      [dict(good, file="/abs.rs")], [dict(good, lines=[])],
+                      [dict(good, lines=[0])], [dict(good, lines=[3, 3])],
+                      [dict(good, lines=[True])], [good, dict(good)]):
+            with self.subTest(sites=sites), self.assertRaises(SystemExit):
+                self.load({"sites": sites})
+
+    def test_one_worklist_per_batch(self) -> None:
+        site = {"counter": "drop_impl", "file": "a.rs", "lines": [1]}
+        with self.assertRaisesRegex(SystemExit, "one of items, modules or sites"):
+            self.load({"modules": ["a.rs"], "sites": [site]})
 
     def test_reports_come_exactly_with_revisit(self) -> None:
         report = "crustify/reviews/b/ub_safe/x"
@@ -224,6 +243,13 @@ class ReviewAgentTests(unittest.TestCase):
                               objectives=None, git_base="w",
                               artifact_dir=self.repo, log_stem="reviewer")
         self.assertEqual(kind(modules.stage), "review-modules")
+        sites = ReviewAgent(self.repo, route="sites",
+                            sites=[{"counter": "drop_impl", "file": "a.rs",
+                                    "lines": [1]}],
+                            objectives=None, git_base="w",
+                            artifact_dir=self.repo, log_stem="reviewer")
+        self.assertEqual(kind(sites.stage), "review-sites")
+        self.assertIn('"counter": "drop_impl"', sites.system_preamble())
 
 
 class ExecuteTests(unittest.TestCase):

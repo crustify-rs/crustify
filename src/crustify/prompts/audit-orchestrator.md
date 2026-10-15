@@ -136,8 +136,14 @@ The task's review objectives, when given, replace this mapping.
 ##### Worksets
 
 For `audit`, inspect the crate and the reports filed so far, and prioritize the sites
-the ffimap skill names. Divide the crate into disjoint worksets of modules, one per review batch;
-give a single reviewer the whole crate when only one is configured.
+the ffimap skill names. Batch those sites first, as `sites` worksets, then divide the rest
+of the crate into `modules` worksets. Worksets are disjoint: no site or file is in two
+batches.
+
+A batch holds at most the task's `max-sites` sites, 20 by default, and the code it covers,
+the functions, or types and impls, its sites sit in, or its modules, spans at most the
+task's `max-loc` lines, 500 by default. Keep a smell's sites in one module together where
+the caps allow.
 
 For `revisit`, divide the reports into their own batches, grouped so that reports
 needing the same instrument or the same build land on the same reviewer.
@@ -190,6 +196,13 @@ A review batch's `batch.json` holds its workset and the approved objectives:
 
 ```json
 {{"objectives": ["ub", "equiv", "disclose"], "modules": ["src/frame.rs", "src/codec/"]}}
+```
+
+A smell batch names its ffimap sites, as the scan's `sites` record gives them, with the
+counter that flagged each and its file relative to the repository:
+
+```json
+{{"objectives": ["ub", "disclose"], "sites": [{{"counter": "ty_wrapper_borrow_non_sanctioned", "file": "src/frame.rs", "lines": [120, 188]}}]}}
 ```
 
 A revisit batch names its report dirs instead:

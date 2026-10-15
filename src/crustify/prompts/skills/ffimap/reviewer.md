@@ -1,6 +1,7 @@
 <!-- SKILL -->
 
-Locate your workset's sites with the scan, and narrow them to those in your workset:
+A `sites` worklist already names your sites. Otherwise, locate your workset's sites with
+the scan, and narrow them to those in your workset:
 
 ```bash
 ffimap <workdir> --json --ffibox --sites <counter> ...

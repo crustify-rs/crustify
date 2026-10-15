@@ -34,11 +34,15 @@ Without `fix`, reviewers change nothing but their reviews dirs.
 
 ## Batches
 
-An audit's review batches carry `modules`, the source files and directories of the crate
-a reviewer covers, instead of a translation's `items`. A revisit batch carries the
-`reports` it reruns:
+A translation's `items` describe C entities, so an audit's review batches carry a Rust
+worklist instead: `sites`, the ffimap sites a reviewer starts from, or `modules`, the
+source files and directories it covers. The orchestrator batches the sites of ffimap's
+smells first, then the rest of the crate as modules, at most 20 sites and 500 lines of
+covered code per batch by default (`id: workload` in the task). A revisit batch carries
+the `reports` it reruns:
 
 ```json
+{"objectives": ["ub", "disclose"], "sites": [{"counter": "drop_impl", "file": "src/codec/ctx.rs", "lines": [42]}]}
 {"objectives": ["ub", "equiv", "disclose"], "modules": ["src/frame.rs", "src/codec/"]}
 {"objectives": ["revisit", "disclose", "fix"], "reports": ["crustify/reviews/<batch id>/ub_safe/<slug>"]}
 ```

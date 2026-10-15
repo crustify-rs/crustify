@@ -26,6 +26,6 @@ For `contracts`, give the reviewers the crate's unsafe API and its justification
 obligations they evaluate, and `undocumented_unsafe`, the `unsafe` sites with no
 `// SAFETY:` comment.
 
-Group the sites by module, so each review batch's `modules` holds the files its sites are
-in; the reviewers locate the sites in their modules with the same scan. Review the rest of
-the crate after the smells.
+Batch the sites as `sites` worksets: each entry is one file of a counter's `sites` record,
+`{"counter": .., "file": .., "lines": [..]}`, with `count` dropped and `file` made
+relative to the repository. Review the rest of the crate after the smells.

@@ -51,7 +51,13 @@ Unanswered optional questions are decided by the orchestrator.
 
 ## Review
 
-7. **Which objectives should the reviewers review for? By default, the objective above
+7. **What batch caps should the reviewers use?** (`id: workload`)
+   - Answer: `<defaults | max-sites: N, max-loc: N>`
+   - Defaults: at most 20 ffimap sites per batch, and at most 500 lines of the
+     code a batch covers: the functions, or types and impls, its sites sit in, or its
+     modules.
+
+8. **Which objectives should the reviewers review for? By default, the objective above
    decides: `ub`, `contracts`, `equiv` when `equivalence` is an instrument, and
    `disclose` for `audit`; `revisit` and `disclose` for `revisit`; plus `fix` for `fix`.**
    - Answer: `<default | any of: unsafety, contracts, ub, equiv, internal, misc,
@@ -59,7 +65,7 @@ Unanswered optional questions are decided by the orchestrator.
 
 ## Reporting
 
-8. **Where and in what format should the dashboard be recorded?**
+9. **Where and in what format should the dashboard be recorded?**
    - Answer: `<dashboard path>, <templates/audit/dashboard.template.md | custom template>`
 
 

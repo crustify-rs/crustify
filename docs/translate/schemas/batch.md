@@ -59,10 +59,11 @@ either the same `items` or, in an audit, `modules`:
 | `objectives` | the review objectives to run; optional, every one the reviewer offers that applies when absent |
 | `items` | as above |
 | `modules` | repo-relative source files and directories of a crate wavefront does not describe; route `modules` |
+| `sites` | ffimap sites of a crate wavefront does not describe, each `{"counter", "file", "lines"}`: an ffimap counter, a repo-relative file and the distinct lines it flagged there; route `sites` |
 | `reports` | repo-relative report dirs, `crustify/reviews/<batch id>/<kind>/<slug>`, to revisit |
 
-A batch carries `items` or `modules`, not both, and needs at least one of `items`,
-`modules` and `reports`; one with only `reports` has route `reports`. `reports` is given
+A batch carries at most one of `items`, `modules` and `sites`, and needs one of them or
+`reports`; a counter appears once per file in `sites`; one with only `reports` has route `reports`. `reports` is given
 exactly when `revisit` is among the objectives, and an absent `objectives` includes
 `revisit` exactly when `reports` is given. No other root field is accepted.
 
