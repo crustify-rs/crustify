@@ -33,7 +33,7 @@ class CommandShapeTests(unittest.TestCase):
 
         with (mock.patch.object(sys, "argv", ["crustify", *argv]),
               mock.patch.object(cli, "_handle_orchestrate", record("orchestrate")),
-              mock.patch.object(cli, "_handle_spawn_translator", record("spawn-translator")),
+              mock.patch.object(cli, "_handle_spawn_worklist", record("spawn-worklist")),
               mock.patch.object(cli, "_handle_spawn_reviewer", record("spawn-reviewer")),
               mock.patch.object(cli, "_handle_audit_stage", record("audit-stage")),
               mock.patch.object(cli, "_handle_cost", record("cost"))):
@@ -60,9 +60,16 @@ class CommandShapeTests(unittest.TestCase):
         seen = self._run("spawn-translator", str(self.repo), "batch.json",
                          "--base-branch", "wave", "--output", "out",
                          "--model", "openai/gpt-5.6")
-        self.assertEqual(seen["handler"], "spawn-translator")
+        self.assertEqual(seen["handler"], "spawn-worklist")
+        self.assertEqual(seen["args"].role, "translator")
         self.assertEqual(seen["args"].base_branch, "wave")
         self.assertEqual(config.MODEL_OVERRIDE, "openai/gpt-5.6")
+
+    def test_spawn_binder_runs_one_batch(self) -> None:
+        seen = self._run("spawn-binder", str(self.repo), "batch.json",
+                         "--base-branch", "wave", "--output", "out")
+        self.assertEqual(seen["handler"], "spawn-worklist")
+        self.assertEqual(seen["args"].role, "binder")
 
     def test_spawn_reviewer_runs_one_review_batch(self) -> None:
         seen = self._run("spawn-reviewer", str(self.repo), "batch.json",

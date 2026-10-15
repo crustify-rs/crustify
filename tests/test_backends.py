@@ -172,7 +172,6 @@ class ProviderRoutingTests(unittest.TestCase):
                     "kind": "symbol",
                     "field_anchors": [],
                 }],
-                objective="wrap",
                 git_base="wave-0",
                 artifact_dir=logs,
                 log_stem="batch",

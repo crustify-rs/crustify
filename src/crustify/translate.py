@@ -16,7 +16,10 @@ _LIFETIME_TIERS = frozenset({"void", "string"})
 
 #: Both artifacts a batch writes, named for the role that wrote them. They sit
 #: in the batch's own `--output` directory, so nothing has to be unique.
-_LOG_STEM = "translator"
+#: The role that runs each objective's batches; its name is also the stem of
+#: the log and usage record a batch writes, in the batch's own `--output`
+#: directory, so nothing has to be unique.
+_ROLE = {"wrap": "binder", "port": "translator"}
 
 
 @dataclass(frozen=True)
@@ -165,30 +168,36 @@ def execute(
     workdir: Path,
     batch_path: Path,
     *,
+    role: str,
     base_branch: str,
     output: Path,
     dry_run: bool = False,
 ) -> None:
-    """Run exactly one translator in ``workdir``.
+    """Run exactly one binder or translator, as ``role`` says, in ``workdir``.
 
-    ``workdir`` is the isolated worktree the orchestrator forked for this
-    batch and ``output`` the directory that batch's artifacts land in; the
-    harness creates and purges neither.
+    A binder runs `wrap` batches, raw-lifetime ones included; a translator
+    runs `port` batches. ``workdir`` is the isolated worktree the
+    orchestrator forked for this batch and ``output`` the directory that
+    batch's artifacts land in; the harness creates and purges neither.
     """
     batch = load_batch(batch_path)
+    effective = _task_objective(batch)
+    if _ROLE[effective] != role:
+        _fail(f"a {effective} batch runs under `crustify spawn-{_ROLE[effective]}`"
+              + (" (raw-lifetime discovery always wraps)"
+                 if effective != batch.objective else ""))
     output = output.resolve()
     if not output.is_dir():
         _fail(f"--output must name an existing directory: {output}")
 
     workdir = workdir.resolve()
-    effective = _task_objective(batch)
     if dry_run:
         normalized = (
             f"; task objective normalized to {effective}"
             if effective != batch.objective else ""
         )
         print(
-            f"[translate dry-run] one {batch.route} agent; "
+            f"[{role} dry-run] one {batch.route} agent; "
             f"{len(batch.items)} item(s); campaign objective "
             f"{batch.objective}{normalized}; landing on {base_branch}; "
             "no agent spawned."
@@ -198,19 +207,21 @@ def execute(
     # Fixed names: `output` is this batch's own directory, so there is nothing
     # to disambiguate. The orchestrator decides what a batch is called by
     # deciding where its artifacts go.
-    print(f"[crustify spawn-translator] workdir: {workdir}")
-    print(f"[crustify spawn-translator] landing on: {base_branch}")
-    print(f"[crustify spawn-translator] log: {output / f'{_LOG_STEM}.log'}")
+    print(f"[crustify spawn-{role}] workdir: {workdir}")
+    print(f"[crustify spawn-{role}] landing on: {base_branch}")
+    print(f"[crustify spawn-{role}] log: {output / f'{role}.log'}")
 
-    from crustify.agents.translate import TranslateAgent
+    if role == "binder":
+        from crustify.agents.bind import BindAgent as Agent
+    else:
+        from crustify.agents.translate import TranslateAgent as Agent
 
-    TranslateAgent(
+    Agent(
         workdir,
         route=batch.route,
         items=batch.items,
-        objective=effective,
         git_base=base_branch.removeprefix("refs/heads/"),
         artifact_dir=output,
-        log_stem=_LOG_STEM,
+        log_stem=role,
     ).run()
-    print("[crustify spawn-translator] batch completed.")
+    print(f"[crustify spawn-{role}] batch completed.")

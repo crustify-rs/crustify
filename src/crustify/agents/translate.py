@@ -1,13 +1,8 @@
-"""One translation agent for one orchestrator-projected thin batch."""
+"""One translator: ports one orchestrator-projected thin batch."""
 from __future__ import annotations
 
-import json
-import re
-from pathlib import Path
-
-from crustify.agents.base import (
-    CrustifyAgent, SkillSpec, _PKG_ROOT, expand_includes,
-)
+from crustify.agents.base import SkillSpec
+from crustify.agents.worklist import WorklistAgent
 
 #: Every skill a translator can carry, in prompt order. Which of them it
 #: actually carries is decided by discovery: a skill whose files are on disk
@@ -41,67 +36,10 @@ _SKILLS = (
 )
 
 
-class TranslateAgent(CrustifyAgent):
-    """Translate one orchestrator-projected batch."""
+class TranslateAgent(WorklistAgent):
+    """Port one orchestrator-projected batch to safe Rust."""
 
     name = "TranslateAgent"
-    model = "anthropic/claude-opus-5"
-    #: The body carries this agent's worklist, so each translator of a wave
-    #: gets its own system prefix rather than the shared one. Chosen
-    #: deliberately: compaction reaching the procedure costs more than the
-    #: cache writes it gives up.
-    prompt_in_system_slot = True
+    objective = "port"
+    prompt = "translator.md"
     SKILLS = _SKILLS
-
-    def __init__(
-        self,
-        workdir: Path,
-        *,
-        route: str,
-        items: list[dict],
-        objective: str,
-        git_base: str,
-        artifact_dir: Path,
-        log_stem: str,
-    ) -> None:
-        super().__init__(
-            workdir, git_base=git_base, artifact_dir=artifact_dir,
-            log_stem=log_stem,
-        )
-        self._route = route
-        self._items = [dict(item) for item in items]
-        self._objective = objective
-
-    @property
-    def stage(self) -> str:  # type: ignore[override]
-        """The stage recorded in this agent's usage record:
-        ``<objective>-<route>_<key>``, e.g. ``port-type_git_delta_index`` /
-        ``wrap-symbol_access``. ``crustify cost`` buckets by its prefix.
-
-        The log file itself takes the harness's fixed stem, ``translator``."""
-        key = self._items[0]["name"] if self._items else "batch"
-        unit = self._route
-        return (f"{self._objective}-{unit}_"
-                f"{re.sub(r'[^A-Za-z0-9_]+', '_', key or 'batch')}")
-
-    def _body(self) -> str:
-        return expand_includes(
-            (_PKG_ROOT / "prompts" / "translator.md").read_text())
-
-    def _arguments(self) -> dict:
-        common = {
-            # Base first: `workdir` and `git_base` (the wave's
-            # integration branch). Building this dict from scratch silently dropped
-            # every key the base adds — a template naming one dies with KeyError
-            # before the agent issues a request.
-            **super()._arguments(),
-            "task_objective": self._objective,
-            # No `artifact_dir`: the batch directory holds only the log and
-            # usage record the harness writes.
-            # NOTE: no `conventions` key. The conventions are a skill, and the
-            # skill index goes to the backend's system slot via
-            # `system_preamble()`, out of reach of context compaction.
-        }
-        common["worklist"] = json.dumps(
-            {"route": self._route, "items": self._items})
-        return common

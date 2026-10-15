@@ -150,8 +150,8 @@ class GitHarnessTests(unittest.TestCase):
             def run(self):
                 pass
 
-        with mock.patch("crustify.agents.translate.TranslateAgent", FakeAgent):
-            translate.execute(tree, self.batch, base_branch="wave-0",
+        with mock.patch("crustify.agents.bind.BindAgent", FakeAgent):
+            translate.execute(tree, self.batch, role="binder", base_branch="wave-0",
                               output=self.output)
         self.assertEqual(calls, [tree])
         # Only the worktree the test forked itself is new.
@@ -168,7 +168,7 @@ class GitHarnessTests(unittest.TestCase):
         before_refs = self.git("for-each-ref", "--format=%(refname)", "refs/heads").stdout
         before_trees = self.git("worktree", "list", "--porcelain").stdout
         translate.execute(
-            self.repo, self.batch, base_branch="wave-0",
+            self.repo, self.batch, role="binder", base_branch="wave-0",
             output=self.output, dry_run=True,
         )
         self.assertEqual(
@@ -178,24 +178,36 @@ class GitHarnessTests(unittest.TestCase):
         self.assertEqual(self.git("worktree", "list", "--porcelain").stdout,
                          before_trees)
 
+    def test_each_role_refuses_the_other_objective(self) -> None:
+        with self.assertRaisesRegex(SystemExit, "spawn-binder"):
+            translate.execute(self.repo, self.batch, role="translator",
+                              base_branch="wave-0", output=self.output,
+                              dry_run=True)
+        port = Path(self.tmp.name) / "port.json"
+        doc = json.loads(self.batch.read_text())
+        port.write_text(json.dumps(dict(doc, objective="port")))
+        with self.assertRaisesRegex(SystemExit, "spawn-translator"):
+            translate.execute(self.repo, port, role="binder",
+                              base_branch="wave-0", output=self.output,
+                              dry_run=True)
+
     def test_output_directory_must_already_exist(self) -> None:
         missing = Path(self.tmp.name) / "missing-logs"
         with self.assertRaisesRegex(SystemExit, "existing directory"):
             translate.execute(
-                self.repo, self.batch, base_branch="wave-0",
+                self.repo, self.batch, role="binder", base_branch="wave-0",
                 output=missing, dry_run=True,
             )
         self.assertFalse(missing.exists())
 
-    def test_translate_agent_renders_thin_worklist_and_base_branch(self) -> None:
-        from crustify.agents.translate import TranslateAgent
+    def test_bind_agent_renders_thin_worklist_and_base_branch(self) -> None:
+        from crustify.agents.bind import BindAgent
 
         items = json.loads(self.batch.read_text())["items"]
-        agent = TranslateAgent(
+        agent = BindAgent(
             self.repo,
             route="type",
             items=items,
-            objective="wrap",
             git_base="wave-0",
             artifact_dir=self.output,
             log_stem="batch-id",
@@ -225,20 +237,21 @@ class GitHarnessTests(unittest.TestCase):
                 with open_agent_log(
                         call["artifact_dir"], call["log_stem"],
                         stage="wrap-type_Frame") as log:
-                    log.line("fake translator")
+                    log.line("fake binder")
                     log.usage({"provider": "test", "model": "test", "requests": []})
 
-        with mock.patch("crustify.agents.translate.TranslateAgent", FakeAgent):
+        with mock.patch("crustify.agents.bind.BindAgent", FakeAgent):
             translate.execute(
-                tree, self.batch, base_branch="wave-0", output=self.output)
+                tree, self.batch, role="binder", base_branch="wave-0",
+                output=self.output)
 
         self.assertEqual(len(calls), 1)
         call = calls[0]
         self.assertEqual(call["git_base"], "wave-0")
-        self.assertEqual(call["log_stem"], "translator")
-        self.assertTrue((self.output / "translator.log").is_file())
-        self.assertTrue((self.output / "translator.usage.json").is_file())
-        usage = json.loads((self.output / "translator.usage.json").read_text())
+        self.assertEqual(call["log_stem"], "binder")
+        self.assertTrue((self.output / "binder.log").is_file())
+        self.assertTrue((self.output / "binder.usage.json").is_file())
+        usage = json.loads((self.output / "binder.usage.json").read_text())
         self.assertEqual(usage["stage"], "wrap-type_Frame")
         # The worktree is the agent's, forked from the wave branch, and the
         # authored home the batch names is present in it.
@@ -257,9 +270,9 @@ class GitHarnessTests(unittest.TestCase):
             def run(self):
                 raise RuntimeError("agent failed")
 
-        with (mock.patch("crustify.agents.translate.TranslateAgent", FailingAgent),
+        with (mock.patch("crustify.agents.bind.BindAgent", FailingAgent),
               self.assertRaisesRegex(RuntimeError, "agent failed")):
-            translate.execute(tree, self.batch, base_branch="wave-0",
+            translate.execute(tree, self.batch, role="binder", base_branch="wave-0",
                               output=self.output)
         self.assertTrue(tree.is_dir())
 

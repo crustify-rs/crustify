@@ -1,9 +1,10 @@
 # Thin batch schema
 
-Field meaning for the JSON the orchestrator passes to `crustify spawn-translator
-<workdir> <batch.json> --base-branch <wave branch> --output <batch dir>`, or to `crustify
-spawn-reviewer` with the same arguments for a review batch. One batch is one agent's entire
-worklist.
+Field meaning for the JSON the orchestrator passes to `crustify spawn-binder <workdir>
+<batch.json> --base-branch <wave branch> --output <batch dir>` for a `wrap` batch, to
+`crustify spawn-translator` with the same arguments for a `port` batch, or to `crustify
+spawn-reviewer` for a review batch. One batch is one agent's entire worklist, and each
+command rejects a batch whose objective belongs to another.
 
 The orchestrator plans it as one batch entry of `docs/translate/schemas/schedule.md` and
 writes it out verbatim.
@@ -89,4 +90,4 @@ batch mixing routes is rejected.
 
 A `raw-lifetime` batch holds exactly one item, named `void` or `string`, with `defined_in:
 null`. Its task objective is always `wrap`: raw lifetime discovery wraps a C primitive, so
-`port` normalizes to `wrap`.
+`port` normalizes to `wrap`, and the batch runs under the binder.

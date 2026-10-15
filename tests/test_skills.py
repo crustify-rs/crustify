@@ -12,10 +12,12 @@ from crustify import deps
 from crustify.agents.base import _PKG_ROOT
 from crustify.agents.orchestrate import OrchestrateAgent
 from crustify.agents.review import ReviewAgent
+from crustify.agents.bind import BindAgent
 from crustify.agents.translate import TranslateAgent
 
-_ROLES = (TranslateAgent, ReviewAgent, OrchestrateAgent)
-_ROLE_NAMES = ((TranslateAgent, "translator"), (ReviewAgent, "reviewer"),
+_ROLES = (BindAgent, TranslateAgent, ReviewAgent, OrchestrateAgent)
+_ROLE_NAMES = ((BindAgent, "binder"), (TranslateAgent, "translator"),
+               (ReviewAgent, "reviewer"),
                (OrchestrateAgent, "orchestrator"))
 
 
@@ -133,6 +135,8 @@ class IncludeTests(unittest.TestCase):
     def test_each_prompt_includes_the_documents_it_follows(self) -> None:
         """The reviewer is told to ignore the conventions outside a
         Crustify-generated batch."""
+        self.assertEqual(self._included("binder.md"),
+                         {"conventions", "binding", "testing", "landing"})
         self.assertEqual(self._included("translator.md"),
                          {"conventions", "binding", "porting", "testing",
                           "landing"})
@@ -272,12 +276,20 @@ class PromptArgumentTests(unittest.TestCase):
         self.assertEqual(supplied - declared - self._BASE, set(),
                          "argument no placeholder names")
 
+    def test_binder_arguments_match_its_placeholders(self) -> None:
+        agent = BindAgent(
+            self.repo, route="type",
+            items=[{"name": "T", "defined_in": "a.h", "kind": "type",
+                    "field_anchors": [], "home": "crustify/rust/x/src/a.rs"}],
+            git_base="wave-0", artifact_dir=self.repo, log_stem="x")
+        self._check(agent)
+
     def test_translator_arguments_match_its_placeholders(self) -> None:
         agent = TranslateAgent(
             self.repo, route="type",
             items=[{"name": "T", "defined_in": "a.h", "kind": "type",
                     "field_anchors": [], "home": "crustify/rust/x/src/a.rs"}],
-            objective="wrap", git_base="wave-0",
+            git_base="wave-0",
             artifact_dir=self.repo, log_stem="x")
         self._check(agent)
 

@@ -71,8 +71,8 @@ Every index also addresses the filesystem, so nothing records a path:
 crustify/campaigns/<campaign-id>/<link_unit>/<subsystem>/wave-<index>/
 └── batch-<n>/                  n is the batch's position in `batches`
     ├── batch.json              the thin batch, written out from this entry
-    ├── translator.log
-    └── translator.usage.json
+    ├── <role>.log              binder, translator or reviewer
+    └── <role>.usage.json
 ```
 
 A batch's directory holds everything about that batch: its input, and both artifacts the

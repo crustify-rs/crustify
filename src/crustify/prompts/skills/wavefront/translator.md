@@ -15,14 +15,7 @@ you need to consult these findings again.
 
 ---
 
-## binding › Type route › Surface
+## porting › Surface
 
 Leverage Wavefront's `--schema` CLI flag to get hints on identifying a type's lifecycle
 primitives and submit your findings through the CLI's `--update`.
-
----
-
-## binding › Symbol route › Raw lifetime strategies
-
-Leverage Wavefront's `--schema` CLI flag to get hints on identifying raw lifecycle
-primitives for void and string and submit your findings through the CLI's `--update`.
