@@ -1,8 +1,0 @@
-{
-  "version": 1,
-  "build_commands": {
-    "configure": "CC=clang cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DUSE_COMPRESSION=zlib -DUSE_REGEX=pcre2 -DUSE_HTTP_PARSER=llhttp -DUSE_HTTPS=OpenSSL -DUSE_SHA1=builtin -DUSE_SHA256=OpenSSL -DUSE_SSH=OFF -DUSE_AUTH_NTLM=builtin -DUSE_THREADS=ON -DDEPRECATE_HARD=ON -DBUILD_SHARED_LIBS=ON -DBUILD_TESTS=ON -DBUILD_CLI=ON -DBUILD_EXAMPLES=OFF -DBUILD_FUZZERS=OFF -DCMAKE_C_FLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer -fno-sanitize-recover=undefined -DSHA1DC_FORCE_ALIGNED_ACCESS -g' -DCMAKE_EXE_LINKER_FLAGS='-fsanitize=address,undefined' -DCMAKE_SHARED_LINKER_FLAGS='-fsanitize=address,undefined'",
-    "build": "cmake --build build -j64",
-    "test": "ctest --test-dir build -j64 --output-on-failure"
-  }
-}

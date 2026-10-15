@@ -1,8 +1,0 @@
-{
-  "version": 1,
-  "build_commands": {
-    "configure": "./Configure linux-aarch64 no-deprecated no-multiblock no-shared -d enable-asan enable-ubsan -DPEDANTIC CC=aarch64-linux-gnu-gcc-14",
-    "build": "make -j16",
-    "test": "make test HARNESS_JOBS=16"
-  }
-}

@@ -7,11 +7,10 @@ Two kinds of campaign, one image, one directory each.
 | [`crustify/`](crustify) | translate C to Rust, or wrap it | [`TASK-template.md`](crustify/TASK-template.md) | [`results-template.md`](crustify/results-template.md) |
 | [`crustify_audit/`](crustify_audit) | hunt UB in an existing Rust crate | [`TASK.md.template`](crustify_audit/TASK.md.template) | [`results.md`](crustify_audit/results.md) |
 
-Below each are one subdirectory per campaign, holding the `TASK.md` a run was
-given plus whatever inputs were authored ahead of time. Derived artifacts such
-as `subsystems.json` are emitted against the live wavefront inventory, not
-committed by hand. Copy a task template to start a request; the campaign
-directories hold filled instances.
+Copy a task template to start a request. Derived artifacts such as
+`subsystems.json` are emitted against the live wavefront inventory, not
+committed by hand. [`crustify_audit/zstd-rs`](crustify_audit/zstd-rs) holds a
+filled audit task.
 
 [`Dockerfile`](Dockerfile) builds the environment either campaign runs in. It
 starts nothing: the container idles, and `crustify` is run inside it: the command
@@ -35,7 +34,7 @@ docker run -d --init --name crustify-libgit2 \
     -v "$(dirname "$PWD")/ffibox:/opt/venv/share/ffibox" \
     -v "$(dirname "$PWD")/ffimap:/opt/venv/share/ffimap" \
     -v /absolute/path/to/your/target-fork:/target \
-    -v "$PWD/examples/crustify/libgit2/src-port/TASK.md:/campaign/TASK.md:ro" \
+    -v /absolute/path/to/your/TASK.md:/campaign/TASK.md:ro \
     -v crustify-libgit2-work:/work \
     crustify
 ```
@@ -123,9 +122,7 @@ Set with `--build-arg` on `docker build`.
 ## Results
 
 Campaign reports are written into the target checkout, at the path the task
-names. Historical aggregate measurements for the libgit2 and OpenSSL campaigns
-are preserved in
-[`crustify/libgit2-openssl-results.md`](crustify/libgit2-openssl-results.md).
+names, filled from [`results-template.md`](crustify/results-template.md).
 
 The Dockerfile header documents the rest: what each mount buys and why the base
 image is pinned by digest.

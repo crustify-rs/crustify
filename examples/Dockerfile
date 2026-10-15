@@ -19,7 +19,7 @@
 #       -v "$(dirname "$PWD")/ffibox:/opt/venv/share/ffibox" \
 #       -v "$(dirname "$PWD")/ffimap:/opt/venv/share/ffimap" \
 #       -v /absolute/path/to/your/target-fork:/target \
-#       -v "$PWD/examples/crustify/libgit2/src-port/TASK.md:/campaign/TASK.md:ro" \
+#       -v /absolute/path/to/your/TASK.md:/campaign/TASK.md:ro \
 #       -v crustify-libgit2-work:/work \
 #       crustify
 #   docker exec -it crustify-libgit2 \

@@ -1,8 +1,0 @@
-{
-  "version": 1,
-  "build_commands": {
-    "configure": "CC=clang cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBUILD_SHARED_LIBS=ON -DLIBXML2_WITH_TESTS=ON -DLIBXML2_WITH_PROGRAMS=ON -DLIBXML2_WITH_PYTHON=OFF -DLIBXML2_WITH_LEGACY=OFF -DLIBXML2_WITH_HTTP=OFF -DLIBXML2_WITH_ICU=OFF -DLIBXML2_WITH_ZLIB=ON -DLIBXML2_WITH_ICONV=ON -DLIBXML2_WITH_THREADS=ON -DLIBXML2_WITH_MODULES=ON -DCMAKE_C_FLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer -fno-sanitize-recover=undefined -g' -DCMAKE_EXE_LINKER_FLAGS='-fsanitize=address,undefined' -DCMAKE_SHARED_LINKER_FLAGS='-fsanitize=address,undefined'",
-    "build": "cmake --build build -j64",
-    "test": "ctest --test-dir build -j64 --output-on-failure"
-  }
-}
