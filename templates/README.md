@@ -4,8 +4,8 @@ Two kinds of campaign, one image, one directory of templates each.
 
 | directory | campaign | task template | report template |
 |---|---|---|---|
-| [`crustify/`](crustify) | translate C to Rust, or wrap it | [`TASK.template.md`](crustify/TASK.template.md) | [`results.template.md`](crustify/results.template.md) |
-| [`crustify_audit/`](crustify_audit) | hunt UB in an existing Rust crate with reviewers | [`TASK.template.md`](crustify_audit/TASK.template.md) | [`results.template.md`](crustify_audit/results.template.md) |
+| [`translate/`](translate) | translate C to Rust, or wrap it | [`TASK.template.md`](translate/TASK.template.md) | [`results.template.md`](translate/results.template.md) |
+| [`audit/`](audit) | hunt UB in an existing Rust crate with reviewers | [`TASK.template.md`](audit/TASK.template.md) | [`results.template.md`](audit/results.template.md) |
 
 Copy a task template to start a request.
 
@@ -60,7 +60,7 @@ docker exec -it audit-zstd \
 ```
 
 Add `--task-only` to either for the ablation control: the task file becomes the
-entire prompt. See [`crustify_audit/BARE.md`](crustify_audit/BARE.md).
+entire prompt. See [`audit/BARE.md`](audit/BARE.md).
 
 `--init` runs a small init process as the container's first process, so the
 processes the agents leave behind are reaped instead of piling up as zombies
@@ -125,7 +125,7 @@ Set with `--build-arg` on `docker build`.
 ## Results
 
 Campaign reports are written into the target checkout, at the path the task
-names, filled from [`results.template.md`](crustify/results.template.md).
+names, filled from [`results.template.md`](translate/results.template.md).
 
 The Dockerfile header documents the rest: what each mount buys and why the base
 image is pinned by digest.

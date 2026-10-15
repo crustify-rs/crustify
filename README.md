@@ -80,7 +80,7 @@ Optionally copy and pre-fill the campaign questionnaire before starting the
 orchestrator:
 
 ```bash
-cp crustify/templates/crustify/TASK.template.md campaign-TASK.md
+cp crustify/templates/translate/TASK.template.md campaign-TASK.md
 # Edit campaign-TASK.md and answer as many questions as you want.
 ```
 
@@ -100,7 +100,7 @@ it has. It presents a consolidated campaign brief for approval before mutating
 the target repository.
 
 Campaign reports follow the
-[`templates/crustify/results.template.md`](templates/crustify/results.template.md)
+[`templates/translate/results.template.md`](templates/translate/results.template.md)
 template.
 
 For a reproducible container environment and the campaign templates, see
@@ -178,9 +178,9 @@ Below is an overview of the campaign's stats:
 - [`docs/translate/schemas/`](docs/translate/schemas/): crate-placement and wave schemas
 - [`docs/translate/schemas/subsystems.md`](docs/translate/schemas/subsystems.md): link-unit and
   subsystem decomposition artifact
-- [`templates/crustify/TASK.template.md`](templates/crustify/TASK.template.md): optional pre-filled
+- [`templates/translate/TASK.template.md`](templates/translate/TASK.template.md): optional pre-filled
   campaign questionnaire
-- [`templates/crustify/results.template.md`](templates/crustify/results.template.md): campaign
+- [`templates/translate/results.template.md`](templates/translate/results.template.md): campaign
   results template
 
 ## Acknowledgements

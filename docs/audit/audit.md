@@ -15,10 +15,10 @@ a report and a reproducer for every finding it confirms.
 crustify audit /path/to/repo /path/to/TASK.md --model anthropic/claude-opus-5
 ```
 
-Fill in [`TASK.template.md`](../../templates/crustify_audit/TASK.template.md) first; a
+Fill in [`TASK.template.md`](../../templates/audit/TASK.template.md) first; a
 headless run needs every mandatory answer. `--campaign <id>` resumes an earlier audit, and
 `--task-only` runs the ablation control described in
-[`BARE.md`](../../templates/crustify_audit/BARE.md).
+[`BARE.md`](../../templates/audit/BARE.md).
 
 ## Objectives
 
@@ -65,7 +65,7 @@ Each reviewer files its findings under its reviews dir, `crustify/reviews/<batch
 lands them on its review wave's branch. With `disclose`, every finding carries a
 `disclosure.md` ready to send to the project's maintainers. The orchestrator writes the
 audit's report from
-[`results.template.md`](../../templates/crustify_audit/results.template.md).
+[`results.template.md`](../../templates/audit/results.template.md).
 
 ## Reference
 

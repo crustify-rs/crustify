@@ -66,7 +66,7 @@
 #                      artifacts -- those land in the target checkout.
 #
 # The results template rides the /opt/crustify mount: the orchestrator reads
-# templates/crustify/results.template.md from the checkout and writes the filled
+# templates/translate/results.template.md from the checkout and writes the filled
 # table where the campaign task says. Nothing is seeded into /target.
 #
 # One container name per campaign: `docker exec -it <name> bash` opens a shell
