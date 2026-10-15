@@ -15,14 +15,14 @@ _ITEM = {"name": "T", "defined_in": "include/t.h", "kind": "type",
 
 
 class _Checkouts:
-    """Stand-in wavefront and ffibox checkouts; crustify resolves to itself.
+    """Stand-in wavefront, ffibox and ffimap checkouts; crustify resolves to itself.
     ``absent`` names dependencies that are not installed."""
 
     def __init__(self, test: unittest.TestCase, absent: tuple[str, ...] = ()):
         tmp = tempfile.TemporaryDirectory()
         test.addCleanup(tmp.cleanup)
         self.root = Path(tmp.name)
-        for dep in ("wavefront", "ffibox"):
+        for dep in ("wavefront", "ffibox", "ffimap"):
             (self.root / dep).mkdir()
             (self.root / dep / "SKILL.md").write_text(
                 f"- Skill name: {dep}\n- Description: stand-in\n")

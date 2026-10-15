@@ -62,5 +62,5 @@ Unanswered optional questions use their defaults.
 
 # Additional instructions
 
-The deterministic `crustify ffimap <workdir>` checks remain enabled independently
+The deterministic `ffimap <workdir>` checks remain enabled independently
 of agentic review.

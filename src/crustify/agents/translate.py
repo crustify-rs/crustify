@@ -15,14 +15,10 @@ from crustify.agents.worklist import WorklistAgent
 #:
 #: Skills are for the external tools a translator reaches for on demand.
 #: crustify's own documents -- the coding conventions and the how-tos -- are
-#: not skills: the prompt includes them whole. ffimap ships with crustify
-#: for now; `crustify ffimap` stays on the agent's PATH whether or not its
-#: skill is carried, so ablating that skill removes the instructions, not
-#: the tool.
+#: not skills: the prompt includes them whole.
 _SKILLS = (
     SkillSpec(
-        "crustify", "src/crustify/prompts/skills/ffimap/SKILL.md",
-        capability="ffimap",
+        "ffimap", "SKILL.md", capability="ffimap",
         role_header="skills/ffimap/translator.md",
     ),
     SkillSpec(

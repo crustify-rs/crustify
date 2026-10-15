@@ -4,7 +4,7 @@ At batch, wave, subsystem, and campaign end, record an unseeded ffimap scan of t
 unsafe and FFI surface in the respective artifact directory:
 
 ```bash
-crustify ffimap <workdir> --json > <artifact dir>/ffimap.json
+ffimap <workdir> --json > <artifact dir>/ffimap.json
 ```
 
 It counts what the safe crate itself defines. The public unsafe surface is

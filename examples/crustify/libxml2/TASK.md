@@ -104,4 +104,4 @@ spending.
 Record coverage using safe functions in call position with documentation
 comments stripped, so it remains comparable to the 113/1,649 baseline. After
 each subsystem, record token-derived cost, the subsystem branch's diff, and the
-deterministic `crustify ffimap <workdir>` scan over the selected names.
+deterministic `ffimap <workdir>` scan over the selected names.

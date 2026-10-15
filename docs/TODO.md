@@ -36,11 +36,9 @@ Open questions:
 ## Ship `docs/` so a non-editable install keeps its conventions
 
 The conventions and the how-tos (`docs/translate/conventions.md`,
-`docs/translate/howto/*.md`) resolve under `deps.CHECKOUT`, which is the source checkout,
-and so does the `ffimap` skill's `SKILL.md`. A wheel install has no `docs/` there, and
-discovery drops a skill whose file is absent — so every agent runs without its conventions
-and how-tos, silently. Only the
-editable install the Dockerfile performs hides this.
+`docs/translate/howto/*.md`) resolve under `deps.CHECKOUT`, which is the source checkout.
+A wheel install has no `docs/` there, so every agent runs without its conventions and
+how-tos. Only the editable install the Dockerfile performs hides this.
 
 Ship `docs/` as data-files to `share/crustify/`, the way Wavefront ships its schemas to
 `share/wavefront/schemas`, and resolve crustify's own skills there before the checkout.

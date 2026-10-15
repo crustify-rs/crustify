@@ -303,7 +303,7 @@ Implementation `<provider>/<model>` via `<backend>`; review
 
 ## Safety audit
 
-Deterministic `crustify ffimap <workdir>` (`ffimap.json`); no model.
+Deterministic `ffimap <workdir>` (`ffimap.json`); no model.
 
 ### Final tally overview
 

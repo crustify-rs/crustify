@@ -89,10 +89,7 @@ class DeclaredPathTests(unittest.TestCase):
             for spec in cls.SKILLS
         }
         root = _PKG_ROOT / "prompts" / "skills"
-        # A skill crustify ships keeps its generic file beside its role
-        # headers; that file belongs to no single role.
-        on_disk = {(f.parent.name, f.stem) for f in root.glob("*/*.md")
-                   if f.name != "SKILL.md"}
+        on_disk = {(f.parent.name, f.stem) for f in root.glob("*/*.md")}
         self.assertEqual(on_disk, declared)
 
     def test_every_capability_is_ablatable_by_deleting_one_file(self) -> None:

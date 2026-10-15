@@ -81,5 +81,5 @@ approval before spending on or promoting the next subsystem.
 After each subsystem, price the batches' `binder.usage.json` and
 `reviewer.usage.json` records with
 `crustify cost`, measure the subsystem branch's diff, and run
-`crustify ffimap <workdir> --json` over the subsystem tip. Derive cost
+`ffimap <workdir> --json` over the subsystem tip. Derive cost
 from token counts, never from provider-reported dollars.

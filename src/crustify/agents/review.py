@@ -14,8 +14,7 @@ from crustify.agents.base import (
 #: header may describe objectives of its own (see `SKILL_OBJECTIVES`).
 _SKILLS = (
     SkillSpec(
-        "crustify", "src/crustify/prompts/skills/ffimap/SKILL.md",
-        capability="ffimap",
+        "ffimap", "SKILL.md", capability="ffimap",
         role_header="skills/ffimap/reviewer.md",
     ),
     SkillSpec(

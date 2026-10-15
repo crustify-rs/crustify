@@ -29,13 +29,10 @@ _TASK_ANCHOR = "<!-- TASK -->"
 #: route the orchestrator to its playbook, and the playbook is now this
 #: agent's prompt.
 #:
-#: ffimap ships with crustify for now; ablating its skill removes its
-#: instructions, while `crustify ffimap` stays on the agent's PATH. The
-#: coding conventions are not a skill: the prompt includes them whole.
+#: The coding conventions are not a skill: the prompt includes them whole.
 _SKILLS = (
     SkillSpec(
-        "crustify", "src/crustify/prompts/skills/ffimap/SKILL.md",
-        capability="ffimap",
+        "ffimap", "SKILL.md", capability="ffimap",
         role_header="skills/ffimap/orchestrator.md",
     ),
     #: One wavefront skill, two role overlays. The oracle a translator queries

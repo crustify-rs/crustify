@@ -17,6 +17,7 @@
 #       -e OPENROUTER_API_KEY \
 #       -v "$(dirname "$PWD")/wavefront:/opt/venv/share/wavefront" \
 #       -v "$(dirname "$PWD")/ffibox:/opt/venv/share/ffibox" \
+#       -v "$(dirname "$PWD")/ffimap:/opt/venv/share/ffimap" \
 #       -v /absolute/path/to/your/target-fork:/target \
 #       -v "$PWD/examples/crustify/libgit2/src-port/TASK.md:/campaign/TASK.md:ro" \
 #       -v crustify-libgit2-work:/work \
@@ -48,7 +49,7 @@
 #   /opt/crustify      The harness, baked into the image. Mount a checkout here
 #                      to test live harness changes. Both packages live in one
 #                      distribution, so this single tree serves both roles.
-#   /opt/venv/share/{wavefront,ffibox}
+#   /opt/venv/share/{wavefront,ffibox,ffimap}
 #                      Optional read-write host checkouts. This is where
 #                      crustify LOOKS for them -- `<prefix>/share/<name>` for
 #                      the environment it is installed in -- so nothing
@@ -220,17 +221,21 @@ RUN if [ "${INSTALL_CLAUDE}" = "1" ]; then \
     && { [ "${INSTALL_CLAUDE}" = "1" ] && claude --version || true; } \
     && { [ "${INSTALL_CODEX}" = "1" ] && codex --version || true; }
 
-# The two capability checkouts a translate campaign uses, cloned where crustify
-# looks for them: `<prefix>/share/<name>`. wavefront is a Python distribution
-# and is installed editable, so a checkout mounted over the clone is what runs;
-# ffibox is a path dependency the emitted crates point at, so a checkout is all
-# it needs. Docker caches this layer by instruction text, so bump DEPS_REFRESH
+# The three capability checkouts a translate campaign uses, cloned where
+# crustify looks for them: `<prefix>/share/<name>`. wavefront and ffimap are
+# Python distributions and are installed editable, so a checkout mounted over
+# the clone is what runs; ffibox is a path dependency the emitted crates point
+# at, so a checkout is all it needs. ffimap's rustc driver is pinned to a dated
+# nightly of its own, installed here; the driver itself is built on first scan. Docker caches this layer by instruction text, so bump DEPS_REFRESH
 # to re-clone `main`: `--build-arg DEPS_REFRESH=$(date +%s)`.
 ARG DEPS_REFRESH=0
 RUN echo "DEPS_REFRESH=${DEPS_REFRESH}" \
     && git clone --depth 1 https://github.com/crustify-rs/wavefront.git /opt/venv/share/wavefront \
     && git clone --depth 1 https://github.com/crustify-rs/ffibox.git /opt/venv/share/ffibox \
-    && uv pip install --python /opt/venv/bin/python -e /opt/venv/share/wavefront
+    && git clone --depth 1 https://github.com/crustify-rs/ffimap.git /opt/venv/share/ffimap \
+    && uv pip install --python /opt/venv/bin/python \
+         -e /opt/venv/share/wavefront -e /opt/venv/share/ffimap \
+    && (cd /opt/venv/share/ffimap/src/ffimap/driver && rustup toolchain install)
 
 # Bake in a runnable harness -- the WHOLE repository, not just `src`. One
 # distribution ships both packages, and the orchestrators are told to read

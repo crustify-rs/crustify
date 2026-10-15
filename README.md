@@ -12,6 +12,8 @@ agents with the tools and skills the job actually requires:
   dependency oracle that resolves the semantic order of a closure
 - [ffibox](https://github.com/crustify-rs/ffibox): a crate of smart pointers
   and lifetime traits for safe interop across the FFI boundary
+- [ffimap](https://github.com/crustify-rs/ffimap): a deterministic map of a
+  Rust crate's FFI and unsafe surface
 - [crustify-audit](docs/audit/audit.md): an agentic undefined-behavior
   auditor.
 
@@ -39,7 +41,7 @@ The harness supports two complementary reliability mechanisms:
   code, challenge unsafe assumptions and behavioral equivalence, and repair
   confirmed defects.
 
-The oracle, ffibox, and the auditor serve both the orchestrator and translators
+The oracle, ffibox, ffimap, and the auditor serve both the orchestrator and translators
 as skills.
 
 ## Components
@@ -50,6 +52,7 @@ as skills.
 | [`wavefront`](https://github.com/crustify-rs/wavefront) | CodeQL-backed dependency analysis, scope selection, and deterministic scheduling |
 | [`crustify-audit`](docs/audit/audit.md) | Agentic UB review, shipped in this repository |
 | [`ffibox`](https://github.com/crustify-rs/ffibox) | Safe FFI smart pointers and lifetime traits used by generated wrappers |
+| [`ffimap`](https://github.com/crustify-rs/ffimap) | Deterministic unsafe and FFI surface counts, recorded per batch, wave, subsystem and campaign |
 
 Claude Code and OpenAI Codex are supported as agent backends with access to latest
 closed- and open-weight models. Campaigns can use

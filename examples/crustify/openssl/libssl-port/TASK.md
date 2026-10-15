@@ -110,4 +110,4 @@ The god-object selection is `record_layer_st`, `quic_stream_st`, and
 
 The orchestrator derives internal waves and schedule files from these selections.
 Record token-derived cost, the subsystem branch's diff, and the deterministic
-`crustify ffimap <workdir>` scan after the subsystem completes.
+`ffimap <workdir>` scan after the subsystem completes.
