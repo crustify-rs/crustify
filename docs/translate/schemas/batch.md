@@ -52,9 +52,9 @@ A review batch carries the same `items` and, instead of `objective`, an optional
 | `items` | as above |
 
 `items` is required and no root field other than these two is accepted. The reviewer's
-prompt offers `unsafety`, `ub`, `equiv`, `internal`, `misc`, `coverage` and `fix`; its
-skills add their own, such as `conventions` (the conventions skill) and `lifecycle`
-(wavefront). A batch naming an objective the installed skills do not offer is rejected.
+prompt offers `unsafety`, `contracts`, `ub`, `equiv`, `internal`, `misc`, `coverage` and
+`fix`; its skills add their own, such as `conventions` (the conventions skill) and
+`lifecycle` (wavefront). A batch naming an objective the installed skills do not offer is rejected.
 Without `fix`, the reviewer reports and reproduces what it finds but patches nothing.
 
 ## items[*]

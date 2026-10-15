@@ -93,8 +93,8 @@ class ReviewAgentTests(unittest.TestCase):
         _Checkouts(self)
         self.assertEqual(
             self.agent(None).available_objectives(),
-            ["lifecycle", "unsafety", "ub", "equiv", "internal", "conventions",
-             "misc", "coverage", "fix"])
+            ["lifecycle", "unsafety", "contracts", "ub", "equiv", "internal",
+             "conventions", "misc", "coverage", "fix"])
 
     def test_an_absent_skill_takes_its_objective_with_it(self) -> None:
         """A reviewer pointed at a crate wavefront does not describe is never

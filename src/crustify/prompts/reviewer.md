@@ -74,14 +74,24 @@ equivalence reproducer through a failed comparison.
 ### Unsafety
 
 Review the public API of your workset for unsafe annotations and raw pointers that could be
-replaced with safe, idiomatic variants, so that API consumers write less unsafe code. For
-the entry points that must legitimately stay unsafe, verify that the obligation their
-`# Safety` section states is correct and unambiguous.
+replaced with safe, idiomatic variants, so that API consumers write less unsafe code.
 
 File a report for each defect in `crustify/reviews/<artifact-dir>/unsafe/<defect-slug>`.
 
-If `fix` is enabled, make each reported entry point safe, or correct its `# Safety`
-obligation. If `fix` is not enabled, do not.
+If `fix` is enabled, make each reported entry point safe. If `fix` is not enabled, do not.
+<!-- /OBJECTIVE -->
+
+<!-- OBJECTIVE contracts -->
+### Contracts
+
+For the public entry points of your workset that must legitimately stay unsafe, verify that
+the obligation their `# Safety` section states is correct, complete and unambiguous: that a
+caller who honours it cannot reach undefined behaviour, and that it asks for nothing the
+implementation does not need.
+
+File a report for each defect in `crustify/reviews/<artifact-dir>/contracts/<defect-slug>`.
+
+If `fix` is enabled, correct each reported obligation. If `fix` is not enabled, do not.
 <!-- /OBJECTIVE -->
 
 <!-- OBJECTIVE ub -->

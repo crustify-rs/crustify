@@ -44,8 +44,8 @@ _SKILLS = (
 #: not named here sorts after these, so a skill can add one without touching
 #: this module.
 OBJECTIVE_ORDER = (
-    "lifecycle", "unsafety", "ub", "equiv", "internal", "conventions", "misc",
-    "coverage", "fix",
+    "lifecycle", "unsafety", "contracts", "ub", "equiv", "internal",
+    "conventions", "misc", "coverage", "fix",
 )
 
 
