@@ -108,34 +108,26 @@ cargo test --workspace
 ```
 
 Every FFI, UB, and equivalence test runs against the matching reusable sanitized C library
-or a private sanitized replacement, and under every available sanitizer. BSan, when
-available, is the exception, and runs with discipline:
+or a private sanitized replacement, and under every available sanitizer.
 
-- A translation batch runs BSan only on the tests it wrote and expects to trigger it, by
-  exact name; never a whole binary or suite. It runs its own tests under Miri.
-- A review batch in its sub-campaign's last wave owns the sub-campaign's BSan gate. Its
-  wave is the last when its index is the highest of its subsystem's waves in
-  `crustify/campaigns/<campaign-id>/schedule.json`; its branch's name gives the link unit,
-  subsystem and wave. The gate covers everything the sub-campaign landed, so a report on an
-  earlier wave's items is that batch's to triage as well. It runs over the whole
-  workspace, one invocation per test binary in parallel, each under a `timeout`, on the
-  wave tip before any change. Each run starts in the background and is waited on to exit;
-  its output is neither polled nor read while it runs. Only true positives are pursued.
-- A review batch in any other wave runs BSan only on the individual reproducers it emits,
-  each alone; never on a test binary, a suite or the workspace.
-- Only a true positive, a report that reproduces through the Rust side as a single test or
-  standalone reproducer, becomes a UB finding.
+BSan, when available, is run for every batch and at sub-campaign end:
 
-Every review batch also owns the workspace-wide Miri gate, in every wave: one
+- For a batch, it runs only on the individual tests or reproducers the batch expects to
+  trigger it, each by exact name and alone; never on a whole test binary, a suite or the
+  workspace.
+- At sub-campaign end, it runs as a gate over everything the sub-campaign landed: the
+  whole workspace, one invocation per test binary in parallel, each under a `timeout`.
+
+Miri is run after every wave, as a gate over the whole workspace: one
 `cargo +nightly miri test` per test binary (`--lib`, and `--test <name>` for each
-integration binary), in parallel, each with `-- --skip compile_fail`, on the wave tip
-before any change. Each run starts in the background and is waited on to exit. The gate
-passes only with no Miri error: a test that stops at the foreign boundary without the
-attribute gets it, and any other Miri error is a UB candidate of the item it touches.
+integration binary), in parallel, each with `-- --skip compile_fail`. The gate passes only
+with no Miri error: a test that stops at the foreign boundary without the attribute gets
+it, and any other Miri error is a UB candidate of the item it touches.
 
-A review batch that patches what it finds runs both gates again on the tree it lands,
-after its last rebase. One that patches nothing files each true positive either gate finds
-as a UB report.
+Each gate run starts in the background and is waited on to exit; its output is neither
+polled nor read while it runs. BSan reports false positives at the foreign boundary, so
+only a true positive, a report that reproduces through the Rust side as a single test or
+standalone reproducer, becomes a UB finding.
 
 When C changed, the configured C build and baseline run with the Rust feature off, and for
 `port` again with it on. A wrap-only batch with no C change does not need the full C

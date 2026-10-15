@@ -92,8 +92,9 @@ item of your worklist, and close the coverage gaps of your worklist's C and Rust
 
 ### 1. Regressions
 
-Validate the tree you land as the testing instructions' Regressions section describes for a
-translation batch.
+Validate the tree you land as the testing instructions' Regressions section describes. Run
+BSan only on the tests you wrote and expect to trigger it, and run your own tests under
+Miri; the wave's and the sub-campaign's gates belong to the review that follows.
 
 ### 2. Commit
 

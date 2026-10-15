@@ -150,13 +150,17 @@ class ReviewAgentTests(unittest.TestCase):
                 self.assertIn("If `fix` is enabled, patch every finding", pre)
                 self.assertIn("If `fix` is not enabled, skip this step", pre)
 
-    def test_gates_and_regressions_live_in_the_testing_how_to(self) -> None:
-        _Checkouts(self)
-        from crustify.agents.base import _PKG_ROOT
-        prompt = (_PKG_ROOT / "prompts" / "reviewer.md").read_text()
-        self.assertNotIn("Miri gate", prompt)
-        self.assertIn("run any regression tests that might be available", prompt)
-        self.assertIn("Miri gate", self.agent(None).system_preamble())
+    def test_testing_says_when_gates_run_the_prompts_who_runs_them(self) -> None:
+        from crustify.agents.base import _PKG_ROOT, deps
+        testing = (deps.CHECKOUT / "docs/translate/howto/testing.md").read_text()
+        self.assertIn("BSan, when available, is run for every batch and at sub-campaign end",
+                      testing)
+        self.assertIn("Miri is run after every wave", testing)
+        self.assertNotIn("review batch", testing)
+        reviewer = (_PKG_ROOT / "prompts" / "reviewer.md").read_text()
+        self.assertIn("so you own its gates", reviewer)
+        translator = (_PKG_ROOT / "prompts" / "translator.md").read_text()
+        self.assertIn("belong to the review that follows", translator)
 
     def test_the_reviewer_is_handed_the_conventions_and_how_tos(self) -> None:
         """The standard a reviewer judges by is the text the translator

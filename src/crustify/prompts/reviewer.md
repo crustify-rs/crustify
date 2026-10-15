@@ -161,7 +161,21 @@ measurement itself.
 
 ### 1. Regressions
 
-If you patched something, run any regression tests that might be available for it.
+Validate the tree you land as the testing instructions' Regressions section describes. If
+you patched something, run any regression tests that might be available for it.
+
+In a Crustify campaign, your review wave follows a translated wave, so you own its gates:
+
+- Miri, in every wave: run its gate on the wave tip before any change.
+- BSan at sub-campaign end, when your wave is the sub-campaign's last: its index is the
+  highest of your subsystem's waves in `crustify/campaigns/<campaign-id>/schedule.json`,
+  and your branch's name gives the link unit, subsystem and wave. Run its gate on the wave
+  tip before any change. It covers everything the sub-campaign landed, so a report on an
+  earlier wave's items is yours to triage as well. In every other wave, run BSan only on
+  the individual reproducers you emit.
+
+If `fix` is enabled, rerun the gates you own on the tree you land, after your last rebase.
+If `fix` is not enabled, file each true positive a gate finds as a UB report.
 
 ### 2. Commit
 
