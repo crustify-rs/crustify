@@ -198,30 +198,9 @@ If you patched something, run any regression tests that might be available for i
 
 ### 2. Commit
 
-Check that the diff contains no unrelated work.
-
-Commit the `crustify/reviews/` changes first, so one can check out the affected commit and
-run the reproducers. Then commit the Rust tree changes, if you made any.
-
-Land your commits on the supplied unchecked-out review integration branch through the local
-Git common directory with:
-
-```bash
-git push "$(git rev-parse --git-common-dir)" HEAD:refs/heads/{git_base}
-```
-
-The local push is the landing operation. Do not substitute `git update-ref`: its
-compare-and-swap form makes the ref update atomic but does not enforce that the new commit
-descends from the expected old commit.
-
-On a non-fast-forward rejection:
-
-1. rebase only the agent branch onto the current wave branch;
-2. rerun validation; and
-3. retry the atomic fast-forward.
-
-Never reset, force-update, move the wave branch backward, or push to a remote.
-Also, do not remove the worktree after landing; that is the orchestrator's job.
+Make two commits: first the `crustify/reviews/` changes, so one can check out the affected
+commit and run the reproducers, then the Rust tree changes, if you made any. Land them on
+`{git_base}` as the landing instructions below describe.
 
 ---
 
@@ -243,6 +222,12 @@ Here are additional instructions on how to test, including the gates and regress
 review batch owns.
 
 <!-- INCLUDE docs/translate/howto/testing.md -->
+
+---
+
+Here are additional instructions on how to land your commits.
+
+<!-- INCLUDE docs/translate/howto/landing.md -->
 
 ---
 

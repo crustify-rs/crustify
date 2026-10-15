@@ -121,6 +121,7 @@ class IncludeTests(unittest.TestCase):
         "bindings": "docs/translate/howto/bindings.md",
         "porting": "docs/translate/howto/porting.md",
         "testing": "docs/translate/howto/testing.md",
+        "landing": "docs/translate/howto/landing.md",
     }
     _REF = re.compile(r"^## ([a-z]+) › (.+?)(?:, for `[a-z]+`)?$", re.M)
 
@@ -133,9 +134,10 @@ class IncludeTests(unittest.TestCase):
         """The reviewer reads the conventions on demand, from its inputs, so
         it can review a codebase with other conventions or none."""
         self.assertEqual(self._included("translator.md"),
-                         {"conventions", "bindings", "porting", "testing"})
+                         {"conventions", "bindings", "porting", "testing",
+                          "landing"})
         self.assertEqual(self._included("reviewer.md"),
-                         {"bindings", "porting", "testing"})
+                         {"bindings", "porting", "testing", "landing"})
         self.assertEqual(self._included("orchestrator.md"), {"conventions"})
 
     def test_included_documents_are_plain_markdown(self) -> None:
