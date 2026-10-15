@@ -88,6 +88,8 @@ Create immutable builds of the target so that binder and translator agents can r
 - one build per sanitizer the campaign enables (`id: sanitizers`; by default, every one
   below the toolchain supports):
   - **ASan + UBSan** — the general build. FFI and lifecycle tests use it;
+  - **MSan** — a separate build that instruments every component, the standard library
+    included, for uninitialized-memory tests;
   - **TSan** — a separate build, for race tests. Do not combine it with ASan:
     the two instrument the same memory operations and their runtimes conflict;
   - **BSan** — when `cargo bsan --version` succeeds (BorrowSanitizer's bsan rustup
@@ -97,7 +99,7 @@ A Rust- or bindgen-only change may reuse a matching build. A change to the compi
 requires a private build; refresh shared builds after that change lands.
 
 Create `crustify/build.json` from `templates/build.json`. Record each prebuild above as one
-of its `variants`, naming the sanitizer builds `asan-ubsan`, `tsan` and `bsan`: binders,
+of its `variants`, naming the sanitizer builds `asan-ubsan`, `msan`, `tsan` and `bsan`: binders,
 translators and reviewers take the sanitizers available to them from these variants, so a
 sanitizer the campaign does not build is one they neither test for nor run. Each variant is an
 out-of-tree `dir` plus the `configure` and `build` commands run from it. Increment `version` whenever any command changes. Disable deprecated features unless otherwise instructed by the user. Use
