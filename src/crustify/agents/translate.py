@@ -16,8 +16,8 @@ from crustify.agents.base import CrustifyAgent, SkillSpec, _PKG_ROOT
 #: route the translator to its playbook, and the playbook is now this agent's
 #: prompt.
 #:
-#: Four of them ship with crustify itself. The coding conventions and the
-#: bindings and testing how-tos are documents under `docs/translate/`, each
+#: Five of them ship with crustify itself. The coding conventions and the
+#: bindings, porting and testing how-tos are documents under `docs/translate/`, each
 #: its own skill file, and inline: their bodies ride the system slot, since
 #: the translator follows them throughout. ffimap is listed in the index;
 #: `crustify ffimap` stays on the agent's PATH whether or not its skill is
@@ -32,6 +32,11 @@ _SKILLS = (
         "crustify", "docs/translate/howto/bindings.md",
         capability="bindings",
         role_header="skills/bindings/translator.md", inline=True,
+    ),
+    SkillSpec(
+        "crustify", "docs/translate/howto/porting.md",
+        capability="porting",
+        role_header="skills/porting/translator.md", inline=True,
     ),
     SkillSpec(
         "crustify", "docs/translate/howto/testing.md",

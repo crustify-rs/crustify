@@ -76,7 +76,8 @@ library.
 
 Emit your worklist's Rust for your route and objective: Macros and Safe boundary for every
 route, then the Type route or the Symbol route. A `raw-lifetime` worklist follows the
-Symbol route's Raw lifetime strategies.
+Symbol route's Raw lifetime strategies. For `port`, the porting how-to that follows this
+prompt applies on top.
 
 ---
 

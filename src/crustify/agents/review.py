@@ -26,6 +26,11 @@ _SKILLS = (
         role_header="skills/bindings/reviewer.md", inline=True,
     ),
     SkillSpec(
+        "crustify", "docs/translate/howto/porting.md",
+        capability="porting",
+        role_header="skills/porting/reviewer.md", inline=True,
+    ),
+    SkillSpec(
         "crustify", "docs/translate/howto/testing.md",
         capability="testing",
         role_header="skills/testing/reviewer.md", inline=True,

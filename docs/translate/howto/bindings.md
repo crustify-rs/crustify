@@ -1,26 +1,27 @@
 ---
 name: bindings
 description: >-
-  How Crustify generates safe Rust over C: analysing each item's ownership,
-  access and lifetimes, macros, the safe boundary, and the type and symbol
-  routes (layouts, lifecycles, field accessors, functions, globals,
-  callbacks, raw lifetime strategies, and porting) for the wrap and port
-  objectives.
+  How Crustify generates safe Rust bindings over C: how each item's ownership,
+  access and lifetimes are analysed, how macros are bound, where the safe
+  boundary sits, and how the type and symbol routes are expressed (layouts,
+  lifecycles, field accessors, functions, globals, callbacks and raw lifetime
+  strategies).
 ---
 
 # Generating safe bindings
 
-How to turn a scheduled C item into safe Rust. The conventions say what the result looks
-like; this says how to arrive at it. `wrap` keeps the C implementation behind a safe Rust
-API; `port` reimplements it in safe Rust.
+How a scheduled C item becomes a safe Rust binding. The conventions say what the result
+looks like; this says how it is arrived at. A binding keeps the C implementation and puts a
+safe Rust API in front of it.
 
 ## Item analysis
 
-For each item, read its source code declarations and definitions, dependency closure,
-callers, field touchers, and existing Rust consumers. For every pointer field, argument,
-and return, inspect all code paths that store, transfer, clone, retain, or free it.
+Each item is analysed from its source declarations and definitions, its dependency closure,
+its callers, its field touchers and its existing Rust consumers. For every pointer field,
+argument and return, every code path that stores, transfers, clones, retains or frees it is
+inspected.
 
-Establish:
+The analysis establishes:
 
 - ownership and transfer direction;
 - shared or mutable access;
@@ -30,34 +31,33 @@ Establish:
 - borrow and keepalive relationships; and
 - construction, clone, and destruction paths.
 
-Observed behaviour overrides names and comments. Preserve known distinctions in Rust
-instead of copying an ambiguous C signature. Leverage these findings later when emitting
-safe bindings.
+Observed behaviour overrides names and comments. A distinction the analysis establishes is
+preserved in Rust rather than flattened into a copy of an ambiguous C signature, and the
+findings shape every binding that follows.
 
 ## Macros
 
-Do not publish a C macro as an independent Rust API.
+A C macro is never published as an independent Rust API.
 
-- Symbol alias: bind and call the underlying symbol's safe wrapper.
-- Function-like macro: use an existing shim or add the smallest required shim, then bind
-  and wrap it.
-- Constant macro: use the generated binding.
-- Type-generating macro: follow the type route.
+- A symbol alias is bound by calling the underlying symbol's safe wrapper.
+- A function-like macro is bound through an existing shim, or the smallest shim it needs,
+  which is then bound and wrapped.
+- A constant macro is used through its generated binding.
+- A type-generating macro follows the type route.
 
 ## Safe boundary
 
-Preserve any ABI or layout still observed by C. Imported entities remain C-owned. Ported
-storage becomes Rust-owned only after no C path accesses, allocates, or frees it.
+Any ABI or layout C still observes is preserved, and imported entities remain C-owned.
 
-Rust consumers use safe APIs. Restrict raw operations to:
+Rust consumers use safe APIs. Raw operations are confined to:
 
 - wrapped-layout projection;
-- wrapped FFI calls;
+- wrapped FFI calls; and
 - operations whose caller obligation cannot be represented in Rust types.
 
-Keep SCC cuts and unavailable higher-layer dependencies as narrow documented raw seams.
-Replace them when a safe dependency becomes available. Every unsafe block requires the
-safety comment the conventions specifies.
+SCC cuts and unavailable higher-layer dependencies remain narrow documented raw seams until
+a safe dependency becomes available, which then replaces them. Every unsafe block carries
+the safety comment the conventions specify.
 
 ---
 
@@ -65,84 +65,74 @@ safety comment the conventions specifies.
 
 ### Surface
 
-For `wrap`, only include fields and lifecycle primitives published by the public API. For
-`port`, include fields touched by targeted symbols and every lifecycle primitive. Identify
-releasers, field disposers, cloners, constructors, casts, and pointer-field semantics
-before selecting a representation.
+A binding's surface is the fields and lifecycle primitives the public API publishes.
+Releasers, field disposers, cloners, constructors, casts and pointer-field semantics are
+identified before a representation is chosen.
 
 ### Safe layout
 
-For `objective: wrap`, emit a safe layout over the raw type and its handles according to
-the conventions.
+A type is bound as a safe layout over the raw type and its handles, as the conventions
+describe.
 
-For a synthetic type generator:
+A synthetic type generator is bound as:
 
-- use a generic wrapper for a homogeneous family converging on the generator;
-- alias a dominant concrete instance to the generator with its element wrapper; and
-- specialize only behaviour that differs from the generic surface.
+- a generic wrapper for a homogeneous family converging on the generator;
+- an alias of a dominant concrete instance to the generator with its element wrapper; and
+- specializations only for behaviour that differs from the generic surface.
 
 ### Lifecycle
 
-Implement every ownership variant supported by the analysis findings. Prefer stateless,
-layout-compatible, statically selected lifecycle and clone strategies when state is recoverable
-from the object. Carry runtime state only when construction, destruction or cloning needs external
-data.
+Every ownership variant the analysis supports has a representation. Lifecycle and clone
+strategies are stateless, layout-compatible and statically selected when the state is
+recoverable from the object; runtime state is carried only when construction, destruction
+or cloning needs external data.
 
-Bind a type's constructor and init routines with its lifecycle policy so that it can be
-exported as a safe function that returns the fully-formed object, where possible. Keep an
-argument whose type is not yet wrapped as a narrow documented raw seam, which the run
-wrapping that type replaces.
+A type's constructor and init routines are bound with its lifecycle policy, so that where
+possible it is exported as a safe function returning the fully-formed object. An argument
+whose type is not yet wrapped remains a narrow documented raw seam, which the run wrapping
+that type replaces.
 
-Keep C lifecycle primitives while C can allocate or free the storage. If Rust fully owns
-allocation and destruction, use native Rust lifecycle operations.
+C lifecycle primitives are kept while C can allocate or free the storage.
 
-Promoting construction-phase storage into an owner is unsafe; aim to encapsulate it in the
-type's safe constructor, so consumers of the public API don't have to call `assume_init`
-in unsafe blocks.
+Promoting construction-phase storage into an owner is unsafe, so it is encapsulated in the
+type's safe constructor: consumers of the public API never call `assume_init` in their own
+unsafe blocks.
 
 Lifecycle routines are also scheduled as free symbols; the symbol route skips those a type
 run already emitted.
 
 ### Field accessors
 
-Derive each accessor from ownership, mutability, nullability, cardinality, and lifetime
-findings. Tie every pointer-derived result to the state that keeps it alive.
+Each accessor follows from the ownership, mutability, nullability, cardinality and lifetime
+findings, and every pointer-derived result is tied to the state that keeps it alive.
 
-Project fields with `addr_of!`, `addr_of_mut!`, `&raw const`, or `&raw mut`. Never use
-`&(*p).field` or `&mut (*p).field`. Follow the conventions for access.
+Fields are projected with `addr_of!`, `addr_of_mut!`, `&raw const` or `&raw mut`, never
+with `&(*p).field` or `&mut (*p).field`; access follows the conventions.
 
-Accessor requirements:
+Each kind of field is expressed as follows:
 
-- Owned-reference field: replacement setter that drops the old owner, owning getter that
-  leaves the field valid, and shared borrowed getter.
-- By-value wrapped field: shared or mutable handle over the projected place.
-- Stored borrow without an expressible lifetime: unsafe setter with the referent-lifetime
-  obligation in its caller contract.
-- Statically known owned and borrowed cases: distinct wrapper forms with a shared trait
-  where useful.
-- Runtime ownership flag: separately checked owned and borrowed operations.
-- Union and discriminator: tagged Rust enum when the mapping is valid.
-- Scalar and array variants: separate typed forms.
-- Type-erased field: generic element type when known; otherwise the discovered untyped
-  lifetime strategy.
-- `Send` or `Sync`: add only with a specific synchronization or immutability proof.
+- An owned-reference field has a replacement setter that drops the old owner, an owning
+  getter that leaves the field valid, and a shared borrowed getter.
+- A by-value wrapped field has a shared or mutable handle over the projected place.
+- A stored borrow without an expressible lifetime has an unsafe setter whose caller
+  contract carries the referent-lifetime obligation.
+- Statically known owned and borrowed cases have distinct wrapper forms, with a shared
+  trait where useful.
+- A runtime ownership flag has separately checked owned and borrowed operations.
+- A union and its discriminator become a tagged Rust enum when the mapping is valid.
+- Scalar and array variants have separate typed forms.
+- A type-erased field takes a generic element type when it is known, and the discovered
+  untyped lifetime strategy otherwise.
+- `Send` and `Sync` are implemented only with a specific synchronization or immutability
+  proof.
 
-Use safe wrappers for translated dependent types and callbacks. Find real release
-strategies for strings, arrays, and erased owners. Replace lower-layer temporary raw
-references made obsolete by this wrapper (cut SCCs). Keep a documented raw gap only for an
-unavailable higher-layer dependency.
+Translated dependent types and callbacks are used through their safe wrappers, and strings,
+arrays and erased owners through real release strategies. A lower-layer temporary raw
+reference this wrapper makes obsolete (a cut SCC) is replaced; a documented raw gap remains
+only for an unavailable higher-layer dependency.
 
-If an inline function-pointer helper lacks an ownership-compatible wrapper, emit one with
-the type.
-
-### Porting layout and storage
-
-For `objective: port`, port layout only after every C-side field toucher is gone and no
-public C consumer receives the concrete body. A public forward declaration alone does not
-block opacification.
-
-Port storage only after no C path allocates or frees it. If C still owns either operation,
-retain compatible storage and report the blocker.
+An inline function-pointer helper without an ownership-compatible wrapper gets one,
+emitted with the type.
 
 ---
 
@@ -150,74 +140,60 @@ retain compatible storage and report the blocker.
 
 ### Functions
 
-Emit `pub fn`; use `pub unsafe fn` only when no safe type-level contract can express the
-caller obligation. Use typed wrappers for arguments and returns and reconstruct raw
-pointers at the FFI call only, in a small documented unsafe block.
+A function is bound as a `pub fn`; it is a `pub unsafe fn` only when no safe type-level
+contract can express its caller obligation. Arguments and returns use typed wrappers, and
+raw pointers are reconstructed only at the FFI call, in a small documented unsafe block.
 
-Separate moved (exclusively or refcounted), borrowed (immutably or mutably), nullable, scalar and array variants when one signature cannot
-express all valid contracts. Prefer generics for methods that take/return type-erased arguments.
+Moved (exclusively or refcounted), borrowed (immutably or mutably), nullable, scalar and
+array variants are separate functions when one signature cannot express every valid
+contract. A function taking or returning type-erased arguments is generic.
 
-Prefer stateless ownership. Carry runtime state only when destruction or cloning requires it.
+Ownership is stateless; runtime state is carried only when destruction or cloning requires
+it.
 
-Bind a method to the type that it implements by emiting it in a `impl T` block on the type;
-it takes `&self` or `&mut self` as its first argument. Keep free functions free.
+A method is emitted in an `impl T` block on the type it implements, taking `&self` or
+`&mut self` as its first argument. A free function stays free.
 
-For `wrap`, the ultimate goal is to avoid any unsafe or raw pointer on the exposed public interface,
-and keep any raw or unsafe logic internal. Thus, use safe translated dependencies throughout.
-Keep a documented raw pointer only for an unavailable higher-layer wrapper.
-Update lower-layer raw surfaces when the new safe contract replaces them.
+The exposed public interface carries no unsafe and no raw pointer: raw and unsafe logic
+stays internal, behind safe translated dependencies. A documented raw pointer remains only
+for an unavailable higher-layer wrapper, and a lower-layer raw surface is updated when the
+new safe contract replaces it.
 
-Use a standard-library operation directly when it is equivalent and no C-interoperability
-requirement remains.
-
-Lifecycle primitives for typed, type-erased or string handles might have been scheduled in a
-worklist, although they implement release/clone/construct strategies/policies emitted in a
-previous run; if so do not emit wrappers for them again.
+Lifecycle primitives for typed, type-erased or string handles may be scheduled as symbols
+although a previous run already emitted the release, clone or construct strategy that calls
+them; they get no second wrapper.
 
 ### Globals
 
-Wrap a global as a `'static` borrow, never as an owner. Derive its access discipline from every C access:
+A global is bound as a `'static` borrow, never as an owner. Its access discipline follows
+from every C access:
 
 - immutable after initialization: a shared handle;
 - synchronized by C: the matching safe synchronization (an atomic, or guards handing out
   the shared or exclusive handle under the lock), never discarding a lock's status;
-- otherwise mutable: `unsafe` accessors that exclude concurrent access; report it;
+- otherwise mutable: `unsafe` accessors that exclude concurrent access, reported as such;
 - thread-local: a handle borrowed for a closure on the current thread, neither `Send` nor
   `Sync`.
 
 A lock counts only if every access takes it and it rejects same-thread re-entry. While C
-consumers reference the symbol, keep its C layout and synchronization protocol.
+consumers reference the symbol, its C layout and synchronization protocol are kept.
 
 ### Callbacks
 
-Inspect the typedef and all call sites. Emit a callable handle with safe argument and
-result wrappers. When call sites use different ownership distributions, emit a distinctly
-named safe wrapper for each distribution over the shared C function-pointer type.
+A callback is bound from its typedef and all of its call sites as a callable handle with
+safe argument and result wrappers. When call sites use different ownership distributions,
+each distribution has its own distinctly named safe wrapper over the shared C
+function-pointer type.
 
-Wrap an inline function pointer when no ownership-compatible callable wrapper exists.
+An inline function pointer is wrapped when no ownership-compatible callable wrapper exists.
 
 ### Raw lifetime strategies
 
-When objective is `raw-lifetime` look for releaser, disposer, cloner, and allocator/constructor routines
-for type-erased `void` or string handles, and emit generic policies / strategies that call the primitive via FFI,
-so that owned string or generic array/singleton handles can bind them to implement RAII. Do not
-also expose the primitive as an ordinary safe function.
+A `raw-lifetime` worklist discovers the releaser, disposer, cloner and allocator or
+constructor routines for type-erased `void` or string handles. Each becomes a generic
+policy or strategy that calls the primitive via FFI, so that owned string and generic
+array or singleton handles bind it to implement RAII. The primitive itself is not also
+exposed as an ordinary safe function.
 
-Emit separate policies for singleton and array handles. 
-
-Home each with the primitive's translation unit.
-
-### Porting symbols
-
-For `port`, translate the implementation to safe idiomatic Rust and preserve observable
-behaviour. Re-export it to C according to the conventions while C consumers
-remain.
-
-- The raw gateway reconstructs safe wrappers and calls the native function.
-- Remove a TU-local export after its last C consumer is removed.
-- Guard only replaced C bodies with the path-derived per-file guard.
-- Group adjacent guarded bodies when useful; do not guard the whole file.
-- In the C fallback branch, declare Rust exports and redirect TU-local names to
-  collision-safe exports.
-- Wire the file flag and Rust static library through the actual build system; do not
-  assume link mechanics.
+Singleton and array handles have separate policies, each homed with its primitive's
+translation unit.
