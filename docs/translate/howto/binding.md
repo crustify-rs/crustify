@@ -60,8 +60,19 @@ identified before a representation is chosen.
 
 ### Safe layout
 
-A type is bound as a safe layout over the raw type and its handles, as the conventions
-describe.
+A type is bound as a safe layout over the raw type and its handles. The canonical wrapped
+surface has three types, named as the conventions describe:
+
+| type | role |
+|---|---|
+| `Foo` | layout-compatible newtype named in every owner and handle, and held by value only in Rust-owned storage (a local, or embedded) |
+| `FooRef<'a>` | copyable shared borrowed handle with getters |
+| `FooMut<'a>` | exclusive borrowed handle with setters, and shared and exclusive reborrows |
+
+No Rust reference to the wrapped C object is ever formed. Borrowed handles contain
+pointers and carry lifetimes; references to handles cover Rust-owned handle storage only.
+Layout access starts from `FooRef::as_ptr()` or `FooMut::as_mut_ptr()`, in small justified
+unsafe blocks.
 
 A synthetic type generator is bound as:
 
@@ -71,7 +82,15 @@ A synthetic type generator is bound as:
 
 ### Lifecycle
 
-Every ownership variant the analysis supports has a representation. Lifecycle and clone
+Every ownership variant the analysis supports has a representation.
+
+Owners never dereference to `Foo`; they hand out handles. A sole owner, or a `Foo` value,
+produces `FooRef` and `FooMut` through `as_ref()` and `as_mut()`. A shared owner without a
+lock produces `FooRef` directly, and `FooMut` only when it can prove its reference is the
+only one, or after copying the object. A shared owner whose object carries its own lock
+produces both through read and write guards, which hold the lock while the handle lives.
+
+Lifecycle and clone
 strategies are stateless, layout-compatible and statically selected when the state is
 recoverable from the object; runtime state is carried only when construction, destruction
 or cloning needs external data.
@@ -95,8 +114,11 @@ run already emitted.
 Each accessor follows from the ownership, mutability, nullability, cardinality and lifetime
 findings, and every pointer-derived result is tied to the state that keeps it alive.
 
-Fields are projected with `addr_of!`, `addr_of_mut!`, `&raw const` or `&raw mut`, never
-with `&(*p).field` or `&mut (*p).field`; access follows the conventions.
+Getters that read `Foo`'s fields are methods in `impl FooRef` blocks taking `&self`, and
+setters that write them are methods in `impl FooMut` blocks taking `&mut self`. A field is
+read through the shared handle's pointer and written through the mutable handle's pointer,
+projected with `addr_of!`, `addr_of_mut!`, `&raw const` or `&raw mut`, never with
+`&(*p).field` or `&mut (*p).field`.
 
 Each kind of field is expressed as follows:
 

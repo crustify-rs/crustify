@@ -99,7 +99,7 @@ The following describes the conventions of the codebase you generate. Follow the
 your workflow wherever they apply: where your items are homed, how they are named and laid
 out, where their tests are placed, and how every unsafe block is documented.
 
-<!-- INCLUDE docs/translate/coding-conventions.md -->
+<!-- INCLUDE docs/translate/conventions.md -->
 
 ---
 

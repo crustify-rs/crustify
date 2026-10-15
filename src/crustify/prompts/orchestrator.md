@@ -362,7 +362,7 @@ The following describes the conventions of the codebase the campaign generates. 
 wherever they apply: when you scaffold crates, subsystem roots, modules and test suites,
 and when you home each batch's items.
 
-<!-- INCLUDE docs/translate/coding-conventions.md -->
+<!-- INCLUDE docs/translate/conventions.md -->
 
 ---
 

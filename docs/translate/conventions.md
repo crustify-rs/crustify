@@ -1,7 +1,7 @@
 # Crustify coding conventions
 
-These are the shared, mechanical contracts between the orchestrator, the translator and the
-reviewer. Their prompts contain the decisions and procedures.
+These are the shared, mechanical contracts between the orchestrator, the binder, the
+translator and the reviewer. Their prompts contain the decisions and procedures.
 
 ## Rust baseline
 
@@ -16,13 +16,39 @@ are safe unless their caller obligation cannot be expressed in the type system.
 
 The safe surface uses ordinary Rust naming: `snake_case` for functions, methods and
 modules, `UpperCamelCase` for types and traits, `SCREAMING_SNAKE_CASE` for constants and
-statics. Drop a C name's library or owning-type prefix wherever the crate, module or
-receiver already supplies it, and prefer the idiomatic Rust term over a transliterated C
-one. The filled anchor records the C name, so renaming costs no traceability.
+statics. A C name's library or owning-type prefix is dropped wherever the crate, module or
+receiver already supplies it, and the idiomatic Rust term is preferred over a
+transliterated C one. The filled anchor records the C name, so renaming costs no
+traceability. Names that cross the language boundary keep their C-derived spelling, as
+below.
 
-Names that cross the language boundary are fixed and exempt: `ffi::<name>` raw bindings,
-`mod ffi_export` exports, `crustify_<NAME>` macro shims and the `CRUSTIFY_<FILE>` build
-switch keep their C-derived spelling.
+### Functions
+
+A C function's raw binding is `ffi::<name>`. Its safe wrapper is a free function homed in
+the owning module, named by the rules above. When one C function has several valid
+ownership contracts, each safe variant has a distinct, descriptive name.
+
+### Types
+
+A wrapped C type is the layout-compatible newtype `Foo`, named by the rules above; its
+shared and exclusive borrowed handles are `FooRef<'a>` and `FooMut<'a>`.
+
+### Shims
+
+A callable macro shim is `crustify_<NAME>`. Constant macros remain generated constants in
+the `-sys` crate.
+
+### Exports
+
+Each ported C source file has one `mod ffi_export { use super::*; ... }` raw ABI gateway
+in its Rust module, whose exports use `#[unsafe(no_mangle)] extern "C"`. Externally
+visible and header-inline symbols are exported under their bare names; static functions,
+TU-inline functions and static globals as `crustify_<file>__<name>`.
+
+### Build switches
+
+The per-file C/Rust build switch is `CRUSTIFY_<FILE>`, with `<FILE>` derived by sanitizing
+the translation unit's path.
 
 ## Crates, modules, and TUs
 
@@ -48,56 +74,12 @@ Rust has no headers, they are homed using the following rules:
     not belong to any TU get their own `_h.rs` sub-module; headers shared by multiple
     subsystems become sub-modules for each subsystem homing the units belonging to that subsystem;
 
-## Wrapped types
-
-The canonical wrapped surface has three types:
-
-| type | role |
-|---|---|
-| `Foo` | layout-compatible newtype named in every owner and handle, and held by value only in Rust-owned storage (a local, or embedded) |
-| `FooRef<'a>` | copyable shared borrowed handle with getters |
-| `FooMut<'a>` | exclusive borrowed handle with setters, and shared and exclusive reborrows |
-
-Owners never dereference to `Foo`; they hand out handles. A sole owner, or a `Foo` value,
-produces `FooRef` and `FooMut` through `as_ref()` and `as_mut()`. A shared owner without a
-lock produces `FooRef` directly, and `FooMut` only when it can prove its reference is the
-only one, or after copying the object. A shared owner whose object carries its own lock
-produces both through read and write guards, which hold the lock while the handle lives.
-Layout access starts from `FooRef::as_ptr()` or `FooMut::as_mut_ptr()`.
-
-Getters that read `Foo`'s fields go on `FooRef` as methods in `impl FooRef` blocks taking `&self`,
-while setters that write its fields go on `FooMut` as methods in `impl FooMut` blocks taking
-`&self mut`. 
-
-Never form a Rust reference to the wrapped C object. Borrowed handles contain pointers and
-carry lifetimes; references to handles cover Rust-owned handle storage only. Keep raw
-layout access in small justified unsafe blocks. Read through the shared handle's pointer
-and write through the mutable handle's pointer.
-
-## Functions and FFI names
-
-The raw binding for a C function lives under `ffi::<name>`. Its safe wrapper is a free
-function homed in the owning module and named per the naming rules above. When one C
-function has several valid ownership contracts, give each safe variant a distinct,
-descriptive name.
-
-A callable macro shim is named `crustify_<NAME>`. Constant macros remain generated
-constants in the `-sys` crate.
-
-Each ported C source file has one `mod ffi_export { use super::*; ... }` raw ABI gateway
-in its Rust module. Its exports use `#[unsafe(no_mangle)] extern "C"`. Export externally
-visible and header-inline symbols under their bare names. Export static functions,
-TU-inline functions and static globals as `crustify_<file>__<name>`.
-
-The per-file C/Rust build switch is `CRUSTIFY_<FILE>`, with `<FILE>` derived by sanitizing
-the translation unit's path.
-
 ## Anchors
 
 A scheduled item arrives with the authored Rust file it belongs in, named by its batch.
-Nothing is written into that file ahead of the agent: the translator emits exactly one
-filled doc-comment anchor per item, and those anchors are the only record that an item was
-translated.
+Nothing is written into that file ahead of the agent: the binder or translator emits exactly
+one filled doc-comment anchor per item, and those anchors are the only record that an item
+was translated.
 
 | anchor | meaning |
 |---|---|

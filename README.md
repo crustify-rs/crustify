@@ -167,7 +167,7 @@ Below is an overview of the campaign's stats:
 
 ## Documentation
 
-- [`docs/translate/coding-conventions.md`](docs/translate/coding-conventions.md): generated Rust
+- [`docs/translate/conventions.md`](docs/translate/conventions.md): generated Rust
   conventions, including the Rust tree layout
 - [`docs/translate/schemas/`](docs/translate/schemas/): crate-placement and wave schemas
 - [`docs/translate/schemas/subsystems.md`](docs/translate/schemas/subsystems.md): link-unit and

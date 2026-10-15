@@ -191,7 +191,7 @@ The following describes the conventions of Crustify-generated codebases. If you 
 reviewing a Crustify-generated batch, judge the Rust against them and follow them in every
 change you make; otherwise, ignore them.
 
-<!-- INCLUDE docs/translate/coding-conventions.md -->
+<!-- INCLUDE docs/translate/conventions.md -->
 
 ---
 

@@ -35,7 +35,7 @@ Open questions:
 
 ## Ship `docs/` so a non-editable install keeps its conventions
 
-The conventions and the how-tos (`docs/translate/coding-conventions.md`,
+The conventions and the how-tos (`docs/translate/conventions.md`,
 `docs/translate/howto/*.md`) resolve under `deps.CHECKOUT`, which is the source checkout,
 and so does the `ffimap` skill's `SKILL.md`. A wheel install has no `docs/` there, and
 discovery drops a skill whose file is absent — so every agent runs without its conventions
@@ -53,13 +53,13 @@ the fix would lose them the same way.
 ## Add an idiomaticity and ergonomics guide
 
 Create `docs/idiomaticity.md` for Rust API-shaping hints and good practices. Keep
-mandatory mechanical rules in `coding-conventions.md`. Make the guide available through an
+mandatory mechanical rules in `conventions.md`. Make the guide available through an
 optional prompt skill so experiments can ablate it without changing the prompts.
 
 ## Emit type-implementing symbols as inherent methods
 
 A symbol whose first parameter is the type it operates on is currently emitted as a free
-function (`coding-conventions.md`, "Functions and FFI names"). Emitting it as an inherent
+function (`conventions.md`, "Naming › Functions"). Emitting it as an inherent
 method on that type instead would read better at call sites — `commit.message()` over
 `git_commit_message(commit)` — and needs no restructuring, since inherent impls are
 crate-scoped and the handle types are generated in the same module as their functions.
@@ -86,7 +86,7 @@ Two findings decide whether this is worth doing:
 
 So the case rests on ergonomics, not on lifetime elision. If adopted, the rule belongs in
 the translator prompt under "Functions and globals", with the `&self`-on-a-borrowed-handle
-hazard stated explicitly, and the free-function clause in `coding-conventions.md` relaxed
+hazard stated explicitly, and the free-function clause in `conventions.md` relaxed
 to defer the shape to the translator prompt.
 
 Also open: whether existing waves get retrofitted, or the crate carries two generations of
