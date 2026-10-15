@@ -173,13 +173,8 @@ Scaffold the top-level manifest, raw `-sys` and safe crates according to the con
 skill. Do this only for the link units included in the scope established by the
 user. Scaffold source files and modules lazily before spawning translator agents.
 
-Create test crates where translators can emit Cargo integration tests for the public
-API:
-- `rust/<target>/tests/ub_safe/main.rs` tagged with `#![forbid(unsafe_code)]` for UB tests that
-  target the safe public API; also create `ub_safe/compile_fail/` for tests that are supposed to
-  fail to compile;
-- `rust/<target>/tests/ub_unsafe/main.rs` for UB tests that target the unsafe public API;
-- `rust/<target>/tests/equiv/main.rs` for functional equivalence tests that target the public API. 
+Create the integration test suites for the public interface that the conventions skill's
+Testing section describes, so translators and reviewers can emit tests into them.
 
 For each `-sys` package, author the build scripts required by bindgen so that translator
 agents can reuse them; each  `-sys` crate needs `Cargo.toml`, `src/lib.rs`, `build.rs`,

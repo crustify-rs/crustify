@@ -1,22 +1,27 @@
 ---
 name: testing
 description: >-
-  How Crustify tests a safe binding: the ub_safe, ub_unsafe, equiv and unit
-  suites, where each test is homed, which instruments it must pass (ASan/UBSan,
-  BSan, TSan, Miri), and how coverage is measured. Read it before writing or
-  placing any test.
+  How Crustify tests a safe binding: UB tests on the safe and unsafe public
+  interface, equivalence tests against C, and unit tests; which instruments
+  they must pass (ASan/UBSan, BSan, TSan, Miri); and how coverage is
+  measured. Read it before writing any test.
 ---
 
 # Testing
 
-Classify tests according to the following scheme:
+Classify tests by what they target, and place each where the conventions skill places
+tests of its kind:
 
-- `ub_safe` ensure the safe public API does not reach UB, mainly by not triggering sanitizer/Miri crashes, or by failing
-  to pass the compiler for a given illegal path; `ub_unsafe` targets UB bugs on the unsafe public API: each public
-  `unsafe fn` or method of your workset, called within its stated `# Safety` contract, edge cases included. Raw `ffi::`
-  round-trips are not `ub_unsafe` tests; they belong in `unit` or `equiv`;
-- `equiv` ensure the safe public API matches the C-observable behavior, mainly by passing equivalence assertions;
-- `unit` ensure the internal API routines behave correctly, mainly by passing Rust assertions.
+- UB tests on the safe public interface ensure it does not reach UB, mainly by not
+  triggering sanitizer/Miri crashes, or by failing to compile for a given illegal path;
+- UB tests on the unsafe public interface target UB bugs there: each public `unsafe fn` or
+  method of your workset, called within its stated `# Safety` contract, edge cases
+  included. Raw `ffi::` round-trips are not UB tests on the unsafe interface; they are unit
+  or equivalence tests;
+- equivalence tests ensure the safe public interface matches the C-observable behaviour,
+  mainly by passing equivalence assertions;
+- unit tests ensure the internal routines behave correctly, mainly by passing Rust
+  assertions.
 
 Construct test objects through safe constructors. While a type has none, adopt the raw
 constructor's result in one documented unsafe fixture per type, and replace the fixture
@@ -26,15 +31,9 @@ once the safe constructor exists.
 
 Emit tests to ensure the public API of your workset is free of UB.
 
-Home UB tests in `crustify/rust/<repo>/tests/` as Cargo integration tests so
-crate privacy enforces the public-API boundary. Place tests that call the
-safe public API under `tests/ub_safe/<the tested TU>.rs` and declare the
-tested TU as a module of `tests/ub_safe/main.rs`; place tests that excercise illegal
-safe paths that the compiler should catch in `tests/ub_safe/compile_fail`. Place tests
-that target the unsafe public API under `tests/ub_unsafe/<the tested TU>.rs` using the same rules:
-one suite per public unsafe function or method your workset adds, with its inputs built through
-the safe API wherever one exists. A workset that adds no public unsafe API adds no `ub_unsafe`
-tests.
+Test the unsafe public interface with one suite per public unsafe function or method your
+workset adds, with its inputs built through the safe API wherever one exists. A workset
+that adds no public unsafe API adds no UB tests on the unsafe interface.
 
 Cover every instrument prepared by the campaign as a separate obligation:
 
@@ -64,11 +63,7 @@ Use compile-fail doctests or `trybuild` when the type system should reject the p
 ## Equivalence tests
 
 Emit functional equivalence tests that run the raw C implementation and public Rust API on
-equivalent, independently owned inputs. 
-
-Home equivalence tests in `crustify/rust/<target>/tests/equiv/<the tested TU>.rs` as Cargo
-integration tests so crate privacy enforces the public-API boundary; declare the
-tested TU as a module of `tests/equiv/main.rs`. 
+equivalent, independently owned inputs.
 
 Compare:
 
@@ -84,14 +79,13 @@ For `port`, the reference build must have the Rust feature disabled so the C sym
 resolve to the Rust export.
 
 Do not copy a confirmed C defect into Rust. Document the divergence, retain equivalence
-tests for unaffected behaviour, and place the corrected-behaviour regression in
-`unit_tests`.
+tests for unaffected behaviour, and make the corrected-behaviour regression a unit test.
 
 
 ## Unit tests
 
-Use inline `#[cfg(test)] mod unit_tests` beside the translated unit when Rust assertions
-supply the verdict or the test exercises internal facilities, including:
+Write a unit test when Rust assertions supply the verdict or the test exercises internal
+facilities, including:
 
 - Rust-only `Iterator`, `Debug`, `Clone`, conversions, and builders;
 - input rejected by Rust before FFI, including the error and no panic;

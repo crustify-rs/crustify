@@ -3,7 +3,8 @@ name: conventions
 description: >-
   Crustify's coding conventions for the Rust it generates: the Rust baseline,
   naming, crate, module and TU layout, wrapped types, functions and FFI names,
-  and anchors. Read it before scaffolding, emitting or reviewing any Rust.
+  anchors, and where each kind of test is placed. Read it before scaffolding,
+  emitting, testing or reviewing any Rust.
 ---
 
 # Crustify coding conventions
@@ -124,3 +125,22 @@ that calls them.
 Duplicate a filled anchor only when several wrappers intentionally represent the same
 item. Existing filled anchors are completed work unless the current objective deliberately
 promotes that item.
+
+## Testing
+
+Tests are placed by what they target. Tests of the public interface are Cargo integration
+tests of the safe crate, under `crustify/rust/<target>/tests/`, so crate privacy enforces
+the public-interface boundary. Each suite's `main.rs` declares one module per tested
+translation unit, in `<suite>/<the tested TU>.rs`.
+
+- Tests that target undefined behaviour on the safe public interface are placed in
+  `tests/ub_safe`, whose `main.rs` carries `#![forbid(unsafe_code)]`. Those the compiler
+  should reject are placed in `tests/ub_safe/compile_fail/`.
+- Tests that target undefined behaviour on the unsafe public interface are placed in
+  `tests/ub_unsafe`.
+- Tests that compare the public interface's behaviour with C's are placed in
+  `tests/equiv`.
+- Tests that check internal routines through Rust assertions are placed in an inline
+  `#[cfg(test)] mod unit_tests` beside the unit they test.
+
+A standalone reproducer is not a test: it is placed with the report that cites it.

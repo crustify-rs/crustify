@@ -35,5 +35,4 @@ destructor.
 
 There is no need to add UB tests on the public seam interface exported by ffibox on a type, as
 these are only meant to be exercised internally by the crate, while acting as escape hatches for
-external consumers. Any UB or functionality test on those should be internal and emited in the
-`#[cfg(test)] mod unit_tests` module.
+external consumers. Any UB or functionality test on those should be an internal unit test.

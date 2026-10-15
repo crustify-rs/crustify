@@ -1,10 +1,11 @@
 <!-- SKILL -->
 
-Home every test you add by the skill's classification, and run it under the instruments the
-skill names. If `fix` is enabled, a reproducer you turn into a regression test keeps its
-suite: a UB reproducer goes to `tests/ub_safe` or `tests/ub_unsafe`, an equivalence
-reproducer to `tests/equiv`, and an internal defect's regression to the inline
-`mod unit_tests`. If `fix` is not enabled, turn no reproducer into a regression test.
+Classify every test you add as the skill describes, place it where the conventions skill
+places tests of its kind, and run it under the instruments the skill names. If `fix` is
+enabled, a reproducer you turn into a regression test keeps its kind: a UB reproducer
+becomes a UB test, an equivalence reproducer an equivalence test, and an internal defect's
+regression a unit test. If `fix` is not enabled, turn no reproducer into a regression
+test.
 
 ## Gates
 

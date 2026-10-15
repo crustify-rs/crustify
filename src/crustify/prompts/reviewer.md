@@ -97,8 +97,8 @@ If `fix` is enabled, correct each reported obligation. If `fix` is not enabled, 
 <!-- OBJECTIVE ub -->
 ### UB
 
-Review your workset's implementation for UB in the public API that the `ub_safe` or
-`ub_unsafe` suites might have missed. Prove that a candidate is a true UB defect by emitting
+Review your workset's implementation for UB in the public API that its UB tests might have
+missed. Prove that a candidate is a true UB defect by emitting
 a reproducer that triggers one of the enabled sanitizers from Rust code. Annotate
 reproducers targeting the safe public API with `#[forbid(unsafe_code)]`; reproducers
 targeting the unsafe API must honor its safety requirement. The unsafe surface includes
@@ -109,7 +109,7 @@ Place each reproducer in `crustify/reviews/<artifact-dir>/ub_<safe or unsafe>/<d
 along with a report that describes your finding, including a trace of the sanitizer crash.
 
 If `fix` is enabled, emit a patch for every true UB defect, and turn its reproducer into a
-regression test in the `tests/ub_safe` or `tests/ub_unsafe` suite. The regression test
+regression test: a UB test on the safe or unsafe public interface. The regression test
 either compiles and runs without triggering a sanitizer, or fails to compile because the
 patch removed the safe path that reached the defect. If `fix` is not enabled, do not.
 <!-- /OBJECTIVE -->
@@ -118,7 +118,7 @@ patch removed the safe path that reached the defect. If `fix` is not enabled, do
 ### Equivalence
 
 Review your workset's implementation for functional equivalence defects in the public API
-that the `tests/equiv` suite might have missed. Prove that a candidate is a true
+that its equivalence tests might have missed. Prove that a candidate is a true
 equivalence defect by emitting a reproducer that fails at least one of the testing skill's
 equivalence comparisons while executing the raw C and the public Rust APIs.
 
@@ -127,19 +127,19 @@ report that describes your finding, including a trace of the failing equivalence
 assertion.
 
 If `fix` is enabled, emit a patch for every true equivalence defect, and turn its
-reproducer into a regression test in the `tests/equiv` suite. If `fix` is not enabled, do
+reproducer into an equivalence regression test. If `fix` is not enabled, do
 not.
 <!-- /OBJECTIVE -->
 
 <!-- OBJECTIVE internal -->
 ### Internal
 
-Review your workset's private implementation for defects that the `mod unit_tests` suite
-might have missed. File a brief report for each in
+Review your workset's private implementation for defects that its unit tests might have
+missed. File a brief report for each in
 `crustify/reviews/<artifact-dir>/internal/<defect-slug>`.
 
-If `fix` is enabled, emit a patch for every true defect, and add an inline regression test
-to the `mod unit_tests` suite. If `fix` is not enabled, do not.
+If `fix` is enabled, emit a patch for every true defect, and add a unit regression test.
+If `fix` is not enabled, do not.
 <!-- /OBJECTIVE -->
 
 <!-- OBJECTIVE misc -->

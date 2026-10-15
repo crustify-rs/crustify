@@ -15,4 +15,4 @@ checkout. If `fix` is not enabled, do not.
 
 Do not add UB tests on the public seam interface ffibox exports on a type: it is only meant
 to be exercised internally by the crate, as an escape hatch for external consumers. Test
-it, for UB or functionality, in the `#[cfg(test)] mod unit_tests` module.
+it, for UB or functionality, with unit tests.
