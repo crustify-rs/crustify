@@ -84,9 +84,12 @@ def main() -> None:
         add_workdir(orch_p, "the checkout the campaign works in; its "
                             "artifacts live under <workdir>/crustify/")
         orch_p.add_argument(
-            "task", type=Path, metavar="TASK",
-            help="Campaign TASK.md: the campaign's decisions are an input, "
-                 "not something the orchestrator interviews for.")
+            "task", type=Path, metavar="TASK", nargs="?",
+            help="Campaign TASK.md, copied to <workdir>/crustify/TASK.md, "
+                 "the canonical copy the orchestrator reads and you edit to "
+                 "change settings mid-campaign. Omit it once that copy "
+                 "exists; a TASK that differs from it is refused, so "
+                 "resuming never overwrites your edits.")
         orch_p.add_argument(
             "--task-only", action="store_true",
             help="Ablation control: the task file is the entire prompt and "
@@ -237,15 +240,46 @@ def _handle_cost(args: argparse.Namespace) -> None:
                             price_cache=args.price_cache))
 
 
+#: Where a campaign's task lives in its checkout. Tracked, and read by the
+#: orchestrator rather than handed to it once, so editing it changes the
+#: settings of the subsystems that have not started yet.
+TASK = "crustify/TASK.md"
+
+
+def canonical_task(workdir: Path, given: Path | None) -> Path:
+    """Install ``given`` as ``workdir``'s canonical task and return its path.
+
+    Without ``given``, the canonical task must already exist. With it, the
+    canonical task is created from it, or must already match it: a resume
+    that names the original file must not overwrite the edits made since."""
+    task = workdir / TASK
+    if given is None:
+        if not task.is_file():
+            raise SystemExit(f"no campaign task at {task}; pass one to start")
+        return task
+    if not given.is_file():
+        raise SystemExit(f"no campaign task at {given}")
+    text = given.read_text()
+    if task.is_file() and given.resolve() != task.resolve():
+        if task.read_text() != text:
+            raise SystemExit(
+                f"{task} differs from {given}: edit {task} to change the "
+                "campaign's settings, or omit TASK to run it as it is")
+        return task
+    task.parent.mkdir(parents=True, exist_ok=True)
+    if not task.is_file():
+        task.write_text(text)
+    return task
+
+
 def _handle_orchestrate(args: argparse.Namespace) -> None:
     """Spawn the campaign orchestrator for this checkout."""
     from crustify import config as _cfg
     from crustify.agents.orchestrate import OrchestrateAgent
 
-    if not args.task.is_file():
-        raise SystemExit(f"no campaign task at {args.task}")
     model = _cfg.MODEL_OVERRIDE or "anthropic/claude-opus-5"
     workdir = Path(args.workdir).resolve()
+    task = canonical_task(workdir, args.task)
     run_start = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
     if getattr(args, "campaign", None) is not None:
         campaign_dir = campaign_artifacts(workdir, args.campaign)
@@ -266,7 +300,7 @@ def _handle_orchestrate(args: argparse.Namespace) -> None:
     # Interactive whenever a person is at the terminal: the orchestrator asks
     # for approval and waits, which a headless run cannot do.
     interactive = sys.stdin.isatty() and sys.stdout.isatty()
-    OrchestrateAgent(workdir, kind=args.kind, task=args.task, model=model,
+    OrchestrateAgent(workdir, kind=args.kind, task=task, model=model,
                      task_only=args.task_only, interactive=interactive,
                      **campaign).run()
 

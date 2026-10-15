@@ -333,16 +333,16 @@ class OrchestratorPromptTests(unittest.TestCase):
         return OrchestrateAgent(self.repo, kind="translate", task=self.task,
                                 model="anthropic/claude-opus-5", **kw)
 
-    def test_the_task_replaces_its_anchor(self) -> None:
-        pre = self._agent().system_preamble()
-        self.assertNotIn("<!-- TASK -->", pre)
-        self.assertIn("`{brace}`", pre)
-
-    def test_a_task_with_braces_survives_formatting(self) -> None:
-        """The task is arbitrary user text spliced into a body that `format`
-        then runs over, so its braces must be escaped on the way in."""
-        self.task.write_text("- Answer: `{max_loc: 500}`")
-        self.assertIn("`{max_loc: 500}`", self._agent().system_preamble())
+    def test_the_task_is_read_not_spliced(self) -> None:
+        """The prompt says where the task lives; its answers stay in the file,
+        so an edit made mid-campaign is what the next subsystem runs under."""
+        for kind in ("translate", "audit"):
+            with self.subTest(kind=kind):
+                pre = OrchestrateAgent(
+                    self.repo, kind=kind, task=self.task,
+                    model="anthropic/claude-opus-5").system_preamble()
+                self.assertNotIn("`{brace}`", pre)
+                self.assertIn(f"{self.repo}/crustify/TASK.md", pre)
 
     def test_the_user_turn_carries_no_instruction(self) -> None:
         """Everything the agent is told is in the system slot; neither backend
@@ -351,12 +351,10 @@ class OrchestratorPromptTests(unittest.TestCase):
         self.assertLess(len(agent._prompt()), 100)
         self.assertGreater(len(agent.system_preamble()), 10_000)
 
-    def test_a_missing_anchor_is_an_error(self) -> None:
-        """Without it the task would vanish from the prompt in silence."""
-        agent = self._agent()
-        with mock.patch.object(Path, "read_text", lambda self: "no anchor"):
-            with self.assertRaises(SystemExit):
-                agent._body()
+    def test_an_empty_task_is_an_error(self) -> None:
+        self.task.write_text("")
+        with self.assertRaises(SystemExit):
+            self._agent().system_preamble()
 
     def test_the_ablation_arm_contributes_nothing(self) -> None:
         agent = self._agent(task_only=True)

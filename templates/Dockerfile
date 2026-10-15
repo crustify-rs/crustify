@@ -44,8 +44,10 @@
 #                      place and remain on the host. The orchestrator must not
 #                      clone, reset or replace it.
 #   /campaign/TASK.md  The campaign task, read-only, by convention: the
-#                      orchestrate command takes any path. Edit on the host
-#                      and the next run picks it up.
+#                      orchestrate command takes any path, and copies it to
+#                      /target/crustify/TASK.md on the first run. Edit that
+#                      copy on the host to change settings mid-campaign; the
+#                      orchestrator rereads it before each subsystem.
 #   /opt/crustify      The harness, baked into the image. Mount a checkout here
 #                      to test live harness changes. Both packages live in one
 #                      distribution, so this single tree serves both roles.

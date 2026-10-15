@@ -59,6 +59,13 @@ docker exec -it audit-zstd \
     --model anthropic/claude-opus-5 --billing api
 ```
 
+The first run copies the task to the target's `crustify/TASK.md`, which is tracked on the
+campaign branch. Edit that copy to change a campaign's settings while it runs, such as its
+models or batch sizes: the orchestrator rereads it before each subsystem, or each review
+wave of an audit, and keeps a copy of the settings each one ran under in its artifact dir.
+To resume, omit the task, or pass the same one; a task that differs from the copy is
+refused, so a resume never overwrites your edits.
+
 Add `--task-only` to either for the ablation control: the task file becomes the
 entire prompt. See [`audit/BARE.md`](audit/BARE.md).
 
@@ -115,7 +122,7 @@ Set with `--build-arg` on `docker build`.
 | path | mode | used by | lifetime |
 |---|---|---|---|
 | `/target` | read-write, required | both | existing target checkout; its partial campaign, CodeQL data, branches and logs stay on the host |
-| `/campaign/TASK.md` | read-only, conventional | both | the campaign task passed to the orchestrate command; any path works |
+| `/campaign/TASK.md` | read-only, conventional | both | the campaign task passed to the orchestrate command on the first run, which copies it to `/target/crustify/TASK.md`; any path works |
 | `/opt/crustify` | read-write, optional | both | baked into the image; mount a checkout to run live harness sources |
 | `/opt/venv/share/wavefront` | read-write, optional | translate | replaces the build-time clone, which is installed editable |
 | `/opt/venv/share/ffibox` | read-write, optional | translate | replaces the build-time clone used by generated Cargo manifests |

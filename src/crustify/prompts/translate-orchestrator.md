@@ -16,21 +16,38 @@ Your git entity: `crustify`.
 
 ## Task
 
-The following depicts the campaign's task and settings configured by the user.
+The campaign's task and settings are in `{workdir}/crustify/TASK.md`, which the user
+configured. Read it now.
 
 It is similar to a questionnaire that the user filled by answering questions that have
-fixed labels, split in mandatory and optional. If the user left any mandatory question
-unanswered, or it is genuinely ambiguous, ask them to clarify. If the user left an
-optional question unanswered, use the setting's default value.
+fixed labels and ids, split in mandatory and optional. If the user left any mandatory
+question unanswered, or it is genuinely ambiguous, ask them to clarify, and record their
+answer in the file. If the user left an optional question unanswered, use the setting's
+default value.
 
 When the user answers "orchestrator's choice", it leaves that question's decision up to
 you.
 
 Present one consolidated campaign brief, including its subsystems, assumptions, models,
-review policy (including the review objectives) and execution policy, then ask for approval. Do not begin Phase 1 or mutate
-the campaign repository before approval.
+review policy (including the review objectives), sanitizers and execution policy, then ask
+for approval. Do not begin Phase 1 or mutate the campaign repository before approval.
 
-<!-- TASK -->
+### Settings changes
+
+The user may edit `crustify/TASK.md` while the campaign runs, to change its settings for
+the subsystems that have not started. Reread it before starting each subsystem, and
+compare it with the copy the previous subsystem ran under:
+
+- `source` and `objective` are fixed for the campaign: if they changed, keep their
+  previous answers and report the change;
+- a changed `scope`, `workload` or `review-workload` re-plans the subsystems, waves and
+  batches that have not started, in `schedule.json`; landed work is never re-planned;
+- a newly selected sanitizer gets its build variant prepared before the subsystem starts;
+- every other change takes effect from the subsystem's first spawn.
+
+The user's edits are their decisions: apply them without asking for approval, unless an
+answer is invalid or ambiguous. Then, in an interactive session, ask; otherwise keep the
+previous answer and report it. Log every change you apply, and note it in the results.
 
 ---
 
@@ -54,7 +71,8 @@ from them and its existing branches instead of starting over.
 cp templates/gitignore <repo>/crustify/.gitignore
 ```
 
-If you're working in a git repo, create the campaign branch:
+If you're working in a git repo, create the campaign branch, and commit
+`crustify/TASK.md` on it:
 
 ```bash
 git -C <repo> checkout -b crustify/campaigns/<campaign-id>
@@ -207,9 +225,13 @@ Before launching translation or review waves:
 
 Pick the next subsystem from this campaign's `schedule.json`.
 
+Reread `crustify/TASK.md` and apply its changes, as the Settings changes section
+describes.
+
 Create the subsystem branch and artifact dir, as the layout instructions name them. Keep
 the subsystem branch checked out in the repository's base dir, without creating a new
-workdir for it.
+workdir for it. Copy `crustify/TASK.md` into the subsystem's artifact dir, so it records the
+settings the subsystem ran under, and commit both on the subsystem branch.
 
 Scaffold the Rust subsystem root on disk according to the conventions. Emit TU and
 header modules lazily before scheduling their first units. Commit the canonical tip as the

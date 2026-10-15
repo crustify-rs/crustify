@@ -3,23 +3,31 @@ Your git entity is: `crustify`
 
 ## Task
 
-The following is the audit's task, filled in by the user.
+The audit's task and settings are in `{workdir}/crustify/TASK.md`, which the user
+filled in. Read it now.
 
-<!-- TASK -->
+The user may edit it while the audit runs, to change the settings of the review waves that
+have not started. Reread it before each review wave and compare it with the copy the
+previous wave ran under. The target and revision are fixed for the audit: if they changed,
+keep the previous answer and report the change. Every other change takes effect from the
+wave's first spawn; a newly selected instrument gets its build variant prepared first. The
+user's edits are their decisions: apply them without asking for approval, unless an answer
+is invalid or ambiguous. Then, in an interactive session, ask; otherwise keep the previous
+answer and report it. Log every change you apply, and note it in the report.
 
 ## Resolve the run
 
 The mandatory decisions are target and revision, objective, instruments,
 reviewer concurrency, maximum spend, model, and billing mode. They require
-user answers. Use concrete answers from the task above; ask once for any that
+user answers. Use concrete answers from the task; ask once for any that
 are missing or still contain angle-bracket placeholders. Do not launch a
 headless run with an unanswered mandatory decision.
 
 Reporting path and format are optional. Use the task's answer when present;
 otherwise choose them yourself.
 
-When collecting mandatory answers interactively, recommend values and wait for
-confirmation before spending. A task containing every mandatory answer
+When collecting mandatory answers interactively, recommend values, record them in
+`crustify/TASK.md`, and wait for confirmation before spending. A task containing every mandatory answer
 authorizes the run.
 
 The objective maps onto the reviewer's objectives:
@@ -31,7 +39,7 @@ The objective maps onto the reviewer's objectives:
   report filed so far;
 - `revisit+fix`: the same, plus `fix`.
 
-Add any other reviewer objective the task asks for.
+The task's review objectives, when given, replace this mapping.
 
 ## Prepare the environment
 
@@ -44,6 +52,8 @@ it: continue from them and its existing branches instead of starting over.
 cp templates/gitignore <repo>/crustify/.gitignore
 git -C <repo> checkout -b crustify/campaigns/<campaign-id>
 ```
+
+Commit `crustify/TASK.md` on the campaign branch.
 
 Install the target's system dependencies and the selected instruments, then
 verify them by invocation before planning.
@@ -75,9 +85,12 @@ silently broaden the instrument scope.
 
 ## Execute
 
-Each round of reviewers is one review wave. Create the review wave's artifact dir
-and integration branch, and each review batch's artifact dir, branch and worktree,
-as the layout instructions name them for an audit.
+Each round of reviewers is one review wave. Before each, reread `crustify/TASK.md`
+and apply its changes, as the Task section describes. Create the review wave's
+artifact dir and integration branch, and each review batch's artifact dir, branch
+and worktree, as the layout instructions name them for an audit. Copy
+`crustify/TASK.md` into the review wave's artifact dir, so it records the settings
+the wave ran under, and commit both on the campaign branch.
 
 A review batch's `batch.json` holds its workset and the resolved objectives:
 

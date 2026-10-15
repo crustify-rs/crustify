@@ -56,27 +56,34 @@ Unanswered optional questions use their defaults.
    - Answer: `<same as translation | max-types: N,
      max-syms: N, max-loc: N>`
 
-9. **Which sanitizers should the campaign build and test under? By default, every one
-   the toolchain supports.** (`id: sanitizers`)
-   - Answer: `<all supported | any of: asan-ubsan, tsan, bsan>`
+9. **Which objectives should review agents review for? By default, every one the
+   reviewer offers.** (`id: review-objectives`)
+   - Answer: `<all | any of: lifecycle, unsafety, contracts, ub, equiv, internal,
+     conventions, misc, coverage, disclose, fix>`
+   - Without `fix`, reviewers report and reproduce what they find but patch nothing.
+
+10. **Which sanitizers should the campaign build and test under? By default, every one
+    the toolchain supports.** (`id: sanitizers`)
+    - Answer: `<all supported | any of: asan-ubsan, msan, tsan, bsan>`
+    - Miri needs no build and is always on.
 
 ## Autonomy (if question 6 is answered `no`)
 
 Answer these approval-gate questions only if question 6 is answered `no`.
 
-10. **Should I wait for your approval before starting the setup phase?** (`id: gates.setup`)
+11. **Should I wait for your approval before starting the setup phase?** (`id: gates.setup`)
     - Answer: `<yes | no>`
-11. **Should I wait for your approval before starting the translation phase?**
+12. **Should I wait for your approval before starting the translation phase?**
     (`id: gates.translation`)
     - Answer: `<yes | no>`
-12. **Should I wait for your approval between subsystems?** (`id: gates.subsystem`)
+13. **Should I wait for your approval between subsystems?** (`id: gates.subsystem`)
     - Answer: `<yes | no | not applicable>`
-13. **Should I wait for your approval before starting review passes?** (`id: gates.review`)
+14. **Should I wait for your approval before starting review passes?** (`id: gates.review`)
     - Answer: `<yes | no | not applicable>`
 
 # Benchmark recording questions
 
-14. **Where and in what format should results be recorded?** (`id: results`)
+15. **Where and in what format should results be recorded?** (`id: results`)
     - Answer: `<results path>, <standard | custom template>`
 
 # Additional instructions

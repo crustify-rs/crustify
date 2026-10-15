@@ -17,9 +17,6 @@ from crustify.agents.base import (
     CrustifyAgent, SkillSpec, _PKG_ROOT, expand_includes,
 )
 
-#: Where the campaign task is spliced into the stage prompt.
-_TASK_ANCHOR = "<!-- TASK -->"
-
 #: Every skill an orchestrator can carry, in prompt order. Which of them it
 #: actually carries is decided by discovery: a skill whose files are on disk
 #: is rendered, one whose files are not is silently absent. Each lives at
@@ -89,17 +86,12 @@ class OrchestrateAgent(CrustifyAgent):
         return () if self.task_only else super().skill_specs()
 
     def _body(self) -> str:
-        """The stage prompt, with the campaign task at its ``<!-- TASK -->``
-        anchor."""
-        path = _PKG_ROOT / "prompts" / f"{self.kind}-orchestrator.md"
-        body = expand_includes(path.read_text())
-        if body.count(_TASK_ANCHOR) != 1:
-            raise SystemExit(
-                f"{path}: expected exactly one {_TASK_ANCHOR} anchor")
-        # Escaped, because the body is formatted with this agent's arguments
-        # and a task is arbitrary user text that may contain braces.
-        task = self._task_text().replace("{", "{{").replace("}", "}}")
-        return body.replace(_TASK_ANCHOR, task)
+        """The stage prompt. The campaign task is not in it: the prompt says
+        where the task lives, and the orchestrator reads it from there, so an
+        edit made mid-campaign is what the next subsystem runs under."""
+        self._task_text()
+        return expand_includes(
+            (_PKG_ROOT / "prompts" / f"{self.kind}-orchestrator.md").read_text())
 
     def _prompt(self) -> str:
         if self.task_only:
@@ -114,7 +106,7 @@ class OrchestrateAgent(CrustifyAgent):
         The base puts this agent's whole body in the system slot, because
         `prompt_in_system_slot` is set: the orchestrator is one agent running
         for hundreds of turns, and what compaction would paraphrase away is
-        its own procedure and the campaign's decisions -- which model reviews,
-        whether a UB pass was authorised.
+        its own procedure. The campaign's decisions are not here: they live
+        in the task file, which the procedure tells it to reread.
         """
         return "" if self.task_only else super().system_preamble()

@@ -84,16 +84,15 @@ cp crustify/templates/translate/TASK.template.md campaign-TASK.md
 # Edit campaign-TASK.md and answer as many questions as you want.
 ```
 
-Render the orchestrator prompt—with or without that task—and give it to a
-supported coding agent:
+Start the orchestrator with it:
 
 ```bash
-crustify-orchestrator-prompt \
-  ./wavefront ./crustify ./campaign-TASK.md \
-  -o orchestrator.md
+crustify translate /path/to/repo ./campaign-TASK.md
 ```
 
-Omit `./campaign-TASK.md` to answer every unresolved question live. The
+The task is copied to the repository's `crustify/TASK.md`, which the orchestrator reads
+and the campaign tracks. Edit that copy to change settings mid-campaign; the orchestrator
+rereads it before each subsystem. Questions left unanswered are asked live. The
 orchestrator asks which repository and revision to use, whether to port or wrap
 it, where the campaign should start, which models to use, and how much autonomy
 it has. It presents a consolidated campaign brief for approval before mutating

@@ -116,6 +116,40 @@ class CommandShapeTests(unittest.TestCase):
                 self._run(*argv)
 
 
+class CanonicalTaskTests(unittest.TestCase):
+    """The orchestrator reads its task from `<workdir>/crustify/TASK.md`."""
+
+    def setUp(self) -> None:
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.repo = Path(self.tmp.name)
+        self.given = self.repo / "given.md"
+        self.given.write_text("answers")
+        self.canonical = self.repo / "crustify/TASK.md"
+
+    def test_the_first_run_installs_the_task(self) -> None:
+        self.assertEqual(cli.canonical_task(self.repo, self.given),
+                         self.canonical)
+        self.assertEqual(self.canonical.read_text(), "answers")
+
+    def test_a_resume_needs_no_task(self) -> None:
+        cli.canonical_task(self.repo, self.given)
+        self.assertEqual(cli.canonical_task(self.repo, None), self.canonical)
+
+    def test_a_resume_never_overwrites_edits(self) -> None:
+        cli.canonical_task(self.repo, self.given)
+        self.canonical.write_text("edited")
+        with self.assertRaisesRegex(SystemExit, "differs"):
+            cli.canonical_task(self.repo, self.given)
+        self.assertEqual(self.canonical.read_text(), "edited")
+        self.assertEqual(cli.canonical_task(self.repo, self.canonical),
+                         self.canonical)
+
+    def test_no_task_at_all_is_an_error(self) -> None:
+        with self.assertRaisesRegex(SystemExit, "no campaign task"):
+            cli.canonical_task(self.repo, None)
+
+
 class CampaignArtifactsTests(unittest.TestCase):
     """A campaign's artifact tree lives under `crustify/artifacts/`; one begun
     before the rename is still found under `crustify/campaigns/`."""

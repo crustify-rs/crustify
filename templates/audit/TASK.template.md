@@ -46,9 +46,17 @@ Optional answers may be left unresolved for the orchestrator to decide.
 
 Unanswered optional questions are decided by the orchestrator.
 
+## Review
+
+7. **Which objectives should the reviewers review for? By default, the objective above
+   decides: `ub`, `equiv` when `equivalence` is an instrument, and `disclose`, plus
+   `fix` for `audit+fix`; `revisit` and `disclose`, plus `fix` for `revisit+fix`.**
+   - Answer: `<default | any of: unsafety, contracts, ub, equiv, internal, misc,
+     coverage, revisit, disclose, fix>`
+
 ## Reporting
 
-7. **Where and in what format should results be recorded?**
+8. **Where and in what format should results be recorded?**
    - Answer: `<results path>, <templates/audit/results.template.md | custom template>`
 
 
