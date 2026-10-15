@@ -1,6 +1,6 @@
 # schedule.json schema
 
-Field meaning for `<workdir>/crustify/campaigns/<campaign-id>/schedule.json`, the
+Field meaning for `<workdir>/crustify/artifacts/<campaign-id>/schedule.json`, the
 campaign's total execution order. Layout example:
 [`specs/schedule.json`](../../specs/schedule.json).
 

@@ -1,6 +1,6 @@
 {
   "_comment": [
-    "Example `<workdir>/crustify/campaigns/<campaign-id>/schedule.json`.",
+    "Example `<workdir>/crustify/artifacts/<campaign-id>/schedule.json`.",
     "The campaign's total execution order, emitted once before the first",
     "agent starts. It nests link unit, subsystem, wave -- the same shape as",
     "subsystems.json and as the campaign directory -- and the total order is",

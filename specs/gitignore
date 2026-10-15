@@ -12,9 +12,11 @@ rust.bak
 # record are tracked: the records are the evidence behind results.md's cost cells, and
 # the transcripts they are recovered from do not outlive the container. The
 # agent streams, and for now the orchestrator's records, are not.
-campaigns/**/translator.log
-campaigns/*/orchestrator-*.log
-campaigns/*/orchestrator-*.usage.json
+artifacts/**/binder.log
+artifacts/**/translator.log
+artifacts/**/reviewer.log
+artifacts/*/orchestrator-*.log
+artifacts/*/orchestrator-*.usage.json
 
 # Review reproducers are tracked; the cargo trees their builds leave are not.
 reviews/**/target

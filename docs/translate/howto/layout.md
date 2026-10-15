@@ -34,10 +34,10 @@ It gives the batch's link unit, subsystem and wave.
 
 ## Artifact dirs
 
-Every level of a campaign has an artifact dir under `crustify/campaigns/`:
+Every level of a campaign has an artifact dir under `crustify/artifacts/`:
 
 ```text
-crustify/campaigns/<campaign-id>/               the campaign: schedule.json, the orchestrator's log
+crustify/artifacts/<campaign-id>/               the campaign: schedule.json, the orchestrator's log
 └── <link-unit>/<subsystem>/                    a subsystem
     ├── wave-<index>/                           a wave
     │   └── batch-<index>/                      a batch
@@ -48,7 +48,8 @@ crustify/campaigns/<campaign-id>/               the campaign: schedule.json, the
         └── batch-<index>/                      a review batch, laid out as a batch
 ```
 
-Each level also holds its `ffimap.json` once the orchestrator records it. A batch's artifact
+Each level also holds its `ffimap.json` once the orchestrator records it. A campaign begun
+before the artifact tree was named so keeps it under `crustify/campaigns/`. A batch's artifact
 dir is what its `--output` names, and holds everything about that batch: its input and the
 artifacts its agent produced.
 

@@ -121,3 +121,25 @@ class CommandShapeTests(unittest.TestCase):
             with self.subTest(argv=argv), mock.patch("sys.stderr"), \
                     self.assertRaises(SystemExit):
                 self._run(*argv)
+
+
+class CampaignArtifactsTests(unittest.TestCase):
+    """A campaign's artifact tree lives under `crustify/artifacts/`; one begun
+    before the rename is still found under `crustify/campaigns/`."""
+
+    def setUp(self) -> None:
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.repo = Path(self.tmp.name)
+
+    def test_new_and_resumed_campaigns_live_under_artifacts(self) -> None:
+        (self.repo / "crustify/artifacts/c1").mkdir(parents=True)
+        self.assertEqual(cli.campaign_artifacts(self.repo, "c1"),
+                         self.repo / "crustify/artifacts/c1")
+        self.assertEqual(cli.campaign_artifacts(self.repo, "missing"),
+                         self.repo / "crustify/artifacts/missing")
+
+    def test_a_campaign_begun_before_the_rename_is_found(self) -> None:
+        (self.repo / "crustify/campaigns/old").mkdir(parents=True)
+        self.assertEqual(cli.campaign_artifacts(self.repo, "old"),
+                         self.repo / "crustify/campaigns/old")

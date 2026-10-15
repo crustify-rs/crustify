@@ -46,7 +46,7 @@ task's target repo.
 #### 2. Artifact tree scaffolding
 
 This campaign's `<campaign-id>` is `{campaign_id}`. The harness has already created its
-artifact dir, `<repo>/crustify/campaigns/<campaign_id>/`, and writes your log there. If
+artifact dir, `<repo>/crustify/artifacts/<campaign_id>/`, and writes your log there. If
 that dir already holds the campaign's earlier artifacts, you are resuming it: continue
 from them and its existing branches instead of starting over.
 
@@ -123,7 +123,7 @@ included.
 
 ##### Subsystems
 
-Emit a campaign-wide `crustify/campaigns/<campaign-id>/schedule.json` from
+Emit a campaign-wide `crustify/artifacts/<campaign-id>/schedule.json` from
 `specs/schedule.json`; read `docs/translate/schemas/schedule.md` for its field meaning. It
 will state a total ordering of this campaign's link units and subsystems based on
 dependency relations, bottom-up.

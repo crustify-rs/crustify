@@ -65,8 +65,9 @@ class OrchestrateAgent(CrustifyAgent):
         self.model = model
         self.task_only = task_only
         #: Minted by the CLI for a new translate campaign, or named by
-        #: `--campaign` to resume one. Either way `crustify/campaigns/<id>/`
-        #: exists and is this agent's artifact dir, so the orchestrator's log
+        #: `--campaign` to resume one. Either way `crustify/artifacts/<id>/`
+        #: (`crustify/campaigns/<id>/` for a campaign begun before the
+        #: rename) exists and is this agent's artifact dir, so the orchestrator's log
         #: sits with the campaign it runs. Empty for an audit campaign, which
         #: has no campaign tree.
         self.campaign_id = campaign_id
