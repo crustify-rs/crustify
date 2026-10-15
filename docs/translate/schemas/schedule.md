@@ -2,7 +2,7 @@
 
 Field meaning for `<workdir>/crustify/artifacts/<campaign-id>/schedule.json`, the
 campaign's total execution order. Layout example:
-[`specs/schedule.json`](../../specs/schedule.json).
+[`templates/schedule.json`](../../templates/schedule.json).
 
 The orchestrator emits it once, before the first agent starts. Waves and batches are
 computable in advance, so writing them down makes a campaign's shape and cost reviewable

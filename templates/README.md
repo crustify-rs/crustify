@@ -1,16 +1,19 @@
-# Examples
+# Templates
 
-Two kinds of campaign, one image, one directory each.
+Two kinds of campaign, one image, one directory of templates each.
 
 | directory | campaign | task template | report template |
 |---|---|---|---|
-| [`crustify/`](crustify) | translate C to Rust, or wrap it | [`TASK-template.md`](crustify/TASK-template.md) | [`results-template.md`](crustify/results-template.md) |
-| [`crustify_audit/`](crustify_audit) | hunt UB in an existing Rust crate | [`TASK.md.template`](crustify_audit/TASK.md.template) | [`results.md`](crustify_audit/results.md) |
+| [`crustify/`](crustify) | translate C to Rust, or wrap it | [`TASK.template.md`](crustify/TASK.template.md) | [`results.template.md`](crustify/results.template.md) |
+| [`crustify_audit/`](crustify_audit) | hunt UB in an existing Rust crate | [`TASK.template.md`](crustify_audit/TASK.template.md) | [`results.template.md`](crustify_audit/results.template.md) |
 
-Copy a task template to start a request. Derived artifacts such as
-`subsystems.json` are emitted against the live wavefront inventory, not
-committed by hand. [`crustify_audit/zstd-rs`](crustify_audit/zstd-rs) holds a
-filled audit task.
+Copy a task template to start a request.
+
+The files beside them seed a translate campaign's `crustify/` dir, which the
+orchestrator creates from them: [`gitignore`](gitignore),
+[`build.json`](build.json), [`subsystems.json`](subsystems.json) and
+[`schedule.json`](schedule.json). Derived artifacts such as `subsystems.json`
+are emitted against the live wavefront inventory, not committed by hand.
 
 [`Dockerfile`](Dockerfile) builds the environment either campaign runs in. It
 starts nothing: the container idles, and `crustify` is run inside it: the command
@@ -21,7 +24,7 @@ picks the campaign kind, and its options pick the model, billing and ablation.
 All commands from the repo root.
 
 ```sh
-docker build -f examples/Dockerfile -t crustify .
+docker build -f templates/Dockerfile -t crustify .
 ```
 
 Start a container per campaign, idle:
@@ -122,7 +125,7 @@ Set with `--build-arg` on `docker build`.
 ## Results
 
 Campaign reports are written into the target checkout, at the path the task
-names, filled from [`results-template.md`](crustify/results-template.md).
+names, filled from [`results.template.md`](crustify/results.template.md).
 
 The Dockerfile header documents the rest: what each mount buys and why the base
 image is pinned by digest.

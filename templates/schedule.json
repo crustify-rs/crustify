@@ -14,7 +14,7 @@
     "raw-lifetime-void and raw-lifetime-string of the first link unit.",
     "Homes follow the coding conventions: crustify/rust/<repo>/<link-unit>/,",
     "here for a repo named widgets. An independent illustration: it is not",
-    "the schedule for specs/subsystems.json."
+    "the schedule for templates/subsystems.json."
   ],
   "schema_version": 1,
   "link_units": [

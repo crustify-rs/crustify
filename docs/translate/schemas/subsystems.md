@@ -1,7 +1,7 @@
 # subsystems.json schema
 
 Field meaning for `<workdir>/crustify/subsystems.json`, the orchestrator's campaign
-decomposition. Layout example: [`specs/subsystems.json`](../../specs/subsystems.json).
+decomposition. Layout example: [`templates/subsystems.json`](../../templates/subsystems.json).
 
 The orchestrator emits this repo-tier artifact. It describes the subsystem span
 selected by the user and every imported subsystem in that span's producer closure.

@@ -51,7 +51,7 @@ that dir already holds the campaign's earlier artifacts, you are resuming it: co
 from them and its existing branches instead of starting over.
 
 ```bash
-cp specs/gitignore <repo>/crustify/.gitignore
+cp templates/gitignore <repo>/crustify/.gitignore
 ```
 
 If you're working in a git repo, create the campaign branch:
@@ -78,7 +78,7 @@ Create immutable builds of the target so that binder and translator agents can r
 A Rust- or bindgen-only change may reuse a matching build. A change to the compiled target
 requires a private build; refresh shared builds after that change lands.
 
-Create `crustify/build.json` from `specs/build.json`. Record each prebuild above as one
+Create `crustify/build.json` from `templates/build.json`. Record each prebuild above as one
 of its `variants`, naming the sanitizer builds `asan-ubsan`, `tsan` and `bsan`: binders,
 translators and reviewers take the sanitizers available to them from these variants, so a
 sanitizer the campaign does not build is one they neither test for nor run. Each variant is an
@@ -89,7 +89,7 @@ disabled test in the campaign results. Post-campaign results must match this bas
 
 #### 4. Subsystem decomposition
 
-Create `crustify/subsystems.json` from `specs/subsystems.json`; see
+Create `crustify/subsystems.json` from `templates/subsystems.json`; see
 `docs/translate/schemas/subsystems.md`.
 
 Use actual linker outputs to identify link units. Cover the selected target and its
@@ -124,7 +124,7 @@ included.
 ##### Subsystems
 
 Emit a campaign-wide `crustify/artifacts/<campaign-id>/schedule.json` from
-`specs/schedule.json`; read `docs/translate/schemas/schedule.md` for its field meaning. It
+`templates/schedule.json`; read `docs/translate/schemas/schedule.md` for its field meaning. It
 will state a total ordering of this campaign's link units and subsystems based on
 dependency relations, bottom-up.
 

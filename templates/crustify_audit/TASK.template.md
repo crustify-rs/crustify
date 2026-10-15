@@ -46,7 +46,7 @@ Unanswered optional questions are decided by the orchestrator.
 ## Reporting
 
 7. **Where and in what format should results be recorded?**
-   - Answer: `<results path>, <examples/crustify_audit/results.md | custom template>`
+   - Answer: `<results path>, <templates/crustify_audit/results.template.md | custom template>`
 
 
 ## Additional instructions

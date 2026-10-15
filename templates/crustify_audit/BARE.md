@@ -1,10 +1,10 @@
 # Ablation: the bare backend
 
 `crustify audit <workdir> <TASK> --task-only` starts the orchestrator's backend CLI
-with the task file, here `TASK-bare.md.template`, as its **entire** prompt: no
+with the task file, here `TASK-bare.template.md`, as its **entire** prompt: no
 orchestrator role, no conventions, no skill index.
 
-`TASK-bare.md.template` is deliberately minimal -- two lines, 21 words.
+`TASK-bare.template.md` is deliberately minimal -- two lines, 21 words.
 
 ## Running it
 

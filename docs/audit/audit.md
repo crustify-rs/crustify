@@ -103,7 +103,7 @@ The container starts an orchestrator that resolves the run plan and launches aud
 against the checkout mounted at `/target`.
 
 ```sh
-docker build -t crustify -f examples/Dockerfile .
+docker build -t crustify -f templates/Dockerfile .
 
 docker run --rm -it --name audit-target \
   -e ANTHROPIC_API_KEY \
@@ -136,7 +136,7 @@ OpenRouter must support the Responses API for the selected model. Model IDs are 
 verbatim to both CLIs.
 
 Before running, complete
-[`examples/crustify_audit/TASK.md.template`](../../examples/crustify_audit/TASK.md.template) and
+[`templates/crustify_audit/TASK.template.md`](../../templates/crustify_audit/TASK.template.md) and
 place it at the host path mounted as `/campaign/TASK.md` above. Without that mount, the
 orchestrator asks for mandatory decisions. A headless run therefore needs a complete task.
 
@@ -161,7 +161,7 @@ OpenRouter model IDs use Codex.
 
 ## Reference
 
-- [Task questionnaire](../../examples/crustify_audit/TASK.md.template)
-- [Example results and report format](../../examples/crustify_audit/results.md)
+- [Task questionnaire](../../templates/crustify_audit/TASK.template.md)
+- [Example results and report format](../../templates/crustify_audit/results.template.md)
 - [`ub` auditor prompt](../../src/crustify_audit/prompts/ub.md)
 - [Orchestrator prompt](../../src/crustify_audit/prompts/orchestrator.md)
