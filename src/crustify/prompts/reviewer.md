@@ -108,6 +108,12 @@ Deviations from the conventions below, in a Crustify-generated batch only.
 
 Any other defect in your workset.
 
+#### Coverage (`coverage`)
+
+Gaps the codebase's existing external and inline test suites leave in your workset's C and
+Rust execution paths. Find them by reading those suites against the C code, and measure
+them as the testing instructions describe.
+
 ### 2. Evidence
 
 File every finding in its own `<slug>` directory in its objective's dir, with a report that
@@ -129,10 +135,13 @@ Each reproducer is a standalone Cargo package: its `Cargo.toml` declares an empt
 `[dependencies]`. Its `src/main.rs` runs one scenario, so that `cargo run` exits non-zero
 on the affected commit.
 
+Coverage gaps are not filed: the tests that fill them show the delta in the coverage
+measurement itself.
+
 ### 3. Fixes
 
-If `fix` is not enabled, skip this step, except Coverage when `coverage` is listed: change
-nothing in the Rust tree outside `crustify/reviews/` but the tests Coverage adds.
+If `fix` is not enabled, skip this step, except for coverage gaps when `coverage` is listed:
+change nothing in the Rust tree outside `crustify/reviews/` but the tests that fill them.
 
 If `fix` is enabled, patch every finding of your objectives:
 
@@ -144,16 +153,12 @@ If `fix` is enabled, patch every finding of your objectives:
   or fails to compile because the patch removed the safe path that reached the defect;
 - `conventions` and `misc`: fix the deviation or defect.
 
+If `coverage` is listed, whether or not `fix` is, add the tests that fill the coverage gaps
+you found to the codebase's test suites.
+
 Classify every test you add given the instructions in the testing how-to, and place it
 where the conventions place tests of its kind, or, outside a Crustify-generated batch, in
 the reviewed crate's own suite for that kind.
-
-#### Coverage (`coverage`)
-
-Identify the coverage gaps that the existing external and inline suites leave in your
-workset's C and Rust execution paths, measured as the testing instructions describe, and add
-tests that fill them. Coverage gaps need no report: the delta shows in the coverage
-measurement itself.
 
 ---
 
@@ -162,7 +167,7 @@ measurement itself.
 ### 1. Regressions
 
 Validate the tree you land as the testing instructions' Regressions section describes. If
-you patched something, run any regression tests that might be available for it.
+you patched something, run any regression suites that might be available for it.
 
 In a Crustify campaign, your review wave follows a translated wave, so you own its gates:
 
