@@ -118,7 +118,7 @@ class IncludeTests(unittest.TestCase):
 
     _DOCS = {
         "conventions": "docs/translate/coding-conventions.md",
-        "bindings": "docs/translate/howto/bindings.md",
+        "binding": "docs/translate/howto/binding.md",
         "porting": "docs/translate/howto/porting.md",
         "testing": "docs/translate/howto/testing.md",
         "landing": "docs/translate/howto/landing.md",
@@ -134,10 +134,10 @@ class IncludeTests(unittest.TestCase):
         """The reviewer is told to ignore the conventions outside a
         Crustify-generated batch."""
         self.assertEqual(self._included("translator.md"),
-                         {"conventions", "bindings", "porting", "testing",
+                         {"conventions", "binding", "porting", "testing",
                           "landing"})
         self.assertEqual(self._included("reviewer.md"),
-                         {"conventions", "bindings", "porting", "testing",
+                         {"conventions", "binding", "porting", "testing",
                           "landing"})
         self.assertEqual(self._included("orchestrator.md"), {"conventions"})
 

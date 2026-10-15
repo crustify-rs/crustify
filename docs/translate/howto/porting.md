@@ -1,6 +1,6 @@
 # Porting
 
-How a scheduled C item is reimplemented in safe Rust. A port builds on the bindings how-to:
+How a scheduled C item is reimplemented in safe Rust. A port builds on the binding how-to:
 item analysis, macros and the safe boundary apply unchanged, and a ported item keeps C
 interoperability and observable behaviour for as long as C consumes it.
 

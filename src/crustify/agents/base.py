@@ -33,7 +33,7 @@ _MD_FIELD_RE = _re.compile(
 # Keeping the anchor in the header makes that composition explicit in source.
 _GENERIC_SKILL_ANCHOR = "<!-- SKILL -->"
 
-#: `<!-- INCLUDE docs/translate/howto/bindings.md -->`: a crustify document,
+#: `<!-- INCLUDE docs/translate/howto/binding.md -->`: a crustify document,
 #: by its path in the checkout, spliced whole into a stage prompt.
 _INCLUDE_RE = _re.compile(r"<!-- INCLUDE ([^ ]+) -->")
 

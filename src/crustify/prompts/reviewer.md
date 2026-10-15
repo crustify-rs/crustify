@@ -201,7 +201,7 @@ change you make; otherwise, ignore them.
 Here are additional instructions on how Crustify generates safe bindings, which your workset
 is judged against.
 
-<!-- INCLUDE docs/translate/howto/bindings.md -->
+<!-- INCLUDE docs/translate/howto/binding.md -->
 
 ---
 

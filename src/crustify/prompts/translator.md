@@ -41,7 +41,7 @@ A targeted dependency outside a partial port's selected migration set may use `w
 
 ## Workflow
 
-The bindings instructions below describe how to produce each part; their section names are
+The binding instructions below describe how to produce each part; their section names are
 cited here.
 
 ### 1. Item analysis
@@ -114,12 +114,12 @@ out, where their tests are placed, and how every unsafe block is documented.
 Here are additional instructions on how to generate safe bindings. Generate your worklist's
 bindings as they describe, following the Type route or the Symbol route for your route.
 
-<!-- INCLUDE docs/translate/howto/bindings.md -->
+<!-- INCLUDE docs/translate/howto/binding.md -->
 
 ---
 
 Here are additional instructions on how to port C to safe Rust. They apply on top of the
-bindings instructions for the `port` objective only.
+binding instructions for the `port` objective only.
 
 <!-- INCLUDE docs/translate/howto/porting.md -->
 
