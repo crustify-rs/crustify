@@ -34,8 +34,6 @@ The worklist objective is authoritative:
 - `wrap`: preserve the C ABI and implementation; add a safe Rust API.
 - `port`: implement the selected behaviour in safe Rust; preserve required C
   interoperability and observable behaviour.
-- `review`: verify existing code, add regression evidence, fix defects, land the fixes,
-  and file reports for every defect fixed.
 
 A targeted dependency outside a partial port's selected migration set may use `wrap`.
 
@@ -110,7 +108,7 @@ Rust consumers use safe APIs. Restrict raw operations to:
 
 Keep SCC cuts and unavailable higher-layer dependencies as narrow documented raw seams.
 Replace them when a safe dependency becomes available. Every unsafe block requires the
-safety comment specified by our coding conventions.
+safety comment the conventions skill specifies.
 
 ---
 
@@ -126,7 +124,7 @@ before selecting a representation.
 ### 2. Safe layout
 
 For `objective: wrap`, emit a safe layout over the raw type and its handles according to
-our coding conventions.
+the conventions skill.
 
 For a synthetic type generator:
 
@@ -162,7 +160,7 @@ Derive each accessor from ownership, mutability, nullability, cardinality, and l
 findings. Tie every pointer-derived result to the state that keeps it alive.
 
 Project fields with `addr_of!`, `addr_of_mut!`, `&raw const`, or `&raw mut`. Never use
-`&(*p).field` or `&mut (*p).field`. Follow our coding conventions for access.
+`&(*p).field` or `&mut (*p).field`. Follow the conventions skill for access.
 
 Accessor requirements:
 
@@ -263,7 +261,7 @@ Home each with the primitive's translation unit.
 ### 5. Porting symbols
 
 For `port`, translate the implementation to safe idiomatic Rust and preserve observable
-behaviour. Re-export it to C according to our coding conventions while C consumers
+behaviour. Re-export it to C according to the conventions skill while C consumers
 remain.
 
 - The raw gateway reconstructs safe wrappers and calls the native function.
@@ -279,238 +277,13 @@ remain.
 
 ## Tests
 
-Classify tests according to the following scheme:
-
-- `ub_safe` ensure the safe public API does not reach UB, mainly by not triggering sanitizer/Miri crashes, or by failing
-  to pass the compiler for a given illegal path; `ub_unsafe` targets UB bugs on the unsafe public API: each public
-  `unsafe fn` or method of your workset, called within its stated `# Safety` contract, edge cases included. Raw `ffi::`
-  round-trips are not `ub_unsafe` tests; they belong in `unit` or `equiv`;
-- `equiv` ensure the safe public API matches the C-observable behavior, mainly by passing equivalence assertions;
-- `unit` ensure the internal API routines behave correctly, mainly by passing Rust assertions.
-
-Construct test objects through safe constructors. While a type has none, adopt the raw
-constructor's result in one documented unsafe fixture per type, and replace the fixture
-once the safe constructor exists.
-
-### UB tests
-
-Emit tests to ensure the public API of your workset is free of UB.
-
-Home UB tests in `crustify/rust/<repo>/tests/` as Cargo integration tests so
-crate privacy enforces the public-API boundary. Place tests that call the
-safe public API under `tests/ub_safe/<the tested TU>.rs` and declare the
-tested TU as a module of `tests/ub_safe/main.rs`; place tests that excercise illegal
-safe paths that the compiler should catch in `tests/ub_safe/compile_fail`. Place tests
-that target the unsafe public API under `tests/ub_unsafe/<the tested TU>.rs` using the same rules:
-one suite per public unsafe function or method your workset adds, with its inputs built through
-the safe API wherever one exists. A workset that adds no public unsafe API adds no `ub_unsafe`
-tests.
-
-Cover every instrument prepared by the campaign as a separate obligation:
-
-- ASan/UBSan: bounds errors, use-after-free, use-after-return, invalid free,
-  double free, leak, pointer/alignment UB, and integer/division/shift UB.
-- BSan: conflicting foreign writes and retained foreign pointers across Rust reborrows.
-  Write these tests like the others. BSan is the slowest instrument and reports false
-  positives at the foreign boundary, so run it as the Regressions step prescribes: a
-  `wrap` or `port` batch runs only the tests it expects to trigger BSan, and a `review`
-  runs the workspace-wide BSan gate only in its sub-campaign's last wave.
-- TSan: races reachable through safe APIs, including every asserted `Send` or `Sync`
-  implementation and threaded callback.
-- Miri: Rust-side lifetime, bounds, initialization, validity, alignment, intrinsic, and
-  `repr` assumptions. Miri cannot call the foreign library, read its globals or spawn a
-  process. Give every test that cannot run under Miri `#[cfg_attr(miri, ignore = "<reason>")]`
-  on its test function, naming what stops it: `"calls C"`, `"reads a C global"`, and so on.
-  Mark a test only after running it alone under Miri and seeing Miri stop there; never to
-  silence a Miri report of undefined behaviour, a panic or a failed assertion, which are
-  findings. Do not use `#[cfg(not(miri))]` or test-name filters instead: with the attribute
-  in place, `cargo miri test` runs every other test.
-
-Exercise every owner and borrowed form, shared and mutable access path, lifecycle
-strategy, generic instance, and callback variant emitted by the batch. Attempt to outlive
-the owner, alias a reborrow, reenter a callback, and drop a parent first.
-
-Use compile-fail doctests or `trybuild` when the type system should reject the program.
-
-
-### Equivalence tests
-
-Emit functional equivalence tests that run the raw C implementation and public Rust API on
-equivalent, independently owned inputs. 
-
-Home equivalence tests in `crustify/rust/<target>/tests/equiv/<the tested TU>.rs` as Cargo
-integration tests so crate privacy enforces the public-API boundary; declare the
-tested TU as a module of `tests/equiv/main.rs`. 
-
-Compare:
-
-- return values and errors;
-- out-parameters and buffers;
-- callbacks;
-- state transitions; and
-- lifecycle effects.
-
-Use multi-call sequences and compare after each step. Single calls are only a baseline.
-
-For `port`, the reference build must have the Rust feature disabled so the C symbol cannot
-resolve to the Rust export.
-
-Do not copy a confirmed C defect into Rust. Document the divergence, retain equivalence
-tests for unaffected behaviour, and place the corrected-behaviour regression in
-`unit_tests`.
-
-
-### Unit tests
-
-Use inline `#[cfg(test)] mod unit_tests` beside the translated unit when Rust assertions
-supply the verdict or the test exercises internal facilities, including:
-
-- Rust-only `Iterator`, `Debug`, `Clone`, conversions, and builders;
-- input rejected by Rust before FFI, including the error and no panic;
-- deliberate correction of defective C behaviour;
-- unsafe adoption through `from_raw`, `from_ptr`, or similar constructors;
-- private or `pub(crate)` constructors and internal destructor/drop plumbing; and
-- resource release exercised through any of those raw, unsafe, or internal paths.
-
-
-### Coverage
-
-Run the worklist's tests with the campaign's coverage-instrumented build and inspect
-coverage for the C and Rust execution paths belonging to the worklist. Add focused tests
-to maximize coverage on the reachable uncovered paths triggered by your worklist. Report
-paths that remain uncovered because they are unreachable, environment-dependent, or
-intentionally nondeterministic.
-
----
-
-## Review mode
-
-Proceed with the following steps for a `review` objective.
-
-A review batch carries one route's whole share of a translated wave: every type, or every
-symbol and callback, that the wave's batches landed, often from several translation batches.
-BSan follows the sub-campaign, not the wave. Your wave is the sub-campaign's last when its
-index is the highest of your subsystem's waves in
-`crustify/campaigns/<campaign-id>/schedule.json`; your working branch's name gives the link
-unit, subsystem and wave. In the last wave you own the sub-campaign's BSan gate, as the
-Regressions step prescribes. It covers everything the sub-campaign landed, so a report on an
-earlier wave's items is yours to triage and fix as well. In every other wave, run BSan only on
-the individual reproducers you emit.
-
-You also own the workspace-wide Miri gate, in every wave, as the Regressions step
-prescribes. Treat each Miri report of undefined behaviour as a UB candidate of the item it
-touches, and give a test that Miri stops at the foreign boundary the attribute the Tests
-section prescribes when it lacks one.
-
-For homing reports and reproducers, use as your artifact dir the part of your working
-branch's name after `crustify/review-batches/`:
-`<campaign-id>/<link-unit>/<subsystem>/<wave>/<batch>`.
-
-Each reproducer is a standalone Cargo package: its `Cargo.toml` declares an
-empty `[workspace]` table and depends on the affected crate through a relative `path`
-under `[dependencies]`. Its `src/main.rs` runs one scenario, so that `cargo run` exits
-non-zero on the affected commit: a UB reproducer through the sanitizer it names in its report,
-an equivalence reproducer through a failed comparison.
-
-### 1. Lifecycle discovery
-
-For a workset that contains `type` or `raw-lifetime` kinds, verify that their existing
-lifetime primitives are complete and none were missed by the previous runs.
-
-Add any missing lifetime representations and file a report for each gap in
-`crustify/reviews/<artifact-dir>/lifecycle/<item-slug>` that describes your finding.
-
-### 2. Safe boundary
-
-Verify the public API of your workset for any remaining unsafe annotations and raw
-pointers that could be replaced with safe, idiomatic variants to facilitate API consumers
-to write less unsafe code. Exclude raw pointers that will be replaced with safe handles
-once their batches get scheduled (i.e. cut SCCs). For those API entry points that must
-legitimately stay unsafe, verify that the safety obligation stated by their `/// SAFETY`
-comment is correct and unambiguous. Use `crustify ffimap` as instructed below to
-locate them. Narrow those sites that belong to your target workset.
-
-Fix the affected items and file a report for each defect in
-`crustify/reviews/<artifact-dir>/unsafe/<defect-slug>` that describes your finding.
-
-### 3. UB
-
-Verify your workset's implementation for any UB defect in the public API that the
-`ub_safe` or `ub_unsafe` suites might have missed. Prove that a candidate is a true UB defect by
-emitting a reproducer that triggers one of the enabled sanitizers from Rust code;
-annotate reproducers targettinng the safe public API with `#[forbid(unsafe_code)]`; reproducers 
-targeting the unsafe API should honor the safety requirement. Place them in 
-`crustify/reviews/<artifact-dir>/ub_<safe or unsafe>/<defect-slug>` along with a report that describes
-your finding, including a trace of the sanitizer crash. The unsafe surface should only include
-API that the workset adds; if the workset did not include any API item that was made unsafe
-then there's nothing to evaluate.
-
-Emit a patch for every true UB defect that you found and turn its reproducer into a Cargo
-integration test `tests/ub_safe` or `tests/ub_unsafe` suite to catch future regressions. The regression
-test should either compile and run without triggering a sanitizer crash, or fail to
-compile because the patch removed the safe path that reached the defect.
-
-### 4. Equivalence
-
-Verify your workset's implementation for any functional equivalence defects in the public
-API that the `tests/equiv` suite might have missed. Prove that a candidate is a true
-equivalence defect by emitting a reproducer that fails to pass at least one of the
-equivalence comparisons stated above while executing the raw C and the public Rust APIs.
-Place the reproducer in `crustify/reviews/<artifact-dir>/equiv/<defect-slug>` along with a
-report that describes your finding, including a trace of the failing equivalence
-assertion.
-
-Emit a patch for every true equivalence defect that you found and turn its reproducer into
-a Cargo integration test in the `tests/equiv` suite to catch future regressions.
-
-### 5. Internal
-
-Verify your workset's private implementation for any remaining defects that the `mod
-unit_tests` suite might have missed. File a brief report that describes your finding and
-place it in `crustify/reviews/<artifact-dir>/internal/<defect-slug>`.
-
-Emit a patch for every true defect that you found and add an inline regression test in the
-`mod unit_tests` suite to catch future regressions.
-
-### 6. Conventions
-
-Fix any deviation from our coding conventions and file a report describing it in
-`crustify/reviews/<artifact-dir>/conventions/<defect-slug>`.
-
-### 7. Misc
-
-Fix any other miscellaneous defect that you find and file a report describing it
-in `crustify/reviews/<artifact-dir>/misc/<defect-slug>`.
-
-### 8. Coverage
-
-Identify any coverage gaps that the existing external or inline test suites might have
-missed for the C and Rust execution paths and add tests that fill those gaps for your
-workset. You do not need to emit any defect-style report for coverage gaps, the delta will
-be demonstrated by measuring the coverage itself.
+Test your worklist as the testing skill prescribes.
 
 ---
 
 ## Completion
 
-### 1. Static safety scan
-
-Run the static safety scan `crustify ffimap` on the safe crate and fix any public
-`unsafe fn` or raw pointer on the safe public interface that you might have missed. Focus
-only on those sites that belong to your changeset.
-
-```bash
-crustify ffimap <workdir> --json
-```
-
-Add `--sites unsafe_fns_pub raw_ptr_ty_pub_fields_pub raw_ptr_fn_pub_safe` to list where
-they are: the public `unsafe fn`s, the raw pointers in public fields of public types, and
-the raw pointers in the signatures of public safe fns.
-
-Do NOT run `crustify spawn-auditor`.
-
-
-### 2. Regressions
+### 1. Regressions
 
 Run:
 
@@ -524,39 +297,22 @@ Every FFI, UB, and equivalence test must use the matching reusable sanitized C l
 a private sanitized replacement.
 
 Validate under every prepared instrument. BSan is the exception, and runs with discipline:
+run it only on the tests you wrote and expect to trigger it, by exact name; never a whole
+binary or suite. Only a true positive, a report that reproduces through the Rust side as a
+single test, becomes a UB finding with a fix.
 
-- `wrap` and `port` run BSan only on the tests they wrote and expect to trigger it, by
-  exact name; never a whole binary or suite.
-- `review` in the sub-campaign's last wave runs the BSan gate: the whole workspace, one
-  invocation per test binary in parallel, each under a `timeout`, once on the wave tip
-  before any fix and once on the tree you land, after your last rebase. Start each run in
-  the background and wait for it to exit; do not poll or read its output while it runs.
-  Pursue only true positives.
-- `review` in any other wave runs BSan only on the individual reproducers it emits, each
-  alone; never a test binary, a suite or the workspace.
-- Only a true positive, a report that reproduces through the Rust side as a single test
-  or standalone reproducer, becomes a UB finding with a fix.
-
-Miri runs as a gate too. `wrap` and `port` run their own tests under Miri. Every `review`
-runs the Miri gate over the whole workspace: one `cargo +nightly miri test` per test binary
-(`--lib`, and `--test <name>` for each integration binary), in parallel, each with
-`-- --skip compile_fail`, once on the wave tip before any fix and once on the tree you land,
-after your last rebase. Start each run in the background
-and wait for it to exit. The gate passes only with no Miri error: a test that stops at the
-foreign boundary without the attribute gets it, and any other Miri error is a UB candidate.
+Run your own tests under Miri.
 
 If C changed, run the configured C build and baseline with the Rust feature off. For
 `port`, repeat with the feature on. A wrap-only batch with no C change does not need the
 full C baseline.
 
 
-### 3. Commit
+### 2. Commit
 
 Check that the diff contains no unrelated work.
 
-For `review`, make two commits: first, the `crustify/reviews/` changes so one can easily
-checkout the affected commit and run reproducers, and then the Rust tree fixes. Otherwise,
-commit one changeset.
+Commit one changeset.
 
 Land your commits on the supplied unchecked-out wave branch through the local Git common
 directory with:
@@ -577,12 +333,6 @@ On a non-fast-forward rejection:
 
 Never reset, force-update, move the wave branch backward, or push to a remote.
 Also, do not remove the worktree after landing; its the orchestrator job.
-
----
-
-Follow these coding conventions where applicable throughout your workflow:
-
-<!-- CODING CONVENTIONS -->
 
 ---
 

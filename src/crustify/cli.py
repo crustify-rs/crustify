@@ -103,7 +103,8 @@ def main() -> None:
         "Run one translator over one thin batch. The workdir is the isolated "
         "worktree the orchestrator forked for it; the harness neither creates "
         "nor purges that tree. The batch is the whole input: which items, "
-        "which objective, and the Rust home each item belongs in.")
+        "which objective (wrap or port), and the Rust home each item belongs "
+        "in.")
     wrap_p = sub.add_parser(
         "spawn-translator", parents=[agent_opts],
         help=_spawn_translator_blurb, description=_spawn_translator_blurb,
@@ -122,6 +123,34 @@ def main() -> None:
              "translator.log and translator.usage.json into it, so give each "
              "batch its own directory.")
     wrap_p.add_argument(
+        "--dry-run", action="store_true",
+        help="Validate and summarize the batch without spawning an agent.")
+
+    # -- spawn-reviewer (one agent over one orchestrator-projected review batch)
+    _spawn_reviewer_blurb = (
+        "Run one reviewer over one review batch. The workdir is the isolated "
+        "worktree the orchestrator forked for it; the harness neither creates "
+        "nor purges that tree. The batch carries the translator's thin "
+        "worklist and, optionally, the objectives to review for; without "
+        "them, every objective the reviewer's prompt and skills offer runs.")
+    review_p = sub.add_parser(
+        "spawn-reviewer", parents=[agent_opts],
+        help=_spawn_reviewer_blurb, description=_spawn_reviewer_blurb,
+    )
+    review_p.set_defaults(handler=_handle_spawn_reviewer)
+    add_workdir(review_p, "the batch's worktree, forked by the orchestrator")
+    review_p.add_argument(
+        "batch", type=Path,
+        help="Review batch JSON containing the items and optional objectives.")
+    review_p.add_argument(
+        "--base-branch", required=True, metavar="BRANCH",
+        help="Unchecked-out review wave integration branch the batch lands on.")
+    review_p.add_argument(
+        "--output", required=True, type=Path, metavar="DIR",
+        help="Existing directory for this batch's artifacts. The agent writes "
+             "reviewer.log and reviewer.usage.json into it, so give each "
+             "batch its own directory.")
+    review_p.add_argument(
         "--dry-run", action="store_true",
         help="Validate and summarize the batch without spawning an agent.")
 
@@ -161,10 +190,10 @@ def main() -> None:
         if not workdir.exists():
             print(f"error: workdir does not exist: {workdir}", file=sys.stderr)
             sys.exit(1)
-        # A translator works inside a campaign the orchestrator set up; an
-        # orchestrator may be the first thing to run in a checkout, and the
-        # audit stages take any repository.
-        if args.command == "spawn-translator" \
+        # A translator or reviewer works inside a campaign the orchestrator
+        # set up; an orchestrator may be the first thing to run in a
+        # checkout, and the audit stages take any repository.
+        if args.command in ("spawn-translator", "spawn-reviewer") \
                 and not (workdir / "crustify").is_dir():
             print(f"error: no crustify/ under workdir: {workdir}",
                   file=sys.stderr)
@@ -244,5 +273,12 @@ def _handle_orchestrate(args: argparse.Namespace) -> None:
 def _handle_spawn_translator(args: argparse.Namespace) -> None:
     """Execute one orchestrator-projected batch."""
     from crustify.translate import execute
+    execute(Path(args.workdir), args.batch, base_branch=args.base_branch,
+            output=args.output, dry_run=args.dry_run)
+
+
+def _handle_spawn_reviewer(args: argparse.Namespace) -> None:
+    """Execute one orchestrator-projected review batch."""
+    from crustify.review import execute
     execute(Path(args.workdir), args.batch, base_branch=args.base_branch,
             output=args.output, dry_run=args.dry_run)

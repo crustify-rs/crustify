@@ -36,16 +36,3 @@ The following steps augment your workflow for a symbol route.
 
 Leverage Wavefront's `--schema` CLI flag to get hints on identifying raw lifecycle
 primitives for void and string and submit your findings through the CLI's `--update`.
-
----
-
-## Review mode
-
-### Analysis and lifecycle findings
-
-Verify Wavefront's analysis and lifecycle findings submitted by an earlier run
-for your workset. If you find any analysis defect or missing property/lifecycle
-primitive, resubmit with a corrected set of findings. File a report describing each
-discovered defect in
-`crustify/reviews/<artifact-dir>/wavefront/<defect-slug>`,
-including evidence that proves the previous finding was wrong/incomplete. 

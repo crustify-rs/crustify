@@ -1,8 +1,9 @@
 # Thin batch schema
 
 Field meaning for the JSON the orchestrator passes to `crustify spawn-translator
-<workdir> <batch.json> --base-branch <wave branch> --output <batch dir>`. One batch is one agent's
-entire worklist.
+<workdir> <batch.json> --base-branch <wave branch> --output <batch dir>`, or to `crustify
+spawn-reviewer` with the same arguments for a review batch. One batch is one agent's entire
+worklist.
 
 The orchestrator plans it as one batch entry of `docs/translate/schemas/schedule.md` and
 writes it out verbatim.
@@ -28,10 +29,33 @@ path or dependency: everything about where the batch sits is the directory it si
 
 | root field | meaning |
 |---|---|
-| `objective` | execution objective for every item: `wrap`, `port` or `review` |
+| `objective` | execution objective for every item: `wrap` or `port` |
 | `items` | non-empty worklist; every item routes to the same agent |
 
 Both are required and no other root field is accepted.
+
+## Review batches
+
+A review batch carries the same `items` and, instead of `objective`, an optional
+`objectives` array:
+
+```json
+{
+  "objectives": ["lifecycle", "unsafety", "ub", "equiv", "fix"],
+  "items": [ ... ]
+}
+```
+
+| root field | meaning |
+|---|---|
+| `objectives` | the review objectives to run; optional, every one the reviewer offers when absent |
+| `items` | as above |
+
+`items` is required and no root field other than these two is accepted. The reviewer's
+prompt offers `unsafety`, `ub`, `equiv`, `internal`, `misc`, `coverage` and `fix`; its
+skills add their own, such as `conventions` (the conventions skill) and `lifecycle`
+(wavefront). A batch naming an objective the installed skills do not offer is rejected.
+Without `fix`, the reviewer reports and reproduces what it finds but patches nothing.
 
 ## items[*]
 
@@ -64,5 +88,5 @@ batch mixing routes is rejected.
 | `raw-lifetime` | `raw-lifetime` |
 
 A `raw-lifetime` batch holds exactly one item, named `void` or `string`, with `defined_in:
-null`. Its task objective is always `wrap` unless the batch objective is `review` — raw
-lifetime discovery wraps a C primitive, so `port` normalizes to `wrap`.
+null`. Its task objective is always `wrap`: raw lifetime discovery wraps a C primitive, so
+`port` normalizes to `wrap`.

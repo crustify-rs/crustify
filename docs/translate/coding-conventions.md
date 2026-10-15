@@ -1,7 +1,15 @@
+---
+name: conventions
+description: >-
+  Crustify's coding conventions for the Rust it generates: the Rust baseline,
+  naming, crate, module and TU layout, wrapped types, functions and FFI names,
+  and anchors. Read it before scaffolding, emitting or reviewing any Rust.
+---
+
 # Crustify coding conventions
 
-These are the shared, mechanical contracts between the orchestrator and the translator.
-Their prompts contain the decisions and procedures.
+These are the shared, mechanical contracts between the orchestrator, the translator and the
+reviewer. Their prompts contain the decisions and procedures.
 
 ## Rust baseline
 

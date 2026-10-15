@@ -33,6 +33,38 @@ _MD_FIELD_RE = _re.compile(
 # Keeping the anchor in the header makes that composition explicit in source.
 _GENERIC_SKILL_ANCHOR = "<!-- SKILL -->"
 
+#: An objective-gated section: `<!-- OBJECTIVE ub -->` ... `<!-- /OBJECTIVE -->`.
+#: Terms joined by `+` (`ub+fix`) must all hold; a term prefixed with `!`
+#: (`!fix`) holds when that objective is disabled. Sections do not nest: a
+#: section that applies only under two objectives says so in its key rather
+#: than inside another section.
+_OBJECTIVE_RE = _re.compile(
+    r"<!-- OBJECTIVE (!?[a-z]+(?:\+!?[a-z]+)*) -->\n?(.*?)<!-- /OBJECTIVE -->\n?",
+    _re.DOTALL)
+
+
+def objective_keys(text: str) -> set[str]:
+    """Every objective a template's gated sections name, negated or not."""
+    return {term.lstrip("!") for m in _OBJECTIVE_RE.finditer(text)
+            for term in m.group(1).split("+")}
+
+
+def filter_objectives(text: str, enabled: frozenset[str] | set[str]) -> str:
+    """Keep the gated sections whose terms all hold, unwrapped, and drop the
+    rest. A disabled objective leaves no trace in the prompt: the agent is
+    not told to skip it, it is never told about it."""
+    def holds(term: str) -> bool:
+        return (term[1:] not in enabled) if term.startswith("!") \
+            else term in enabled
+
+    def keep(m: _re.Match) -> str:
+        if not all(map(holds, m.group(1).split("+"))):
+            return ""
+        # A kept section is a paragraph of its own, even when the source
+        # writes it flush against the section before it.
+        return m.group(2).rstrip("\n") + "\n\n"
+    return _re.sub(r"\n{3,}", "\n\n", _OBJECTIVE_RE.sub(keep, text))
+
 @dataclass(frozen=True)
 class SkillSpec:
     """A generic skill plus optional role-specific prompt guidance.
@@ -264,12 +296,11 @@ class CrustifyAgent:
         """This stage's prompt template, before argument substitution.
 
         No substitution beyond the caller's `.format(**arguments)`. The
-        `<!-- CODING CONVENTIONS -->` and `<!-- SKILLS -->` markers a stage
-        prompt carries are inert: they record where each part of the system
-        preamble sits relative to the task, and are deliberately NOT
-        sentinels — a marker that silently expanded would put the text back in
-        the user turn, which is the compaction path this design exists to
-        leave.
+        `<!-- SKILLS -->` marker a stage prompt carries is inert: it records
+        where the skill index sits relative to the task, and is deliberately
+        NOT a sentinel — a marker that silently expanded would put the text
+        back in the user turn, which is the compaction path this design exists
+        to leave.
         """
         raise NotImplementedError
 
@@ -327,7 +358,7 @@ class CrustifyAgent:
     def _render_skills(self) -> str:
         """Render this agent's :attr:`SKILLS` set as a metadata index
         (name — description + on-disk path), as its own section of the system
-        preamble — a sibling of coding-conventions.md, not a section inside it.
+        preamble.
 
         Mirrors a skill-aware harness's tier-1 load: the metadata rides in the
         system prompt unconditionally (the routing signal), while the body is
@@ -337,9 +368,8 @@ class CrustifyAgent:
 
         Descriptions are single-sourced from each skill's metadata, so
         they never drift from the skill itself. The framing sentence is emitted
-        here rather than kept in coding-conventions.md: it is about how to read the
-        index, so it belongs to the index, and coding-conventions.md stays
-        conventions."""
+        here because it is about how to read the index, so it belongs to the
+        index rather than to any one skill."""
         blocks = []
         for spec in self.skill_specs():
             # Paths are derived, never configured: see crustify.deps. Both
@@ -379,7 +409,8 @@ class CrustifyAgent:
                         f"prompt capability {spec.capability or spec.path!r}: "
                         f"role header must contain one "
                         f"{_GENERIC_SKILL_ANCHOR} anchor: {header}")
-                guidance = template.replace(_GENERIC_SKILL_ANCHOR, "").strip()
+                guidance = self._role_guidance(
+                    template.replace(_GENERIC_SKILL_ANCHOR, "")).strip()
                 if guidance:
                     block += "\n  Additional role guidance:\n" + "\n".join(
                         f"  {line}" if line else ""
@@ -396,54 +427,37 @@ class CrustifyAgent:
             f"{body}"
         )
 
-    def _conventions_md(self) -> Path:
-        """The always-on conventions doc, at the checkout's ``docs/``.
-
-        Human-readable in its own right and read by anyone working on crustify,
-        not only spliced into a prompt — which is what puts it beside
-        ``docs/`` rather than under ``prompts/``: it is the user's own file,
-        edited to state a campaign's preferences for generated code. What lives
-        in ``prompts/`` is what the pipeline RENDERS and crustify owns: the
-        stage templates and the skill descriptions. Neither provider CLI loads this from a canonical
-        path — claude reads ``CLAUDE.md``, codex a repo-root ``AGENTS.md``, and
-        it is at neither — so it reaches an agent only by being read here."""
-        return deps.CHECKOUT / "docs" / "translate" / "coding-conventions.md"
-
-    def _render_conventions(self) -> str:
-        """coding-conventions.md verbatim. Empty string if the doc is absent.
-
-        No substitution: the skill index used to be spliced into a sentinel in
-        here, which made a conventions doc that was partly not conventions. The
-        two are concatenated in :meth:`system_preamble` instead."""
-        p = self._conventions_md()
-        return p.read_text() if p.exists() else ""
+    def _role_guidance(self, text: str) -> str:
+        """A role header's guidance as this agent renders it. Identity here;
+        an agent that runs with objectives drops the sections it disabled."""
+        return text
 
     def system_preamble(self) -> str:
         """What the backend puts in its system slot, above the stage prompt.
 
-        The conventions doc and the skill index go here rather than into the
-        stage prompt for one reason: the system prompt is not part of
-        ``messages``, so nothing a long agent run does can summarize it away.
-        A 100+ turn agent that has had its file contract compacted into a
-        paraphrase is the failure this prevents, and it is silent when it
-        happens — the agent keeps working, just against a lossy copy of the
-        rules.
+        The skill index goes here rather than into the stage prompt for one
+        reason: the system prompt is not part of ``messages``, so nothing a
+        long agent run does can summarize it away. A 100+ turn agent that has
+        had its routing to the conventions or the testing procedure compacted
+        into a paraphrase is the failure this prevents, and it is silent when
+        it happens — the agent keeps working, just against a lossy copy of
+        the rules.
 
         An agent that sets `prompt_in_system_slot` puts its whole body here
-        too, ahead of both. That trades the shared prefix away when the body
-        carries per-agent data: a wave's translators then each write their own
-        preamble instead of N-1 of them reading one. The trade is deliberate --
-        the shared prefix only ever saved those N-1 first-turn writes, because
-        longest-prefix matching sends every later turn to the agent's own
-        chain, while compaction reaching the procedure costs the run itself.
+        too, ahead of the index. That trades the shared prefix away when the
+        body carries per-agent data: a wave's translators then each write
+        their own preamble instead of N-1 of them reading one. The trade is
+        deliberate -- the shared prefix only ever saved those N-1 first-turn
+        writes, because longest-prefix matching sends every later turn to the
+        agent's own chain, while compaction reaching the procedure costs the
+        run itself.
 
-        Two independent documents, concatenated: coding-conventions.md is the same for
-        every agent, the skill index varies with :meth:`skill_specs`. The
-        `<!-- CODING CONVENTIONS -->` and `<!-- SKILLS -->` markers in the stage prompts
-        record where each one lands relative to the task; neither is a
-        substitution point."""
+        The coding conventions are a skill like any other
+        (``docs/translate/coding-conventions.md`` carries its own
+        frontmatter), so they reach every role through the index and are
+        ablated the way every skill is: by deleting the role's header."""
         parts = []
         if self.prompt_in_system_slot:
             parts.append(self._body().format(**self._arguments()))
-        parts += [self._render_conventions().rstrip(), self._render_skills()]
+        parts.append(self._render_skills())
         return "\n\n---\n\n".join(part for part in parts if part)

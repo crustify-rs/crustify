@@ -195,7 +195,7 @@ class GitHarnessTests(unittest.TestCase):
             self.repo,
             route="type",
             items=items,
-            objective="review",
+            objective="wrap",
             git_base="wave-0",
             artifact_dir=self.output,
             log_stem="batch-id",

@@ -37,12 +37,3 @@ There is no need to add UB tests on the public seam interface exported by ffibox
 these are only meant to be exercised internally by the crate, while acting as escape hatches for
 external consumers. Any UB or functionality test on those should be internal and emited in the
 `#[cfg(test)] mod unit_tests` module.
-
----
-
-## Review mode
-
-If you discover any soundness or ergonomics gap in ffibox, both in its safe primitives
-or unsafe FFI seams, emit a reproducer and report in `crustify/reviews` to demonstrate
-the flaw, like you would for bugs in the target repo. Then, emit a patch in a separate
-branch and worktree of the local ffibox checkout.

@@ -24,7 +24,7 @@ Copy this template into the campaign checkout, then fill it as work lands.
 
 ## Review pass
 
-Thin batches with `"objective": "review"`, LLM-as-a-Judge over each landed wave.
+Review batches run by `crustify spawn-reviewer`, LLM-as-a-Judge over each landed wave.
 
 - **agent backend** — `<codex | claude>`
 - **model** — `<provider>/<model>`

@@ -34,6 +34,7 @@ class CommandShapeTests(unittest.TestCase):
         with (mock.patch.object(sys, "argv", ["crustify", *argv]),
               mock.patch.object(cli, "_handle_orchestrate", record("orchestrate")),
               mock.patch.object(cli, "_handle_spawn_translator", record("spawn-translator")),
+              mock.patch.object(cli, "_handle_spawn_reviewer", record("spawn-reviewer")),
               mock.patch.object(cli, "_handle_audit_stage", record("audit-stage")),
               mock.patch.object(cli, "_handle_cost", record("cost"))):
             cli.main()
@@ -62,6 +63,21 @@ class CommandShapeTests(unittest.TestCase):
         self.assertEqual(seen["handler"], "spawn-translator")
         self.assertEqual(seen["args"].base_branch, "wave")
         self.assertEqual(config.MODEL_OVERRIDE, "openai/gpt-5.6")
+
+    def test_spawn_reviewer_runs_one_review_batch(self) -> None:
+        seen = self._run("spawn-reviewer", str(self.repo), "batch.json",
+                         "--base-branch", "review-wave", "--output", "out",
+                         "--dry-run")
+        self.assertEqual(seen["handler"], "spawn-reviewer")
+        self.assertEqual(seen["args"].base_branch, "review-wave")
+        self.assertTrue(seen["args"].dry_run)
+
+    def test_spawn_reviewer_needs_a_campaign_tree(self) -> None:
+        bare = self.repo / "bare"
+        bare.mkdir()
+        with self.assertRaises(SystemExit):
+            self._run("spawn-reviewer", str(bare), "batch.json",
+                      "--base-branch", "wave", "--output", "out")
 
     def test_audit_stages_take_any_repository(self) -> None:
         """Neither audit stage needs a crustify/ directory, and the auditor's

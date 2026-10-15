@@ -27,11 +27,20 @@ _TASK_ANCHOR = "<!-- TASK -->"
 #: route the orchestrator to its playbook, and the playbook is now this
 #: agent's prompt.
 #:
-#: Nothing crustify ships is here either. `crustify audit` is on the agent's
-#: PATH and in its `--help` whatever the index says, so a role header for it
-#: could only ablate the instructions and never the tool -- which is not an
-#: ablation. Its guidance lives in the prompt with the rest of the workflow.
+#: The coding conventions and ffimap ship with crustify itself; ablating
+#: ffimap's skill removes its instructions, while `crustify ffimap` stays on
+#: the agent's PATH.
 _SKILLS = (
+    SkillSpec(
+        "crustify", "docs/translate/coding-conventions.md",
+        capability="conventions",
+        role_header="skills/conventions/orchestrator.md",
+    ),
+    SkillSpec(
+        "crustify", "src/crustify/prompts/skills/ffimap/SKILL.md",
+        capability="ffimap",
+        role_header="skills/ffimap/orchestrator.md",
+    ),
     #: One wavefront skill, two role overlays. The oracle a translator queries
     #: and the oracle an orchestrator plans with are the same tool used for
     #: different work, so the metadata is shared and only the guidance splits.

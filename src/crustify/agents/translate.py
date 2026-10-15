@@ -16,11 +16,27 @@ from crustify.agents.base import CrustifyAgent, SkillSpec, _PKG_ROOT
 #: route the translator to its playbook, and the playbook is now this agent's
 #: prompt.
 #:
-#: Nothing crustify ships is here either. `crustify audit` is on the agent's
-#: PATH and in its `--help` whatever the index says, so a role header for it
-#: could only ablate the instructions and never the tool -- which is not an
-#: ablation. Its guidance lives in the prompt with the rest of the workflow.
+#: Three of them ship with crustify itself: the coding conventions (the doc
+#: under `docs/` is the skill file, with its own frontmatter), testing and
+#: ffimap. `crustify ffimap` stays on the agent's PATH whether or not its
+#: skill is carried, so ablating that skill removes the instructions, not
+#: the tool.
 _SKILLS = (
+    SkillSpec(
+        "crustify", "docs/translate/coding-conventions.md",
+        capability="conventions",
+        role_header="skills/conventions/translator.md",
+    ),
+    SkillSpec(
+        "crustify", "src/crustify/prompts/skills/testing/SKILL.md",
+        capability="testing",
+        role_header="skills/testing/translator.md",
+    ),
+    SkillSpec(
+        "crustify", "src/crustify/prompts/skills/ffimap/SKILL.md",
+        capability="ffimap",
+        role_header="skills/ffimap/translator.md",
+    ),
     SkillSpec(
         "wavefront", "SKILL.md", capability="wavefront",
         role_header="skills/wavefront/translator.md",
@@ -33,7 +49,7 @@ _SKILLS = (
 
 
 class TranslateAgent(CrustifyAgent):
-    """Translate or review one orchestrator-projected batch."""
+    """Translate one orchestrator-projected batch."""
 
     name = "TranslateAgent"
     model = "anthropic/claude-opus-5"
@@ -87,11 +103,10 @@ class TranslateAgent(CrustifyAgent):
             **super()._arguments(),
             "task_objective": self._objective,
             # No `artifact_dir`: the batch directory holds only the log and
-            # usage record the harness writes. A reviewer files its reports in
-            # its worktree, under a path derived from its branch.
-            # NOTE: no `conventions` key. The conventions doc and skill index are
-            # no longer a `.format` slot — they go to the backend's system slot
-            # via `system_preamble()`, out of reach of context compaction.
+            # usage record the harness writes.
+            # NOTE: no `conventions` key. The conventions are a skill, and the
+            # skill index goes to the backend's system slot via
+            # `system_preamble()`, out of reach of context compaction.
         }
         common["worklist"] = json.dumps(
             {"route": self._route, "items": self._items})

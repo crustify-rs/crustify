@@ -10,10 +10,14 @@ from unittest import mock
 
 from crustify import deps
 from crustify.agents.base import _PKG_ROOT
+from crustify.agents.base import objective_keys
 from crustify.agents.orchestrate import OrchestrateAgent
+from crustify.agents.review import ReviewAgent
 from crustify.agents.translate import TranslateAgent
 
-_ROLES = (TranslateAgent, OrchestrateAgent)
+_ROLES = (TranslateAgent, ReviewAgent, OrchestrateAgent)
+_ROLE_NAMES = ((TranslateAgent, "translator"), (ReviewAgent, "reviewer"),
+               (OrchestrateAgent, "orchestrator"))
 
 
 class DeclaredPathTests(unittest.TestCase):
@@ -43,8 +47,7 @@ class DeclaredPathTests(unittest.TestCase):
         """`skills/<skill>/<role>.md`, one directory per skill and one file
         per role. The layout is what gives an ablation two grains, so a spec
         that spells its path some other way silently loses the coarse one."""
-        for cls, role in ((TranslateAgent, "translator"),
-                          (OrchestrateAgent, "orchestrator")):
+        for cls, role in _ROLE_NAMES:
             for spec in cls.SKILLS:
                 if spec.role_header is None:
                     continue
@@ -81,13 +84,29 @@ class DeclaredPathTests(unittest.TestCase):
         """The inverse: nothing sits in prompts/skills/ that no role reads."""
         declared = {
             (spec.capability or spec.path.rsplit("/", 2)[-2], role)
-            for cls, role in ((TranslateAgent, "translator"),
-                              (OrchestrateAgent, "orchestrator"))
+            for cls, role in _ROLE_NAMES
             for spec in cls.SKILLS
         }
         root = _PKG_ROOT / "prompts" / "skills"
-        on_disk = {(f.parent.name, f.stem) for f in root.glob("*/*.md")}
+        # A skill crustify ships keeps its generic file beside its role
+        # headers; that file belongs to no single role.
+        on_disk = {(f.parent.name, f.stem) for f in root.glob("*/*.md")
+                   if f.name != "SKILL.md"}
         self.assertEqual(on_disk, declared)
+
+    def test_only_reviewer_headers_gate_objectives(self) -> None:
+        """Only the reviewer filters objective sections; in any other role's
+        header the markers would reach the agent verbatim."""
+        for cls, role in _ROLE_NAMES:
+            if cls is ReviewAgent:
+                continue
+            for spec in cls.SKILLS:
+                if spec.role_header is None:
+                    continue
+                with self.subTest(role=role, header=spec.role_header):
+                    text = (_PKG_ROOT / "prompts" / spec.role_header).read_text()
+                    self.assertEqual(objective_keys(text), set())
+                    self.assertNotIn("OBJECTIVE", text)
 
     def test_every_capability_is_ablatable_by_deleting_one_file(self) -> None:
         """Each optional skill is governed by exactly one file under
@@ -95,8 +114,7 @@ class DeclaredPathTests(unittest.TestCase):
         a generic skill, its own path when it is self-contained. Without one,
         a skill shipped inside this distribution could not be removed from a
         prompt without uninstalling crustify."""
-        for cls, role in ((TranslateAgent, "translator"),
-                          (OrchestrateAgent, "orchestrator")):
+        for cls, role in _ROLE_NAMES:
             for spec in cls.SKILLS:
                 if spec.capability is None:
                     continue
@@ -172,14 +190,18 @@ class PromptRenderTests(unittest.TestCase):
             with self.subTest(prompt=path.name):
                 path.read_text().format_map(collections.defaultdict(str))
 
-    def test_the_coding_conventions_doc_resolves(self) -> None:
-        """`_render_conventions` returns "" for an absent file, so a rename
-        that misses `_conventions_md` deletes the conventions from every
-        agent's system prompt and nothing raises."""
+    def test_every_role_carries_the_conventions_skill(self) -> None:
+        """The conventions doc is the skill file itself. Discovery drops a
+        skill whose file is missing, so a rename that misses the spec would
+        delete the conventions from every role and nothing would raise."""
+        from crustify.agents.base import _skill_meta
         for cls in _ROLES:
+            specs = [s for s in cls.SKILLS if s.capability == "conventions"]
             with self.subTest(role=cls.name):
-                agent = object.__new__(cls)
-                self.assertTrue(cls._conventions_md(agent).is_file())
+                self.assertEqual(len(specs), 1)
+                path = deps.CHECKOUT / specs[0].path
+                self.assertTrue(path.is_file())
+                self.assertEqual(_skill_meta(path)[0], "conventions")
 
 
 class PromptArgumentTests(unittest.TestCase):
@@ -218,6 +240,15 @@ class PromptArgumentTests(unittest.TestCase):
             items=[{"name": "T", "defined_in": "a.h", "kind": "type",
                     "field_anchors": [], "home": "crustify/rust/x/src/a.rs"}],
             objective="wrap", git_base="wave-0",
+            artifact_dir=self.repo, log_stem="x")
+        self._check(agent)
+
+    def test_reviewer_arguments_match_its_placeholders(self) -> None:
+        agent = ReviewAgent(
+            self.repo, route="type",
+            items=[{"name": "T", "defined_in": "a.h", "kind": "type",
+                    "field_anchors": [], "home": "crustify/rust/x/src/a.rs"}],
+            objectives=None, git_base="review-wave-0",
             artifact_dir=self.repo, log_stem="x")
         self._check(agent)
 

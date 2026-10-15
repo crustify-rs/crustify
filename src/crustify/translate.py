@@ -5,10 +5,10 @@ import json
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import NoReturn
+from typing import Callable, NoReturn
 
 
-_OBJECTIVES = frozenset({"wrap", "port", "review"})
+_OBJECTIVES = frozenset({"wrap", "port"})
 _KINDS = frozenset({"type", "symbol", "callback", "raw-lifetime"})
 _ITEM_FIELDS = frozenset({"name", "defined_in", "kind", "field_anchors", "home"})
 _FIELD_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
@@ -40,30 +40,38 @@ def _route(kind: str) -> str:
     return "raw-lifetime"
 
 
-def load_batch(path: Path) -> Batch:
-    """Load and strictly validate the thin batch schema."""
+def read_object(path: Path, fail: Callable[[str], NoReturn]) -> dict:
+    """The batch file's JSON object, or a failure naming what is wrong."""
     try:
         raw = json.loads(path.read_text())
     except OSError as exc:
-        _fail(f"cannot read batch {path}: {exc}")
+        fail(f"cannot read batch {path}: {exc}")
     except json.JSONDecodeError as exc:
-        _fail(f"invalid JSON in {path}: {exc}")
-
+        fail(f"invalid JSON in {path}: {exc}")
     if not isinstance(raw, dict):
-        _fail("batch must be a JSON object")
-    unknown = sorted(set(raw) - {"objective", "items"})
-    missing = sorted({"objective", "items"} - set(raw))
-    if unknown:
-        _fail("unknown batch field(s): " + ", ".join(unknown))
-    if missing:
-        _fail("missing batch field(s): " + ", ".join(missing))
+        fail("batch must be a JSON object")
+    return raw
 
-    objective = raw["objective"]
-    if not isinstance(objective, str) or objective not in _OBJECTIVES:
-        _fail("objective must be one of: port, review, wrap")
-    items = raw["items"]
+
+def check_fields(raw: dict, required: set[str], optional: set[str],
+                 fail: Callable[[str], NoReturn]) -> None:
+    """Reject unknown and missing top-level batch fields."""
+    unknown = sorted(set(raw) - required - optional)
+    missing = sorted(required - set(raw))
+    if unknown:
+        fail("unknown batch field(s): " + ", ".join(unknown))
+    if missing:
+        fail("missing batch field(s): " + ", ".join(missing))
+
+
+def parse_items(items: object, fail: Callable[[str], NoReturn]
+                ) -> tuple[str, list[dict]]:
+    """Validate a batch's items; return their one route and the items.
+
+    Shared by the translator and the reviewer: both take the same thin
+    worklist, and differ only in what else the batch says."""
     if not isinstance(items, list) or not items:
-        _fail("items must be a non-empty array")
+        fail("items must be a non-empty array")
 
     routes: set[str] = set()
     identities: set[tuple[str, str | None]] = set()
@@ -71,13 +79,13 @@ def load_batch(path: Path) -> Batch:
     for index, item in enumerate(items):
         label = f"items[{index}]"
         if not isinstance(item, dict):
-            _fail(f"{label} must be an object")
+            fail(f"{label} must be an object")
         item_unknown = sorted(set(item) - _ITEM_FIELDS)
         item_missing = sorted(_ITEM_FIELDS - set(item))
         if item_unknown:
-            _fail(f"{label} has unknown field(s): " + ", ".join(item_unknown))
+            fail(f"{label} has unknown field(s): " + ", ".join(item_unknown))
         if item_missing:
-            _fail(f"{label} is missing field(s): " + ", ".join(item_missing))
+            fail(f"{label} is missing field(s): " + ", ".join(item_missing))
 
         name = item["name"]
         defined_in = item["defined_in"]
@@ -85,35 +93,35 @@ def load_batch(path: Path) -> Batch:
         anchors = item["field_anchors"]
         home = item["home"]
         if not isinstance(name, str) or not name:
-            _fail(f"{label}.name must be a non-empty string")
+            fail(f"{label}.name must be a non-empty string")
         if not isinstance(kind, str) or kind not in _KINDS:
-            _fail(
+            fail(
                 f"{label}.kind must be one of: callback, raw-lifetime, symbol, type")
         if not isinstance(anchors, list):
-            _fail(f"{label}.field_anchors must be an array")
+            fail(f"{label}.field_anchors must be an array")
         if any(not isinstance(anchor, str) or not _FIELD_NAME.fullmatch(anchor)
                for anchor in anchors):
-            _fail(f"{label}.field_anchors must contain C field identifiers")
+            fail(f"{label}.field_anchors must contain C field identifiers")
         if len(set(anchors)) != len(anchors):
-            _fail(f"{label}.field_anchors contains duplicates")
+            fail(f"{label}.field_anchors contains duplicates")
         if kind != "type" and anchors:
-            _fail(f"{label}.field_anchors must be empty for kind {kind!r}")
+            fail(f"{label}.field_anchors must be empty for kind {kind!r}")
 
         # The authored Rust file this item belongs in, decided by the
-        # orchestrator and carried in the worklist. A translator resolves no
+        # orchestrator and carried in the worklist. An agent resolves no
         # repo-tier artifact to find it: the batch is the whole input.
         if not isinstance(home, str) or not home or not home.endswith(".rs"):
-            _fail(f"{label}.home must be a repo-relative .rs path")
+            fail(f"{label}.home must be a repo-relative .rs path")
 
         if kind == "raw-lifetime":
             if defined_in is not None:
-                _fail(f"{label}.defined_in must be null for raw-lifetime")
+                fail(f"{label}.defined_in must be null for raw-lifetime")
         elif not isinstance(defined_in, str) or not defined_in:
-            _fail(f"{label}.defined_in must be a non-empty string")
+            fail(f"{label}.defined_in must be a non-empty string")
 
         identity = (name, defined_in)
         if identity in identities:
-            _fail(f"duplicate item: {kind} {name!r} defined in {defined_in!r}")
+            fail(f"duplicate item: {kind} {name!r} defined in {defined_in!r}")
         identities.add(identity)
         routes.add(_route(kind))
         validated.append({
@@ -125,18 +133,30 @@ def load_batch(path: Path) -> Batch:
         })
 
     if len(routes) != 1:
-        _fail("items resolve to mixed agent routes: " + ", ".join(sorted(routes)))
+        fail("items resolve to mixed agent routes: " + ", ".join(sorted(routes)))
     route = routes.pop()
     if route == "raw-lifetime":
         if len(validated) != 1 or validated[0]["name"] not in _LIFETIME_TIERS:
-            _fail("raw-lifetime batches must contain exactly one void or string item")
+            fail("raw-lifetime batches must contain exactly one void or string item")
+    return route, validated
 
-    return Batch(objective=objective, route=route, items=validated)
+
+def load_batch(path: Path) -> Batch:
+    """Load and strictly validate the thin batch schema."""
+    raw = read_object(path, _fail)
+    check_fields(raw, {"objective", "items"}, set(), _fail)
+    objective = raw["objective"]
+    if not isinstance(objective, str) or objective not in _OBJECTIVES:
+        _fail("objective must be one of: port, wrap"
+              + ("; a review batch runs under `crustify spawn-reviewer`"
+                 if objective == "review" else ""))
+    route, items = parse_items(raw["items"], _fail)
+    return Batch(objective=objective, route=route, items=items)
 
 
 def _task_objective(batch: Batch) -> str:
-    """Raw-lifetime discovery always wraps, except during explicit review."""
-    if batch.route == "raw-lifetime" and batch.objective != "review":
+    """Raw-lifetime discovery always wraps, in a port campaign too."""
+    if batch.route == "raw-lifetime":
         return "wrap"
     return batch.objective
 

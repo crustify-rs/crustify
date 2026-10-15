@@ -1,0 +1,38 @@
+<!-- SKILL -->
+
+Read wavefront's CLI helpstring via `--help` to learn how to use it.
+
+### Analysis findings
+
+Verify Wavefront's analysis findings submitted by an earlier run for your workset:
+ownership, access, nullability, cardinality and keepalive. File a report describing each
+defect in `crustify/reviews/<artifact-dir>/wavefront/<defect-slug>`, including evidence
+that proves the previous finding was wrong or incomplete.
+
+<!-- OBJECTIVE fix -->
+Resubmit each corrected set of findings through the CLI's `--update`.
+<!-- /OBJECTIVE -->
+
+<!-- OBJECTIVE lifecycle -->
+### Lifecycle
+
+For a workset that contains `type` or `raw-lifetime` items, verify that their lifecycle
+primitives are complete: that the earlier runs missed no releaser, disposer, cloner or
+constructor, and that every ownership variant the analysis found has a representation.
+Leverage Wavefront's `--schema` CLI flag for hints on identifying lifecycle primitives and
+compare them with the findings submitted earlier.
+
+File a report for each gap in `crustify/reviews/<artifact-dir>/lifecycle/<item-slug>`.
+<!-- /OBJECTIVE -->
+<!-- OBJECTIVE lifecycle+fix -->
+Add each missing lifecycle representation, and resubmit the corrected lifecycle findings
+through the CLI's `--update`.
+<!-- /OBJECTIVE -->
+
+<!-- OBJECTIVE unsafety -->
+### Unsafety
+
+Wavefront's plan cuts the cycles between subsystems and types. A raw pointer that stands in
+for a dependency that a later scheduled batch wraps is such a cut, not a finding: leave it
+out of your unsafety review.
+<!-- /OBJECTIVE -->

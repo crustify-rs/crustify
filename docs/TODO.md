@@ -35,13 +35,14 @@ Open questions:
 
 ## Ship `docs/` so a non-editable install keeps its conventions
 
-`_conventions_md` resolves `coding-conventions.md` under `deps.CHECKOUT`, which is the
-source checkout. A wheel install has no `docs/` there, and `_render_conventions` returns
-`""` for an absent file — so every agent runs with no conventions in its system prompt,
-silently. Only the editable install the Dockerfile performs hides this.
+The conventions skill resolves `docs/translate/coding-conventions.md` under
+`deps.CHECKOUT`, which is the source checkout, and so do the `testing` and `ffimap`
+skills' `SKILL.md` files. A wheel install has no `docs/` there, and discovery drops a skill
+whose file is absent — so every agent runs without its conventions, silently. Only the
+editable install the Dockerfile performs hides this.
 
 Ship `docs/` as data-files to `share/crustify/`, the way Wavefront ships its schemas to
-`share/wavefront/schemas`, and have `_conventions_md` look there before the checkout.
+`share/wavefront/schemas`, and resolve crustify's own skills there before the checkout.
 `deps.share_dir()` already resolves that prefix.
 
 This is also the prerequisite for moving `src/crustify/prompts/` into `docs/`: prompts
