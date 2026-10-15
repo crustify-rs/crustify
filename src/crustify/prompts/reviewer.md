@@ -140,8 +140,9 @@ measurement itself.
 
 ### 3. Fixes
 
-If `fix` is not enabled, skip this step, except for coverage gaps when `coverage` is listed:
-change nothing in the Rust tree outside `crustify/reviews/` but the tests that fill them.
+If `fix` is not enabled, skip this step, except for coverage gaps when `coverage` is listed
+and for the gates in Regressions below: change nothing in the Rust tree outside
+`crustify/reviews/` but the tests that fill the coverage gaps.
 
 If `fix` is enabled, patch every finding of your objectives:
 
@@ -160,11 +161,7 @@ Classify every test you add given the instructions in the testing how-to, and pl
 where the conventions place tests of its kind, or, outside a Crustify-generated batch, in
 the reviewed crate's own suite for that kind.
 
----
-
-## Completion
-
-### 1. Regressions
+#### Regressions
 
 Validate the tree you land as the testing instructions' Regressions section describes. If
 you patched something, run any regression suites that might be available for it.
@@ -182,7 +179,7 @@ In a Crustify campaign, your review wave follows a translated wave, so you own i
 If `fix` is enabled, rerun the gates you own on the tree you land, after your last rebase.
 If `fix` is not enabled, file each true positive a gate finds as a UB report.
 
-### 2. Commit
+### 4. Landing
 
 Make two commits: first the `crustify/reviews/` changes, so one can check out the affected
 commit and run the reproducers, then the Rust tree changes, if you made any. Land them on
