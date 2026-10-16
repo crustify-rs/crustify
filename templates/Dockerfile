@@ -80,6 +80,37 @@
 # Run tmux inside to detach from a long campaign.
 
 
+# The tool checkouts, one stage each. By default each is cloned from GitHub's
+# `main`; `--build-context <tool>=<path>` replaces the stage of that name with
+# a local checkout, and its clone is then never run. That is how a private or
+# unpushed tool gets into the image:
+#
+#   docker build -t crustify -f templates/Dockerfile \
+#       --build-context ffimap=../ffimap .
+#
+# Docker caches the clones by instruction text, so bump DEPS_REFRESH to
+# re-clone `main`: `--build-arg DEPS_REFRESH=$(date +%s)`. Every stage uses the
+# base image pinned below, which has git.
+ARG DEPS_REFRESH=0
+FROM ghcr.io/borrowsanitizer/bsan@sha256:56bbbfd19dec23ba518e9dc2221045b2869cc1f6aabdd8ea40174a41d860a5b2 AS wavefront-clone
+ARG DEPS_REFRESH
+RUN echo "DEPS_REFRESH=${DEPS_REFRESH}" \
+    && git clone --depth 1 https://github.com/crustify-rs/wavefront.git /src
+FROM scratch AS wavefront
+COPY --from=wavefront-clone /src /
+FROM ghcr.io/borrowsanitizer/bsan@sha256:56bbbfd19dec23ba518e9dc2221045b2869cc1f6aabdd8ea40174a41d860a5b2 AS ffibox-clone
+ARG DEPS_REFRESH
+RUN echo "DEPS_REFRESH=${DEPS_REFRESH}" \
+    && git clone --depth 1 https://github.com/crustify-rs/ffibox.git /src
+FROM scratch AS ffibox
+COPY --from=ffibox-clone /src /
+FROM ghcr.io/borrowsanitizer/bsan@sha256:56bbbfd19dec23ba518e9dc2221045b2869cc1f6aabdd8ea40174a41d860a5b2 AS ffimap-clone
+ARG DEPS_REFRESH
+RUN echo "DEPS_REFRESH=${DEPS_REFRESH}" \
+    && git clone --depth 1 https://github.com/crustify-rs/ffimap.git /src
+FROM scratch AS ffimap
+COPY --from=ffimap-clone /src /
+
 # Pinned by DIGEST, not `:latest`. This image's whole premise is that rustc,
 # bsan and clang agree on one LLVM version; a moving base silently shifts
 # bsan's LLVM out from under the matched clang compiler-rt below and there is
@@ -87,7 +118,7 @@
 # once already mid-campaign. Bump this deliberately.
 # The previous pin (sha256:69440e3b...) was garbage-collected from ghcr.io; this is
 # `sha-de6ede0`, verified as Ubuntu noble, clang 18, and nightly/bsan on LLVM 23.1.3.
-FROM ghcr.io/borrowsanitizer/bsan@sha256:56bbbfd19dec23ba518e9dc2221045b2869cc1f6aabdd8ea40174a41d860a5b2
+FROM ghcr.io/borrowsanitizer/bsan@sha256:56bbbfd19dec23ba518e9dc2221045b2869cc1f6aabdd8ea40174a41d860a5b2 AS crustify
 
 ARG CODEQL_VERSION=v2.26.3
 ARG PYTHON_VERSION=3.13
@@ -225,23 +256,19 @@ RUN if [ "${INSTALL_CLAUDE}" = "1" ]; then \
     && { [ "${INSTALL_CLAUDE}" = "1" ] && claude --version || true; } \
     && { [ "${INSTALL_CODEX}" = "1" ] && codex --version || true; }
 
-# The three tool checkouts, cloned under `<prefix>/share/<name>`, which is
-# where crustify looks for wavefront and ffibox. wavefront and ffimap are
-# Python distributions installed editable, so their commands (`wavefront`,
-# `ffimap`) land in /opt/venv/bin, on PATH, and run whatever checkout is
-# mounted over the clone; ffibox is a path dependency the emitted crates point
-# at, so a checkout is all it needs. ffimap's rustc driver is pinned to a dated
-# nightly of its own, installed here; the driver itself is built on first
-# scan. A mounted ffimap that pins a different nightly needs
-# `rustup toolchain install` run in its driver directory. Docker caches this
-# layer by instruction text, so bump DEPS_REFRESH to re-clone `main`:
-# `--build-arg DEPS_REFRESH=$(date +%s)`.
-ARG DEPS_REFRESH=0
-RUN echo "DEPS_REFRESH=${DEPS_REFRESH}" \
-    && git clone --depth 1 https://github.com/crustify-rs/wavefront.git /opt/venv/share/wavefront \
-    && git clone --depth 1 https://github.com/crustify-rs/ffibox.git /opt/venv/share/ffibox \
-    && git clone --depth 1 https://github.com/crustify-rs/ffimap.git /opt/venv/share/ffimap \
-    && uv pip install --python /opt/venv/bin/python \
+# The three tool checkouts, from their stages above, under
+# `<prefix>/share/<name>`, which is where crustify looks for wavefront and
+# ffibox. wavefront and ffimap are Python distributions installed editable, so
+# their commands (`wavefront`, `ffimap`) land in /opt/venv/bin, on PATH, and
+# run whatever checkout is mounted over the copy; ffibox is a path dependency
+# the emitted crates point at, so a checkout is all it needs. ffimap's rustc
+# driver is pinned to a dated nightly of its own, installed here; the driver
+# itself is built on first scan. A mounted ffimap that pins a different
+# nightly needs `rustup toolchain install` run in its driver directory.
+COPY --from=wavefront / /opt/venv/share/wavefront
+COPY --from=ffibox / /opt/venv/share/ffibox
+COPY --from=ffimap / /opt/venv/share/ffimap
+RUN uv pip install --python /opt/venv/bin/python \
          -e /opt/venv/share/wavefront -e /opt/venv/share/ffimap \
     && (cd /opt/venv/share/ffimap/src/ffimap/driver && rustup toolchain install) \
     && ffimap --help > /dev/null

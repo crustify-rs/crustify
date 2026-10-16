@@ -27,6 +27,14 @@ All commands from the repo root.
 docker build -f templates/Dockerfile -t crustify .
 ```
 
+The image clones wavefront, ffibox and ffimap from GitHub. To build with a local checkout
+of one instead, such as a private or unpushed one, pass it as a build context named after
+the tool:
+
+```sh
+docker build -f templates/Dockerfile -t crustify --build-context ffimap=../ffimap .
+```
+
 Start a container per campaign, idle:
 
 ```sh
