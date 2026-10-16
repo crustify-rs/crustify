@@ -71,9 +71,8 @@ class ReviewAgent(CrustifyAgent):
         workdir: Path,
         *,
         route: str,
-        items: list[dict] = (),
-        modules: list[str] = (),
-        sites: list[dict] = (),
+        commits: list[str] = (),
+        modules: list[object] = (),
         reports: list[str] = (),
         objectives: list[str] | None,
         git_base: str,
@@ -85,9 +84,8 @@ class ReviewAgent(CrustifyAgent):
             log_stem=log_stem,
         )
         self._route = route
-        self._items = [dict(item) for item in items]
-        self._modules = list(modules)
-        self._sites = [dict(site) for site in sites]
+        self._commits = list(commits)
+        self._modules = [dict(m) if isinstance(m, dict) else m for m in modules]
         self._reports = list(reports)
         available = set(self.available_objectives())
         if objectives is None:
@@ -118,20 +116,17 @@ class ReviewAgent(CrustifyAgent):
 
     @property
     def stage(self) -> str:  # type: ignore[override]
-        """``review-<route>_<key>``, the record ``crustify cost`` buckets as
-        ``review-type`` / ``review-symbol`` / ``review-raw-lifetime``, as it
-        did when review ran under the translator, and ``review-modules`` /
-        ``review-sites`` / ``review-reports`` for an audit."""
-        if self._items:
-            key = self._items[0]["name"]
+        """``review-<route>_<key>``, which ``crustify cost`` buckets as
+        ``review-commits`` / ``review-modules`` / ``review-reports``."""
+        if self._commits:
+            key = self._commits[0][:12]
         elif self._modules:
-            key = self._modules[0]
-        elif self._sites:
-            key = self._sites[0]["file"]
+            first = self._modules[0]
+            key = first["path"] if isinstance(first, dict) else first
         else:
             key = "batch"
         return (f"review-{self._route}_"
-                f"{re.sub(r'[^A-Za-z0-9_]+', '_', key or 'batch')}")
+                f"{re.sub(r'[^A-Za-z0-9_]+', '_', key)}")
 
     def _body(self) -> str:
         return expand_includes(
@@ -144,8 +139,6 @@ class ReviewAgent(CrustifyAgent):
             "worklist": json.dumps(
                 {"route": self._route, "modules": self._modules}
                 if self._modules else
-                {"route": self._route, "sites": self._sites}
-                if self._sites else
-                {"route": self._route, "items": self._items}),
+                {"route": self._route, "commits": self._commits}),
             "reports": ", ".join(self._reports) or "none",
         }

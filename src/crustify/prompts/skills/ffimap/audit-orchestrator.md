@@ -11,7 +11,7 @@ ffimap <workdir> --json --ffibox --sites <counter> ...
 compiles, so a file outside every configuration you scan has no sites: plan it from the
 source instead.
 
-For `ub`, review the smells first, in this order, and give the reviewers their sites:
+For `ub`, review the modules that hold these smells first, in this order:
 
 1. safe API with references to raw wrappers: `ty_wrapper_borrow_non_sanctioned`, borrows
    of C memory that assert `noalias`, `readonly` or validity over memory C may write;
@@ -21,11 +21,12 @@ For `ub`, review the smells first, in this order, and give the reviewers their s
 3. hand-written `Drop` impls: `drop_impl`, in the `ffibox` record, owners whose release of
    C resources no ffibox policy vouches for.
 
-For `contracts`, give the reviewers the crate's unsafe API and its justifications:
+For `contracts`, review first the modules that hold the crate's unsafe API and its
+justifications:
 `unsafe_fns_pub` and `raw_ptr_fn_pub_unsafe`, the public `unsafe fn`s whose `# Safety`
 obligations they evaluate, and `undocumented_unsafe`, the `unsafe` sites with no
 `// SAFETY:` comment.
 
-Batch the sites as `sites` worksets: each entry is one file of a counter's `sites` record,
-`{"counter": .., "file": .., "lines": [..]}`, with `count` dropped and `file` made
-relative to the repository. Review the rest of the crate after the smells.
+Batch the modules by their sites, and, when you split a module, keep a type or function
+with its sites in one batch. The reviewers run the same scan over their modules, so the
+sites need not be passed on. Review the rest of the crate after the smells.

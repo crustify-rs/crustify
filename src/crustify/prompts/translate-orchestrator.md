@@ -298,22 +298,26 @@ instructed to do that after every batch promotion, which will corespond to the w
 
 When review is enabled, every translated wave is followed by its review wave before the next
 translation wave starts. Upon the user's request you may also spawn reviewers after every
-translation batch, with that batch's workset; otherwise, reason what workset distribution would
-be a sensible one given the wave's complexity. We want the reviewer to take a larger batch than
-a regular binder or translator, e.g. 5-10x for types, 3-4x for symbols, however without overwhelming the
-reviewer. Thus, a review wave holds at least two batches, one with every type item the translated
-wave scheduled, and one with every symbol and callback item. A raw-lifetime wave's review batch mirrors
-its single batch. Review caps scale with the wave: a review batch holds its route's whole workset. 
+translation batch, with that batch's commits; otherwise, reason what distribution would be a
+sensible one given the wave's complexity. A review batch takes the commits of one or more of
+the wave's translation batches, within the approved review caps (`id: review-workload`),
+counted over the items those batches scheduled. We want the reviewer to take a larger batch
+than a regular binder or translator, e.g. 5-10x for types, 3-4x for symbols, however
+without overwhelming the reviewer. Keep the batches that bound a type and the batches
+that added methods on it in the same review batch where the caps allow.
 
-Reviewers inspect the merged wave for the approved review objectives, file a report and
-reproducer for each finding, fix the findings when `fix` is among the objectives, and land
-through the same branch flow.
+Reviewers inspect what the commits landed for the approved review objectives, file a report
+and reproducer for each finding, fix the findings when `fix` is among the objectives, and
+land through the same branch flow.
 
-A review batch's `batch.json` holds the items of its workset and the approved objectives:
+A review batch's `batch.json` holds the landed commits of its translation batches, as they
+sit on the wave branch, and the approved objectives:
 
 ```json
-{{"objectives": ["lifecycle", "unsafety", "ub", "equiv", "fix"], "items": [...]}}
+{{"objectives": ["lifecycle", "unsafety", "ub", "equiv", "fix"], "commits": ["3f2a9c1", "8be04d7"]}}
 ```
+
+Each commit's `Batch:` trailer leads the reviewer to its translation batch's `batch.json`.
 
 Omit `objectives` to run every objective the reviewer offers. `crustify spawn-reviewer
 --help` describes them; a dry run lists the ones a batch resolves to, and rejects any the

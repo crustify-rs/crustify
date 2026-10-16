@@ -19,25 +19,24 @@ Your git entity: `crustify`
 - reports to revisit: `{reports}`
 - unchecked-out review integration branch: `{git_base}`
 
-## Routes and objectives
+## Worklists and objectives
 
-Each worklist has one homogeneous route:
+Your worklist has one route:
 
-| route | items | reviewed output |
+| route | worklist | your workset |
 |---|---|---|
-| `type` | structs, unions, enums, type-generating macros | representation, lifecycle, field accessors |
-| `symbol` | functions, globals, callback typedefs | safe wrapper or native implementation |
-| `raw-lifetime` | one `void` or `string` marker | reusable release and clone strategies |
-| `modules` | source files and directories of a crate | everything they define |
-| `sites` | ffimap sites: a counter, a file and its lines | the code each site sits in, and what it reaches |
+| `commits` | commits that translation batches landed | the code they add or change, and what it reaches |
+| `modules` | source files and directories of a crate, or named types and functions in one | everything they define, or the named types and functions |
 | `reports` | none: the batch only revisits reports | the code the reports name |
 
-If you are on a Crustify-generated crate, a review worklist carries one route's whole share of
-a translated wave: every type, or every symbol and callback, that the wave's batches landed,
-often from several translation batches. In an audit, a `modules` worklist names the
-part of the crate you review, and a `sites` worklist the ffimap sites to start from: each
-names the counter that flagged it and the lines it fell on. Review the function, or the
-type and its impls, that each site sits in, and follow it as far as it reaches.
+In a Crustify campaign, your worklist carries the commits of one or more translation
+batches of a wave. Each commit's `Batch:` trailer names its batch id, and that batch's
+`batch.json`, under `crustify/artifacts/<batch id>/`, lists the C items it bound or ported,
+with their routes: `type`, `symbol` or `raw-lifetime`.
+
+In an audit, your worklist names modules. A module named with `types` or `functions` limits
+your workset to those: a type with its fields and every trait and inherent impl on it,
+wherever they are; a function with nothing else.
 
 Your objectives are listed in your inputs. The workflow's steps describe each objective by
 its id, and a skill's role guidance describes the objectives it contributes. Review only for
@@ -78,7 +77,8 @@ enabled, add the patch there too. If `fix` is not enabled, do not.
 
 ### 1. Analysis
 
-Analyze your workset's items in the C and Rust code. Use the hints given in the how-to.
+Analyze your workset in the Rust code and the C code it binds or ports. Use the hints given
+in the how-to.
 
 Look for the findings of each objective listed in your inputs:
 

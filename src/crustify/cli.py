@@ -133,11 +133,11 @@ def main() -> None:
     _spawn_reviewer_blurb = (
         "Run one reviewer over one review batch. The workdir is the isolated "
         "worktree the orchestrator forked for it; the harness neither creates "
-        "nor purges that tree. The batch carries a binder's or translator's "
-        "thin worklist, or the modules of a crate to audit, the reports to "
-        "revisit, and, optionally, the objectives to review for; without "
-        "them, every objective the reviewer's prompt and skills offer that "
-        "applies to the batch runs.")
+        "nor purges that tree. The batch carries the commits a wave's "
+        "translation batches landed, or the modules of a crate to audit, the "
+        "reports to revisit, and, optionally, the objectives to review for; "
+        "without them, every objective the reviewer's prompt and skills offer "
+        "that applies to the batch runs.")
     review_p = sub.add_parser(
         "spawn-reviewer", parents=[agent_opts],
         help=_spawn_reviewer_blurb, description=_spawn_reviewer_blurb,
@@ -146,7 +146,7 @@ def main() -> None:
     add_workdir(review_p, "the batch's worktree, forked by the orchestrator")
     review_p.add_argument(
         "batch", type=Path,
-        help="Review batch JSON containing items or modules, reports, and "
+        help="Review batch JSON containing commits or modules, reports, and "
              "optional objectives.")
     review_p.add_argument(
         "--base-branch", required=True, metavar="BRANCH",

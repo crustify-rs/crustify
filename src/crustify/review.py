@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import NoReturn
 
-from crustify.translate import check_fields, parse_items, read_object
+from crustify.translate import check_fields, read_object
 
 _OBJECTIVE = re.compile(r"^[a-z]+$")
 
@@ -18,17 +18,16 @@ _LOG_STEM = "reviewer"
 class ReviewBatch:
     """Validated review-batch input.
 
-    A batch reviews one worklist: wavefront ``items`` of one route; or, for a
-    crate wavefront does not describe, ``modules``, its source files and
-    directories, or ``sites``, the ffimap sites to start from. It may also
-    carry ``reports`` to revisit. ``objectives`` is None when the
+    A batch reviews one worklist: in a translate campaign, the ``commits``
+    its translation batches landed; in an audit, ``modules`` of the crate,
+    each a path or a path with the types and functions to review in it. It
+    may also carry ``reports`` to revisit. ``objectives`` is None when the
     batch names none, which enables every objective the reviewer offers that
     applies to it."""
 
     route: str
-    items: list[dict]
-    modules: list[str]
-    sites: list[dict]
+    commits: list[str]
+    modules: list[object]
     reports: list[str]
     objectives: list[str] | None
 
@@ -37,69 +36,80 @@ def _fail(message: str) -> NoReturn:
     raise SystemExit(f"review: {message}")
 
 
+_COMMIT = re.compile(r"^[0-9a-f]{7,64}$")
+_RUST_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*(::[A-Za-z_][A-Za-z0-9_]*)*$")
+
+
+def _path(raw: object, field: str) -> str:
+    """One repo-relative path."""
+    if not isinstance(raw, str) or not raw:
+        _fail(f"{field} must be a non-empty path")
+    pure = PurePosixPath(raw)
+    if pure.is_absolute() or ".." in pure.parts:
+        _fail(f"{field} must be a repo-relative path: {raw}")
+    return raw
+
+
 def _paths(raw: object, field: str) -> list[str]:
     """A non-empty array of distinct repo-relative paths."""
-    if (not isinstance(raw, list) or not raw
-            or any(not isinstance(p, str) or not p for p in raw)):
+    if not isinstance(raw, list) or not raw:
         _fail(f"{field} must be a non-empty array of paths")
-    for p in raw:
-        if PurePosixPath(p).is_absolute() or ".." in PurePosixPath(p).parts:
-            _fail(f"{field} must hold repo-relative paths: {p}")
-    if len(set(raw)) != len(raw):
+    paths = [_path(p, f"{field}[{i}]") for i, p in enumerate(raw)]
+    if len(set(paths)) != len(paths):
         _fail(f"{field} contains duplicates")
+    return paths
+
+
+def _names(raw: object, field: str) -> list[str]:
+    if (not isinstance(raw, list) or not raw
+            or any(not isinstance(n, str) or not _RUST_NAME.fullmatch(n)
+                   for n in raw)
+            or len(set(raw)) != len(raw)):
+        _fail(f"{field} must be a non-empty array of distinct Rust names")
     return list(raw)
 
 
-_SITE_FIELDS = frozenset({"counter", "file", "lines"})
-_COUNTER = re.compile(r"^[a-z][a-z0-9_]*(:[A-Za-z0-9_:<>]+)?$")
-
-
-def _sites(raw: object) -> list[dict]:
-    """ffimap sites, one counter's lines in one file each: the shape of
-    ffimap's own `sites` record, with the counter named."""
+def _modules(raw: object) -> list[object]:
+    """Paths, or ``{"path", "types", "functions"}`` naming the part of a
+    module too large to review whole."""
     if not isinstance(raw, list) or not raw:
-        _fail("sites must be a non-empty array")
-    seen: set[tuple[str, str]] = set()
-    for index, site in enumerate(raw):
-        label = f"sites[{index}]"
-        if not isinstance(site, dict) or set(site) != _SITE_FIELDS:
-            _fail(f"{label} must be an object with exactly: counter, file, lines")
-        if not isinstance(site["counter"], str) \
-                or not _COUNTER.fullmatch(site["counter"]):
-            _fail(f"{label}.counter must be an ffimap counter name")
-        _paths([site["file"]], f"{label}.file")
-        lines = site["lines"]
-        if (not isinstance(lines, list) or not lines
-                or any(not isinstance(n, int) or isinstance(n, bool) or n < 1
-                       for n in lines)
-                or len(set(lines)) != len(lines)):
-            _fail(f"{label}.lines must be a non-empty array of distinct line numbers")
-        key = (site["counter"], site["file"])
-        if key in seen:
-            _fail(f"{label} repeats counter {key[0]} in {key[1]}")
-        seen.add(key)
-    return [dict(site) for site in raw]
+        _fail("modules must be a non-empty array")
+    modules: list[object] = []
+    for i, module in enumerate(raw):
+        label = f"modules[{i}]"
+        if isinstance(module, dict):
+            if "path" not in module or not set(module) - {"path"} \
+                    or set(module) - {"path", "types", "functions"}:
+                _fail(f"{label} must be a path, or an object with path and "
+                      "types, functions or both")
+            entry = {"path": _path(module["path"], f"{label}.path")}
+            for key in ("types", "functions"):
+                if key in module:
+                    entry[key] = _names(module[key], f"{label}.{key}")
+            modules.append(entry)
+        else:
+            modules.append(_path(module, label))
+    paths = [m["path"] if isinstance(m, dict) else m for m in modules]
+    if len(set(paths)) != len(paths):
+        _fail("modules names a path twice")
+    return modules
 
 
 def load_batch(path: Path) -> ReviewBatch:
     """Load and strictly validate a review batch.
 
-    Its ``items`` are a binder's or translator's thin worklist, and
-    ``modules`` or ``sites`` replace them for a crate wavefront does not
-    describe;
-    ``objectives`` replaces their single ``objective``. ``reports`` names the
-    report dirs a ``revisit`` batch re-examines, and is given exactly when
-    ``revisit`` is. Which objective names exist depends on the skills the
-    reviewer carries, so they are checked against the agent, not here."""
+    ``objectives`` replaces a translation batch's single ``objective``.
+    ``reports`` names the report dirs a ``revisit`` batch re-examines, and is
+    given exactly when ``revisit`` is. Which objective names exist depends on
+    the skills the reviewer carries, so they are checked against the agent,
+    not here."""
     raw = read_object(path, _fail)
-    check_fields(raw, set(),
-                 {"items", "modules", "sites", "reports", "objectives"}, _fail)
-    worklists = sorted({"items", "modules", "sites"} & set(raw))
-    if len(worklists) > 1:
-        _fail("a batch carries one of items, modules or sites, not "
-              + " and ".join(worklists))
-    if not worklists and "reports" not in raw:
-        _fail("a batch needs items, modules, sites or reports")
+    check_fields(raw, set(), {"commits", "modules", "reports", "objectives"},
+                 _fail)
+    if "commits" in raw and "modules" in raw:
+        _fail("a batch carries commits or modules, not both")
+    if not {"commits", "modules", "reports"} & set(raw):
+        _fail("a batch needs commits, modules or reports")
     objectives = raw.get("objectives")
     if objectives is not None:
         if (not isinstance(objectives, list) or not objectives
@@ -111,14 +121,18 @@ def load_batch(path: Path) -> ReviewBatch:
         if ("revisit" in objectives) != ("reports" in raw):
             _fail("reports are given exactly when revisit is an objective")
     reports = _paths(raw["reports"], "reports") if "reports" in raw else []
-    route, items, modules, sites = "reports", [], [], []
-    if "items" in raw:
-        route, items = parse_items(raw["items"], _fail)
+    route, commits, modules = "reports", [], []
+    if "commits" in raw:
+        commits = raw["commits"]
+        if (not isinstance(commits, list) or not commits
+                or any(not isinstance(c, str) or not _COMMIT.fullmatch(c)
+                       for c in commits)
+                or len(set(commits)) != len(commits)):
+            _fail("commits must be a non-empty array of distinct commit ids")
+        route = "commits"
     elif "modules" in raw:
-        route, modules = "modules", _paths(raw["modules"], "modules")
-    elif "sites" in raw:
-        route, sites = "sites", _sites(raw["sites"])
-    return ReviewBatch(route=route, items=items, modules=modules, sites=sites,
+        route, modules = "modules", _modules(raw["modules"])
+    return ReviewBatch(route=route, commits=list(commits), modules=modules,
                        reports=reports, objectives=objectives)
 
 
@@ -148,9 +162,8 @@ def execute(
     agent = ReviewAgent(
         workdir.resolve(),
         route=batch.route,
-        items=batch.items,
+        commits=batch.commits,
         modules=batch.modules,
-        sites=batch.sites,
         reports=batch.reports,
         objectives=batch.objectives,
         git_base=base_branch.removeprefix("refs/heads/"),
@@ -160,8 +173,7 @@ def execute(
     if dry_run:
         print(
             f"[review dry-run] one {batch.route} agent; "
-            f"{len(batch.items)} item(s), {len(batch.modules)} module(s), "
-            f"{len(batch.sites)} site(s), "
+            f"{len(batch.commits)} commit(s), {len(batch.modules)} module(s), "
             f"{len(batch.reports)} report(s); objectives "
             f"{', '.join(agent.objectives)}; landing on {base_branch}; "
             "no agent spawned."

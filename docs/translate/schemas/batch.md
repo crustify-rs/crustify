@@ -37,35 +37,36 @@ Both are required and no other root field is accepted.
 
 ## Review batches
 
-A review batch carries, instead of `objective`, an optional `objectives` array, and reviews
-either the same `items` or, in an audit, `modules`:
+A review batch carries, instead of `objective`, an optional `objectives` array, and a Rust
+worklist instead of `items`: in a translate campaign, the commits its translation batches
+landed; in an audit, modules of the crate.
 
 ```json
 {
   "objectives": ["lifecycle", "unsafety", "ub", "equiv", "fix"],
-  "items": [ ... ]
+  "commits": ["3f2a9c1", "8be04d7"]
 }
 ```
 
 ```json
 {
-  "objectives": ["ub", "equiv", "disclose"],
-  "modules": ["src/frame.rs", "src/codec/"]
+  "objectives": ["ub", "contracts", "disclose"],
+  "modules": ["src/frame.rs", {"path": "src/codec.rs", "types": ["Decoder"], "functions": ["open_input"]}]
 }
 ```
 
 | root field | meaning |
 |---|---|
 | `objectives` | the review objectives to run; optional, every one the reviewer offers that applies when absent |
-| `items` | as above |
-| `modules` | repo-relative source files and directories of a crate wavefront does not describe; route `modules` |
-| `sites` | ffimap sites of a crate wavefront does not describe, each `{"counter", "file", "lines"}`: an ffimap counter, a repo-relative file and the distinct lines it flagged there; route `sites` |
+| `commits` | distinct commit ids, as they sit on the wave branch; route `commits`. Each commit's `Batch:` trailer names the translation batch whose `batch.json` lists its C items |
+| `modules` | repo-relative source files and directories; route `modules`. An entry may instead be `{"path", "types", "functions"}`, naming the types (each with its fields and impls) and free functions of a module too large to review whole |
 | `reports` | repo-relative report dirs, `crustify/reviews/<batch id>/<kind>/<slug>`, to revisit |
 
-A batch carries at most one of `items`, `modules` and `sites`, and needs one of them or
-`reports`; a counter appears once per file in `sites`; one with only `reports` has route `reports`. `reports` is given
-exactly when `revisit` is among the objectives, and an absent `objectives` includes
-`revisit` exactly when `reports` is given. No other root field is accepted.
+A batch carries `commits` or `modules`, not both, and needs one of them or `reports`; one
+with only `reports` has route `reports`. A module path appears once, and a module object
+names `types`, `functions` or both. `reports` is given exactly when `revisit` is among the
+objectives, and an absent `objectives` includes `revisit` exactly when `reports` is given.
+No other root field is accepted.
 
 The reviewer's prompt offers `unsafety`, `contracts`, `ub`, `equiv`, `internal`,
 `conventions`, `misc`, `coverage`, `revisit`, `disclose` and `fix`, with `conventions`

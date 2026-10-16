@@ -1,7 +1,9 @@
 <!-- SKILL -->
 
-A `sites` worklist already names your sites. Otherwise, locate your workset's sites with
-the scan, and narrow them to those in your workset:
+Locate the fishy sites with the scan, and keep those in your workset: the code your
+commits add or change, or your modules and the types and functions they name. They are
+starting points, not your whole review: ffimap is neither complete nor sound, so review
+beyond them.
 
 ```bash
 ffimap <workdir> --json --ffibox --sites <counter> ...

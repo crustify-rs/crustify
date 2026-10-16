@@ -304,9 +304,7 @@ class PromptArgumentTests(unittest.TestCase):
 
     def test_reviewer_arguments_match_its_placeholders(self) -> None:
         agent = ReviewAgent(
-            self.repo, route="type",
-            items=[{"name": "T", "defined_in": "a.h", "kind": "type",
-                    "field_anchors": [], "home": "crustify/rust/x/src/a.rs"}],
+            self.repo, route="commits", commits=["3f2a9c1"],
             objectives=None, git_base="review-wave-0",
             artifact_dir=self.repo, log_stem="x")
         self._check(agent)

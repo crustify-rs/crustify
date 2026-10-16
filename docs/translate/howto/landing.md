@@ -1,7 +1,9 @@
 # Landing
 
 A batch lands its commits on the integration branch it was given, which is never checked
-out. Before committing, the diff is checked to contain no unrelated work.
+out. Before committing, the diff is checked to contain no unrelated work. Each commit
+message ends with a `Batch: <batch id>` trailer, which ties the commit to the batch's
+artifact dir, `crustify/artifacts/<batch id>/`, through rebases.
 
 The landing operation is a local push through the Git common directory:
 

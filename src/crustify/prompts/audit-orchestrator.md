@@ -135,15 +135,14 @@ The task's review objectives, when given, replace this mapping.
 
 ##### Worksets
 
-For `audit`, inspect the crate and the reports filed so far, and prioritize the sites
-the ffimap skill names. Batch those sites first, as `sites` worksets, then divide the rest
-of the crate into `modules` worksets. Worksets are disjoint: no site or file is in two
-batches.
+For `audit`, inspect the crate and the reports filed so far, and divide the crate into
+disjoint worksets of modules, one per review batch. Batch the modules that hold the smells
+the ffimap skill names first.
 
-A batch holds at most the task's `max-sites` sites, 20 by default, and the code it covers,
-the functions, or types and impls, its sites sit in, or its modules, spans at most the
-task's `max-loc` lines, 500 by default. Keep a smell's sites in one module together where
-the caps allow.
+A batch holds at most the task's `max-defs` types and functions, 20 by default, spanning at
+most its `max-loc` lines, 500 by default. A module too large for one batch is split: name
+the types and functions each batch reviews in it, so that every type, with its impls, and
+every free function of the module falls in exactly one batch.
 
 For `revisit`, divide the reports into their own batches, grouped so that reports
 needing the same instrument or the same build land on the same reviewer.
@@ -198,11 +197,10 @@ A review batch's `batch.json` holds its workset and the approved objectives:
 {{"objectives": ["ub", "equiv", "disclose"], "modules": ["src/frame.rs", "src/codec/"]}}
 ```
 
-A smell batch names its ffimap sites, as the scan's `sites` record gives them, with the
-counter that flagged each and its file relative to the repository:
+A part of a module names its types and functions:
 
 ```json
-{{"objectives": ["ub", "disclose"], "sites": [{{"counter": "ty_wrapper_borrow_non_sanctioned", "file": "src/frame.rs", "lines": [120, 188]}}]}}
+{{"objectives": ["ub", "contracts", "disclose"], "modules": [{{"path": "src/codec.rs", "types": ["Decoder"], "functions": ["open_input"]}}]}}
 ```
 
 A revisit batch names its report dirs instead:

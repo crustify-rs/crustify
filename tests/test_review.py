@@ -10,6 +10,7 @@ from unittest import mock
 from crustify import deps, review, translate
 from crustify.agents.review import ReviewAgent
 
+_COMMIT = "3f2a9c1"
 _ITEM = {"name": "T", "defined_in": "include/t.h", "kind": "type",
          "field_anchors": [], "home": "crustify/rust/demo/src/t.rs"}
 
@@ -49,65 +50,57 @@ class ReviewBatchTests(unittest.TestCase):
         return review.load_batch(self.path)
 
     def test_objectives_are_optional(self) -> None:
-        batch = self.load({"items": [_ITEM]})
+        batch = self.load({"commits": [_COMMIT]})
         self.assertIsNone(batch.objectives)
-        self.assertEqual(batch.route, "type")
+        self.assertEqual((batch.route, batch.commits), ("commits", [_COMMIT]))
 
     def test_objectives_are_carried(self) -> None:
-        batch = self.load({"objectives": ["ub", "fix"], "items": [_ITEM]})
+        batch = self.load({"objectives": ["ub", "fix"], "commits": [_COMMIT]})
         self.assertEqual(batch.objectives, ["ub", "fix"])
 
     def test_a_translator_objective_is_not_a_review_field(self) -> None:
         with self.assertRaisesRegex(SystemExit, "unknown batch field"):
-            self.load({"objective": "review", "items": [_ITEM]})
+            self.load({"objective": "review", "commits": [_COMMIT]})
 
     def test_malformed_objectives_are_rejected(self) -> None:
         for objectives in ([], "ub", ["ub", "ub"], ["Ub"], [1]):
             with self.subTest(objectives=objectives), \
                     self.assertRaises(SystemExit):
-                self.load({"objectives": objectives, "items": [_ITEM]})
+                self.load({"objectives": objectives, "commits": [_COMMIT]})
 
-    def test_items_are_validated_as_for_a_translator(self) -> None:
-        with self.assertRaisesRegex(SystemExit, "mixed agent routes"):
-            self.load({"items": [_ITEM, dict(_ITEM, name="f", kind="symbol")]})
+    def test_commits_are_validated(self) -> None:
+        for commits in ([], ["xyz1234"], ["abc"], [_COMMIT, _COMMIT], [1]):
+            with self.subTest(commits=commits), self.assertRaises(SystemExit):
+                self.load({"commits": commits})
+
+    def test_c_items_are_not_a_review_worklist(self) -> None:
+        with self.assertRaisesRegex(SystemExit, "unknown batch field"):
+            self.load({"items": [_ITEM]})
 
     def test_an_audit_reviews_modules(self) -> None:
-        batch = self.load({"modules": ["src/frame.rs", "src/codec/"]})
-        self.assertEqual(batch.route, "modules")
-        self.assertEqual(batch.modules, ["src/frame.rs", "src/codec/"])
-        self.assertEqual(batch.items, [])
+        modules = ["src/frame.rs",
+                   {"path": "src/codec.rs", "types": ["Decoder"],
+                    "functions": ["open_input", "util::probe"]}]
+        batch = self.load({"modules": modules})
+        self.assertEqual((batch.route, batch.modules), ("modules", modules))
+        self.assertEqual(batch.commits, [])
 
-    def test_items_and_modules_are_exclusive(self) -> None:
-        with self.assertRaisesRegex(SystemExit, "items and modules"):
-            self.load({"items": [_ITEM], "modules": ["src/a.rs"]})
+    def test_commits_and_modules_are_exclusive(self) -> None:
+        with self.assertRaisesRegex(SystemExit, "not both"):
+            self.load({"commits": [_COMMIT], "modules": ["src/a.rs"]})
 
     def test_a_batch_needs_a_worklist_or_reports(self) -> None:
-        with self.assertRaisesRegex(SystemExit, "items, modules, sites or reports"):
+        with self.assertRaisesRegex(SystemExit, "commits, modules or reports"):
             self.load({"objectives": ["ub"]})
 
-    def test_modules_are_repo_relative(self) -> None:
-        for modules in ([], ["/abs.rs"], ["../out.rs"], ["a.rs", "a.rs"], [""]):
+    def test_modules_are_validated(self) -> None:
+        for modules in ([], ["/abs.rs"], ["../out.rs"], ["a.rs", "a.rs"], [""],
+                        [{"path": "a.rs"}], [{"path": "a.rs", "types": []}],
+                        [{"path": "a.rs", "types": ["Bad name"]}],
+                        [{"path": "a.rs", "items": ["T"]}],
+                        ["a.rs", {"path": "a.rs", "types": ["T"]}]):
             with self.subTest(modules=modules), self.assertRaises(SystemExit):
                 self.load({"modules": modules})
-
-    def test_an_audit_reviews_ffimap_sites(self) -> None:
-        site = {"counter": "drop_impl", "file": "src/ctx.rs", "lines": [42, 7]}
-        batch = self.load({"sites": [site]})
-        self.assertEqual((batch.route, batch.sites), ("sites", [site]))
-
-    def test_sites_are_validated(self) -> None:
-        good = {"counter": "drop_impl", "file": "src/ctx.rs", "lines": [42]}
-        for sites in ([], [dict(good, count=1)], [dict(good, counter="Bad")],
-                      [dict(good, file="/abs.rs")], [dict(good, lines=[])],
-                      [dict(good, lines=[0])], [dict(good, lines=[3, 3])],
-                      [dict(good, lines=[True])], [good, dict(good)]):
-            with self.subTest(sites=sites), self.assertRaises(SystemExit):
-                self.load({"sites": sites})
-
-    def test_one_worklist_per_batch(self) -> None:
-        site = {"counter": "drop_impl", "file": "a.rs", "lines": [1]}
-        with self.assertRaisesRegex(SystemExit, "one of items, modules or sites"):
-            self.load({"modules": ["a.rs"], "sites": [site]})
 
     def test_reports_come_exactly_with_revisit(self) -> None:
         report = "crustify/reviews/b/ub_safe/x"
@@ -133,7 +126,7 @@ class ReviewAgentTests(unittest.TestCase):
         (self.repo / "crustify").mkdir()
 
     def agent(self, objectives: list[str] | None) -> ReviewAgent:
-        return ReviewAgent(self.repo, route="type", items=[_ITEM],
+        return ReviewAgent(self.repo, route="commits", commits=[_COMMIT],
                            objectives=objectives, git_base="review-wave-0",
                            artifact_dir=self.repo, log_stem="reviewer")
 
@@ -237,19 +230,13 @@ class ReviewAgentTests(unittest.TestCase):
         _Checkouts(self)
         from crustify.log_cost import kind
         stage = self.agent(None).stage
-        self.assertEqual(stage, "review-type_T")
-        self.assertEqual(kind(stage), "review-type")
+        self.assertEqual(stage, f"review-commits_{_COMMIT}")
+        self.assertEqual(kind(stage), "review-commits")
         modules = ReviewAgent(self.repo, route="modules", modules=["src/a.rs"],
                               objectives=None, git_base="w",
                               artifact_dir=self.repo, log_stem="reviewer")
         self.assertEqual(kind(modules.stage), "review-modules")
-        sites = ReviewAgent(self.repo, route="sites",
-                            sites=[{"counter": "drop_impl", "file": "a.rs",
-                                    "lines": [1]}],
-                            objectives=None, git_base="w",
-                            artifact_dir=self.repo, log_stem="reviewer")
-        self.assertEqual(kind(sites.stage), "review-sites")
-        self.assertIn('"counter": "drop_impl"', sites.system_preamble())
+        self.assertIn(_COMMIT, self.agent(None).system_preamble())
 
 
 class ExecuteTests(unittest.TestCase):
@@ -265,7 +252,7 @@ class ExecuteTests(unittest.TestCase):
 
     def test_dry_run_lists_the_resolved_objectives(self) -> None:
         self.batch.write_text(json.dumps(
-            {"objectives": ["fix", "ub"], "items": [_ITEM]}))
+            {"objectives": ["fix", "ub"], "commits": [_COMMIT]}))
         with mock.patch("builtins.print") as printed:
             review.execute(self.repo, self.batch, base_branch="review-wave-0",
                            output=self.output, dry_run=True)
@@ -273,13 +260,13 @@ class ExecuteTests(unittest.TestCase):
 
     def test_dry_run_rejects_an_objective_no_skill_offers(self) -> None:
         self.batch.write_text(json.dumps(
-            {"objectives": ["nonesuch"], "items": [_ITEM]}))
+            {"objectives": ["nonesuch"], "commits": [_COMMIT]}))
         with self.assertRaisesRegex(SystemExit, "nonesuch"):
             review.execute(self.repo, self.batch, base_branch="review-wave-0",
                            output=self.output, dry_run=True)
 
     def test_artifacts_take_the_reviewer_names(self) -> None:
-        self.batch.write_text(json.dumps({"items": [_ITEM]}))
+        self.batch.write_text(json.dumps({"commits": [_COMMIT]}))
         seen = {}
 
         def run(agent):
