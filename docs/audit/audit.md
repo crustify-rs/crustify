@@ -37,8 +37,8 @@ Without `fix`, reviewers change nothing but their reviews dirs.
 An audit's review batches carry `modules`, the source files and directories of the crate a
 reviewer covers. A module too large for one batch is split by naming the types, each with
 its fields and impls, and the free functions each batch reviews in it. The orchestrator
-batches the modules that hold ffimap's smells first, at most 20 types and functions and 500
-lines per batch by default (`id: workload` in the task). Reviewers start from the ffimap
+batches the modules that hold ffimap's smells first, around 500 lines of code per batch by
+default, give or take a small margin (`id: workload` in the task). Reviewers start from the ffimap
 sites in their modules, but do not stop at them. A revisit batch carries the `reports` it
 reruns:
 

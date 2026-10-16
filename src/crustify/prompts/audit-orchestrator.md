@@ -139,9 +139,10 @@ For `audit`, inspect the crate and the reports filed so far, and divide the crat
 disjoint worksets of modules, one per review batch. Batch the modules that hold the smells
 the ffimap skill names first.
 
-A batch holds at most the task's `max-defs` types and functions, 20 by default, spanning at
-most its `max-loc` lines, 500 by default. A module too large for one batch is split: name
-the types and functions each batch reviews in it, so that every type, with its impls, and
+A batch spans around the task's `max-loc` lines of code, 500 by default; a small margin
+either way is fine, so as not to split a type from its impls or leave a small remainder.
+A module too large for one batch is split: name the types and functions each batch reviews
+in it, a type counted with its impls, so that every type, with its impls, and
 every free function of the module falls in exactly one batch.
 
 For `revisit`, divide the reports into their own batches, grouped so that reports

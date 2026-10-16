@@ -52,9 +52,9 @@ Unanswered optional questions are decided by the orchestrator.
 ## Review
 
 7. **What batch caps should the reviewers use?** (`id: workload`)
-   - Answer: `<defaults | max-defs: N, max-loc: N>`
-   - Defaults: at most 20 types and functions per batch, a type counted with its
-     impls, spanning at most 500 lines.
+   - Answer: `<defaults | max-loc: N>`
+   - Default: around 500 lines of code per batch, a type counted with its impls; a
+     small margin either way is allowed.
 
 8. **Which objectives should the reviewers review for? By default, the objective above
    decides: `ub`, `contracts`, `equiv` when `equivalence` is an instrument, and
