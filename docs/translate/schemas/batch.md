@@ -51,7 +51,7 @@ landed; in an audit, modules of the crate.
 ```json
 {
   "objectives": ["ub", "contracts", "disclose"],
-  "modules": ["src/frame.rs", {"path": "src/codec.rs", "types": ["Decoder"], "functions": ["open_input"]}]
+  "modules": ["src/frame.rs", {"path": "src/codec.rs", "types": ["Decoder"], "trait_impls": ["Drop for Decoder"], "functions": ["open_input"]}]
 }
 ```
 
@@ -59,12 +59,12 @@ landed; in an audit, modules of the crate.
 |---|---|
 | `objectives` | the review objectives to run; optional, every one the reviewer offers that applies when absent |
 | `commits` | distinct commit ids, as they sit on the wave branch; route `commits`. Each commit's `Batch:` trailer names the translation batch whose `batch.json` lists its C items |
-| `modules` | repo-relative source files and directories; route `modules`. An entry may instead be `{"path", "types", "functions"}`, naming the types (each with its fields and impls) and free functions of a module too large to review whole |
+| `modules` | repo-relative source files and directories; route `modules`. An entry may instead be `{"path", "types", "trait_impls", "functions"}`, naming the parts of a module too large to review whole: types, each with its fields and inherent impls; trait impls, each `<trait> for <type>` as its impl header spells it; and free functions |
 | `reports` | repo-relative report dirs, `crustify/reviews/<batch id>/<kind>/<slug>`, to revisit |
 
 A batch carries `commits` or `modules`, not both, and needs one of them or `reports`; one
 with only `reports` has route `reports`. A module path appears once, and a module object
-names `types`, `functions` or both. `reports` is given exactly when `revisit` is among the
+names one or more of `types`, `trait_impls` and `functions`, each a distinct list. `reports` is given exactly when `revisit` is among the
 objectives, and an absent `objectives` includes `revisit` exactly when `reports` is given.
 No other root field is accepted.
 

@@ -141,9 +141,11 @@ the ffimap skill names first.
 
 A batch spans around the task's `max-loc` lines of code, 500 by default; a small margin
 either way is fine, so as not to split a type from its impls or leave a small remainder.
-A module too large for one batch is split: name the types and functions each batch reviews
-in it, a type counted with its impls, so that every type, with its impls, and
-every free function of the module falls in exactly one batch.
+A module too large for one batch is split: name the types, trait impls and free functions
+each batch reviews in it, so that each falls in exactly one batch. A type covers its fields
+and inherent impls only: name its trait impls, `<trait> for <type>` as their impl headers
+spell them, in `trait_impls`, with the type's batch unless they are worth a batch of their
+own. Never name the methods of an impl as functions.
 
 For `revisit`, divide the reports into their own batches, grouped so that reports
 needing the same instrument or the same build land on the same reviewer.
@@ -198,10 +200,10 @@ A review batch's `batch.json` holds its workset and the approved objectives:
 {{"objectives": ["ub", "equiv", "disclose"], "modules": ["src/frame.rs", "src/codec/"]}}
 ```
 
-A part of a module names its types and functions:
+A part of a module names its types, trait impls and functions:
 
 ```json
-{{"objectives": ["ub", "contracts", "disclose"], "modules": [{{"path": "src/codec.rs", "types": ["Decoder"], "functions": ["open_input"]}}]}}
+{{"objectives": ["ub", "contracts", "disclose"], "modules": [{{"path": "src/codec.rs", "types": ["Decoder"], "trait_impls": ["Drop for Decoder", "Iterator for Packets<'_>"], "functions": ["open_input"]}}]}}
 ```
 
 A revisit batch names its report dirs instead:

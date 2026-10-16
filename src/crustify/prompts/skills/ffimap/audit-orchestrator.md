@@ -27,6 +27,7 @@ justifications:
 obligations they evaluate, and `undocumented_unsafe`, the `unsafe` sites with no
 `// SAFETY:` comment.
 
-Batch the modules by their sites, and, when you split a module, keep a type or function
-with its sites in one batch. The reviewers run the same scan over their modules, so the
+Batch the modules by their sites, and, when you split a module, keep a type, trait impl or
+function with its sites in one batch. A `drop_impl` site is a trait impl: name it as
+`Drop for <type>`. The reviewers run the same scan over their modules, so the
 sites need not be passed on. Review the rest of the crate after the smells.

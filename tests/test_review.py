@@ -80,6 +80,9 @@ class ReviewBatchTests(unittest.TestCase):
     def test_an_audit_reviews_modules(self) -> None:
         modules = ["src/frame.rs",
                    {"path": "src/codec.rs", "types": ["Decoder"],
+                    "trait_impls": ["Drop for Decoder",
+                                    "From<Oid> for String",
+                                    "Iterator for Packets<'_>"],
                     "functions": ["open_input", "util::probe"]}]
         batch = self.load({"modules": modules})
         self.assertEqual((batch.route, batch.modules), ("modules", modules))
@@ -97,6 +100,10 @@ class ReviewBatchTests(unittest.TestCase):
         for modules in ([], ["/abs.rs"], ["../out.rs"], ["a.rs", "a.rs"], [""],
                         [{"path": "a.rs"}], [{"path": "a.rs", "types": []}],
                         [{"path": "a.rs", "types": ["Bad name"]}],
+                        [{"path": "a.rs", "trait_impls": ["Drop"]}],
+                        [{"path": "a.rs", "trait_impls": ["Drop for "]}],
+                        [{"path": "a.rs", "trait_impls": ["Drop for T",
+                                                          "Drop for T"]}],
                         [{"path": "a.rs", "items": ["T"]}],
                         ["a.rs", {"path": "a.rs", "types": ["T"]}]):
             with self.subTest(modules=modules), self.assertRaises(SystemExit):

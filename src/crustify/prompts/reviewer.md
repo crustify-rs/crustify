@@ -26,7 +26,7 @@ Your worklist has one route:
 | route | worklist | your workset |
 |---|---|---|
 | `commits` | commits that translation batches landed | the code they add or change, and what it reaches |
-| `modules` | source files and directories of a crate, or named types and functions in one | everything they define, or the named types and functions |
+| `modules` | source files and directories of a crate, or named types, trait impls and functions in one | everything they define, or the named parts |
 | `reports` | none: the batch only revisits reports | the code the reports name |
 
 In a Crustify campaign, your worklist carries the commits of one or more translation
@@ -34,9 +34,11 @@ batches of a wave. Each commit's `Batch:` trailer names its batch id, and that b
 `batch.json`, under `crustify/artifacts/<batch id>/`, lists the C items it bound or ported,
 with their routes: `type`, `symbol` or `raw-lifetime`.
 
-In an audit, your worklist names modules. A module named with `types` or `functions` limits
-your workset to those: a type with its fields and every trait and inherent impl on it,
-wherever they are; a function with nothing else.
+In an audit, your worklist names modules. A module named with `types`, `trait_impls` or
+`functions` limits your workset to those: a type with its fields and its inherent impls,
+wherever they are; a trait impl, named `<trait> for <type>` as its header spells it, with
+its methods and associated items; a free function with nothing else. Read what they call
+and what implements their traits, but report only on your workset.
 
 Your objectives are listed in your inputs. The workflow's steps describe each objective by
 its id, and a skill's role guidance describes the objectives it contributes. Review only for

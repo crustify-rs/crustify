@@ -20,7 +20,8 @@ class ReviewBatch:
 
     A batch reviews one worklist: in a translate campaign, the ``commits``
     its translation batches landed; in an audit, ``modules`` of the crate,
-    each a path or a path with the types and functions to review in it. It
+    each a path or a path with the types, trait impls and functions to
+    review in it. It
     may also carry ``reports`` to revisit. ``objectives`` is None when the
     batch names none, which enables every objective the reviewer offers that
     applies to it."""
@@ -38,6 +39,9 @@ def _fail(message: str) -> NoReturn:
 
 _COMMIT = re.compile(r"^[0-9a-f]{7,64}$")
 _RUST_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*(::[A-Za-z_][A-Za-z0-9_]*)*$")
+#: ``<trait> for <type>``, as the impl header spells them: ``Drop for Repository``,
+#: ``From<Oid> for String``, ``Iterator for Revwalk<'_>``.
+_TRAIT_IMPL = re.compile(r"^[A-Za-z_][\w:]*(<.+>)? for [A-Za-z_&*(\[].*\S$")
 
 
 def _path(raw: object, field: str) -> str:
@@ -60,18 +64,27 @@ def _paths(raw: object, field: str) -> list[str]:
     return paths
 
 
-def _names(raw: object, field: str) -> list[str]:
+def _names(raw: object, field: str, name: re.Pattern[str] = _RUST_NAME,
+           what: str = "Rust names") -> list[str]:
     if (not isinstance(raw, list) or not raw
-            or any(not isinstance(n, str) or not _RUST_NAME.fullmatch(n)
+            or any(not isinstance(n, str) or not name.fullmatch(n)
                    for n in raw)
             or len(set(raw)) != len(raw)):
-        _fail(f"{field} must be a non-empty array of distinct Rust names")
+        _fail(f"{field} must be a non-empty array of distinct {what}")
     return list(raw)
 
 
+#: The parts of a module an object entry may name, and how each is spelled.
+_PARTS = {
+    "types": (_RUST_NAME, "Rust names"),
+    "trait_impls": (_TRAIT_IMPL, "`<trait> for <type>` impls"),
+    "functions": (_RUST_NAME, "Rust names"),
+}
+
+
 def _modules(raw: object) -> list[object]:
-    """Paths, or ``{"path", "types", "functions"}`` naming the part of a
-    module too large to review whole."""
+    """Paths, or ``{"path", "types", "trait_impls", "functions"}`` naming
+    the part of a module too large to review whole."""
     if not isinstance(raw, list) or not raw:
         _fail("modules must be a non-empty array")
     modules: list[object] = []
@@ -79,13 +92,14 @@ def _modules(raw: object) -> list[object]:
         label = f"modules[{i}]"
         if isinstance(module, dict):
             if "path" not in module or not set(module) - {"path"} \
-                    or set(module) - {"path", "types", "functions"}:
+                    or set(module) - {"path", *_PARTS}:
                 _fail(f"{label} must be a path, or an object with path and "
-                      "types, functions or both")
+                      "one or more of types, trait_impls and functions")
             entry = {"path": _path(module["path"], f"{label}.path")}
-            for key in ("types", "functions"):
+            for key, (name, what) in _PARTS.items():
                 if key in module:
-                    entry[key] = _names(module[key], f"{label}.{key}")
+                    entry[key] = _names(module[key], f"{label}.{key}",
+                                        name, what)
             modules.append(entry)
         else:
             modules.append(_path(module, label))
