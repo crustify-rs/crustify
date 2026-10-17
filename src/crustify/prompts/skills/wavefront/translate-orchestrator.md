@@ -80,25 +80,39 @@ Selection rules:
 
 - Use the established batch caps to limit agent work.
 
-##### Type-erased call chains
+##### T3 tables: chased casts and type generators
 
-Wavefront records a cast only where it is written: a named type converted into a
-parameter, field or return, and that slot read as another named type. It does not follow
-a type-erased value (`void *`, `uint8_t *`, `intptr_t`) handed from one function to
-another, so a public function that only passes its `void *` on carries no dependency on
-the type its callees read it as. These are false negatives by design; recover them
-before finalizing `schedule.json`.
+Wavefront states only what its syntactic queries see. Two kinds of dependency need your
+judgement, and you record them in the T3 tables. Set `"t3_dir": "t3"` in every
+`wavefront-config.json` (relative to `state_dir`, so `crustify/wavefront/t3/`), track
+the directory, and read `docs/schemas/t3.md` from wavefront's checkout for the columns.
+Wavefront checks every row's entities when it loads them and stops on a bad row, naming
+it; each accepted row becomes one DAG edge.
 
-- For every public function with a type-erased pointer parameter, follow the parameter
-  through its call chain until it is read as a named type, or until it is stored,
-  returned or lost. `query types --name <T>` lists the slots a type is known to be read
-  through (`casted_via`).
-- A chain counts only when every hop hands the value on unchanged and unconditionally.
-  A hop that dispatches on a tag (`switch (obj->flags)`) and reads different types per
-  branch does not establish any one of them.
-- For each recovered type, order the function's batch after the type's batch, and
-  submit the chain as the function's `_comment_agent` through `--update` so the binder
-  can consult it.
+- `chased_casts.csv`. Wavefront records a cast only where it is written at a slot: a
+  value converted into a parameter or field, or that slot read as a named type. It does
+  not follow a type-erased value (`void *`, `void **`) handed on through calls or
+  locals, so a function that only passes its `void *` on gets no dependency on the type
+  its callees read it as (`av_log` hands `avcl` to `av_vlog`, which reads `AVClass`).
+  - Review every type-erased parameter and field (`is_erased` in `t1/params.csv` and
+    `t1/fields.csv`) with no `to` row in `t2/arg_casts.csv` / `t2/field_casts.csv`.
+    Follow it until it is read as a named type, or is stored, returned or lost.
+  - A chain counts only when every hop hands the value on unchanged. A hop that
+    dispatches on a tag (`switch (obj->flags)`) and reads different types per branch
+    establishes none of them.
+  - Record each established type as an `erased_arg` or `erased_field` row, and each
+    base/derived pair joined through such slots as a `base_derived` row.
+- `type_generators.csv`. `t2/macro_generated_types.csv` lists which macro invocation
+  minted which type. Wavefront treats no macro as a generator on its own. Record a
+  macro as one when it is a template: invoked at several sites, each minting the same
+  shape (`GIT_HASHMAP_STRUCT`, `git_array_t`), not a one-off definition
+  (`FF_PAD_STRUCTURE`). Check the source for invocations conditional compilation hides
+  from the extracted build. Name a macro the generator expands into a family of its
+  own with `derived_kind = macro`.
+- Under `--api-headers-only` record only public relations: erased slots of public
+  functions and of structs defined in `api_headers`, pairs whose two types are both
+  public, and generators defined in `api_headers`.
+- Re-run `schedule` after writing the tables; rows only add edges.
 
 ---
 
