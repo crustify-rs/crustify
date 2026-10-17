@@ -102,6 +102,11 @@ it; each accepted row becomes one DAG edge.
     establishes none of them.
   - Record each established type as an `erased_arg` or `erased_field` row, and each
     base/derived pair joined through such slots as a `base_derived` row.
+  - Casts between two named types are undirected facts: `query types` shows both sides
+    (`casted`, `casted_via`), and wavefront orders each pair by a centrality guess that
+    misses downcast-only hierarchies and can put a base after its derived type. For
+    every public type in a cast relation, decide whether the pair is a hierarchy and
+    record it as a `base_derived` row; the row overrides the guess.
 - `type_generators.csv`. `t2/macro_generated_types.csv` lists which macro invocation
   minted which type. Wavefront treats no macro as a generator on its own. Record a
   macro as one when it is a template: invoked at several sites, each minting the same
