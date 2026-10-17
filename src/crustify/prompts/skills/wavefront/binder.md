@@ -15,9 +15,8 @@ you need to consult these findings again.
 
 Wavefront does not follow a type-erased pointer through calls. Before binding a
 type-erased parameter, query the function's `_comment_agent` for a recorded chain, or
-trace it yourself,
-to find the type it is read as; bind to that type rather than to a raw pointer when the
-chain establishes it.
+trace it yourself, to find the type it is read as; bind to that type rather than to a
+raw pointer when the chain establishes it.
 
 ---
 
