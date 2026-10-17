@@ -80,6 +80,26 @@ Selection rules:
 
 - Use the established batch caps to limit agent work.
 
+##### Type-erased call chains
+
+Wavefront records a cast only where it is written: a named type converted into a
+parameter, field or return, and that slot read as another named type. It does not follow
+a type-erased value (`void *`, `uint8_t *`, `intptr_t`) handed from one function to
+another, so a public function that only passes its `void *` on carries no dependency on
+the type its callees read it as. These are false negatives by design; recover them
+before finalizing `schedule.json`.
+
+- For every public function with a type-erased pointer parameter, follow the parameter
+  through its call chain until it is read as a named type, or until it is stored,
+  returned or lost. `query types --name <T>` lists the slots a type is known to be read
+  through (`casted_via`).
+- A chain counts only when every hop hands the value on unchanged and unconditionally.
+  A hop that dispatches on a tag (`switch (obj->flags)`) and reads different types per
+  branch does not establish any one of them.
+- For each recovered type, order the function's batch after the type's batch, and
+  submit the chain as the function's `_comment_agent` through `--update` so the binder
+  can consult it.
+
 ---
 
 ### For Phase 2: Translation
