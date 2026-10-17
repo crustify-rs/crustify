@@ -115,9 +115,10 @@ it; each accepted row becomes one DAG edge.
   (`FF_PAD_STRUCTURE`). Check the source for invocations conditional compilation hides
   from the extracted build. Name a macro the generator expands into a family of its
   own with `derived_kind = macro`.
-- Under `--api-headers-only` record only public relations: erased slots of public
-  functions and of structs defined in `api_headers`, pairs whose two types are both
-  public, and generators defined in `api_headers`.
+- Under `--api-headers-only` chase public relations: erased slots of public functions
+  and of structs defined in `api_headers`, pairs whose two types are both public, and
+  generators defined in `api_headers`. Other rows are still checked and kept for the
+  records, but add no edge in the API graph.
 - Re-run `schedule` after writing the tables; rows only add edges.
 
 ---
