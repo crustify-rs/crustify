@@ -6,8 +6,8 @@ Field meaning for the JSON the orchestrator passes to `crustify spawn-binder <wo
 spawn-reviewer` for a review batch. One batch is one agent's entire worklist, and each
 command rejects a batch whose objective belongs to another.
 
-The orchestrator plans it as one batch entry of `docs/translate/schemas/schedule.md` and
-writes it out verbatim.
+A planner plans it as one batch entry of `docs/translate/schemas/schedule.md`, and the
+orchestrator writes it out verbatim.
 
 It lands as `batch.json` in that batch's own directory, beside the log and usage record
 the agent writes there. The harness reads it once and the file names no wave, branch, log

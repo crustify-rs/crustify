@@ -163,9 +163,21 @@ Implementation `<provider>/<model>` via `<backend>`; review
 | `raw-lifetime-void` | `0` | `<n>` | `<n>m<n>s` | `$<n>` | `<n>M` | `$<n>` | `<n>M` | `$<n>` | `<n>M` | — | `$<n>` |
 | `raw-lifetime-string` | `0` | `<n>` | `<n>m<n>s` | `$<n>` | `<n>M` | `$<n>` | `<n>M` | `$<n>` | `<n>M` | — | `$<n>` |
 | `<link-unit>/<subsystem>` | `<n>` | `<n>` | `<n>h<n>m<n>s` | `$<n>` | `<n>M` | `$<n>` | `<n>M` | `$<n>` | `<n>M` | `$<n>` | `$<n>` |
+| planners | — | — | `<n>h<n>m<n>s` | — | — | — | — | `$<n>` | `<n>M` | — | — |
 | orchestrator | — | — | — | — | — | — | — | `$<n>` | `<n>M` | — | — |
 | **Σ recorded agents** | **`<n>`** | **`<n>`** | **`<n>h<n>m`** | **`$<n>`** | **`<n>M`** | **`$<n>`** | **`<n>M`** | **`$<n>`** | **`<n>M`** | **`$<n>`** | **`$<n>`** |
 | **Σ campaign** | **`<n>`** | **`<n>`** | **`<n>h<n>m`** | **`$<n>`** | **`<n>M`** | **`$<n>`** | **`<n>M`** | **`$<n>`** | **`<n>M`** | — | — |
+
+## Planning
+
+`<provider>/<model>` via `<backend>`. One row per planner run, in order; each run after
+the first reviews and amends the one before.
+
+| run | commit | subsystems changed | items moved | wavefront artifacts changed | $ | tokens | wall |
+|---|---|---:|---:|---|---|---|---|
+| 1 | `<sha>` | `<n>` | `<n>` | `<files>` | `$<n>` | `<n>M` | `<n>m<n>s` |
+| 2 | `<sha>` | `<n>` | `<n>` | `<files>` | `$<n>` | `<n>M` | `<n>m<n>s` |
+| **Σ** | | **`<n>`** | **`<n>`** | | **`$<n>`** | **`<n>M`** | **`<n>m<n>s`** |
 
 ## Raw lifetime discovery
 

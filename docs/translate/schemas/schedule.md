@@ -4,7 +4,8 @@ Field meaning for `<workdir>/crustify/artifacts/schedule.json`, the
 campaign's total execution order. Layout example:
 [`templates/schedule.json`](../../templates/schedule.json).
 
-The orchestrator emits it once, before the first agent starts. Waves and batches are
+The campaign's planner agents emit it before the first binder or translator starts: the
+first run creates it and every later run reviews and amends it. Waves and batches are
 computable in advance, so writing them down makes a campaign's shape and cost reviewable
 before it spends anything.
 

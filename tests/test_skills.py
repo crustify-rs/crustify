@@ -12,15 +12,17 @@ from unittest import mock
 from crustify import deps
 from crustify.agents.base import _PKG_ROOT
 from crustify.agents.orchestrate import AUDIT_SKILLS, OrchestrateAgent
+from crustify.agents.plan import PlanAgent
 from crustify.agents.review import ReviewAgent
 from crustify.agents.bind import BindAgent
 from crustify.agents.translate import TranslateAgent
 
-_ROLES = (BindAgent, TranslateAgent, ReviewAgent, OrchestrateAgent,
+_ROLES = (BindAgent, TranslateAgent, ReviewAgent, OrchestrateAgent, PlanAgent,
           SimpleNamespace(name="audit-orchestrator", SKILLS=AUDIT_SKILLS))
 _ROLE_NAMES = ((BindAgent, "binder"), (TranslateAgent, "translator"),
                (ReviewAgent, "reviewer"),
                (OrchestrateAgent, "translate-orchestrator"),
+               (PlanAgent, "planner"),
                (SimpleNamespace(name="audit-orchestrator", SKILLS=AUDIT_SKILLS),
                 "audit-orchestrator"))
 

@@ -46,23 +46,30 @@ Unanswered optional questions use their defaults.
 
 ## Campaign execution
 
-7. **Should the campaign use the default batching and parallelism settings, or
+7. **Which model and billing should plan the campaign, and how many planner runs
+   should review the plan? Each run after the first reviews and amends the one
+   before.** (`id: plan-agent`)
+   - Answer: `<provider/model, api | subscription>, runs: N | orchestrator's
+     choice>`
+   - By default: the translation model and billing, 2 runs.
+
+8. **Should the campaign use the default batching and parallelism settings, or
    customize them?** (`id: workload`)
    - Answer: `<defaults | max-types: N, max-syms: N, max-loc: N,
      parallelism: N | orchestrator's choice>`
 
-8. **What batch caps should review agents use? We recommend the same caps as
+9. **What batch caps should review agents use? We recommend the same caps as
    translation by default.** (`id: review-workload`)
    - Answer: `<same as translation | max-types: N,
      max-syms: N, max-loc: N>`
 
-9. **Which objectives should review agents review for? By default, every one the
-   reviewer offers.** (`id: review-objectives`)
-   - Answer: `<all | any of: lifecycle, unsafety, contracts, ub, equiv, internal,
-     conventions, misc, coverage, disclose, fix>`
-   - Without `fix`, reviewers report and reproduce what they find but patch nothing.
+10. **Which objectives should review agents review for? By default, every one the
+    reviewer offers.** (`id: review-objectives`)
+    - Answer: `<all | any of: lifecycle, unsafety, contracts, ub, equiv, internal,
+      conventions, misc, coverage, disclose, fix>`
+    - Without `fix`, reviewers report and reproduce what they find but patch nothing.
 
-10. **Which sanitizers should the campaign build and test under? By default, every one
+11. **Which sanitizers should the campaign build and test under? By default, every one
     the toolchain supports.** (`id: sanitizers`)
     - Answer: `<all supported | any of: asan-ubsan, msan, tsan, bsan>`
     - Miri needs no build and is always on.
@@ -71,19 +78,19 @@ Unanswered optional questions use their defaults.
 
 Answer these approval-gate questions only if question 6 is answered `no`.
 
-11. **Should I wait for your approval before starting the setup phase?** (`id: gates.setup`)
+12. **Should I wait for your approval before starting the setup phase?** (`id: gates.setup`)
     - Answer: `<yes | no>`
-12. **Should I wait for your approval before starting the translation phase?**
+13. **Should I wait for your approval before starting the translation phase?**
     (`id: gates.translation`)
     - Answer: `<yes | no>`
-13. **Should I wait for your approval between subsystems?** (`id: gates.subsystem`)
+14. **Should I wait for your approval between subsystems?** (`id: gates.subsystem`)
     - Answer: `<yes | no | not applicable>`
-14. **Should I wait for your approval before starting review passes?** (`id: gates.review`)
+15. **Should I wait for your approval before starting review passes?** (`id: gates.review`)
     - Answer: `<yes | no | not applicable>`
 
 # Benchmark recording questions
 
-15. **Where and in what format should the dashboard be recorded?** (`id: dashboard`)
+16. **Where and in what format should the dashboard be recorded?** (`id: dashboard`)
     - Answer: `<dashboard path>, <standard | custom template>`
 
 # Additional instructions

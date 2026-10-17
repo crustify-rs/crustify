@@ -3,7 +3,8 @@
 Field meaning for `<workdir>/crustify/artifacts/subsystems.json`, the orchestrator's campaign
 decomposition. Layout example: [`templates/subsystems.json`](../../templates/subsystems.json).
 
-The orchestrator emits this repo-tier artifact. It describes the subsystem span
+The campaign's planner agents emit this repo-tier artifact: the first run creates it and
+every later run reviews and amends it. It describes the subsystem span
 selected by the user and every imported subsystem in that span's producer closure.
 
 It is also the shape the Rust tree mirrors. There is no second placement document: a
