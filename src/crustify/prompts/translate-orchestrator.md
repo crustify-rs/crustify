@@ -78,7 +78,7 @@ If you're working in a git repo, create the campaign branch, unless it exists, a
 commit `crustify/TASK.md` on it:
 
 ```bash
-git -C <repo> checkout -b crustify/campaign
+git -C <repo> checkout -b crustify/main
 ```
 
 

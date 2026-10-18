@@ -9,7 +9,7 @@ index. Nothing records a path; each name below is spelled from those coordinates
 
 | branch | name | checked out |
 |---|---|---|
-| campaign | `crustify/campaign` | in the repository's base dir, between subsystems |
+| campaign | `crustify/main` | in the repository's base dir, between subsystems |
 | subsystem | `crustify/subsystems/<link-unit>/<subsystem>` | in the repository's base dir, while live |
 | wave | `crustify/waves/<link-unit>/<subsystem>/wave-<index>` | never |
 | batch | `crustify/batches/<link-unit>/<subsystem>/wave-<index>/batch-<index>` | in its worktree |
@@ -25,7 +25,7 @@ under the campaign, and each is promoted to the campaign branch once it lands.
 
 | branch | name | checked out |
 |---|---|---|
-| campaign | `crustify/campaign` | in the repository's base dir |
+| campaign | `crustify/main` | in the repository's base dir |
 | review wave | `crustify/reviews/wave-<index>` | never |
 | review batch | `crustify/review-batches/wave-<index>/batch-<index>` | in its worktree |
 
@@ -50,7 +50,9 @@ crustify/artifacts/                             the campaign
 ├── subsystems.json                             the subsystem decomposition
 ├── schedule.json                               the waves and batches of every subsystem
 ├── dashboard.md                                the campaign dashboard; audit-dashboard.md for an audit
-├── orchestrator-<timestamp>.log                one per orchestrator run
+├── orchestrator/                               the orchestrator's records
+│   ├── orchestrator-<timestamp>.log            one per orchestrator run
+│   └── orchestrator-<timestamp>.usage.json
 └── <link-unit>/<subsystem>/                    a subsystem
     ├── TASK.md                                 the settings the subsystem ran under
     ├── wave-<index>/                           a wave

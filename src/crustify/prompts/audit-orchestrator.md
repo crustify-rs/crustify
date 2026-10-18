@@ -78,7 +78,7 @@ cp templates/gitignore <repo>/crustify/.gitignore
 Create the campaign branch, unless it exists, and commit `crustify/TASK.md` on it:
 
 ```bash
-git -C <repo> checkout -b crustify/campaign
+git -C <repo> checkout -b crustify/main
 ```
 
 #### 3. Prebuilds and test baselines

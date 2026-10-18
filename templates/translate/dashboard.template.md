@@ -75,7 +75,7 @@ the campaign's.
   translation batches and of its review batches; `—` where it ran none
 - `total` — `batch` + `review`; for the orchestrator, its own cost
 - `orchestrator` — the Overview row for every orchestrator session of the campaign, priced
-  from the `orchestrator-*.usage.json` records in its campaign dir; `total` is their sum. A
+  from the `orchestrator-*.usage.json` records in `crustify/artifacts/orchestrator/`; `total` is their sum. A
   session that died before writing its record is recovered from its transcript (Notes)
 - `Σ recorded agents` / `Σ campaign` — the batch and review agents alone, then those plus the
   orchestrator. `$/type` and `$/sym` are given for the agents only, since the orchestrator's

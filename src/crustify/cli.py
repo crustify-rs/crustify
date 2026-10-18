@@ -295,7 +295,7 @@ def _handle_orchestrate(args: argparse.Namespace) -> None:
     run_start = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
     # Created here, not by the agent, so the orchestrator's log and usage
     # record land in it from its first turn.
-    artifact_dir = workdir / "crustify" / ARTIFACTS
+    artifact_dir = workdir / "crustify" / ARTIFACTS / "orchestrator"
     artifact_dir.mkdir(parents=True, exist_ok=True)
     print(f"[crustify {args.kind}] artifacts: {artifact_dir}")
     # Interactive whenever a person is at the terminal: the orchestrator asks
