@@ -18,7 +18,8 @@ Your git entity: `crustify`.
 ## Task
 
 The campaign's task and settings are in `{workdir}/crustify/TASK.md`. Read it: its
-`objective`, `scope` and `workload` answers bound everything you plan. Do not edit it;
+`objective`, `scope`, `target-config` and `workload` answers bound everything you plan; a
+feature the target is configured without is out of scope. Do not edit it;
 report an unanswered or ambiguous question instead.
 
 Plan from the setup the orchestrator prepared: the builds recorded in
@@ -119,9 +120,33 @@ For a `wrap` campaign, every batch uses `objective: wrap`.
 For a `port` campaign:
 
 - a selected symbol uses `port` immediately;
-- a selected type uses `wrap` while C reads its fields, then `port` after those readers
-  are removed; and
+- a selected type uses `wrap` while C depends on its layout, then `port` once nothing in C
+  does, as Porting types below describes; and
 - a dependency outside the selected migration set uses `wrap`.
+
+##### Porting types
+
+A selected type is scheduled twice: a `wrap` batch where the DAG places it, and a `port`
+batch once its layout leaves C. Its layout leaves C when no C code that remains after a wave
+depends on it. List every such C user of each selected type:
+
+- code that touches a field: reads or writes it, or takes its address;
+- code that depends on the layout without naming a field: `sizeof`, `_Alignof` or
+  `offsetof` on the type (`sizeof *p`, and macros such as `container_of` included); a
+  value of the type, as a local, a parameter or return, a global, a copy or a compound
+  literal; pointer arithmetic or indexing on a pointer to it; and
+- another struct, or an array, that embeds it by value, which carries this layout inside
+  its own.
+
+Find the second and third kinds in the source: no tool lists them. Read every function that
+mentions the type, its globals, and the struct fields declared with it, macro expansions
+included.
+
+Place the `port` batch in the first wave after the one that ports the type's last C user.
+A type keeps its `wrap` batch only, and its C layout, when a C user stays: one outside the
+selected migration set, an embedding struct that stays C, or a definition in an installed
+header, whose concrete body every public C consumer receives. Name each type that stays
+wrapped, and the C user that keeps it there, in your commit message.
 
 See `docs/translate/schemas/batch.md` for schema format, field meaning, routing and the
 raw-lifetime rule. Every field shown is required.

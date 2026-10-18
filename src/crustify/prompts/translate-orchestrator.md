@@ -105,7 +105,8 @@ of its `variants`, naming the sanitizer builds `asan-ubsan`, `msan`, `tsan` and 
 translators and reviewers take the sanitizers available to them from these variants, so a
 sanitizer the campaign does not build is one they neither test for nor run. Each variant is an
 out-of-tree `dir` plus the `configure` and `build` commands run from it.
-Increment `version` whenever any command changes. Disable deprecated features unless otherwise instructed by the user. Use
+Increment `version` whenever any command changes. Configure every variant as `target-config`
+asks: by default, the target's default configuration with deprecated features disabled. Use
 parallel builds. Disable unstable baseline tests as needed, record pass/total and every
 disabled test in the campaign dashboard. Post-campaign results must match this baseline.
 

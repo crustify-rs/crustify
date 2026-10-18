@@ -74,23 +74,28 @@ Unanswered optional questions use their defaults.
     - Answer: `<all supported | any of: asan-ubsan, msan, tsan, bsan>`
     - Miri needs no build and is always on.
 
+12. **How should the target be configured: which of its build features should be
+    enabled or disabled?** (`id: target-config`)
+    - Answer: `<default | default, plus: enable X, disable Y | configure flags>`
+    - By default: the target's default configuration, with deprecated features disabled.
+
 ## Autonomy (if question 6 is answered `no`)
 
 Answer these approval-gate questions only if question 6 is answered `no`.
 
-12. **Should I wait for your approval before starting the setup phase?** (`id: gates.setup`)
+13. **Should I wait for your approval before starting the setup phase?** (`id: gates.setup`)
     - Answer: `<yes | no>`
-13. **Should I wait for your approval before starting the translation phase?**
+14. **Should I wait for your approval before starting the translation phase?**
     (`id: gates.translation`)
     - Answer: `<yes | no>`
-14. **Should I wait for your approval between subsystems?** (`id: gates.subsystem`)
+15. **Should I wait for your approval between subsystems?** (`id: gates.subsystem`)
     - Answer: `<yes | no | not applicable>`
-15. **Should I wait for your approval before starting review passes?** (`id: gates.review`)
+16. **Should I wait for your approval before starting review passes?** (`id: gates.review`)
     - Answer: `<yes | no | not applicable>`
 
 # Benchmark recording questions
 
-16. **Where and in what format should the dashboard be recorded?** (`id: dashboard`)
+17. **Where and in what format should the dashboard be recorded?** (`id: dashboard`)
     - Answer: `<dashboard path>, <standard | custom template>`
 
 # Additional instructions

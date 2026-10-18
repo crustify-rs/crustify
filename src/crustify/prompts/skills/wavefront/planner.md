@@ -121,4 +121,10 @@ it; each accepted row becomes one DAG edge.
 
 - Wrap campaigns use `schedule --api-headers-only`.
 
+- For a port campaign, `query types --name <T> --field-touchers` lists every function
+  that touches each of a type's fields, and `--users` every function that mentions the
+  type at all. A layout user that touches no field is among the `--users` that are not
+  field touchers; check each in the source. Neither lists globals or embedding structs:
+  find those in `t1/globals.csv` and `t1/fields.csv`.
+
 - Use the established batch caps to limit agent work.
