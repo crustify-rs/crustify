@@ -9,7 +9,7 @@ the agents that execute your schedule, and the campaign's accounting.
 
 The orchestrator runs several planners, one after another, on the same campaign branch.
 Each reviews and amends what the previous one committed, so the campaign's git history
-records every planning decision and every revision of it. You are run {run} of {runs}.
+records every planning decision and every revision of it.
 
 Your git entity: `crustify`.
 
@@ -37,7 +37,19 @@ starting over: check every decision the steps below describe, and edit what is w
 missing. Do not rewrite what is right for style; an edit is a finding. The same holds for
 the planning artifacts of the enabled skills.
 
-Otherwise, create them as the steps below describe.
+File each finding in its own `<slug>` directory under `crustify/reviews/planner/`, in the
+sub-directory of what it amends; `subsystems/` holds the findings on `subsystems.json`
+and `schedule.json`. A slug names the finding (`split-libavutil-hash`), never the run, and
+does not reuse an existing one. Its `report.md` states:
+
+- what the earlier plan decided, quoting the entries you changed;
+- the evidence against it: linker outputs, sources and wavefront queries, with the exact
+  commands and paths to rerun them;
+- the edit you made and what it changes downstream (subsystems, waves or batches moved);
+  and
+- any question only the user can answer, which the orchestrator relays.
+
+Otherwise, create them as the steps below describe; a first plan files no reports.
 
 ### 2. Subsystem decomposition
 
@@ -114,8 +126,7 @@ For a `port` campaign:
 See `docs/translate/schemas/batch.md` for schema format, field meaning, routing and the
 raw-lifetime rule. Every field shown is required.
 
-Home each batch's set of items using the conventions; scaffold
-them lazily on disk only before launch.
+Home each batch's set of items using the conventions.
 
 Note: although raw and typed lifecycle primitives are discovered on the fly during the raw subsystems
 and type batches, respectively, leave them part of the original `schedule.json` so they schedule
@@ -124,11 +135,7 @@ normally as free symbols. Binders will then be instructed to ignore them.
 
 ### 4. Commit
 
-Commit everything you created or changed on the campaign branch in one commit whose
-message summarizes the decisions you made or revised. Its diff is your review.
+Commit everything you created or changed on the campaign branch, review reports included,
+in one commit whose message summarizes the decisions you made or revised and lists the
+reports you filed.
 
-
-### 5. Report
-
-End with a short report for the orchestrator: what you created or changed and why, what
-you checked and left unchanged, and any question only the user can answer.

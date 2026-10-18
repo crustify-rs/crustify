@@ -173,11 +173,11 @@ Implementation `<provider>/<model>` via `<backend>`; review
 `<provider>/<model>` via `<backend>`. One row per planner run, in order; each run after
 the first reviews and amends the one before.
 
-| run | commit | subsystems changed | items moved | wavefront artifacts changed | $ | tokens | wall |
-|---|---|---:|---:|---|---|---|---|
-| 1 | `<sha>` | `<n>` | `<n>` | `<files>` | `$<n>` | `<n>M` | `<n>m<n>s` |
-| 2 | `<sha>` | `<n>` | `<n>` | `<files>` | `$<n>` | `<n>M` | `<n>m<n>s` |
-| **Σ** | | **`<n>`** | **`<n>`** | | **`$<n>`** | **`<n>M`** | **`<n>m<n>s`** |
+| run | commit | subsystems changed | items moved | wavefront artifacts changed | reports | $ | tokens | wall |
+|---|---|---:|---:|---|---:|---|---|---|
+| 1 | `<sha>` | `<n>` | `<n>` | `<files>` | — | `$<n>` | `<n>M` | `<n>m<n>s` |
+| 2 | `<sha>` | `<n>` | `<n>` | `<files>` | `<n>` | `$<n>` | `<n>M` | `<n>m<n>s` |
+| **Σ** | | **`<n>`** | **`<n>`** | | **`<n>`** | **`$<n>`** | **`<n>M`** | **`<n>m<n>s`** |
 
 ## Raw lifetime discovery
 

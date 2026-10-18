@@ -79,19 +79,17 @@ class CommandShapeTests(unittest.TestCase):
         self.assertTrue(seen["args"].dry_run)
 
     def test_spawn_planner_runs_one_planner(self) -> None:
-        seen = self._run("spawn-planner", str(self.repo), "--run", "2", "--runs", "2",
+        seen = self._run("spawn-planner", str(self.repo),
                          "--output", "crustify/artifacts/planning/run-2",
                          "--model", "anthropic/claude-opus-5")
         self.assertEqual(seen["handler"], "spawn-planner")
-        self.assertEqual((seen["args"].run, seen["args"].runs), (2, 2))
         self.assertEqual(config.MODEL_OVERRIDE, "anthropic/claude-opus-5")
 
     def test_spawn_planner_needs_a_campaign_tree(self) -> None:
         bare = self.repo / "bare"
         bare.mkdir()
         with self.assertRaises(SystemExit):
-            self._run("spawn-planner", str(bare), "--run", "1", "--runs", "1",
-                      "--output", "out")
+            self._run("spawn-planner", str(bare), "--output", "out")
 
     def test_spawn_reviewer_needs_a_campaign_tree(self) -> None:
         bare = self.repo / "bare"
@@ -173,16 +171,10 @@ class PlannerPromptTests(unittest.TestCase):
         self.repo = Path(self.tmp.name)
         (self.repo / "crustify").mkdir()
 
-    def test_the_prompt_knows_its_run(self) -> None:
+    def test_the_prompt_reviews_and_reports(self) -> None:
         from crustify.agents.plan import PlanAgent
-        agent = PlanAgent(self.repo, run=2, runs=3)
-        body = agent.system_preamble()
-        self.assertIn("You are run 2 of 3.", body)
-        self.assertIn(f"{agent.workdir}/crustify/TASK.md", body)
+        body = PlanAgent(self.repo).system_preamble()
+        self.assertIn(f"{self.repo.resolve()}/crustify/TASK.md", body)
         self.assertIn("### 1. Review", body)
-
-    def test_a_run_outside_the_count_is_refused(self) -> None:
-        from crustify.agents.plan import PlanAgent
-        for run, runs in ((0, 2), (3, 2)):
-            with self.subTest(run=run, runs=runs), self.assertRaises(SystemExit):
-                PlanAgent(self.repo, run=run, runs=runs)
+        self.assertIn("under `crustify/reviews/planner/`", body)
+        self.assertNotIn("scaffold", body.split("### 3. Planning")[1].split("### 4.")[0])

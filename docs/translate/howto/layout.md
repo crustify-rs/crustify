@@ -80,3 +80,8 @@ repository.
 A review batch files its findings under its reviews dir, `crustify/reviews/<batch id>/`, in
 the repository the review lands in: one `<slug>` directory per finding, holding its report
 and, when it has one, its reproducer, under the sub-directory of the finding's kind.
+
+A planner that amends an earlier plan files its findings the same way under
+`crustify/reviews/planner/`: `subsystems/` for `subsystems.json` and `schedule.json`, and
+one sub-directory per skill artifact it amends (wavefront's `chased-casts/` and
+`type-generators/`).

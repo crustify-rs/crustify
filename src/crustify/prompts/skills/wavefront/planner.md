@@ -4,9 +4,29 @@ Read wavefront's CLI helpstring via `--help` to learn how to use it.
 
 ## Workflow
 
-The following steps augment your base workflow. When you review an earlier planner's
-work (step 1), review its wavefront artifacts the same way: the configurations under
-`crustify/wavefront/configs/` and the T3 tables under `crustify/wavefront/t3/`.
+The following steps augment your base workflow.
+
+### For 1. Review
+
+Review an earlier planner's wavefront artifacts as you review its plan: the
+configurations under `crustify/wavefront/configs/` against `subsystems.json`, and the T3
+tables under `crustify/wavefront/t3/` against the source and the T1/T2 tables, row by
+row and for the rows it missed (step 3).
+
+File each finding as the base workflow describes, in the reviews sub-directory of what it
+amends:
+
+- `crustify/reviews/planner/subsystems/` for a configuration, with the
+  `subsystems.json` finding it follows from;
+- `crustify/reviews/planner/chased-casts/` for `chased_casts.csv`: the rows added,
+  changed or removed, and for each the chain you followed, hop by hop with `file:line`,
+  or the hop that breaks it; and
+- `crustify/reviews/planner/type-generators/` for `type_generators.csv`: the rows
+  added, changed or removed, and for each the macro's invocation sites, conditional ones
+  included, and the shapes they mint.
+
+A report on a T3 table also states the DAG change the edit makes: the `schedule` output
+before and after it, for every configuration whose schedule moved.
 
 ### For 2. Subsystem decomposition
 
@@ -49,17 +69,6 @@ Selection rules:
 
 ### For 3. Planning
 
-- Leverage the per-subsystem `wavefront-config.json` when emitting `schedule.json` to form
-  dependency-ordered DAGs over link units, subsystems, and type/symbol batches.
-
-- Prefer `--transitive` so the subsystem includes the selected surface's in-scope
-  producer dependencies. Use an exact non-transitive selection only when those
-  dependencies are already satisfied or intentionally excluded.
-
-- Wrap campaigns use `schedule --api-headers-only`.
-
-- Use the established batch caps to limit agent work.
-
 #### T3 tables: chased casts and type generators
 
 Wavefront states only what its syntactic queries see. Two kinds of dependency need your
@@ -99,4 +108,17 @@ it; each accepted row becomes one DAG edge.
   and of structs defined in `api_headers`, pairs whose two types are both public, and
   generators defined in `api_headers`. Other rows are still checked and kept for the
   records, but add no edge in the API graph.
-- Re-run `schedule` after writing the tables; rows only add edges.
+- Write the tables before you run `schedule`; rows only add edges.
+
+#### Scheduling
+
+- Leverage the per-subsystem `wavefront-config.json` when emitting `schedule.json` to form
+  dependency-ordered DAGs over link units, subsystems, and type/symbol batches.
+
+- Prefer `--transitive` so the subsystem includes the selected surface's in-scope
+  producer dependencies. Use an exact non-transitive selection only when those
+  dependencies are already satisfied or intentionally excluded.
+
+- Wrap campaigns use `schedule --api-headers-only`.
+
+- Use the established batch caps to limit agent work.

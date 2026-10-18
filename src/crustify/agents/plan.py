@@ -1,14 +1,13 @@
 """One planner: decomposes a campaign into subsystems and schedules it.
 
 The orchestrator spawns planners one after another on the campaign branch,
-after setup and before the Rust tree is scaffolded. The first run creates
-`subsystems.json`, `schedule.json` and the skills' planning artifacts; every
-later run reviews what the previous one committed and amends it, so the
-branch history is the record of each planning decision and its revisions.
+after setup and before the Rust tree is scaffolded. A planner that finds no
+plan creates `subsystems.json`, `schedule.json` and the skills' planning
+artifacts; one that finds a plan reviews and amends it, filing a report per
+edit under `crustify/reviews/planner/`, so the branch history and the
+reports record each planning decision and its revisions.
 """
 from __future__ import annotations
-
-from pathlib import Path
 
 from crustify.agents.base import (
     CrustifyAgent, SkillSpec, _PKG_ROOT, expand_includes,
@@ -25,7 +24,7 @@ _SKILLS = (
 
 
 class PlanAgent(CrustifyAgent):
-    """Plan one campaign: run ``run`` of ``runs``."""
+    """Plan one campaign, or review and amend the plan already committed."""
 
     name = "PlanAgent"
     stage = "plan"
@@ -35,15 +34,5 @@ class PlanAgent(CrustifyAgent):
     prompt_in_system_slot = True
     SKILLS = _SKILLS
 
-    def __init__(self, workdir: Path, *, run: int, runs: int, **kwargs) -> None:
-        if not 1 <= run <= runs:
-            raise SystemExit(f"planner run {run} is not within 1..{runs}")
-        self.run_index = run
-        self.runs = runs
-        super().__init__(workdir, **kwargs)
-
     def _body(self) -> str:
         return expand_includes((_PKG_ROOT / "prompts" / "planner.md").read_text())
-
-    def _arguments(self) -> dict:
-        return {**super()._arguments(), "run": self.run_index, "runs": self.runs}

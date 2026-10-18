@@ -118,15 +118,15 @@ campaign branch, as many runs as `plan-agent` asks for (by default two, with the
 translation model and billing), each with its own log directory:
 
 ```bash
-crustify spawn-planner <repo> --run <k> --runs <n> \
+crustify spawn-planner <repo> \
     --output crustify/artifacts/planning/run-<k> --model <model> --billing <billing>
 ```
 
-The first run creates the plan; every later run reviews what the previous one committed
-and amends it. Do not start a run before the previous one has committed. After the last
-run, check that `schedule.json` covers the approved scope and that every run committed,
-relay any question a planner raised to the user, and record each run's changes and cost
-in the dashboard. Do not edit the plan yourself: if it needs a change, spawn another run
+The first run creates the plan; every later run reviews what the previous one committed,
+amends it, and files a report per edit under `crustify/reviews/planner/`. Do not start a
+run before the previous one has committed. After the last run, check that `schedule.json`
+covers the approved scope and that every run committed, relay any question a report
+raises to the user, and record each run's changes, reports and cost in the dashboard. Do not edit the plan yourself: if it needs a change, spawn another run
 with the change as its instructions.
 
 
@@ -134,7 +134,9 @@ with the change as its instructions.
 
 Scaffold the top-level manifest, raw `-sys` and safe crates according to the conventions
 skill. Do this only for the link units included in the scope established by the
-user. Scaffold source files and modules lazily before spawning binder or translator agents.
+user. Scaffold source files and modules lazily: create the home of each batch's items, as
+the planner assigned it in `schedule.json`, on disk only before you spawn the binder or
+translator agent of that batch.
 
 Create the integration test suites for the public interface that the conventions' Testing
 section describes, so binders, translators and reviewers can emit tests into them.
