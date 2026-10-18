@@ -79,17 +79,19 @@ class CommandShapeTests(unittest.TestCase):
         self.assertTrue(seen["args"].dry_run)
 
     def test_spawn_planner_runs_one_planner(self) -> None:
-        seen = self._run("spawn-planner", str(self.repo),
+        seen = self._run("spawn-planner", str(self.repo), "batch.json",
                          "--output", "crustify/artifacts/planning/run-2",
-                         "--model", "anthropic/claude-opus-5")
+                         "--model", "anthropic/claude-opus-5", "--dry-run")
         self.assertEqual(seen["handler"], "spawn-planner")
+        self.assertEqual(seen["args"].batch, Path("batch.json"))
+        self.assertTrue(seen["args"].dry_run)
         self.assertEqual(config.MODEL_OVERRIDE, "anthropic/claude-opus-5")
 
     def test_spawn_planner_needs_a_campaign_tree(self) -> None:
         bare = self.repo / "bare"
         bare.mkdir()
         with self.assertRaises(SystemExit):
-            self._run("spawn-planner", str(bare), "--output", "out")
+            self._run("spawn-planner", str(bare), "batch.json", "--output", "out")
 
     def test_spawn_reviewer_needs_a_campaign_tree(self) -> None:
         bare = self.repo / "bare"
@@ -171,10 +173,21 @@ class PlannerPromptTests(unittest.TestCase):
         self.repo = Path(self.tmp.name)
         (self.repo / "crustify").mkdir()
 
-    def test_the_prompt_reviews_and_reports(self) -> None:
+    def test_the_prompt_carries_its_objective(self) -> None:
         from crustify.agents.plan import PlanAgent
-        body = PlanAgent(self.repo).system_preamble()
+        for objective in ("emit", "review"):
+            with self.subTest(objective=objective):
+                agent = PlanAgent(self.repo, objective=objective)
+                body = agent.system_preamble()
+                self.assertIn(f"- objective: `{objective}`", body)
+                self.assertEqual(agent.stage, f"plan-{objective}")
         self.assertIn(f"{self.repo.resolve()}/crustify/TASK.md", body)
-        self.assertIn("### 1. Review", body)
+        self.assertIn("#### Emit (`emit`)", body)
+        self.assertIn("#### Review (`review`)", body)
         self.assertIn("under `crustify/reviews/planner/`", body)
         self.assertNotIn("scaffold", body.split("### 3. Planning")[1].split("### 4.")[0])
+
+    def test_an_unknown_objective_is_refused(self) -> None:
+        from crustify.agents.plan import PlanAgent
+        with self.assertRaises(SystemExit):
+            PlanAgent(self.repo, objective="amend")

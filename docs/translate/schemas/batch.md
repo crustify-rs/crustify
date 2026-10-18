@@ -4,7 +4,8 @@ Field meaning for the JSON the orchestrator passes to `crustify spawn-binder <wo
 <batch.json> --base-branch <wave branch> --output <batch dir>` for a `wrap` batch, to
 `crustify spawn-translator` with the same arguments for a `port` batch, or to `crustify
 spawn-reviewer` for a review batch. One batch is one agent's entire worklist, and each
-command rejects a batch whose objective belongs to another.
+command rejects a batch whose objective belongs to another. `crustify spawn-planner` takes
+a planner batch.
 
 A planner plans it as one batch entry of `docs/translate/schemas/schedule.md`, and the
 orchestrator writes it out verbatim.
@@ -73,6 +74,22 @@ The reviewer's prompt offers `unsafety`, `contracts`, `ub`, `equiv`, `internal`,
 applying to a Crustify-generated batch only. Its skills add their own. A batch naming
 an objective the installed skills do not offer is rejected.
 Without `fix`, the reviewer reports and reproduces what it finds but patches nothing.
+
+## Planner batches
+
+A planner batch names the one arm a planner run executes, and nothing else: the plan it
+works on is the campaign branch it is spawned on.
+
+```json
+{"objective": "review"}
+```
+
+| root field | meaning |
+|---|---|
+| `objective` | `emit`: create the plan, or add what the committed plan lacks, leaving its judgements as they are; `review`: assess the committed judgements, correct them, and file a report per edit |
+
+It is required and no other root field is accepted. The orchestrator writes it as
+`batch.json` in the run's artifact dir, `crustify/artifacts/planning/run-<k>/`.
 
 ## items[*]
 

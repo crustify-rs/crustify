@@ -311,6 +311,10 @@ class PromptArgumentTests(unittest.TestCase):
             artifact_dir=self.repo, log_stem="x")
         self._check(agent)
 
+    def test_planner_arguments_match_its_placeholders(self) -> None:
+        self._check(PlanAgent(self.repo, objective="emit",
+                              artifact_dir=self.repo, log_stem="x"))
+
     def test_orchestrator_arguments_match_its_placeholders(self) -> None:
         task = self.repo / "TASK.md"
         task.write_text("- Answer: none")

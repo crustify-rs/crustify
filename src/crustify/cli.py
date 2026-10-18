@@ -99,11 +99,12 @@ def main() -> None:
 
     # -- spawn-planner (one planner run on the campaign branch) --------------
     _spawn_planner_blurb = (
-        "Run one planner over the campaign checkout. It decomposes the "
-        "campaign into subsystems and schedules it: with no plan committed it "
-        "creates subsystems.json, schedule.json and the skills' planning "
-        "artifacts; otherwise it reviews and amends the committed plan. Runs "
-        "are sequential; each commits on the campaign branch.")
+        "Run one planner over the campaign checkout, for the objective its "
+        "batch names. `emit` creates the plan -- subsystems.json, "
+        "schedule.json and the skills' planning artifacts -- or adds what "
+        "the committed plan lacks, leaving its judgements alone; `review` "
+        "assesses the committed judgements and corrects them. Runs are "
+        "sequential; each commits on the campaign branch.")
     plan_p = sub.add_parser(
         "spawn-planner", parents=[agent_opts],
         help=_spawn_planner_blurb, description=_spawn_planner_blurb,
@@ -111,10 +112,16 @@ def main() -> None:
     plan_p.set_defaults(handler=_handle_spawn_planner)
     add_workdir(plan_p, "the campaign checkout, on its campaign branch")
     plan_p.add_argument(
+        "batch", type=Path,
+        help="Planner batch JSON: {\"objective\": \"emit\" | \"review\"}.")
+    plan_p.add_argument(
         "--output", required=True, type=Path, metavar="DIR",
-        help="Directory for this run's artifacts, created if absent. The "
-             "agent writes planner.log and planner.usage.json into it, so "
-             "give each run its own directory.")
+        help="Existing directory for this run's artifacts. The agent writes "
+             "planner.log and planner.usage.json into it, so give each run "
+             "its own directory.")
+    plan_p.add_argument(
+        "--dry-run", action="store_true",
+        help="Validate and summarize the batch without spawning an agent.")
 
     # -- spawn-binder / spawn-translator (one agent over one projected batch)
     # A binder runs `wrap` batches, raw-lifetime ones included; a translator
@@ -303,13 +310,9 @@ def _handle_orchestrate(args: argparse.Namespace) -> None:
 
 def _handle_spawn_planner(args: argparse.Namespace) -> None:
     """Run one planner over the campaign checkout."""
-    from crustify.agents.plan import PlanAgent
-
-    workdir = Path(args.workdir).resolve()
-    output = args.output if args.output.is_absolute() else workdir / args.output
-    output.mkdir(parents=True, exist_ok=True)
-    print(f"[crustify spawn-planner] log: {output / 'planner.log'}")
-    PlanAgent(workdir, artifact_dir=output, log_stem="planner").run()
+    from crustify.plan import execute
+    execute(Path(args.workdir), args.batch, output=args.output,
+            dry_run=args.dry_run)
 
 
 def _handle_spawn_worklist(args: argparse.Namespace) -> None:

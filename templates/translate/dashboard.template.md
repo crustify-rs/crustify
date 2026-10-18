@@ -170,14 +170,14 @@ Implementation `<provider>/<model>` via `<backend>`; review
 
 ## Planning
 
-`<provider>/<model>` via `<backend>`. One row per planner run, in order; each run after
-the first reviews and amends the one before.
+`<provider>/<model>` via `<backend>`. One row per planner run, in order, with its
+objective: `emit` adds what the plan lacks, `review` amends what earlier runs committed.
 
-| run | commit | subsystems changed | items moved | wavefront artifacts changed | reports | $ | tokens | wall |
-|---|---|---:|---:|---|---:|---|---|---|
-| 1 | `<sha>` | `<n>` | `<n>` | `<files>` | — | `$<n>` | `<n>M` | `<n>m<n>s` |
-| 2 | `<sha>` | `<n>` | `<n>` | `<files>` | `<n>` | `$<n>` | `<n>M` | `<n>m<n>s` |
-| **Σ** | | **`<n>`** | **`<n>`** | | **`<n>`** | **`$<n>`** | **`<n>M`** | **`<n>m<n>s`** |
+| run | objective | commit | subsystems changed | items moved | wavefront artifacts changed | reports | $ | tokens | wall |
+|---|---|---|---:|---:|---|---:|---|---|---|
+| 1 | `emit` | `<sha>` | `<n>` | `<n>` | `<files>` | — | `$<n>` | `<n>M` | `<n>m<n>s` |
+| 2 | `review` | `<sha>` | `<n>` | `<n>` | `<files>` | `<n>` | `$<n>` | `<n>M` | `<n>m<n>s` |
+| **Σ** | | | **`<n>`** | **`<n>`** | | **`<n>`** | **`$<n>`** | **`<n>M`** | **`<n>m<n>s`** |
 
 ## Raw lifetime discovery
 

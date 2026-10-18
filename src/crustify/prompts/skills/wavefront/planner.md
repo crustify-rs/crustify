@@ -6,7 +6,16 @@ Read wavefront's CLI helpstring via `--help` to learn how to use it.
 
 The following steps augment your base workflow.
 
-### For 1. Review
+### For 1. Objective
+
+#### Emit (`emit`)
+
+Emit the wavefront artifacts the plan lacks, as steps 2 and 3 describe: a configuration
+for every subsystem that has none, and the T3 tables under `crustify/wavefront/t3/` when
+they do not exist yet. For a subsystem or items the scope adds, add the T3 rows their
+erased slots, casts and macros call for, and leave the existing rows as they are.
+
+#### Review (`review`)
 
 Review an earlier planner's wavefront artifacts as you review its plan: the
 configurations under `crustify/wavefront/configs/` against `subsystems.json`, and the T3

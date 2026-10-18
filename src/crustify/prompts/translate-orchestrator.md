@@ -42,8 +42,9 @@ compare it with the copy the previous subsystem ran under:
 - `source` and `objective` are fixed for the campaign: if they changed, keep their
   previous answers and report the change;
 - a changed `scope`, `workload` or `review-workload` re-plans the subsystems, waves and
-  batches that have not started: spawn one planner run (step 4 of Phase 1) under the new
-  answers; landed work is never re-planned;
+  batches that have not started: spawn planner runs as step 4 of Phase 1 describes, an
+  `emit` run under the new answers and then the `review` runs; landed work is never
+  re-planned;
 - a newly selected sanitizer gets its build variant prepared before the subsystem starts;
 - every other change takes effect from the subsystem's first spawn.
 
@@ -116,16 +117,19 @@ disabled test in the campaign dashboard. Post-campaign results must match this b
 Planner agents produce `crustify/artifacts/subsystems.json`, `crustify/artifacts/schedule.json`
 and the planning artifacts of the enabled skills. Spawn them one after another on the
 campaign branch, as many runs as `plan-agent` asks for (by default two, with the
-translation model and billing), each with its own log directory:
+translation model and billing). The first run's objective is `emit`: it creates the plan,
+or adds what an existing plan lacks. Every later run's is `review`: it assesses what the
+earlier runs committed, amends it, and files a report per edit under
+`crustify/reviews/planner/`. Give each run its own artifact dir, write its batch,
+`{{"objective": "emit"}}` or `{{"objective": "review"}}` (see
+`docs/translate/schemas/batch.md`), as `batch.json` in it, and spawn it:
 
 ```bash
-crustify spawn-planner <repo> \
+crustify spawn-planner <repo> crustify/artifacts/planning/run-<k>/batch.json \
     --output crustify/artifacts/planning/run-<k> --model <model> --billing <billing>
 ```
 
-The first run creates the plan; every later run reviews what the previous one committed,
-amends it, and files a report per edit under `crustify/reviews/planner/`. Do not start a
-run before the previous one has committed. After the last run, check that `schedule.json`
+Do not start a run before the previous one has committed. After the last run, check that `schedule.json`
 covers the approved scope and that every run committed, relay any question a report
 raises to the user, and record each run's changes, reports and cost in the dashboard. Do not edit the plan yourself: if it needs a change, spawn another run
 with the change as its instructions.

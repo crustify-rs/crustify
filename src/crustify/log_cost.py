@@ -83,6 +83,7 @@ def kind(stage):
                  ("review-commits", "review-commits"),
                  ("review-modules", "review-modules"),
                  ("review-reports", "review-reports"),
+                 ("plan-emit", "plan-emit"), ("plan-review", "plan-review"),
                  # Historical pre-`translate` log prefixes remain bucketed so
                  # existing campaign measurements stay readable.
                  ("port_", "port"), ("wrap_", "wrap"), ("merge", "merge"),

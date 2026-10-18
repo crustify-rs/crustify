@@ -7,20 +7,28 @@ You own the campaign's subsystem decomposition and its schedule: `subsystems.jso
 spawned you after setup. It owns the builds and baselines you plan from, the Rust tree,
 the agents that execute your schedule, and the campaign's accounting.
 
-The orchestrator runs several planners, one after another, on the same campaign branch.
-Each reviews and amends what the previous one committed, so the campaign's git history
-records every planning decision and every revision of it.
+The orchestrator runs several planners, one after another, on the same campaign branch,
+each for one objective: `emit` adds what the plan lacks, and `review` corrects what an
+earlier run decided. The campaign's git history records every planning decision and every
+revision of it.
 
 Your git entity: `crustify`.
+
+---
+
+## Inputs
+
+- repository: `{workdir}`
+- objective: `{objective}`
 
 ---
 
 ## Task
 
 The campaign's task and settings are in `{workdir}/crustify/TASK.md`. Read it: its
-`objective`, `scope`, `target-config` and `workload` answers bound everything you plan; a
-feature the target is configured without is out of scope. Do not edit it;
-report an unanswered or ambiguous question instead.
+`objective` (port or wrap), `scope`, `target-config` and `workload` answers bound
+everything you plan; a feature the target is configured without is out of scope. Do not
+edit it; report an unanswered or ambiguous question instead.
 
 Plan from the setup the orchestrator prepared: the builds recorded in
 `crustify/artifacts/build.json` and the linker outputs of those builds. Do not rebuild
@@ -30,13 +38,35 @@ the target, change the build, or touch the Rust tree.
 
 ## Workflow
 
-### 1. Review
+### 1. Objective
 
-If `crustify/artifacts/subsystems.json` or `crustify/artifacts/schedule.json` already
-exists, an earlier planner produced it. Review it against the evidence instead of
-starting over: check every decision the steps below describe, and edit what is wrong or
-missing. Do not rewrite what is right for style; an edit is a finding. The same holds for
-the planning artifacts of the enabled skills.
+Your objective is listed in your inputs. Its arm below says what you do in each of the steps
+that follow; skip the other arm. A skill's role guidance describes what each arm covers for
+its own artifacts.
+
+#### Emit (`emit`)
+
+Emit every artifact and entry the steps below describe that the plan lacks:
+
+- in a fresh campaign, all of them;
+- in an existing one, what changed since the last plan calls for: a subsystem or link unit
+  the scope now includes, items it adds, an artifact kind that does not exist yet, or a
+  changed setting, such as `workload`, whose waves and batches you re-plan for the
+  subsystems that have not started.
+
+Leave the other judgements already committed as they are, and add new ones only: an `emit`
+run does not revise an entry an earlier run decided, even one it would decide otherwise.
+Name such entries in your commit message, so a `review` run can take them up. Revise an
+existing entry only where a new one cannot be added without it, such as a wave a new batch
+must join, and say so in your commit message. An `emit` run files no reports.
+
+#### Review (`review`)
+
+Review the plan an earlier run committed against the evidence instead of starting over:
+check every decision the steps below describe, and correct the defects you find and the
+improvements the evidence supports. Do not rewrite what is right for style; an edit is a
+finding. The same holds for the planning artifacts of the enabled skills. If no plan is
+committed, stop and report that there is nothing to review.
 
 File each finding in its own `<slug>` directory under `crustify/reviews/planner/`, in the
 sub-directory of what it amends; `subsystems/` holds the findings on `subsystems.json`
@@ -50,11 +80,9 @@ does not reuse an existing one. Its `report.md` states:
   and
 - any question only the user can answer, which the orchestrator relays.
 
-Otherwise, create them as the steps below describe; a first plan files no reports.
-
 ### 2. Subsystem decomposition
 
-Create `crustify/artifacts/subsystems.json` from `templates/subsystems.json`; see
+Emit `crustify/artifacts/subsystems.json` from `templates/subsystems.json`; see
 `docs/translate/schemas/subsystems.md`.
 
 Use actual linker outputs to identify link units. Cover the selected target and its
@@ -161,6 +189,6 @@ normally as free symbols. Binders will then be instructed to ignore them.
 ### 4. Commit
 
 Commit everything you created or changed on the campaign branch, review reports included,
-in one commit whose message summarizes the decisions you made or revised and lists the
-reports you filed.
+in one commit whose message names your objective, summarizes the decisions you made or
+revised, and lists the reports you filed.
 
