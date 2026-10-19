@@ -1,6 +1,11 @@
 
 Fill in every mandatory answer before a headless run.
-Optional answers may be left unresolved for the orchestrator to decide.
+Optional answers may be left unresolved for Crustify to decide.
+
+# Campaign
+
+**Which campaign is this?** (`id: campaign`)
+- Answer: `audit`
 
 # Mandatory questions
 

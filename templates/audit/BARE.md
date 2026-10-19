@@ -1,8 +1,8 @@
 # Ablation: the bare backend
 
-`crustify audit <workdir> <CRUSTIFY.md> --task-only` starts the orchestrator's backend CLI
+`crustify <workdir> --settings <file> --campaign audit --task-only --start` starts the backend CLI
 with the task file, here `CRUSTIFY-bare.template.md`, as its **entire** prompt: no
-orchestrator role, no conventions, no skill index.
+assistant role, no conventions, no skill index.
 
 `CRUSTIFY-bare.template.md` is deliberately minimal -- two lines, 21 words.
 
@@ -15,7 +15,7 @@ orchestrator role, no conventions, no skill index.
         -v bare-git2-work:/work \
         crustify
     docker exec -it bare-git2 \
-        crustify audit /target /campaign/CRUSTIFY.md --task-only \
+        crustify /target --settings /campaign/CRUSTIFY.md --campaign audit --task-only --start \
         --model openrouter/anthropic/claude-opus-5 --billing api
 
 Nothing spawns reviewers in bare mode, so there is no maximum spend: the run

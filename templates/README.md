@@ -51,29 +51,26 @@ docker run -d --init --name crustify-libgit2 \
     crustify
 ```
 
-Translate:
+Open Crustify on the target:
 
 ```sh
 docker exec -it crustify-libgit2 \
-    crustify translate /target /campaign/CRUSTIFY.md \
+    crustify /target --settings /campaign/CRUSTIFY.md \
     --model anthropic/claude-opus-5 --billing api
 ```
 
-Audit, in a container started the same way with an audit task and its own `/work`
-volume:
+The settings' `campaign` answer, `port`, `wrap` or `audit`, decides which campaign
+Crustify runs; an audit runs in a container started the same way, with its own `/work`
+volume. Crustify waits for your instructions; add `--start` to run the campaign right
+away, which a session without a terminal (`docker exec` without `-it`) needs.
 
-```sh
-docker exec -it audit-zstd \
-    crustify audit /target /campaign/CRUSTIFY.md \
-    --model anthropic/claude-opus-5 --billing api
-```
-
-The first run copies the task to the target's `crustify/CRUSTIFY.md`, which is tracked on the
-campaign branch. Edit that copy to change a campaign's settings while it runs, such as its
-models or batch sizes: the orchestrator rereads it before each subsystem, or each review
-wave of an audit, and keeps a copy of the settings each one ran under in its artifact dir.
-To resume, omit the task, or pass the same one; a task that differs from the copy is
-refused, so a resume never overwrites your edits.
+The first run copies the settings to the target's `crustify/CRUSTIFY.md`, which is tracked
+on the campaign branch. Edit that copy to change a campaign's settings while it runs, such
+as its models or batch sizes: Crustify rereads it before each subsystem, or each review
+wave of an audit, and commits it whenever it applies a change, so the branch's history
+records the settings each one ran under. To resume, omit `--settings`, or pass the same
+file; a file that differs from the copy is refused, so a resume never overwrites your
+edits.
 
 Add `--task-only` to either for the ablation control: the task file becomes the
 entire prompt. See [`audit/BARE.md`](audit/BARE.md).
@@ -131,7 +128,7 @@ Set with `--build-arg` on `docker build`.
 | path | mode | used by | lifetime |
 |---|---|---|---|
 | `/target` | read-write, required | both | existing target checkout; its partial campaign, CodeQL data, branches and logs stay on the host |
-| `/campaign/CRUSTIFY.md` | read-only, conventional | both | the campaign settings passed to the orchestrate command on the first run, which copies it to `/target/crustify/CRUSTIFY.md`; any path works |
+| `/campaign/CRUSTIFY.md` | read-only, conventional | both | the campaign settings passed with `--settings` on the first run, which copies them to `/target/crustify/CRUSTIFY.md`; any path works |
 | `/opt/crustify` | read-write, optional | both | baked into the image; mount a checkout to run live harness sources |
 | `/opt/venv/share/wavefront` | read-write, optional | translate | replaces the build-time clone, which is installed editable |
 | `/opt/venv/share/ffibox` | read-write, optional | translate | replaces the build-time clone used by generated Cargo manifests |

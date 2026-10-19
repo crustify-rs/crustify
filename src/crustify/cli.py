@@ -6,16 +6,28 @@ from pathlib import Path
 import argparse
 
 
+#: The commands that run one job rather than the assistant. Only these names
+#: are read as a command; any other first argument is the assistant's workdir.
+SUBCOMMANDS = ("spawn-planner", "spawn-binder", "spawn-translator",
+               "spawn-reviewer", "cost")
+
+#: The campaign kinds a settings file can name, and the assistant prompt each
+#: one runs: port and wrap are both translation campaigns.
+CAMPAIGNS = {"port": "translate", "wrap": "translate", "audit": "audit"}
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         prog="crustify",
-        description="Crustify, your co-translator for C-to-Rust work.",
+        description="Crustify, your co-translator for C-to-Rust work. "
+                    "`crustify [WORKDIR]` opens the assistant; the commands "
+                    "below run one job each.",
     )
     sub = parser.add_subparsers(dest="command", required=True, metavar="COMMAND")
 
     # Options of every command that starts a crustify agent. A parent parser
     # rather than options on `crustify` itself, so they follow the command
-    # like any other option: `crustify translate <wd> <CRUSTIFY.md> --model ...`.
+    # like any other option: `crustify <workdir> --start --model ...`.
     agent_opts = argparse.ArgumentParser(add_help=False)
     agent_opts.add_argument(
         "--no-console",
@@ -68,39 +80,43 @@ def main() -> None:
     # own --help). Without the second, `crustify <command> --help` prints a
     # usage line and a flag list and never says what the command does.
 
-    # -- translate / audit (campaign orchestrators) ----------------------
-    # One command per campaign kind, so the name says which orchestrator
-    # prompt runs; a wrong guess would start the wrong campaign and spend a
-    # budget before anyone reads the transcript.
-    _orch_blurbs = {
-        "translate": (
-            "Start a translation campaign's orchestrator. It reads the "
-            "campaign settings, sets the campaign up, spawns the planners that "
-            "decompose and schedule it, and spawns the binders, translators "
-            "and reviewers that execute the schedule."),
-        "audit": (
-            "Start an audit campaign's orchestrator. It reads the campaign "
-            "task and spawns the reviewers itself."),
-    }
-    for kind, blurb in _orch_blurbs.items():
-        orch_p = sub.add_parser(kind, parents=[agent_opts, model_opts],
-                                help=blurb, description=blurb)
-        orch_p.set_defaults(kind=kind, handler=_handle_assist)
-        add_workdir(orch_p, "the checkout the campaign works in; its "
-                            "artifacts live under <workdir>/crustify/")
-        orch_p.add_argument(
-            "task", type=Path, metavar="CRUSTIFY_MD", nargs="?",
-            help="The campaign's settings, copied to "
-                 "<workdir>/crustify/CRUSTIFY.md, the canonical copy the "
-                 "orchestrator reads and you edit to change settings "
-                 "mid-campaign. Omit it once that copy exists; a file that "
-                 "differs from it is refused, so resuming never overwrites "
-                 "your edits.")
-        orch_p.add_argument(
-            "--task-only", action="store_true",
-            help="Ablation control: the task file is the entire prompt and "
-                 "the harness contributes nothing -- no conventions, no skill "
-                 "index, no stage prompt.")
+    # -- the assistant: `crustify [WORKDIR]` --------------------------------
+    # Not a subcommand: anything that is not one of SUBCOMMANDS opens it.
+    assistant = argparse.ArgumentParser(
+        prog="crustify", parents=[agent_opts, model_opts],
+        description=(
+            "Open Crustify, your co-translator, on a checkout. It carries its "
+            "workflow in its system prompt, follows the campaign's settings "
+            "in crustify/CRUSTIFY.md, and waits for your instructions; "
+            "--start runs the campaign right away. Other commands: "
+            + ", ".join(SUBCOMMANDS) + " (crustify <command> --help)."),
+    )
+    assistant.set_defaults(handler=_handle_assist, command="assistant")
+    assistant.add_argument(
+        "workdir", nargs="?", default=".",
+        help="The checkout the campaign works in; its artifacts live under "
+             "<workdir>/crustify/. Default: the current directory.")
+    assistant.add_argument(
+        "--campaign", choices=sorted(CAMPAIGNS), default=None,
+        help="The campaign, when crustify/CRUSTIFY.md does not exist yet or "
+             "leaves it unanswered: Crustify creates the file from the "
+             "campaign's template. Asked at the terminal when omitted.")
+    assistant.add_argument(
+        "--settings", type=Path, metavar="CRUSTIFY_MD", default=None,
+        help="A settings file to install as <workdir>/crustify/CRUSTIFY.md, "
+             "the copy Crustify reads and you edit mid-campaign. A file that "
+             "differs from an existing copy is refused, so resuming never "
+             "overwrites your edits.")
+    assistant.add_argument(
+        "--start", action="store_true",
+        help="Start the campaign right away, as CRUSTIFY.md configures it. "
+             "Without it Crustify waits for your instructions; a headless "
+             "session needs it.")
+    assistant.add_argument(
+        "--task-only", action="store_true",
+        help="Ablation control: the settings file is the entire prompt and "
+             "the harness contributes nothing -- no conventions, no skill "
+             "index, no stage prompt.")
 
     # -- spawn-planner (one planner run on the campaign branch) --------------
     _spawn_planner_blurb = (
@@ -203,7 +219,16 @@ def main() -> None:
     from crustify.log_cost import add_flags as _add_cost_flags
     _add_cost_flags(cost_p)
 
-    args = parser.parse_args()
+    argv = sys.argv[1:]
+    if argv and argv[0] in SUBCOMMANDS:
+        args = parser.parse_args(argv)
+    elif argv[:1] in (["-h"], ["--help"]):
+        assistant.print_help()
+        print()
+        parser.print_help()
+        return
+    else:
+        args = assistant.parse_args(argv)
 
     if hasattr(args, "workdir"):
         # workdir is explicit: crustify never walks the filesystem to find it.
@@ -268,7 +293,8 @@ def canonical_task(workdir: Path, given: Path | None) -> Path:
     task = workdir / TASK
     if given is None:
         if not task.is_file():
-            raise SystemExit(f"no campaign settings at {task}; pass a CRUSTIFY.md to start")
+            raise SystemExit(f"no campaign settings at {task}; pass --campaign "
+                             "or --settings to create them")
         return task
     if not given.is_file():
         raise SystemExit(f"no campaign settings at {given}")
@@ -277,12 +303,92 @@ def canonical_task(workdir: Path, given: Path | None) -> Path:
         if task.read_text() != text:
             raise SystemExit(
                 f"{task} differs from {given}: edit {task} to change the "
-                "campaign's settings, or omit CRUSTIFY_MD to run it as it is")
+                "campaign's settings, or omit --settings to run it as it is")
         return task
     task.parent.mkdir(parents=True, exist_ok=True)
     if not task.is_file():
         task.write_text(text)
     return task
+
+
+import re as _re
+
+#: A settings question's answer: the backticked value on the `- Answer:` line
+#: that follows the question's `(id: <id>)` tag. `<...>` is unanswered.
+def _answer_re(question: str) -> "_re.Pattern[str]":
+    return _re.compile(r"\(`id: " + _re.escape(question)
+                       + r"`\)(?:.|\n)*?- Answer: `([^`]*)`")
+
+
+def settings_answer(text: str, question: str) -> str | None:
+    """The answer to ``question`` in a settings file, or None when it is
+    missing or still its template placeholder."""
+    m = _answer_re(question).search(text)
+    if m is None or m.group(1).startswith("<"):
+        return None
+    return m.group(1).strip()
+
+
+def _set_answer(text: str, question: str, answer: str) -> str:
+    m = _answer_re(question).search(text)
+    if m is None:
+        raise SystemExit(f"the settings have no `{question}` question")
+    return text[:m.start(1)] + answer + text[m.end(1):]
+
+
+def campaign_settings(workdir: Path, given: Path | None, campaign: str | None,
+                      ask) -> tuple[Path, str]:
+    """``workdir``'s settings file and its campaign, ``port``, ``wrap`` or
+    ``audit``.
+
+    ``given`` is installed as the canonical copy, as on every run. A checkout
+    with no settings yet gets them from its campaign's template; an
+    unanswered campaign is filled in. The campaign comes from the file, then
+    ``campaign``, then ``ask()``, which returns None where nobody can answer.
+    A ``campaign`` that contradicts the file is refused: the file is what
+    the campaign runs under."""
+    from crustify import deps
+
+    task = workdir / TASK
+    if given is not None:
+        task = canonical_task(workdir, given)
+    if task.is_file():
+        text = task.read_text()
+        recorded = settings_answer(text, "campaign")
+        if recorded is not None:
+            if recorded not in CAMPAIGNS:
+                raise SystemExit(f"{task}: campaign must be one of "
+                                 f"{', '.join(CAMPAIGNS)}, not {recorded!r}")
+            if campaign is not None and campaign != recorded:
+                raise SystemExit(
+                    f"{task} configures a {recorded} campaign, not {campaign}: "
+                    "edit it to change the campaign")
+            return task, recorded
+    else:
+        text = None
+    campaign = campaign or ask()
+    if campaign not in CAMPAIGNS:
+        raise SystemExit("which campaign is this? pass --campaign "
+                         + " | ".join(CAMPAIGNS))
+    if text is None:
+        template = deps.CHECKOUT / "templates" / CAMPAIGNS[campaign] / "CRUSTIFY.template.md"
+        text = template.read_text()
+        task.parent.mkdir(parents=True, exist_ok=True)
+        print(f"[crustify] created {task} from {template.name}")
+    elif _answer_re("campaign").search(text) is None:
+        # A settings file with no campaign question, such as the bare
+        # ablation's: the campaign comes from the command line alone.
+        return task, campaign
+    task.write_text(_set_answer(text, "campaign", campaign))
+    return task, campaign
+
+
+def _ask_campaign() -> str | None:
+    """Ask at the terminal which campaign this is; None without one."""
+    if not (sys.stdin.isatty() and sys.stdout.isatty()):
+        return None
+    answer = input("Which campaign is this: port, wrap or audit? ").strip().lower()
+    return answer or None
 
 
 def _handle_assist(args: argparse.Namespace) -> None:
@@ -292,21 +398,28 @@ def _handle_assist(args: argparse.Namespace) -> None:
 
     model = _cfg.MODEL_OVERRIDE or "anthropic/claude-opus-5"
     workdir = Path(args.workdir).resolve()
-    task = canonical_task(workdir, args.task)
+    # Interactive whenever a person is at the terminal: the assistant waits
+    # for instructions and approvals, which a headless run cannot do.
+    interactive = sys.stdin.isatty() and sys.stdout.isatty()
+    if not interactive and not args.start:
+        raise SystemExit("a headless session has nobody to instruct it: pass "
+                         "--start to run the campaign as CRUSTIFY.md configures it")
+    task, campaign = campaign_settings(workdir, args.settings, args.campaign,
+                                       _ask_campaign)
+    kind = CAMPAIGNS[campaign]
     run_start = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
-    # Created here, not by the agent, so the orchestrator's log and usage
+    # Created here, not by the agent, so the assistant's log and usage
     # record land in it from its first turn.
     artifact_dir = workdir / "crustify" / ARTIFACTS / "assistant"
     artifact_dir.mkdir(parents=True, exist_ok=True)
-    print(f"[crustify {args.kind}] artifacts: {artifact_dir}")
-    # Interactive whenever a person is at the terminal: the orchestrator asks
-    # for approval and waits, which a headless run cannot do.
-    interactive = sys.stdin.isatty() and sys.stdout.isatty()
+    print(f"[crustify] {campaign} campaign; artifacts: {artifact_dir}")
+    if interactive and not args.start:
+        print("[crustify] Crustify is waiting for your instructions.")
     # One log per run, so resuming never overwrites an earlier session's.
-    AssistAgent(workdir, kind=args.kind, task=task, model=model,
-                     task_only=args.task_only, interactive=interactive,
-                     artifact_dir=artifact_dir,
-                     log_stem=f"assistant-{run_start}").run()
+    AssistAgent(workdir, kind=kind, task=task, model=model,
+                task_only=args.task_only, interactive=interactive,
+                start=args.start, artifact_dir=artifact_dir,
+                log_stem=f"assistant-{run_start}").run()
 
 
 def _handle_spawn_planner(args: argparse.Namespace) -> None:

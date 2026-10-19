@@ -4,6 +4,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 from unittest import mock
 
 from crustify import cli, config
@@ -40,20 +41,28 @@ class CommandShapeTests(unittest.TestCase):
             cli.main()
         return seen
 
-    def test_translate_starts_the_translation_orchestrator(self) -> None:
-        seen = self._run("translate", str(self.repo), str(self.task),
+    def test_a_workdir_opens_the_assistant(self) -> None:
+        seen = self._run(str(self.repo), "--campaign", "wrap", "--start",
                          "--model", "openrouter/anthropic/claude-opus-5",
                          "--billing", "api")
         self.assertEqual(seen["handler"], "assist")
-        self.assertEqual(seen["args"].kind, "translate")
+        self.assertEqual(seen["args"].workdir, str(self.repo))
+        self.assertEqual(seen["args"].campaign, "wrap")
+        self.assertTrue(seen["args"].start)
         self.assertEqual(config.MODEL_OVERRIDE, "openrouter/anthropic/claude-opus-5")
         self.assertEqual(config.BILLING, "api")
 
-    def test_audit_starts_the_audit_orchestrator(self) -> None:
-        seen = self._run("audit", str(self.repo), str(self.task), "--task-only")
+    def test_no_argument_opens_the_assistant_here(self) -> None:
+        seen = self._run()
         self.assertEqual(seen["handler"], "assist")
-        self.assertEqual(seen["args"].kind, "audit")
-        self.assertTrue(seen["args"].task_only)
+        self.assertEqual(seen["args"].workdir, ".")
+        self.assertFalse(seen["args"].start)
+
+    def test_the_old_campaign_commands_are_gone(self) -> None:
+        for command in ("translate", "audit"):
+            with self.subTest(command=command), mock.patch("sys.stderr"), \
+                    self.assertRaises(SystemExit):
+                self._run(command, str(self.repo), str(self.task))
 
     def test_spawn_translator_runs_one_task(self) -> None:
         seen = self._run("spawn-translator", str(self.repo), "task.json",
@@ -138,6 +147,72 @@ class CommandShapeTests(unittest.TestCase):
             with self.subTest(argv=argv), mock.patch("sys.stderr"), \
                     self.assertRaises(SystemExit):
                 self._run(*argv)
+
+
+class AssistantSettingsTests(unittest.TestCase):
+    """`crustify [WORKDIR]` reads its campaign from crustify/CRUSTIFY.md, and
+    creates the file from the campaign's template when it is missing."""
+
+    def setUp(self) -> None:
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.repo = Path(self.tmp.name)
+        self.canonical = self.repo / "crustify/CRUSTIFY.md"
+
+    def test_a_missing_file_comes_from_the_campaign_template(self) -> None:
+        for campaign in ("port", "wrap", "audit"):
+            with self.subTest(campaign=campaign):
+                if self.canonical.exists():
+                    self.canonical.unlink()
+                task, got = cli.campaign_settings(self.repo, None, campaign,
+                                                  lambda: None)
+                self.assertEqual((task, got), (self.canonical, campaign))
+                self.assertEqual(
+                    cli.settings_answer(task.read_text(), "campaign"), campaign)
+
+    def test_the_file_decides_and_a_contradiction_is_refused(self) -> None:
+        cli.campaign_settings(self.repo, None, "port", lambda: None)
+        self.assertEqual(cli.campaign_settings(self.repo, None, None,
+                                               lambda: None)[1], "port")
+        with self.assertRaisesRegex(SystemExit, "configures a port campaign"):
+            cli.campaign_settings(self.repo, None, "audit", lambda: None)
+
+    def test_an_unanswered_campaign_is_asked_and_recorded(self) -> None:
+        self.canonical.parent.mkdir(parents=True)
+        self.canonical.write_text(
+            "**Port or wrap?** (`id: campaign`)\n   - Answer: `<port | wrap>`\n")
+        self.assertEqual(cli.campaign_settings(self.repo, None, None,
+                                               lambda: "wrap")[1], "wrap")
+        self.assertIn("- Answer: `wrap`", self.canonical.read_text())
+
+    def test_a_file_without_the_question_takes_the_flag(self) -> None:
+        """The bare ablation's file is the whole prompt and asks nothing."""
+        self.canonical.parent.mkdir(parents=True)
+        self.canonical.write_text("Audit this crate.\n")
+        self.assertEqual(cli.campaign_settings(self.repo, None, "audit",
+                                               lambda: None)[1], "audit")
+        self.assertEqual(self.canonical.read_text(), "Audit this crate.\n")
+
+    def test_nobody_to_ask_is_an_error(self) -> None:
+        with self.assertRaisesRegex(SystemExit, "pass --campaign"):
+            cli.campaign_settings(self.repo, None, None, lambda: None)
+        self.assertFalse(self.canonical.exists())
+
+    def test_a_headless_session_needs_start(self) -> None:
+        args = SimpleNamespace(workdir=str(self.repo), start=False, settings=None,
+                               campaign="wrap", task_only=False)
+        with mock.patch.object(sys.stdin, "isatty", return_value=False), \
+                self.assertRaisesRegex(SystemExit, "pass --start"):
+            cli._handle_assist(args)
+
+    def test_the_session_opens_idle_unless_started(self) -> None:
+        from crustify.agents.assist import START, AssistAgent
+        task, _ = cli.campaign_settings(self.repo, None, "wrap", lambda: None)
+        for start, first in ((False, ""), (True, START)):
+            with self.subTest(start=start):
+                agent = AssistAgent(self.repo, kind="translate", task=task,
+                                    model="anthropic/claude-opus-5", start=start)
+                self.assertEqual(agent._prompt(), first)
 
 
 class CanonicalTaskTests(unittest.TestCase):

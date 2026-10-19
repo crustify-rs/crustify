@@ -79,11 +79,17 @@ cp crustify/templates/translate/CRUSTIFY.template.md campaign-CRUSTIFY.md
 # Edit campaign-CRUSTIFY.md and answer as many questions as you want.
 ```
 
-Start Crustify with it:
+Open Crustify on the repository:
 
 ```bash
-crustify translate /path/to/repo ./campaign-CRUSTIFY.md
+crustify /path/to/repo --settings ./campaign-CRUSTIFY.md
 ```
+
+Crustify opens with its workflow and the campaign's settings loaded, and waits for your
+instructions: ask it about the target, have it plan one subsystem, or tell it to run the
+campaign. `--start` runs the campaign right away, as the settings configure it; a
+headless session needs it. Without `--settings`, Crustify creates the settings from the
+template of the campaign you name with `--campaign port | wrap | audit`, or asks which.
 
 The settings are copied to the repository's `crustify/CRUSTIFY.md`, which Crustify
 reads and the campaign tracks. Edit that copy to change settings mid-campaign; Crustify

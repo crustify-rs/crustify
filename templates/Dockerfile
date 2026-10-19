@@ -23,13 +23,13 @@
 #       -v crustify-libgit2-work:/work \
 #       crustify
 #   docker exec -it crustify-libgit2 \
-#       crustify translate /target /campaign/CRUSTIFY.md \
+#       crustify /target --settings /campaign/CRUSTIFY.md \
 #       --model openrouter/anthropic/claude-opus-5 --billing api
 #
-# `crustify audit` starts an audit campaign instead, and `--task-only` makes
-# the task file the entire prompt (the ablation control). Every other choice
-# is an option of the command; see
-# `crustify <command> --help`.
+# The settings' `campaign` answer picks a port, wrap or audit campaign;
+# Crustify waits for instructions unless `--start` runs it right away, and
+# `--task-only` makes the settings file the entire prompt (the ablation
+# control). See `crustify --help`.
 #
 # `--security-opt seccomp=unconfined` lets the TSan and BSan runtimes call
 # personality(ADDR_NO_RANDOMIZE) at startup; Docker's default profile rejects it
@@ -43,11 +43,11 @@
 #                      CodeQL data, partial translation and logs are used in
 #                      place and remain on the host. The orchestrator must not
 #                      clone, reset or replace it.
-#   /campaign/CRUSTIFY.md  The campaign settings, read-only, by convention: the
-#                      orchestrate command takes any path, and copies it to
+#   /campaign/CRUSTIFY.md  The campaign settings, read-only, by convention:
+#                      `--settings` takes any path, and copies it to
 #                      /target/crustify/CRUSTIFY.md on the first run. Edit that
-#                      copy on the host to change settings mid-campaign; the
-#                      orchestrator rereads it before each subsystem.
+#                      copy on the host to change settings mid-campaign;
+#                      Crustify rereads it before each subsystem.
 #   /opt/crustify      The harness, baked into the image. Mount a checkout here
 #                      to test live harness changes. Both packages live in one
 #                      distribution, so this single tree serves both roles.
@@ -310,7 +310,7 @@ WORKDIR /target
 # Run it with `--init`, so the processes a campaign leaves behind are reaped
 # rather than collecting as zombies under this idle process.
 # Idle by default so the container is an environment, not one run: a campaign
-# started with `docker exec <name> crustify translate ...`
+# started with `docker exec <name> crustify /target ...`
 # survives its own crash, and a shell beside it can read the worktrees and caches
 # it left.
 CMD ["sleep", "infinity"]

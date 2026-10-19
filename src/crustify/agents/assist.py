@@ -55,6 +55,13 @@ AUDIT_SKILLS = (
 SKILLS_BY_KIND = {"translate": TRANSLATE_SKILLS, "audit": AUDIT_SKILLS}
 
 
+#: The first turn of a session started with `--start`: the user's instruction
+#: to run the campaign as its settings configure it. Without `--start` there
+#: is no first turn, and the user types it.
+START = ("Start the campaign: run your workflow end to end, as "
+         "crustify/CRUSTIFY.md configures it.")
+
+
 class AssistAgent(CrustifyAgent):
     """Crustify's assistant for one `translate` or `audit` campaign: it talks to
     the user and orchestrates the campaign's sub-agents."""
@@ -66,7 +73,7 @@ class AssistAgent(CrustifyAgent):
 
     def __init__(self, workdir: Path, *, kind: str, task: Path,
                  model: str, task_only: bool = False,
-                 interactive: bool = False,
+                 interactive: bool = False, start: bool = False,
                  **kwargs) -> None:
         self.kind = kind
         self.SKILLS = SKILLS_BY_KIND[kind]
@@ -76,6 +83,10 @@ class AssistAgent(CrustifyAgent):
         #: The orchestrator presents a brief and waits at approval gates, so
         #: with a person at the terminal it runs in the CLI's own interface.
         self.interactive = interactive
+        #: Whether the session opens by starting the campaign. Without it the
+        #: assistant opens idle, with its workflow in the system slot, and
+        #: waits for the user's instructions.
+        self.start = start
         self.stage_suffix = kind
         super().__init__(workdir, **kwargs)
 
@@ -103,7 +114,7 @@ class AssistAgent(CrustifyAgent):
             # The ablation control: the harness contributes nothing, so the
             # task file is the whole prompt and the system slot stays empty.
             return self._task_text().replace("{", "{{").replace("}", "}}")
-        return super()._prompt()
+        return START if self.start else ""
 
     def system_preamble(self) -> str:
         """Empty for the ablation arm, the base composition otherwise.

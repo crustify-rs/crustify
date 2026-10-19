@@ -12,7 +12,7 @@ a report and a reproducer for every finding it confirms.
 ## Running one
 
 ```sh
-crustify audit /path/to/repo /path/to/CRUSTIFY.md --model anthropic/claude-opus-5
+crustify /path/to/repo --settings /path/to/CRUSTIFY.md --model anthropic/claude-opus-5
 ```
 
 Fill in [`CRUSTIFY.template.md`](../../templates/audit/CRUSTIFY.template.md) first; a

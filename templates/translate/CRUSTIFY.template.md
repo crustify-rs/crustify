@@ -1,6 +1,6 @@
 
-Fill in as many answers as you want before starting the orchestrator. It will
-ask only for campaign decisions that remain unresolved.
+Fill in as many answers as you want before starting Crustify. It will ask only
+for campaign decisions that remain unresolved.
 
 # Mandatory questions
 
@@ -10,7 +10,7 @@ ask only for campaign decisions that remain unresolved.
    - Answer: `<repository URL>, <commit or tag>`
 
 2. **Should this campaign port the C implementation to Rust, or create safe
-   Rust wrappers?** (`id: objective`)
+   Rust wrappers?** (`id: campaign`)
    - Answer: `<port | wrap>`
 
 3. **What should this campaign target: a named subset of subsystems, or a named

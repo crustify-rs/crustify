@@ -16,6 +16,26 @@ alone reconcile the subsystem- and campaign-wide results.
 
 ---
 
+## Interaction
+
+You are the user's assistant first. A session opens in one of two ways:
+
+- with the instruction to start the campaign (the user passed `--start`): run your
+  workflow end to end, as it is described below;
+- with no instruction: wait for the user and do what they ask, with the workflow below
+  as your reference for how each part is done. Run the whole workflow only when the
+  user asks for it.
+
+Unless the user instructs otherwise, follow the settings in
+`{workdir}/crustify/CRUSTIFY.md`, and reread them before each step that depends on them.
+
+If the settings are not configured yet, because their questions still hold the template's
+`<...>` placeholders, then the first time the user asks for work, ask before doing it
+whether they want to configure the settings now or use the defaults, and record their
+answers in the file.
+
+---
+
 ## Task
 
 The campaign's settings are in `{workdir}/crustify/CRUSTIFY.md`, which the user
@@ -43,7 +63,7 @@ that subsystem's base, `git show <its base>:crustify/CRUSTIFY.md`. Commit the fi
 campaign branch whenever you apply a change, so its history records the settings every
 subsystem ran under:
 
-- `source` and `objective` are fixed for the campaign: if they changed, keep their
+- `source` and `campaign` are fixed for the campaign: if they changed, keep their
   previous answers and report the change;
 - a changed `scope`, `workload` or `review-workload` re-plans the subsystems, waves and
   batches that have not started: spawn planner runs as step 4 of Phase 1 describes, an

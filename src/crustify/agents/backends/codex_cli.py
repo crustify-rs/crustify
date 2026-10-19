@@ -295,7 +295,9 @@ class CodexCliBackend:
                     "-c", "include_collaboration_mode_instructions=false",
                     "-c", "include_permissions_instructions=false"]
 
-        cmd.append(prompt)
+        # An interactive session may open with no first turn: the user types it.
+        if prompt:
+            cmd.append(prompt)
 
         if interactive:
             # The terminal is the CLI's, so its session banner is never seen:

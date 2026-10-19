@@ -135,7 +135,8 @@ class ClaudeCliBackend:
 
         # The prompt goes first: `--tools` and `--add-dir` take variadic
         # values, so a trailing positional would be read as one of them.
-        cmd = [exe, prompt] if interactive else [
+        # An interactive session may open with no first turn: the user types it.
+        cmd = ([exe, prompt] if prompt else [exe]) if interactive else [
             exe, "-p", prompt,
             # Stream each turn as it happens; `--verbose` is what the CLI
             # requires to emit the per-turn events in print mode rather than

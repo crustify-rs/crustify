@@ -27,7 +27,7 @@ revision of it.
 ## Task
 
 The campaign's settings are in `{workdir}/crustify/CRUSTIFY.md`. Read it: its
-`objective` (port or wrap), `scope`, `target-config` and `workload` answers bound
+`campaign` (port or wrap), `scope`, `target-config` and `workload` answers bound
 everything you plan; a feature the target is configured without is out of scope. Do not
 edit it; report an unanswered or ambiguous question instead.
 
