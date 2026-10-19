@@ -157,7 +157,7 @@ class IncludeTests(unittest.TestCase):
                          {"conventions", "planning", "reviewing"})
         self.assertEqual(self._included("translate-assistant.md"),
                          {"conventions", "layout", "planning", "testing",
-                          "reviewing"})
+                          "reviewing", "binding", "porting", "landing"})
         self.assertEqual(self._included("audit-assistant.md"),
                          {"layout", "testing", "reviewing"})
 

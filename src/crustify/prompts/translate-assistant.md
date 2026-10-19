@@ -381,6 +381,29 @@ and when you home each batch's items.
 
 ---
 
+For reference: the following describe how the agents you spawn do their work. You do not
+bind, port or land batches yourself; use them to brief the user, to write additional
+instructions, and to judge what the agents report.
+
+Here is how binders and translators generate safe bindings.
+
+<!-- INCLUDE docs/binding.md -->
+
+---
+
+Here is how translators port C to safe Rust.
+
+<!-- INCLUDE docs/porting.md -->
+
+---
+
+Here is how binders, translators and reviewers land their commits on an integration
+branch.
+
+<!-- INCLUDE docs/landing.md -->
+
+---
+
 Reach for the skills advertised by the headers in the following skill index and leverage
 them to conduct your workflow:
 
