@@ -85,7 +85,7 @@ def main() -> None:
     for kind, blurb in _orch_blurbs.items():
         orch_p = sub.add_parser(kind, parents=[agent_opts, model_opts],
                                 help=blurb, description=blurb)
-        orch_p.set_defaults(kind=kind, handler=_handle_orchestrate)
+        orch_p.set_defaults(kind=kind, handler=_handle_assist)
         add_workdir(orch_p, "the checkout the campaign works in; its "
                             "artifacts live under <workdir>/crustify/")
         orch_p.add_argument(
@@ -285,10 +285,10 @@ def canonical_task(workdir: Path, given: Path | None) -> Path:
     return task
 
 
-def _handle_orchestrate(args: argparse.Namespace) -> None:
-    """Spawn the campaign orchestrator for this checkout."""
+def _handle_assist(args: argparse.Namespace) -> None:
+    """Start Crustify's assistant on this checkout's campaign."""
     from crustify import config as _cfg
-    from crustify.agents.orchestrate import OrchestrateAgent
+    from crustify.agents.assist import AssistAgent
 
     model = _cfg.MODEL_OVERRIDE or "anthropic/claude-opus-5"
     workdir = Path(args.workdir).resolve()
@@ -303,7 +303,7 @@ def _handle_orchestrate(args: argparse.Namespace) -> None:
     # for approval and waits, which a headless run cannot do.
     interactive = sys.stdin.isatty() and sys.stdout.isatty()
     # One log per run, so resuming never overwrites an earlier session's.
-    OrchestrateAgent(workdir, kind=args.kind, task=task, model=model,
+    AssistAgent(workdir, kind=args.kind, task=task, model=model,
                      task_only=args.task_only, interactive=interactive,
                      artifact_dir=artifact_dir,
                      log_stem=f"assistant-{run_start}").run()

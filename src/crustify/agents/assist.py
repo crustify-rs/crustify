@@ -1,4 +1,4 @@
-"""The campaign orchestrator, run as an ordinary crustify agent.
+"""Crustify's assistant, the campaign's user-facing agent, run as an ordinary crustify agent.
 
 It used to be started by shell: the container cat'd a prompt, appended a task
 and some context, and exec'd `claude` or `codex` directly. That path had no
@@ -55,8 +55,9 @@ AUDIT_SKILLS = (
 SKILLS_BY_KIND = {"translate": TRANSLATE_SKILLS, "audit": AUDIT_SKILLS}
 
 
-class OrchestrateAgent(CrustifyAgent):
-    """One campaign orchestrator, for a `translate` or `audit` campaign."""
+class AssistAgent(CrustifyAgent):
+    """Crustify's assistant for one `translate` or `audit` campaign: it talks to
+    the user and orchestrates the campaign's sub-agents."""
 
     name = "assistant"
     stage = "assist"

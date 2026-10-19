@@ -11,17 +11,17 @@ from unittest import mock
 
 from crustify import deps
 from crustify.agents.base import _PKG_ROOT
-from crustify.agents.orchestrate import AUDIT_SKILLS, OrchestrateAgent
+from crustify.agents.assist import AUDIT_SKILLS, AssistAgent
 from crustify.agents.plan import PlanAgent
 from crustify.agents.review import ReviewAgent
 from crustify.agents.bind import BindAgent
 from crustify.agents.translate import TranslateAgent
 
-_ROLES = (BindAgent, TranslateAgent, ReviewAgent, OrchestrateAgent, PlanAgent,
+_ROLES = (BindAgent, TranslateAgent, ReviewAgent, AssistAgent, PlanAgent,
           SimpleNamespace(name="audit-assistant", SKILLS=AUDIT_SKILLS))
 _ROLE_NAMES = ((BindAgent, "binder"), (TranslateAgent, "translator"),
                (ReviewAgent, "reviewer"),
-               (OrchestrateAgent, "translate-assistant"),
+               (AssistAgent, "translate-assistant"),
                (PlanAgent, "planner"),
                (SimpleNamespace(name="audit-assistant", SKILLS=AUDIT_SKILLS),
                 "audit-assistant"))
@@ -206,8 +206,8 @@ class DiscoveryTests(unittest.TestCase):
         patcher.start()
         self.addCleanup(patcher.stop)
 
-    def _agent(self) -> OrchestrateAgent:
-        return OrchestrateAgent(
+    def _agent(self) -> AssistAgent:
+        return AssistAgent(
             self.repo, kind="translate", task=Path(__file__),
             model="anthropic/claude-opus-5")
 
@@ -229,13 +229,13 @@ class DiscoveryTests(unittest.TestCase):
         checkout, and not installing the checkout removes it."""
         with mock.patch.object(deps, "dep_root",
                                return_value=Path("/nonexistent")):
-            agent = OrchestrateAgent(
+            agent = AssistAgent(
                 self.repo, kind="translate", task=Path(__file__),
                 model="anthropic/claude-opus-5")
             self.assertEqual(agent.skill_specs(), ())
 
     def test_the_ablation_control_carries_no_skills(self) -> None:
-        agent = OrchestrateAgent(
+        agent = AssistAgent(
             self.repo, kind="translate", task=Path(__file__),
             model="anthropic/claude-opus-5",
             task_only=True)
@@ -317,7 +317,7 @@ class PromptArgumentTests(unittest.TestCase):
     def test_orchestrator_arguments_match_its_placeholders(self) -> None:
         task = self.repo / "CRUSTIFY.md"
         task.write_text("- Answer: none")
-        agent = OrchestrateAgent(self.repo, kind="translate", task=task,
+        agent = AssistAgent(self.repo, kind="translate", task=task,
                                  model="anthropic/claude-opus-5")
         self._check(agent)
 
@@ -336,7 +336,7 @@ class OrchestratorPromptTests(unittest.TestCase):
         self.tmp.cleanup()
 
     def _agent(self, **kw):
-        return OrchestrateAgent(self.repo, kind="translate", task=self.task,
+        return AssistAgent(self.repo, kind="translate", task=self.task,
                                 model="anthropic/claude-opus-5", **kw)
 
     def test_the_task_is_read_not_spliced(self) -> None:
@@ -344,7 +344,7 @@ class OrchestratorPromptTests(unittest.TestCase):
         so an edit made mid-campaign is what the next subsystem runs under."""
         for kind in ("translate", "audit"):
             with self.subTest(kind=kind):
-                pre = OrchestrateAgent(
+                pre = AssistAgent(
                     self.repo, kind=kind, task=self.task,
                     model="anthropic/claude-opus-5").system_preamble()
                 self.assertNotIn("`{brace}`", pre)

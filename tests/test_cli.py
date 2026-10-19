@@ -32,7 +32,7 @@ class CommandShapeTests(unittest.TestCase):
             return lambda args: seen.update(handler=name, args=args)
 
         with (mock.patch.object(sys, "argv", ["crustify", *argv]),
-              mock.patch.object(cli, "_handle_orchestrate", record("orchestrate")),
+              mock.patch.object(cli, "_handle_assist", record("assist")),
               mock.patch.object(cli, "_handle_spawn_worklist", record("spawn-worklist")),
               mock.patch.object(cli, "_handle_spawn_reviewer", record("spawn-reviewer")),
               mock.patch.object(cli, "_handle_spawn_planner", record("spawn-planner")),
@@ -44,14 +44,14 @@ class CommandShapeTests(unittest.TestCase):
         seen = self._run("translate", str(self.repo), str(self.task),
                          "--model", "openrouter/anthropic/claude-opus-5",
                          "--billing", "api")
-        self.assertEqual(seen["handler"], "orchestrate")
+        self.assertEqual(seen["handler"], "assist")
         self.assertEqual(seen["args"].kind, "translate")
         self.assertEqual(config.MODEL_OVERRIDE, "openrouter/anthropic/claude-opus-5")
         self.assertEqual(config.BILLING, "api")
 
     def test_audit_starts_the_audit_orchestrator(self) -> None:
         seen = self._run("audit", str(self.repo), str(self.task), "--task-only")
-        self.assertEqual(seen["handler"], "orchestrate")
+        self.assertEqual(seen["handler"], "assist")
         self.assertEqual(seen["args"].kind, "audit")
         self.assertTrue(seen["args"].task_only)
 
