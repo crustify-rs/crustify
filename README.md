@@ -1,28 +1,112 @@
-**Crustify** is your co-translator for C-to-Rust work. You describe the task, and
-Crustify plans it with you, runs it, and reports back. It can:
+# Crustify
 
-- port an implementation to native Rust, fully or partially;
-- generate safe Rust wrappers over an unsafe C API; or
-- find undefined behavior and memory-safety bugs in safe Rust code.
+**Crustify is your AI-based co-translator and assistant for automating C-to-Rust tasks.**
+Point it at a C repository or a Rust crate, describe what you want, and Crustify plans
+the work with you, runs it, and reports back. It handles three kinds of task:
 
-For a large task, Crustify orchestrates an end-to-end workflow. It splits the codebase
-into subsystems, schedules them in dependency order, and hands each batch to a focused
-sub-agent. Sub-agents run in parallel, each in its own worktree with only its own
-worklist in context, so none of them carries the whole codebase. Crustify keeps the
-campaign's state, lands their work behind build, test and safety gates, and asks you
-whenever a decision is yours.
+- **Wrap public APIs.** Keep the C implementation and generate a safe, idiomatic Rust API
+  in front of it.
+- **Audit a crate.** Hunt for undefined behavior and memory-safety bugs in any Rust crate
+  that wraps C, and file a report and a reproducer for each finding.
+- **Port a codebase.** Reimplement C code in safe Rust, one subsystem at a time or all
+  of it.
 
-Deterministic tools ground the agents' judgement:
+Crustify works at the level of a whole repository. It splits the codebase into
+subsystems, orders them by their dependencies, and hands each batch of work to a focused
+sub-agent in its own Git worktree. Sub-agents run in parallel, and each one sees only its
+own worklist. Crustify keeps the campaign's state, lands their work behind build, test
+and safety gates, and repairs what fails.
 
-- [wavefront](https://github.com/crustify-rs/wavefront) orders the C codebase into
-  dependency-sorted waves, from CodeQL facts;
-- [ffibox](https://github.com/crustify-rs/ffibox) provides the smart pointers and
-  lifetime traits the generated Rust builds on;
-- [ffimap](https://github.com/crustify-rs/ffimap) measures the resulting unsafe and FFI
-  surface; and
-- the target's own tests run under sanitizers.
+You choose how much control to keep. Crustify can run a campaign fully autonomously, or
+you can stay in the loop: ask it about the target, have it plan one subsystem and stop,
+approve the campaign brief before it touches the repository, and take decisions as they
+come up. You can change course mid-campaign by editing its settings file.
 
-## Agents
+## Installation
+
+Crustify requires Python 3.13 and a Claude Code or Codex CLI. Clone the components side
+by side and install the Python packages. `ffibox` is a Rust crate that the generated
+wrappers depend on, so you only clone it.
+
+```bash
+git clone https://github.com/crustify-rs/crustify.git
+git clone https://github.com/crustify-rs/wavefront.git
+git clone https://github.com/crustify-rs/ffibox.git
+git clone https://github.com/crustify-rs/ffimap.git
+
+python -m pip install -e crustify -e wavefront -e ffimap
+```
+
+### Docker
+
+Crustify can also run in a Docker container. [`templates/Dockerfile`](templates/Dockerfile)
+builds an image with everything a campaign needs: both agent CLIs, CodeQL, bindgen, Miri,
+and the sanitizer toolchains, including BorrowSanitizer and MemorySanitizer.
+
+```bash
+docker build -t crustify -f templates/Dockerfile .
+```
+
+Start one container per campaign, with the target checkout mounted at `/target`, then
+open Crustify inside it:
+
+```bash
+docker run -d --init --name crustify-libgit2 \
+    --security-opt seccomp=unconfined \
+    -e ANTHROPIC_API_KEY \
+    -v /absolute/path/to/target:/target \
+    -v crustify-libgit2-work:/work \
+    crustify
+
+docker exec -it crustify-libgit2 crustify /target --model anthropic/claude-opus-5 --billing api
+```
+
+[`templates/README.md`](templates/README.md) documents the mounts, build arguments and
+environment variables.
+
+## Usage
+
+Open Crustify on a repository:
+
+```bash
+crustify /path/to/repo
+```
+
+Crustify loads its workflow and waits for your instructions. Tell it what you want in
+plain language: wrap the public API, audit the crate, port the parser. Questions it
+needs answered, such as the revision to start from, the models to use and how much
+autonomy it has, are asked live, and Crustify presents a campaign brief for your
+approval before it changes the repository.
+
+To answer those questions up front, copy and fill in a settings template:
+
+```bash
+cp crustify/templates/translate/CRUSTIFY.template.md my-campaign.md   # port or wrap
+cp crustify/templates/audit/CRUSTIFY.template.md my-campaign.md       # audit
+crustify /path/to/repo --settings my-campaign.md
+```
+
+Crustify copies the settings to `crustify/CRUSTIFY.md` in the repository and rereads
+that copy before each subsystem, so you can edit it while a campaign runs.
+
+Common options:
+
+| Option | Effect |
+|---|---|
+| `--campaign port\|wrap\|audit` | Pick the campaign when the settings don't name one. |
+| `--start` | Run the campaign right away, as the settings configure it. A headless session needs it. |
+| `--resume [SESSION_ID]` | Continue an earlier session, from any directory. Without an id, the most recent one. |
+| `--model PROVIDER/MODEL` | Pick the assistant's model, e.g. `anthropic/claude-opus-5` or `openrouter/openai/gpt-5.6-sol`. |
+| `--billing subscription\|api` | Use the CLI's logged-in account or an API key from the environment. |
+
+`crustify usage <transcripts>` reports the tokens and cost of agent sessions. Crustify
+runs the `spawn-planner`, `spawn-binder`, `spawn-translator` and `spawn-reviewer`
+commands itself; you rarely need them. Run `crustify --help` or
+`crustify <command> --help` for the full reference.
+
+## How it works
+
+Crustify talks to you and launches four kinds of sub-agent:
 
 | Agent | Role |
 |---|---|
@@ -30,135 +114,31 @@ Deterministic tools ground the agents' judgement:
 | planner | Splits the codebase into subsystems and schedules each one's waves and batches. |
 | binder | Wraps a batch: keeps its C implementation and puts a safe Rust API in front of it. |
 | translator | Ports a batch to safe Rust. |
-| reviewer | Reviews what a wave landed, for unsafety, undefined behavior and equivalence with the C, files a report and reproducer per finding, and fixes them. |
+| reviewer | Reviews the work a wave landed for unsafety, undefined behavior and equivalence with the C, files a report and reproducer per finding, and fixes them. |
 
-The assistant also repairs: it diagnoses failed agents, merge conflicts and regressions,
-then retries or reschedules the affected work. The reviewers test adversarially: they are
-independent of the agents whose work they review.
+Reviewers are independent of the agents whose work they review, and they test
+adversarially. An audit runs the reviewers alone over an existing crate.
 
-The [audit campaign](docs/audit.md) runs the reviewers alone over any Rust crate
-that wraps C.
+Deterministic tools ground the agents' judgement:
 
-## Components
+- [wavefront](https://github.com/crustify-rs/wavefront) sorts the C codebase into
+  dependency-ordered waves from CodeQL facts;
+- [ffibox](https://github.com/crustify-rs/ffibox) provides the smart pointers and
+  lifetime traits the generated Rust builds on;
+- [ffimap](https://github.com/crustify-rs/ffimap) measures the resulting unsafe and FFI
+  surface per batch, wave, subsystem and campaign; and
+- the target's own tests run under sanitizers.
 
-| Component | Responsibility |
-|---|---|
-| `crustify` | Agent execution, isolated worktrees, crate placement, logging, and campaign artifacts |
-| [`wavefront`](https://github.com/crustify-rs/wavefront) | CodeQL-backed dependency analysis, scope selection, and deterministic scheduling |
-| [audit campaigns](docs/audit.md) | UB review of any Rust crate that wraps C, by the same reviewers a translation uses |
-| [`ffibox`](https://github.com/crustify-rs/ffibox) | Safe FFI smart pointers and lifetime traits used by generated wrappers |
-| [`ffimap`](https://github.com/crustify-rs/ffimap) | Deterministic unsafe and FFI surface counts, recorded per batch, wave, subsystem and campaign |
-
-Claude Code and OpenAI Codex are supported as agent backends with access to latest
-closed- and open-weight models. Campaigns can use
-API or subscription billing and can select a model independently for each
-agentic stage. The recommended baseline is `claude-opus-5` for the
-assistant, `gpt-5.6-sol` for translators, and `claude-opus-5` again for the
-review and UB passes.
-
-## Quick start
-
-Crustify requires Python 3.13. Clone the three components side by side and
-install the two Python packages; `ffibox` is a Rust crate that generated
-wrappers depend on, so it is cloned but not installed:
-
-```bash
-git clone https://github.com/crustify-rs/crustify.git
-git clone https://github.com/crustify-rs/wavefront.git
-git clone https://github.com/crustify-rs/ffibox.git
-
-python -m pip install -e crustify
-python -m pip install -e wavefront
-```
-
-Optionally copy and pre-fill the campaign questionnaire before starting
-Crustify:
-
-```bash
-cp crustify/templates/translate/CRUSTIFY.template.md campaign-CRUSTIFY.md
-# Edit campaign-CRUSTIFY.md and answer as many questions as you want.
-```
-
-Open Crustify on the repository:
-
-```bash
-crustify /path/to/repo --settings ./campaign-CRUSTIFY.md
-```
-
-Crustify opens with its workflow and the campaign's settings loaded, and waits for your
-instructions: ask it about the target, have it plan one subsystem, or tell it to run the
-campaign. `--start` runs the campaign right away, as the settings configure it; a
-headless session needs it. Without `--settings`, Crustify creates the settings from the
-template of the campaign you name with `--campaign port | wrap | audit`, or asks which.
-`crustify --resume [SESSION_ID]` continues an earlier session, from any directory: the one
-with that id, or the most recent one.
-
-The settings are copied to the repository's `crustify/CRUSTIFY.md`, which Crustify
-reads and the campaign tracks. Edit that copy to change settings mid-campaign; Crustify
-rereads it before each subsystem. Questions left unanswered are asked live: which
-repository and revision to use, whether to port or wrap it, where the campaign should
-start, which models to use, and how much autonomy Crustify has. It presents a
-consolidated campaign brief for approval before it changes the target repository.
-
-Campaign dashboards follow the
-[`templates/translate/dashboard.template.md`](templates/translate/dashboard.template.md)
-template.
-
-For a reproducible container environment and the campaign templates, see
-[`templates/`](templates/README.md).
-
-## Campaign lifecycle
-
-1. **Scope:** choose a target and objective, then define subsystems now or
-   brainstorm them with Crustify.
-2. **Setup:** establish the build and test baseline, extract CodeQL data,
-   configure the campaign-wide oracle target, decompose its targeted and
-   imported translation units into `subsystems.json`, and scaffold compiling
-   Rust crates.
-3. **Plan:** each subsystem of `subsystems.json` is planned on its own, plus the
-   synthetic raw `void` and raw `string` lifetime subsystems. Each gets a narrow
-   `wavefront-config.json`; Wavefront computes its exact imported-producer
-   closure, waves and batches. Wrap campaigns select the public API graph with
-   `--api-headers-only`.
-4. **Translate and review:** Crustify launches one isolated binder or translator
-   per scheduled batch. After all translation batches in a wave land, an
-   adversarial review wave runs before any consumer wave starts.
-5. **Promote and audit:** Crustify reconciles parallel landings, runs
-   regression and deterministic safety gates, then promotes the reviewed wave.
-
-Each role's authoritative procedure is its own prompt:
-[`translate-assistant`](src/crustify/prompts/translate-assistant.md),
-[`audit-assistant`](src/crustify/prompts/audit-assistant.md),
-[`binder`](src/crustify/prompts/binder.md),
-[`translator`](src/crustify/prompts/translator.md) and
-[`reviewer`](src/crustify/prompts/reviewer.md).
-
-## CLI
-
-This repository installs one command:
-
-```text
-crustify           one entry point for every stage:
-                     translate         start Crustify on a translation campaign
-                     audit             start Crustify on an audit campaign
-                     spawn-planner     run one planner over its task.json
-                     spawn-binder      run one binder over its task.json
-                     spawn-translator  run one translator over its task.json
-                     spawn-reviewer    run one reviewer over its task.json
-                     usage             tokens and cost of agent sessions, as JSON
-```
-
-The oracle interface is owned by its own repository. Use `<command> --help` for
-current commands, defaults, and flags; the README does not duplicate those
-interfaces.
+Claude Code and OpenAI Codex are supported as agent backends, with API or subscription
+billing, directly or through OpenRouter. Each agentic stage can use its own model. We
+recommend `claude-opus-5` for the assistant and reviewers and `gpt-5.6-sol` for
+translators.
 
 ## Results
 
-Crustify generated safe bindings for the whole API of `libgit2` (excluding deprecated
-items) using Codex GPT-5.6-Sol and followed by independent Claude Opus 5 review and UB
-audit.
-
-Below is an overview of the campaign's stats:
+Crustify generated safe bindings for the whole public API of `libgit2`, excluding
+deprecated items. Codex GPT-5.6-Sol wrote the bindings, and Claude Opus 5 reviewed them
+independently and audited them for undefined behavior.
 
 | Measure | Result |
 |---|---:|
@@ -172,26 +152,32 @@ Below is an overview of the campaign's stats:
 | Recorded cost | `$1,904.64` for translation, review, and orchestration |
 | Aggregate agent wall time | `24h49m20s` |
 
- The full campaign results and code are available [here](https://github.com/crustify-rs/libgit2-wrap).
+The full campaign results and code are available at
+[crustify-rs/libgit2-wrap](https://github.com/crustify-rs/libgit2-wrap).
 
 ## Documentation
 
-- [`docs/conventions.md`](docs/conventions.md): generated Rust
-  conventions, including the Rust tree layout
 - [`docs/planning.md`](docs/planning.md): how a campaign is decomposed and scheduled
-- [`docs/reviewing.md`](docs/reviewing.md): how landed work and plans are reviewed
 - [`docs/binding.md`](docs/binding.md), [`docs/porting.md`](docs/porting.md): how an
   item is wrapped or ported
+- [`docs/reviewing.md`](docs/reviewing.md): how landed work and plans are reviewed
+- [`docs/audit.md`](docs/audit.md): audit campaigns
 - [`docs/testing.md`](docs/testing.md), [`docs/landing.md`](docs/landing.md),
   [`docs/layout.md`](docs/layout.md): tests, landing, and a campaign's branches and
-  artifact dirs
-- [`docs/audit.md`](docs/audit.md): audit campaigns
-- [`docs/artifacts/`](docs/artifacts/): field meaning of the campaign's artifacts:
-  `subsystems.json`, `schedule.json` and `task.json`
-- [`templates/translate/CRUSTIFY.template.md`](templates/translate/CRUSTIFY.template.md): optional pre-filled
-  campaign questionnaire
-- [`templates/translate/dashboard.template.md`](templates/translate/dashboard.template.md): campaign
-  dashboard template
+  artifact directories
+- [`docs/conventions.md`](docs/conventions.md): conventions for the generated Rust,
+  including the tree layout
+- [`docs/artifacts/`](docs/artifacts/): the fields of `subsystems.json`,
+  `schedule.json` and `task.json`
+- [`templates/`](templates/README.md): settings and dashboard templates, and the
+  Dockerfile
+
+Each agent's authoritative procedure is its prompt, under
+[`src/crustify/prompts/`](src/crustify/prompts/).
+
+## Maintainers
+
+- Marius Momeu ([marius.momeu@berkeley.edu](mailto:marius.momeu@berkeley.edu))
 
 ## Acknowledgements
 
