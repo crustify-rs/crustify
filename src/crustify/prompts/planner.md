@@ -27,8 +27,7 @@ decision and every revision of it.
 
 The campaign's settings are in `{workdir}/crustify/CRUSTIFY.md`. Read it: its
 `campaign` (port or wrap), `scope`, `target-config` and `workload` answers bound
-everything you plan; a feature the target is configured without is out of scope. Do not
-edit it; report an unanswered or ambiguous question instead.
+everything you plan; a feature the target is configured without is out of scope.
 
 Plan from the setup the orchestrator prepared: the builds recorded in
 `crustify/artifacts/build.json` and the linker outputs of those builds. Do not rebuild

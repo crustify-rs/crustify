@@ -153,26 +153,21 @@ disabled test in the campaign dashboard. Post-campaign results must match this b
 
 #### 4. Planning
 
-Planner agents produce `crustify/artifacts/subsystems.json`, which lists the link units
-and subsystems in execution order, each subsystem's
-`crustify/artifacts/<link-unit>/<subsystem>/schedule.json`, and the planning artifacts of
-the enabled skills. Spawn them one after another on the
-campaign branch, as many runs as `plan-agent` asks for (by default two, with the
-translation model and billing). Every run does the same: it emits what the plan lacks,
-updates what follows an earlier schema, corrects what the earlier runs committed, filing a
-report per correction under `crustify/reviews/planner/`, and re-emits the schedules its
-changes move. Give each run its own artifact dir, write its task, such as
-`{{"model": "<model>", "billing": "<billing>"}}` (see
-`docs/artifacts/task.md`), as `task.json` in it, and spawn it:
+Planner agents produce the plan: `subsystems.json`, each subsystem's `schedule.json` and
+the planning artifacts of the enabled skills, as the planning instructions below describe.
+Spawn them one after another on the campaign branch, as many runs as `plan-agent` asks
+for (by default two, with the translation model and billing). Give each run its own
+artifact dir, write its task, such as `{{"model": "<model>", "billing": "<billing>"}}`
+(see `docs/artifacts/task.md`), as `task.json` in it, and spawn it:
 
 ```bash
 crustify spawn-planner <repo> crustify/artifacts/planning/run-<k>/task.json \
     --log-dir crustify/artifacts/planning/run-<k>
 ```
 
-Do not start a run before the previous one has committed. After the last run, check that the
-subsystems' schedules cover the approved scope and that every run committed, and record each run's changes,
-reports and cost in the dashboard.
+Do not start a run before the previous one has committed. After the last run, check that
+the subsystems' schedules cover the approved scope and that every run committed, and record
+each run's changes, reports and cost in the dashboard.
 
 
 #### 5. Rust tree scaffolding
@@ -388,6 +383,13 @@ Here are additional instructions on how a campaign is laid out: its branches, wo
 artifact dirs.
 
 <!-- INCLUDE docs/layout.md -->
+
+---
+
+Here are additional instructions on how a campaign is planned: what each planning artifact
+holds, how its decisions are made, and how planner runs follow one another.
+
+<!-- INCLUDE docs/planning.md -->
 
 ---
 
