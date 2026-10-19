@@ -5,8 +5,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import NoReturn
 
-from crustify.translate import (RUN_FIELDS, RunSettings, check_fields, parse_run, read_object,
-                                task_and_log_dir)
+from crustify.translate import (RUN_FIELDS, Instructions, RunSettings, check_fields,
+                                instructions_note, parse_instructions, parse_run,
+                                read_object, task_and_log_dir)
 
 #: The planner's two arms. `emit` adds what the plan lacks -- a fresh
 #: campaign's artifacts, or the entries a scope change or a new artifact
@@ -24,6 +25,7 @@ class PlanBatch:
 
     objective: str
     run: RunSettings
+    instructions: Instructions | None = None
 
 
 def _fail(message: str) -> NoReturn:
@@ -32,14 +34,15 @@ def _fail(message: str) -> NoReturn:
 
 def load_batch(path: Path) -> PlanBatch:
     """Load and strictly validate a planner task: ``objective``, ``model``
-    and ``billing``. A planner commits on the checked-out campaign branch, so
+    and ``billing``, and optionally ``instructions``. A planner commits on the checked-out campaign branch, so
     it lands on no other."""
     raw = read_object(path, _fail)
-    check_fields(raw, {"objective"} | RUN_FIELDS, set(), _fail)
+    check_fields(raw, {"objective"} | RUN_FIELDS, {"instructions"}, _fail)
     if raw["objective"] not in OBJECTIVES:
         _fail(f"objective must be one of {', '.join(OBJECTIVES)}, "
               f"not {raw['objective']!r}")
-    return PlanBatch(objective=raw["objective"], run=parse_run(raw, _fail))
+    return PlanBatch(objective=raw["objective"], run=parse_run(raw, _fail),
+                     instructions=parse_instructions(raw, path, _fail))
 
 
 def execute(workdir: Path, task_path: Path, *, log_dir: Path,
@@ -54,15 +57,20 @@ def execute(workdir: Path, task_path: Path, *, log_dir: Path,
 
     agent = PlanAgent(workdir.resolve(), objective=batch.objective,
                       artifact_dir=output, log_stem=_LOG_STEM)
+    agent.instructions = batch.instructions
     if dry_run:
         print(f"[plan dry-run] one planner; objective {batch.objective}; "
-              f"model {batch.run.model} ({batch.run.billing}); no agent spawned.")
+              f"model {batch.run.model} ({batch.run.billing}); "
+              f"{instructions_note(batch.instructions)}; no agent spawned.")
         return
 
     print(f"[crustify spawn-planner] workdir: {agent.workdir}")
     print(f"[crustify spawn-planner] objective: {batch.objective}")
     print(f"[crustify spawn-planner] model: {batch.run.model} ({batch.run.billing})")
     print(f"[crustify spawn-planner] session: {output / f'{_LOG_STEM}.session.json'}")
+    if batch.instructions is not None:
+        print("[crustify spawn-planner] additional instructions: "
+              f"{batch.instructions.path}")
     batch.run.apply()
     agent.run()
     print("[crustify spawn-planner] run completed.")

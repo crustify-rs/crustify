@@ -143,7 +143,7 @@ def main() -> None:
     plan_p.add_argument(
         "task", type=Path, metavar="TASK_JSON",
         help="Path to the run's task.json: its objective (emit or review), "
-             "model and billing.")
+             "model and billing, and optional additional instructions.")
     plan_p.add_argument(
         "--log-dir", required=True, type=Path, metavar="DIR",
         help="Existing directory for the run's planner.session.json; give "
@@ -173,8 +173,8 @@ def main() -> None:
         p.add_argument(
             "task", type=Path, metavar="TASK_JSON",
             help="Path to the batch's task.json: its objective and items, the "
-                 "wave integration branch it lands on, and its model and "
-                 "billing.")
+                 "wave integration branch it lands on, its model and "
+                 "billing, and optional additional instructions.")
         p.add_argument(
             "--log-dir", required=True, type=Path, metavar="DIR",
             help=f"Existing directory for the batch's {role}.session.json; "
@@ -202,7 +202,8 @@ def main() -> None:
         "task", type=Path, metavar="TASK_JSON",
         help="Path to the batch's task.json: commits or modules, reports, "
              "optional objectives, the review wave integration branch it lands "
-             "on, and its model and billing.")
+             "on, its model and billing, and optional additional "
+             "instructions.")
     review_p.add_argument(
         "--log-dir", required=True, type=Path, metavar="DIR",
         help="Existing directory for the batch's reviewer.session.json; give "

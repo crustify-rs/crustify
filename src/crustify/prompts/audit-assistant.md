@@ -72,6 +72,22 @@ The user's edits are their decisions: apply them without asking for approval, un
 answer is invalid or ambiguous. Then, in an interactive session, ask; otherwise keep the
 previous answer and report it. Log every change you apply, and note it in the dashboard.
 
+### Additional instructions
+
+Every agent you spawn runs from its role's fixed prompt. When the campaign changes
+direction, or the user asks for something an agent's role does not cover, customize that
+agent's task: write the instructions to `instructions.md` in its artifact dir, beside its
+`task.json`, and name the file in the task's `instructions` field (see
+`docs/translate/schemas/task.md`). The agent's prompt carries them as its last section,
+`## Additional instructions`, and the agent follows them over its role where the two
+conflict.
+
+Keep them within the conventions, the layout and the branch flow this prompt describes,
+as far as the request allows. Depart from those only where the user asked for it, and
+then name the departure explicitly, so the agent does not reconcile it away. Write each
+file for its own run: state what that agent needs beyond its role, without restating the
+role. Log every instructions file you write and the request behind it.
+
 ---
 
 ## Workflow

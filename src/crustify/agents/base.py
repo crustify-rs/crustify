@@ -186,6 +186,10 @@ class CrustifyAgent:
     # don't clobber each other's logs. None on instances that don't
     # need disambiguation.
     stage_suffix: str | None = None
+    #: The task's additional instructions (a
+    #: :class:`crustify.translate.Instructions`), or None. Set per instance
+    #: by the harness that read the task.
+    instructions = None
 
     def __init__(
         self,
@@ -473,4 +477,23 @@ class CrustifyAgent:
         if self.prompt_in_system_slot:
             parts.append(self._body().format(**self._arguments()))
         parts.append(self._render_skills())
+        parts.append(self._render_instructions())
         return "\n\n---\n\n".join(part for part in parts if part)
+
+    def _render_instructions(self) -> str:
+        """The task's additional instructions as the preamble's last section,
+        or nothing when the task gives none.
+
+        Last, so they read as a refinement of everything above them; in the
+        system slot, so compaction cannot paraphrase them away. The framing
+        sentence states their precedence once, here, rather than in each
+        role's prompt."""
+        if self.instructions is None:
+            return ""
+        return (
+            "## Additional instructions\n\n"
+            "The user or the assistant wrote these instructions for this run. "
+            "They add to your role and task; where they conflict with "
+            "anything above, follow them.\n\n"
+            f"{self.instructions.text}"
+        )

@@ -40,8 +40,9 @@ everything about the batch: what it was given, how it ran, and what it produced.
 | `objective` | execution objective for every item: `wrap` or `port` |
 | `items` | non-empty worklist; every item routes to the same agent |
 | `base_branch`, `model`, `billing` | the [run fields](#run-fields) |
+| `instructions` | optional [additional instructions](#additional-instructions) |
 
-All five are required and no other root field is accepted.
+All five are required, and `instructions` is the only other root field accepted.
 
 ## Run fields
 
@@ -54,6 +55,22 @@ All five are required and no other root field is accepted.
 A binder, translator or reviewer task carries all three. A planner task carries `model`
 and `billing` only: a planner commits on the campaign branch it is spawned on, and lands on
 no other.
+
+## Additional instructions
+
+Every task may carry `instructions`, the path of a Markdown file, relative to the task's
+own directory, that customizes the agent's task on top of its role:
+
+```json
+{"objective": "review", "model": "anthropic/claude-opus-5-5", "billing": "subscription",
+ "instructions": "instructions.md"}
+```
+
+The agent's system prompt carries the file's text as its last section, `## Additional
+instructions`, which states that the instructions take precedence over the role's prompt
+where the two conflict. An unreadable or empty file fails the command; a dry run reports
+the file it would use. The file usually sits in the batch's directory beside `task.json`,
+so git records what the agent was told along with the task.
 
 The settings a campaign ran under are recorded twice: per batch in its `task.json`, and per
 campaign in the history of `crustify/CRUSTIFY.md`.
@@ -93,7 +110,7 @@ A batch carries `commits` or `modules`, not both, and needs one of them or `repo
 with only `reports` has route `reports`. A module path appears once, and a module object
 names one or more of `types`, `trait_impls` and `functions`, each a distinct list. `reports` is given exactly when `revisit` is among the
 objectives, and an absent `objectives` includes `revisit` exactly when `reports` is given.
-No other root field is accepted.
+The optional `instructions` is the only other root field accepted.
 
 The reviewer's prompt offers `unsafety`, `contracts`, `ub`, `equiv`, `internal`,
 `conventions`, `misc`, `coverage`, `revisit`, `disclose` and `fix`, with `conventions`
@@ -114,8 +131,9 @@ on is the campaign branch it is spawned on.
 |---|---|
 | `objective` | `emit`: create the plan, or add what the committed plan lacks, leaving its judgements as they are; `review`: assess the committed judgements, correct them, and file a report per edit |
 | `model`, `billing` | the [run fields](#run-fields) |
+| `instructions` | optional [additional instructions](#additional-instructions) |
 
-All three are required and no other root field is accepted. The orchestrator writes it as
+All three are required, and `instructions` is the only other root field accepted. The orchestrator writes it as
 `task.json` in the run's artifact dir, `crustify/artifacts/planning/run-<k>/`.
 
 ## items[*]

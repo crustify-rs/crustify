@@ -41,6 +41,15 @@ class RunSettings:
 
 
 @dataclass(frozen=True)
+class Instructions:
+    """A task's additional instructions: the file that holds them, and its
+    text, which the agent's prompt carries as its own section."""
+
+    path: Path
+    text: str
+
+
+@dataclass(frozen=True)
 class Batch:
     """Validated binder or translator task."""
 
@@ -49,6 +58,7 @@ class Batch:
     items: list[dict]
     base_branch: str
     run: RunSettings
+    instructions: Instructions | None = None
 
 
 def _fail(message: str) -> NoReturn:
@@ -111,6 +121,33 @@ def parse_branch(raw: dict, fail: Callable[[str], NoReturn]) -> str:
     if not isinstance(branch, str) or not branch.strip():
         fail("base_branch must name a branch")
     return branch.removeprefix("refs/heads/")
+
+
+def parse_instructions(raw: dict, task_path: Path,
+                       fail: Callable[[str], NoReturn]) -> Instructions | None:
+    """The file a task's optional ``instructions`` names, resolved against the
+    task's own directory, and its text; a failure when it is unreadable or
+    empty."""
+    if "instructions" not in raw:
+        return None
+    name = raw["instructions"]
+    if not isinstance(name, str) or not name.strip():
+        fail("instructions must name a file")
+    path = (task_path.parent / name).resolve()
+    try:
+        text = path.read_text().strip()
+    except OSError as exc:
+        fail(f"cannot read instructions {path}: {exc}")
+    if not text:
+        fail(f"instructions file is empty: {path}")
+    return Instructions(path=path, text=text)
+
+
+def instructions_note(instructions: Instructions | None) -> str:
+    """How a dry run reports a task's additional instructions."""
+    if instructions is None:
+        return "no additional instructions"
+    return f"additional instructions from {instructions.path}"
 
 
 def check_fields(raw: dict, required: set[str], optional: set[str],
@@ -202,10 +239,11 @@ def parse_items(items: object, fail: Callable[[str], NoReturn]
 
 
 def load_batch(path: Path) -> Batch:
-    """Load and strictly validate a binder or translator task."""
+    """Load and strictly validate a binder or translator task, ``path``
+    resolved."""
     raw = read_object(path, _fail)
     check_fields(raw, {"objective", "items", "base_branch"} | RUN_FIELDS,
-                 set(), _fail)
+                 {"instructions"}, _fail)
     objective = raw["objective"]
     if not isinstance(objective, str) or objective not in _OBJECTIVES:
         _fail("objective must be one of: port, wrap"
@@ -214,7 +252,8 @@ def load_batch(path: Path) -> Batch:
     route, items = parse_items(raw["items"], _fail)
     return Batch(objective=objective, route=route, items=items,
                  base_branch=parse_branch(raw, _fail),
-                 run=parse_run(raw, _fail))
+                 run=parse_run(raw, _fail),
+                 instructions=parse_instructions(raw, path, _fail))
 
 
 def _task_objective(batch: Batch) -> str:
@@ -258,7 +297,8 @@ def execute(
             f"[{role} dry-run] one {batch.route} agent; "
             f"{len(batch.items)} item(s); campaign objective "
             f"{batch.objective}{normalized}; landing on {base_branch}; "
-            f"model {batch.run.model} ({batch.run.billing}); no agent spawned."
+            f"model {batch.run.model} ({batch.run.billing}); "
+            f"{instructions_note(batch.instructions)}; no agent spawned."
         )
         return
 
@@ -269,6 +309,9 @@ def execute(
     print(f"[crustify spawn-{role}] landing on: {base_branch}")
     print(f"[crustify spawn-{role}] model: {batch.run.model} ({batch.run.billing})")
     print(f"[crustify spawn-{role}] session: {output / f'{role}.session.json'}")
+    if batch.instructions is not None:
+        print(f"[crustify spawn-{role}] additional instructions: "
+              f"{batch.instructions.path}")
 
     if role == "binder":
         from crustify.agents.bind import BindAgent as Agent
@@ -276,12 +319,14 @@ def execute(
         from crustify.agents.translate import TranslateAgent as Agent
 
     batch.run.apply()
-    Agent(
+    agent = Agent(
         workdir,
         route=batch.route,
         items=batch.items,
         git_base=base_branch,
         artifact_dir=output,
         log_stem=role,
-    ).run()
+    )
+    agent.instructions = batch.instructions
+    agent.run()
     print(f"[crustify spawn-{role}] batch completed.")

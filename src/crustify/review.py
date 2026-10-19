@@ -6,7 +6,8 @@ from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import NoReturn
 
-from crustify.translate import (RUN_FIELDS, RunSettings, check_fields, parse_branch,
+from crustify.translate import (RUN_FIELDS, Instructions, RunSettings, check_fields,
+                                instructions_note, parse_branch, parse_instructions,
                                 parse_run, read_object, task_and_log_dir)
 
 _OBJECTIVE = re.compile(r"^[a-z]+$")
@@ -34,6 +35,7 @@ class ReviewBatch:
     objectives: list[str] | None
     base_branch: str
     run: RunSettings
+    instructions: Instructions | None = None
 
 
 def _fail(message: str) -> NoReturn:
@@ -122,7 +124,8 @@ def load_batch(path: Path) -> ReviewBatch:
     not here."""
     raw = read_object(path, _fail)
     check_fields(raw, {"base_branch"} | RUN_FIELDS,
-                 {"commits", "modules", "reports", "objectives"}, _fail)
+                 {"commits", "modules", "reports", "objectives", "instructions"},
+                 _fail)
     if "commits" in raw and "modules" in raw:
         _fail("a batch carries commits or modules, not both")
     if not {"commits", "modules", "reports"} & set(raw):
@@ -152,7 +155,8 @@ def load_batch(path: Path) -> ReviewBatch:
     return ReviewBatch(route=route, commits=list(commits), modules=modules,
                        reports=reports, objectives=objectives,
                        base_branch=parse_branch(raw, _fail),
-                       run=parse_run(raw, _fail))
+                       run=parse_run(raw, _fail),
+                       instructions=parse_instructions(raw, path, _fail))
 
 
 def execute(
@@ -187,13 +191,15 @@ def execute(
         artifact_dir=output,
         log_stem=_LOG_STEM,
     )
+    agent.instructions = batch.instructions
     if dry_run:
         print(
             f"[review dry-run] one {batch.route} agent; "
             f"{len(batch.commits)} commit(s), {len(batch.modules)} module(s), "
             f"{len(batch.reports)} report(s); objectives "
             f"{', '.join(agent.objectives)}; landing on {base_branch}; "
-            f"model {batch.run.model} ({batch.run.billing}); no agent spawned."
+            f"model {batch.run.model} ({batch.run.billing}); "
+            f"{instructions_note(batch.instructions)}; no agent spawned."
         )
         return
 
@@ -202,6 +208,9 @@ def execute(
     print(f"[crustify spawn-reviewer] objectives: {', '.join(agent.objectives)}")
     print(f"[crustify spawn-reviewer] model: {batch.run.model} ({batch.run.billing})")
     print(f"[crustify spawn-reviewer] session: {output / f'{_LOG_STEM}.session.json'}")
+    if batch.instructions is not None:
+        print("[crustify spawn-reviewer] additional instructions: "
+              f"{batch.instructions.path}")
     batch.run.apply()
     agent.run()
     print("[crustify spawn-reviewer] batch completed.")
