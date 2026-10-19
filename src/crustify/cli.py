@@ -93,9 +93,10 @@ def main() -> None:
     )
     assistant.set_defaults(handler=_handle_assist, command="assistant")
     assistant.add_argument(
-        "workdir", nargs="?", default=".",
+        "workdir", nargs="?", default=None,
         help="The checkout the campaign works in; its artifacts live under "
-             "<workdir>/crustify/. Default: the current directory.")
+             "<workdir>/crustify/. Default: the current directory, or, with "
+             "--resume, the checkout of the session it resumes.")
     assistant.add_argument(
         "--campaign", choices=sorted(CAMPAIGNS), default=None,
         help="The campaign, when crustify/CRUSTIFY.md does not exist yet or "
@@ -112,6 +113,13 @@ def main() -> None:
         help="Start the campaign right away, as CRUSTIFY.md configures it. "
              "Without it Crustify waits for your instructions; a headless "
              "session needs it.")
+    assistant.add_argument(
+        "--resume", nargs="?", const="", default=None, metavar="SESSION_ID",
+        help="Resume an earlier assistant session: the one with that id, from "
+             "any directory; without one, the most recent session of WORKDIR, "
+             "or of any checkout when WORKDIR is omitted. It continues on the "
+             "CLI and model it ran with, unless --model names another model "
+             "of the same CLI, under the workflow as it stands now.")
     assistant.add_argument(
         "--task-only", action="store_true",
         help="Ablation control: the settings file is the entire prompt and "
@@ -236,7 +244,7 @@ def main() -> None:
     else:
         args = assistant.parse_args(argv)
 
-    if hasattr(args, "workdir"):
+    if getattr(args, "workdir", None) is not None:
         # workdir is explicit: crustify never walks the filesystem to find it.
         workdir = Path(args.workdir).resolve()
         if not workdir.exists():
@@ -406,20 +414,67 @@ def _ask_campaign() -> str | None:
     return answer or None
 
 
+def assistant_session(workdir: Path | None, session_id: str | None) -> dict:
+    """The record of an earlier assistant session, from the index in
+    crustify's home: the one with ``session_id``, or the most recent one, of
+    ``workdir`` when given. The record names the session's workdir."""
+    import json
+    from crustify.layout import crustify_home
+    records = []
+    for path in sorted((crustify_home() / "sessions").glob("*.json")):
+        try:
+            record = json.loads(path.read_text())
+        except (OSError, ValueError):
+            continue
+        if isinstance(record, dict) and record.get("session_id") \
+                and record.get("workdir"):
+            records.append(record)
+    if session_id:
+        records = [r for r in records if r["session_id"] == session_id]
+    if workdir is not None:
+        records = [r for r in records if Path(r["workdir"]) == workdir]
+    if not records:
+        where = f" of {workdir}" if workdir is not None else ""
+        raise SystemExit(f"no assistant session {session_id}{where}" if session_id
+                         else f"no earlier assistant session{where}")
+    return max(records, key=lambda r: r.get("started_at") or "")
+
+
 def _handle_assist(args: argparse.Namespace) -> None:
     """Start Crustify's assistant on this checkout's campaign."""
     from crustify import config as _cfg
     from crustify.agents.assist import AssistAgent
 
+    given = Path(args.workdir).resolve() if args.workdir else None
+    workdir = given or Path(".").resolve()
     model = _cfg.MODEL_OVERRIDE or "anthropic/claude-opus-5"
-    workdir = Path(args.workdir).resolve()
+    resume = None
+    campaign_flag = args.campaign
+    if getattr(args, "resume", None) is not None:
+        from crustify.core.models import resolve
+        record = assistant_session(given, args.resume or None)
+        resume = record["session_id"]
+        workdir = Path(record["workdir"])
+        campaign_flag = campaign_flag or record.get("campaign")
+        recorded = f"{record.get('provider')}/{record.get('model')}"
+        model = _cfg.MODEL_OVERRIDE or recorded
+        cli = "claude_cli" if record.get("cli") == "claude" else "codex_cli"
+        try:
+            backend = resolve(model).backend
+        except ValueError as exc:
+            raise SystemExit(str(exc)) from exc
+        if backend != cli:
+            raise SystemExit(
+                f"session {resume} ran on {record.get('cli')}, which {model} "
+                "does not: only the CLI that ran a session can resume it")
+        print(f"[crustify] resuming session {resume} ({model})")
     # Interactive whenever a person is at the terminal: the assistant waits
     # for instructions and approvals, which a headless run cannot do.
     interactive = sys.stdin.isatty() and sys.stdout.isatty()
     if not interactive and not args.start:
         raise SystemExit("a headless session has nobody to instruct it: pass "
                          "--start to run the campaign as CRUSTIFY.md configures it")
-    task, campaign = campaign_settings(workdir, args.settings, args.campaign,
+    task, campaign = campaign_settings(workdir, args.settings, campaign_flag,
                                        _ask_campaign)
     kind = CAMPAIGNS[campaign]
     run_start = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
@@ -433,7 +488,8 @@ def _handle_assist(args: argparse.Namespace) -> None:
     # One log per run, so resuming never overwrites an earlier session's.
     AssistAgent(workdir, kind=kind, task=task, model=model,
                 task_only=args.task_only, interactive=interactive,
-                start=args.start, artifact_dir=artifact_dir,
+                start=args.start, resume=resume, campaign=campaign,
+                artifact_dir=artifact_dir,
                 log_stem=f"assistant-{run_start}").run()
 
 

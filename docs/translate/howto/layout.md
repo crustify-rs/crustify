@@ -51,7 +51,6 @@ crustify/artifacts/                             the campaign
 ├── dashboard.md                                the campaign dashboard; audit-dashboard.md for an audit
 ├── assistant/                                  Crustify's own records, as the assistant
 │   ├── assistant-<timestamp>.session.json      one per assistant session
-│   ├── assistant-<timestamp>.transcript.jsonl  its transcript, untracked
 │   └── assistant-<timestamp>.usage.json        derived by `crustify usage`
 └── <link-unit>/<subsystem>/                    a subsystem
     ├── schedule.json                           its waves and batches
@@ -59,7 +58,6 @@ crustify/artifacts/                             the campaign
     │   └── batch-<index>/                      a batch
     │       ├── task.json                       its schedule.json entry, with the run fields
     │       ├── <role>.session.json             binder, translator or reviewer
-    │       ├── <role>.transcript.jsonl         its transcript, copied in; untracked
     │       └── <role>.usage.json               derived by `crustify usage`
     └── review-wave-<index>/                    a review wave
         └── batch-<index>/                      a review batch, laid out as a batch
@@ -75,6 +73,18 @@ produced.
 
 The settings each subsystem or review wave ran under are not copied anywhere: they are
 `crustify/CRUSTIFY.md` as committed when it started, in the campaign branch's history.
+
+## Crustify's home
+
+Crustify keeps what belongs to its user rather than to a campaign in its home,
+`$CRUSTIFY_HOME` or `~/.crustify`:
+
+```text
+~/.crustify/
+├── providers/codex/                  Codex's home under API-key billing
+├── sessions/<session id>.json        an index of the assistant's sessions, for `--resume`
+└── transcripts/<session id>.jsonl    the agents' transcripts, copied from the CLIs' homes
+```
 
 ## Scratch
 

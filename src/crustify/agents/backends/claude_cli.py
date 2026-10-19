@@ -123,6 +123,7 @@ class ClaudeCliBackend:
         override_base_prompt: bool = False,
         provider_home: Path | None = None,
         interactive: bool = False,
+        resume: str | None = None,
     ) -> None:
         exe = shutil.which("claude")
         if exe is None:
@@ -131,7 +132,10 @@ class ClaudeCliBackend:
             )
 
         wd = Path(work_dir).resolve()
-        session_id = str(uuid.uuid4())
+        # A resumed session keeps its id, and its transcript grows: it is not
+        # forked, which would copy the earlier turns into a new transcript and
+        # count their cost twice.
+        session_id = resume or str(uuid.uuid4())
 
         # The prompt goes first: `--tools` and `--add-dir` take variadic
         # values, so a trailing positional would be read as one of them.
@@ -146,7 +150,7 @@ class ClaudeCliBackend:
         ]
         cmd += [
             "--model", route.model,
-            "--session-id", session_id,
+            *(("--resume", session_id) if resume else ("--session-id", session_id)),
             # One tool. `--tools` is an allowlist, so anything the CLI gains
             # in a later version stays excluded by default.
             "--tools", "Bash",
@@ -208,9 +212,8 @@ class ClaudeCliBackend:
                     "and exits 0 having done nothing."
                 )
 
-        if provider_home is not None:
-            provider_home.mkdir(parents=True, exist_ok=True)
-            env["ANTHROPIC_CONFIG_DIR"] = str(provider_home.resolve())
+        # No config home of crustify's: claude keeps its transcripts, and the
+        # subscription login, in its own home whatever crustify sets.
 
         if interactive:
             # The terminal is the CLI's: nothing is captured, so the session
@@ -233,6 +236,7 @@ class ClaudeCliBackend:
             "session_id": session_id,
             "transcript": str(transcript) if transcript is not None else None,
             "exit_code": rc,
+            "resumed": bool(resume),
         })
 
         if rc != 0:

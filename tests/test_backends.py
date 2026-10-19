@@ -176,7 +176,8 @@ class InteractiveModeTests(unittest.TestCase):
     """An interactive run hands the terminal to the CLI's own interface: no
     print mode, no captured pipes, and the usage record still follows."""
 
-    def _run(self, backend, model: str, tmp: str) -> list[str]:
+    def _run(self, backend, model: str, tmp: str,
+             resume: str | None = None) -> list[str]:
         captured: dict = {}
 
         def run(command, **kwargs):
@@ -203,6 +204,7 @@ class InteractiveModeTests(unittest.TestCase):
                 billing="api",
                 provider_home=Path(tmp) / "home",
                 interactive=True,
+                resume=resume,
             )
         # Inherited stdio: nothing is piped away from the terminal.
         for stream in ("stdin", "stdout", "stderr"):
@@ -222,6 +224,29 @@ class InteractiveModeTests(unittest.TestCase):
             self.assertNotIn(flag, command)
         self.assertIn("--append-system-prompt", command)
         self.assertIn("--session-id", command)
+
+    def test_claude_resumes_the_session_without_forking_it(self) -> None:
+        from crustify.agents.backends.claude_cli import ClaudeCliBackend
+
+        with tempfile.TemporaryDirectory() as tmp:
+            command = self._run(ClaudeCliBackend(),
+                                "openrouter/anthropic/claude-opus-5", tmp,
+                                resume="s-1")
+        self.assertEqual(command[command.index("--resume") + 1], "s-1")
+        self.assertNotIn("--session-id", command)
+        self.assertNotIn("--fork-session", command)
+        # The system prompt is not kept with the conversation: it goes again.
+        self.assertIn("--append-system-prompt", command)
+
+    def test_codex_resumes_the_session(self) -> None:
+        from crustify.agents.backends.codex_cli import CodexCliBackend
+
+        with tempfile.TemporaryDirectory() as tmp:
+            command = self._run(CodexCliBackend(),
+                                "openrouter/openai/gpt-5.6", tmp, resume="r-1")
+        self.assertEqual(command[1], "resume")
+        self.assertEqual(command[-2:], ["r-1", "kickoff"])
+        self.assertIn("model_instructions_file", " ".join(command))
 
     def test_codex_runs_its_interface_without_exec_only_flags(self) -> None:
         from crustify.agents.backends.codex_cli import CodexCliBackend

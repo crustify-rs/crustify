@@ -90,6 +90,8 @@ instructions: ask it about the target, have it plan one subsystem, or tell it to
 campaign. `--start` runs the campaign right away, as the settings configure it; a
 headless session needs it. Without `--settings`, Crustify creates the settings from the
 template of the campaign you name with `--campaign port | wrap | audit`, or asks which.
+`crustify --resume [SESSION_ID]` continues an earlier session, from any directory: the one
+with that id, or the most recent one.
 
 The settings are copied to the repository's `crustify/CRUSTIFY.md`, which Crustify
 reads and the campaign tracks. Edit that copy to change settings mid-campaign; Crustify

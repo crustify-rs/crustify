@@ -1,6 +1,5 @@
 # Example <repo>/crustify/.gitignore.
 
-.providers
 tmp
 .worktrees
 # Prebuilt variants of the target (see build.json).
@@ -10,9 +9,8 @@ rust.bak
 
 # Campaign plans, the tasks written from them, and each agent's session and usage
 # records are tracked: the usage records are the evidence behind dashboard.md's cost
-# cells. The transcripts they are derived from are not: they are large, and hold
-# whatever an agent read or printed.
-artifacts/**/*.transcript.jsonl
+# cells. The transcripts they are derived from live in crustify's home, outside the
+# checkout.
 
 # Review reproducers are tracked; the cargo trees their builds leave are not.
 reviews/**/target

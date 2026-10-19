@@ -40,6 +40,7 @@ class Backend(Protocol):
         override_base_prompt: bool = False,
         provider_home: Path | None = None,
         interactive: bool = False,
+        resume: str | None = None,
     ) -> None:
         """Drive one agent to completion.
 
@@ -58,6 +59,9 @@ class Backend(Protocol):
         streaming a headless run into ``log``: the person at the terminal reads
         the agent and answers it. The session transcript still yields the
         usage record once the CLI exits.
+
+        ``resume`` continues the session with that id instead of starting one:
+        same id, same transcript.
         """
         ...
 

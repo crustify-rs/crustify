@@ -55,7 +55,7 @@ class CommandShapeTests(unittest.TestCase):
     def test_no_argument_opens_the_assistant_here(self) -> None:
         seen = self._run()
         self.assertEqual(seen["handler"], "assist")
-        self.assertEqual(seen["args"].workdir, ".")
+        self.assertIsNone(seen["args"].workdir)          # the current directory
         self.assertFalse(seen["args"].start)
 
     def test_the_old_campaign_commands_are_gone(self) -> None:
@@ -220,6 +220,52 @@ class AssistantSettingsTests(unittest.TestCase):
                 agent = AssistAgent(self.repo, kind="translate", task=task,
                                     model="anthropic/claude-opus-5", start=start)
                 self.assertEqual(agent._prompt(), first)
+
+
+class ResumeTests(unittest.TestCase):
+    """`--resume` finds assistant sessions through the index in crustify's
+    home, so it works from any directory."""
+
+    def setUp(self) -> None:
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.home = Path(tmp.name) / "home"
+        patcher = mock.patch.dict("os.environ", {"CRUSTIFY_HOME": str(self.home)})
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        self.a, self.b = Path(tmp.name) / "a", Path(tmp.name) / "b"
+        sessions = self.home / "sessions"
+        sessions.mkdir(parents=True)
+        import json
+        for sid, wd, at in (("s-1", self.a, "2026-10-19T10:00:00+00:00"),
+                            ("s-2", self.a, "2026-10-19T11:00:00+00:00"),
+                            ("s-3", self.b, "2026-10-19T09:00:00+00:00")):
+            (sessions / f"{sid}.json").write_text(json.dumps({
+                "session_id": sid, "workdir": str(wd), "started_at": at,
+                "cli": "claude", "provider": "anthropic",
+                "model": "claude-opus-5"}))
+
+    def test_an_id_is_found_from_anywhere(self) -> None:
+        self.assertEqual(cli.assistant_session(None, "s-3")["workdir"], str(self.b))
+
+    def test_the_most_recent_session_of_a_workdir_or_of_all(self) -> None:
+        self.assertEqual(cli.assistant_session(self.b, None)["session_id"], "s-3")
+        self.assertEqual(cli.assistant_session(None, None)["session_id"], "s-2")
+
+    def test_an_unknown_session_is_an_error(self) -> None:
+        with self.assertRaisesRegex(SystemExit, "no assistant session s-9"):
+            cli.assistant_session(None, "s-9")
+
+    def test_the_assistant_indexes_its_sessions(self) -> None:
+        import json
+        from crustify.agentlog import open_agent_log
+        with open_agent_log(self.a / "logs", "assistant-x", agent="assistant",
+                            workdir=self.a,
+                            index_dir=self.home / "sessions") as log:
+            log.session({"session_id": "s-4", "cli": "claude"})
+        indexed = json.loads((self.home / "sessions" / "s-4.json").read_text())
+        self.assertEqual((indexed["workdir"], indexed["agent"]), (str(self.a), "assistant"))
+        self.assertTrue(indexed["record"].endswith("assistant-x.session.json"))
 
 
 class CanonicalTaskTests(unittest.TestCase):

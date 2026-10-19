@@ -6,6 +6,13 @@ from pathlib import Path
 CRUSTIFY = "crustify"
 
 
+def crustify_home() -> Path:
+    """Crustify's own home, shared by every campaign of this user:
+    ``$CRUSTIFY_HOME``, or ``~/.crustify``."""
+    import os
+    return Path(os.environ.get("CRUSTIFY_HOME") or Path.home() / ".crustify")
+
+
 class Layout:
     """Resolves every crustify artifact path from one ``crustify/`` root."""
 
@@ -14,14 +21,11 @@ class Layout:
         self.root = self.workdir / CRUSTIFY
 
     def providers(self, cli: str) -> Path:
-        """Config home crustify hands a provider CLI (``claude`` / ``codex``),
-        so a run reads crustify's settings rather than the operator's.
-
-        Not a full sandbox: claude keeps session transcripts in the real
-        ``~/.claude/projects/`` regardless of ``ANTHROPIC_CONFIG_DIR``, and
-        codex resolves auth from ``CODEX_HOME`` — so pointing that at a
-        crustify path loses a ChatGPT-subscription login (an OpenRouter
-        ``env_key`` needs no auth file and is unaffected)."""
-        d = self.root / ".providers" / cli
+        """Config home crustify hands a provider CLI, under crustify's own
+        home rather than the checkout: its session files then stay out of
+        the repository and its worktrees. Only codex uses one, as its
+        ``CODEX_HOME`` under API-key billing; claude keeps its own home,
+        which holds its subscription login."""
+        d = crustify_home() / "providers" / cli
         d.mkdir(parents=True, exist_ok=True)
         return d

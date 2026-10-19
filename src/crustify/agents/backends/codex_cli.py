@@ -141,9 +141,8 @@ _REASONING_EFFORT = {
 #   * the MAIN checkout         — a worktree's `.git` is a file pointing at
 #                                 `<main>/.git/worktrees/<slug>`, so commits and
 #                                 the landing push write there; and the
-#                                 orchestrator symlinks gitignored shared state
-#                                 (.providers and the like) back to it, which is
-#                                 where codex's session rollout lands.
+#                                 assistant symlinks gitignored shared state
+#                                 back to it.
 #                                 Derived via `--git-common-dir`, whose parent is
 #                                 the right root from a worktree or a plain
 #                                 checkout alike.
@@ -183,6 +182,7 @@ class CodexCliBackend:
         override_base_prompt: bool = False,
         provider_home: Path | None = None,
         interactive: bool = False,
+        resume: str | None = None,
     ) -> None:
         exe = shutil.which("codex")
         if exe is None:
@@ -200,8 +200,8 @@ class CodexCliBackend:
         # submit a record. It was widened by hand to three roots: the worktree;
         # the MAIN checkout (a worktree's `.git` is a *file* pointing at
         # `<main>/.git/worktrees/<slug>`, so every commit and the landing push
-        # write there, and the orchestrator symlinks shared gitignored state
-        # such as .providers back to it); and CARGO_HOME.
+        # write there, and the assistant symlinks shared gitignored state
+        # back to it); and CARGO_HOME.
         # Enumerating write roots still left the agent unable to navigate the
         # workspace freely, so the mode is now global.
         #
@@ -214,7 +214,9 @@ class CodexCliBackend:
         # `--ignore-user-config`, and asks before running commands unless
         # told `-a never`. With an env-key provider CODEX_HOME is relocated
         # below, so no operator config loads either way.
-        cmd = ([exe, "-a", "never"] if interactive
+        # `codex resume <id>` takes the interactive options; `codex exec`
+        # takes its own before its `resume <id>` subcommand, below.
+        cmd = ([exe, *(("resume",) if resume else ()), "-a", "never"] if interactive
                else [exe, "exec", "--skip-git-repo-check", "--ignore-user-config"])
         cmd += ["-C", str(wd),
                 "-s", "danger-full-access",
@@ -244,15 +246,9 @@ class CodexCliBackend:
         # --ignore-user-config for config hermeticity.
         env_key_auth = route.provider == "openrouter" or billing == "api"
         if env_key_auth:
-            # RESOLVED, not the raw path. An isolated agent's `workdir` is its
-            # worktree, where `crustify/.providers` is a symlink into the main
-            # checkout (worktree.link_shared) — so the raw path is only valid
-            # while the worktree exists. The agent PURGES its worktree as the
-            # last step of landing, before this backend does its accounting, so
-            # `_rollout_path` globbing the unresolved path finds nothing and the
-            # run is reported unaccounted even though codex wrote the rollout
-            # safely into the shared tree. Resolving pins both CODEX_HOME and
-            # the later lookup to the real directory, which outlives the wave.
+            # Crustify's home, outside the checkout and its worktrees, so the
+            # rollout outlives the worktree an agent purges as it lands.
+            # RESOLVED, so CODEX_HOME and the later rollout lookup agree.
             if provider_home is None:
                 raise SystemExit(
                     "codex_cli backend: API billing requires a provider home.")
@@ -294,6 +290,9 @@ class CodexCliBackend:
                     "-c", "include_collaboration_mode_instructions=false",
                     "-c", "include_permissions_instructions=false"]
 
+        if resume:
+            # A resumed session keeps its id and its rollout.
+            cmd += [resume] if interactive else ["resume", resume]
         # An interactive session may open with no first turn: the user types it.
         if prompt:
             cmd.append(prompt)
@@ -304,8 +303,9 @@ class CodexCliBackend:
             log.line(f"[crustify] {name}: interactive session")
             started = time.time()
             rc = subprocess.run(cmd, cwd=str(wd), env=env).returncode
-            rollout = _newest_rollout(codex_home, started)
-            session_id = ""
+            rollout = (_rollout_path(codex_home, resume) if resume
+                       else _newest_rollout(codex_home, started))
+            session_id = resume or ""
         else:
             rc, session_id = self._stream(cmd, wd, env, log)
             rollout = (_rollout_path(codex_home, session_id)
@@ -327,6 +327,7 @@ class CodexCliBackend:
             "session_id": session_id,
             "transcript": str(rollout) if rollout is not None else None,
             "exit_code": rc,
+            "resumed": bool(resume),
         })
 
         if rc != 0:

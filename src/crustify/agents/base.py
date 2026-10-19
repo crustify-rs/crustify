@@ -7,7 +7,7 @@ from pathlib import Path
 
 from crustify import deps
 from crustify.agentlog import AgentLog, open_agent_log
-from crustify.layout import Layout
+from crustify.layout import Layout, crustify_home
 
 # Package root — used to locate prompts/.
 _PKG_ROOT = Path(__file__).parent.parent
@@ -228,6 +228,8 @@ class CrustifyAgent:
         backend = get_backend(route.backend)
         cli = "claude" if route.backend == "claude_cli" else "codex"
         provider_home = self.layout.providers(cli)
+        #: The session to resume, when the agent continues one.
+        resume = getattr(self, "resume", None)
 
         with self._make_log() as log:
             caps = ", ".join(self.prompt_capabilities()) or "none"
@@ -247,6 +249,7 @@ class CrustifyAgent:
                 override_base_prompt=_cfg.OVERRIDE_BASE_PROMPT,
                 provider_home=provider_home,
                 interactive=self.interactive,
+                **({"resume": resume} if resume else {}),
             )
 
     def _log_stem(self) -> str:
@@ -277,7 +280,17 @@ class CrustifyAgent:
             self.artifact_dir or self.layout.root / "logs",
             self.log_stem or self._log_stem(),
             agent=self.role,
+            workdir=self.workdir,
+            # The assistant's sessions are indexed in crustify's home, so
+            # `crustify --resume` finds them from any directory.
+            index_dir=(crustify_home() / "sessions"
+                       if self.role == "assistant" else None),
+            extra=self.session_facts(),
         )
+
+    def session_facts(self) -> dict:
+        """What else this agent's session record carries."""
+        return {}
 
     # ------------------------------------------------------------------
     # Helpers

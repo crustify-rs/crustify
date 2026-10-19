@@ -28,8 +28,12 @@ class AgentLog:
     its subprocess. Use as a context manager."""
 
     def __init__(self, log_dir: Path | None, stem: str, *, console: bool,
-                 metadata: dict | None = None) -> None:
+                 metadata: dict | None = None,
+                 index_dir: Path | None = None) -> None:
         self.console = console
+        #: Where a copy of the record goes, named by its session id, so the
+        #: session can be found from anywhere (the assistant's: `--resume`).
+        self.index_dir = index_dir
         self.metadata = dict(metadata or {})
         self.session_path: Path | None = None
         # Wall clock is OURS to measure: claude's stream carries a duration and
@@ -80,6 +84,11 @@ class AgentLog:
                     "ended_at": _iso(time.time()),
                     "duration_ms": round((time.monotonic() - self._t0) * 1000)}
             self.session_path.write_text(json.dumps(full, indent=1) + "\n")
+            if self.index_dir is not None and full.get("session_id"):
+                self.index_dir.mkdir(parents=True, exist_ok=True)
+                (self.index_dir / f"{full['session_id']}.json").write_text(
+                    json.dumps({**full, "record": str(self.session_path)},
+                               indent=1) + "\n")
 
     def close(self) -> None:
         pass
