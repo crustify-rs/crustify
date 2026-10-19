@@ -133,6 +133,15 @@ Here are additional instructions on how to land your commits.
 
 ---
 
+## Additional instructions
+
+The user or the assistant may customize this run on top of your role. Their instructions,
+if any, follow; where they conflict with the rest of this prompt, follow them.
+
+<!-- INSTRUCTIONS -->
+
+---
+
 Reach for the skills advertised by the headers in the following skill index and leverage
 them to conduct your workflow:
 

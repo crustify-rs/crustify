@@ -204,3 +204,11 @@ Commit everything you created or changed on the campaign branch, review reports 
 in one commit whose message names your objective, summarizes the decisions you made or
 revised, and lists the reports you filed.
 
+---
+
+## Additional instructions
+
+The user or the assistant may customize this run on top of your role. Their instructions,
+if any, follow; where they conflict with the rest of this prompt, follow them.
+
+<!-- INSTRUCTIONS -->

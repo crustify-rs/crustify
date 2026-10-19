@@ -88,14 +88,25 @@ class PlanBatchTests(unittest.TestCase):
         from crustify.translate import Instructions
 
         agent = PlanAgent(self.repo, objective="emit")
-        self.assertNotIn("## Additional instructions", agent.system_preamble())
+        empty = agent.system_preamble()
+        self.assertIn("## Additional instructions", empty)
+        self.assertNotIn("<!-- INSTRUCTIONS -->", empty)
         agent.instructions = Instructions(self.out / "instructions.md",
-                                          "Re-plan libavutil only.")
-        preamble = agent.system_preamble()
-        section = preamble.rsplit("\n\n---\n\n", 1)[1]
-        self.assertTrue(section.startswith("## Additional instructions\n\n"))
-        self.assertIn("where they conflict with anything above, follow them", section)
-        self.assertTrue(section.endswith("Re-plan libavutil only."))
+                                          "Re-plan {libavutil} only.")
+        filled = agent.system_preamble()
+        # The text fills the prompt's own section, braces and all, and the
+        # CLI adds nothing else.
+        self.assertEqual(filled.replace("Re-plan {libavutil} only.", ""), empty)
+
+    def test_every_spawned_role_prompt_takes_instructions(self) -> None:
+        from crustify.agents.base import _PKG_ROOT, INSTRUCTIONS_MARKER
+
+        for role in ("planner", "binder", "translator", "reviewer"):
+            with self.subTest(role=role):
+                text = (_PKG_ROOT / "prompts" / f"{role}.md").read_text()
+                self.assertEqual(text.count(INSTRUCTIONS_MARKER), 1)
+                self.assertLess(text.index("## Additional instructions"),
+                                text.index(INSTRUCTIONS_MARKER))
 
     def test_log_dir_must_exist(self) -> None:
         with self.assertRaises(SystemExit) as cm:

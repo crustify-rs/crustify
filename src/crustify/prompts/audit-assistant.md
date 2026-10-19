@@ -78,9 +78,9 @@ Every agent you spawn runs from its role's fixed prompt. When the campaign chang
 direction, or the user asks for something an agent's role does not cover, customize that
 agent's task: write the instructions to `instructions.md` in its artifact dir, beside its
 `task.json`, and name the file in the task's `instructions` field (see
-`docs/translate/schemas/task.md`). The agent's prompt carries them as its last section,
-`## Additional instructions`, and the agent follows them over its role where the two
-conflict.
+`docs/translate/schemas/task.md`). The agent's prompt carries them in its
+`## Additional instructions` section, and the agent follows them over the rest of its
+prompt where the two conflict.
 
 Keep them within the conventions, the layout and the branch flow this prompt describes,
 as far as the request allows. Depart from those only where the user asked for it, and

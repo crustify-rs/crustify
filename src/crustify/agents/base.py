@@ -33,6 +33,10 @@ _MD_FIELD_RE = _re.compile(
 # Keeping the anchor in the header makes that composition explicit in source.
 _GENERIC_SKILL_ANCHOR = "<!-- SKILL -->"
 
+#: Where a stage prompt takes its task's additional instructions: replaced by
+#: the instructions file's text, or by nothing when the task gives none.
+INSTRUCTIONS_MARKER = "<!-- INSTRUCTIONS -->"
+
 #: `<!-- INCLUDE docs/translate/howto/binding.md -->`: a crustify document,
 #: by its path in the checkout, spliced whole into a stage prompt.
 _INCLUDE_RE = _re.compile(r"<!-- INCLUDE ([^ ]+) -->")
@@ -188,7 +192,8 @@ class CrustifyAgent:
     stage_suffix: str | None = None
     #: The task's additional instructions (a
     #: :class:`crustify.translate.Instructions`), or None. Set per instance
-    #: by the harness that read the task.
+    #: by the harness that read the task; the stage prompt's
+    #: ``<!-- INSTRUCTIONS -->`` marker takes their text.
     instructions = None
 
     def __init__(
@@ -475,25 +480,24 @@ class CrustifyAgent:
         for the external tools an agent reaches for on demand."""
         parts = []
         if self.prompt_in_system_slot:
-            parts.append(self._body().format(**self._arguments()))
+            parts.append(self._fill_instructions(
+                self._body().format(**self._arguments())))
         parts.append(self._render_skills())
-        parts.append(self._render_instructions())
         return "\n\n---\n\n".join(part for part in parts if part)
 
-    def _render_instructions(self) -> str:
-        """The task's additional instructions as the preamble's last section,
-        or nothing when the task gives none.
+    def _fill_instructions(self, body: str) -> str:
+        """``body`` with its instructions marker replaced by the task's
+        additional instructions, or by nothing when it has none.
 
-        Last, so they read as a refinement of everything above them; in the
-        system slot, so compaction cannot paraphrase them away. The framing
-        sentence states their precedence once, here, rather than in each
-        role's prompt."""
+        Replaced after formatting, so braces in the instructions are text.
+        Every word around them is the stage prompt's own: the marker sits in
+        a section that states their precedence, and this adds nothing to it.
+        A task with instructions for a prompt without the marker fails rather
+        than lose them."""
         if self.instructions is None:
-            return ""
-        return (
-            "## Additional instructions\n\n"
-            "The user or the assistant wrote these instructions for this run. "
-            "They add to your role and task; where they conflict with "
-            "anything above, follow them.\n\n"
-            f"{self.instructions.text}"
-        )
+            return body.replace(INSTRUCTIONS_MARKER, "")
+        if body.count(INSTRUCTIONS_MARKER) != 1:
+            raise SystemExit(
+                f"{self.role}: the prompt has no single {INSTRUCTIONS_MARKER} "
+                "marker to take the task's instructions")
+        return body.replace(INSTRUCTIONS_MARKER, self.instructions.text)

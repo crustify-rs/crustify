@@ -66,9 +66,9 @@ own directory, that customizes the agent's task on top of its role:
  "instructions": "instructions.md"}
 ```
 
-The agent's system prompt carries the file's text as its last section, `## Additional
-instructions`, which states that the instructions take precedence over the role's prompt
-where the two conflict. An unreadable or empty file fails the command; a dry run reports
+The role's prompt has an `## Additional instructions` section, which states that the
+instructions take precedence over the rest of the prompt where the two conflict; the
+file's text fills it, and the section stays empty when the task names no file. An unreadable or empty file fails the command; a dry run reports
 the file it would use. The file usually sits in the batch's directory beside `task.json`,
 so git records what the agent was told along with the task.
 
