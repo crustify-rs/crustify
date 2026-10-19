@@ -266,6 +266,9 @@ class ResumeTests(unittest.TestCase):
         indexed = json.loads((self.home / "sessions" / "s-4.json").read_text())
         self.assertEqual((indexed["workdir"], indexed["agent"]), (str(self.a), "assistant"))
         self.assertTrue(indexed["record"].endswith("assistant-x.session.json"))
+        # The workdir is the index's alone: the tracked record carries none.
+        tracked = json.loads((self.a / "logs" / "assistant-x.session.json").read_text())
+        self.assertNotIn("workdir", tracked)
 
 
 class CanonicalTaskTests(unittest.TestCase):

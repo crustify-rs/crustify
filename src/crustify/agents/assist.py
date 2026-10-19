@@ -76,8 +76,7 @@ class AssistAgent(CrustifyAgent):
     def __init__(self, workdir: Path, *, kind: str, task: Path,
                  model: str, task_only: bool = False,
                  interactive: bool = False, start: bool = False,
-                 resume: str | None = None, campaign: str | None = None,
-                 **kwargs) -> None:
+                 resume: str | None = None, **kwargs) -> None:
         self.kind = kind
         self.SKILLS = SKILLS_BY_KIND[kind]
         self.task = Path(task)
@@ -94,14 +93,8 @@ class AssistAgent(CrustifyAgent):
         #: rendered again, as the workflow stands now: neither CLI keeps it
         #: with the conversation.
         self.resume = resume
-        #: port, wrap or audit: recorded with the session, so a resume
-        #: continues the campaign it ran.
-        self.campaign = campaign
         self.stage_suffix = kind
         super().__init__(workdir, **kwargs)
-
-    def session_facts(self) -> dict:
-        return {"campaign": self.campaign} if self.campaign else {}
 
     def _task_text(self) -> str:
         text = self.task.read_text().strip()

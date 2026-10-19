@@ -29,11 +29,14 @@ class AgentLog:
 
     def __init__(self, log_dir: Path | None, stem: str, *, console: bool,
                  metadata: dict | None = None,
-                 index_dir: Path | None = None) -> None:
+                 index_dir: Path | None = None,
+                 index_facts: dict | None = None) -> None:
         self.console = console
         #: Where a copy of the record goes, named by its session id, so the
-        #: session can be found from anywhere (the assistant's: `--resume`).
+        #: session can be found from anywhere (the assistant's: `--resume`),
+        #: with what only that copy needs, such as the session's workdir.
         self.index_dir = index_dir
+        self.index_facts = dict(index_facts or {})
         self.metadata = dict(metadata or {})
         self.session_path: Path | None = None
         # Wall clock is OURS to measure: claude's stream carries a duration and
@@ -87,7 +90,8 @@ class AgentLog:
             if self.index_dir is not None and full.get("session_id"):
                 self.index_dir.mkdir(parents=True, exist_ok=True)
                 (self.index_dir / f"{full['session_id']}.json").write_text(
-                    json.dumps({**full, "record": str(self.session_path)},
+                    json.dumps({**full, **self.index_facts,
+                                "record": str(self.session_path)},
                                indent=1) + "\n")
 
     def close(self) -> None:

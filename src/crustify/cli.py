@@ -449,13 +449,11 @@ def _handle_assist(args: argparse.Namespace) -> None:
     workdir = given or Path(".").resolve()
     model = _cfg.MODEL_OVERRIDE or "anthropic/claude-opus-5"
     resume = None
-    campaign_flag = args.campaign
     if getattr(args, "resume", None) is not None:
         from crustify.core.models import resolve
         record = assistant_session(given, args.resume or None)
         resume = record["session_id"]
         workdir = Path(record["workdir"])
-        campaign_flag = campaign_flag or record.get("campaign")
         recorded = f"{record.get('provider')}/{record.get('model')}"
         model = _cfg.MODEL_OVERRIDE or recorded
         cli = "claude_cli" if record.get("cli") == "claude" else "codex_cli"
@@ -474,7 +472,7 @@ def _handle_assist(args: argparse.Namespace) -> None:
     if not interactive and not args.start:
         raise SystemExit("a headless session has nobody to instruct it: pass "
                          "--start to run the campaign as CRUSTIFY.md configures it")
-    task, campaign = campaign_settings(workdir, args.settings, campaign_flag,
+    task, campaign = campaign_settings(workdir, args.settings, args.campaign,
                                        _ask_campaign)
     kind = CAMPAIGNS[campaign]
     run_start = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
@@ -488,8 +486,7 @@ def _handle_assist(args: argparse.Namespace) -> None:
     # One log per run, so resuming never overwrites an earlier session's.
     AssistAgent(workdir, kind=kind, task=task, model=model,
                 task_only=args.task_only, interactive=interactive,
-                start=args.start, resume=resume, campaign=campaign,
-                artifact_dir=artifact_dir,
+                start=args.start, resume=resume, artifact_dir=artifact_dir,
                 log_stem=f"assistant-{run_start}").run()
 
 

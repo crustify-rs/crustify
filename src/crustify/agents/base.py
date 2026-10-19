@@ -285,12 +285,7 @@ class CrustifyAgent:
             # `crustify --resume` finds them from any directory.
             index_dir=(crustify_home() / "sessions"
                        if self.role == "assistant" else None),
-            extra=self.session_facts(),
         )
-
-    def session_facts(self) -> dict:
-        """What else this agent's session record carries."""
-        return {}
 
     # ------------------------------------------------------------------
     # Helpers
