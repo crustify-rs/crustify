@@ -130,9 +130,8 @@ crustify spawn-planner <repo> crustify/artifacts/planning/run-<k>/batch.json \
 ```
 
 Do not start a run before the previous one has committed. After the last run, check that `schedule.json`
-covers the approved scope and that every run committed, relay any question a report
-raises to the user, and record each run's changes, reports and cost in the dashboard. Do not edit the plan yourself: if it needs a change, spawn another run
-with the change as its instructions.
+covers the approved scope and that every run committed, and record each run's changes,
+reports and cost in the dashboard.
 
 
 #### 5. Rust tree scaffolding

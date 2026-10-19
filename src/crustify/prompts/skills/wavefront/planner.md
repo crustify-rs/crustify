@@ -34,8 +34,7 @@ amends:
   added, changed or removed, and for each the macro's invocation sites, conditional ones
   included, and the shapes they mint.
 
-A report on a T3 table also states the DAG change the edit makes: the `schedule` output
-before and after it, for every configuration whose schedule moved.
+A report on a T3 table also states the DAG change the edit makes.
 
 ### For 2. Subsystem decomposition
 
@@ -80,7 +79,8 @@ Selection rules:
 
 #### T3 tables: chased casts and type generators
 
-Wavefront states only what its syntactic queries see. Two kinds of dependency need your
+Do this before forming any DAG with wavefront. Wavefront states only what its
+syntactic queries see. Two kinds of dependency need your
 judgement, and you record them in the T3 tables. Set `"t3_dir": "t3"` in every
 `wavefront-config.json` (relative to `state_dir`, so `crustify/wavefront/t3/`), track
 the directory, and read `docs/schemas/t3.md` from wavefront's checkout for the columns.

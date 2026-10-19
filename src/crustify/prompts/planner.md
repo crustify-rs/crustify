@@ -119,7 +119,8 @@ included.
 Emit a campaign-wide `crustify/artifacts/schedule.json` from
 `templates/schedule.json`; read `docs/translate/schemas/schedule.md` for its field meaning. It
 will state a total ordering of this campaign's link units and subsystems based on
-dependency relations, bottom-up.
+dependency relations, bottom-up. If any modification or correction changes an existing
+`schedule.json` then you must re-emit it.
 
 Plan only link units and subsystems included in the campaign scope established by the
 user.
