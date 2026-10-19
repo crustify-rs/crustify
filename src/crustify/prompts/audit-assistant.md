@@ -275,8 +275,9 @@ timestamp. The harness validates the batch, starts the backend, and writes
 The reviewer commits its reports and fixes and atomically fast-forwards the review wave
 branch. On rejection, it rebases its own branch onto the current wave tip, revalidates, and
 retries. Failed reviewers retain their branches and worktrees: the harness neither creates
-nor purges them, so a failed batch's tree stays for inspection until you remove it. The
-orchestrator must not review the failed workset or discard a competing landing.
+nor purges them, so a failed batch's tree stays for inspection until you remove it. Do
+not review the failed workset yourself unless the user asks you to; respawn its reviewer
+or report the failure instead. Never discard a competing landing.
 
 After the review wave lands, promote its tip to the campaign branch and purge its
 worktrees.

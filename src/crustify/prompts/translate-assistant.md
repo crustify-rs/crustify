@@ -253,8 +253,9 @@ starts the backend, and writes `binder.session.json` or `translator.session.json
 The agent commits its changes and atomically fast-forwards the wave branch. On rejection,
 it rebases its own branch onto the current wave tip, revalidates, and retries. Failed
 binders and translators retain their branches and worktrees: the harness neither creates nor
-purges them, so a failed batch's tree stays for inspection until you remove it. The
-orchestrator must not translate the failed worklist or discard a competing landing.
+purges them, so a failed batch's tree stays for inspection until you remove it. Do not
+translate the failed worklist yourself unless the user asks you to; respawn its agent or
+report the failure instead. Never discard a competing landing.
 
 You do not have to rerun the whole test suite gates; binders, translators or reviewers are already
 instructed to do that after every batch promotion, which will corespond to the wave tip.
