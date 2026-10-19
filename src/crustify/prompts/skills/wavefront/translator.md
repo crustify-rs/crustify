@@ -1,6 +1,7 @@
 <!-- SKILL -->
 
-Read wavefront's CLI helpstring via `--help` to learn how to use it.
+Before your first command, read wavefront's `README.md`, its `--help`, and the documents
+under its `docs/`.
 
 Each section below augments the how-to section it names, as `<how-to> › <section>`.
 
