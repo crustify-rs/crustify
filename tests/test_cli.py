@@ -312,21 +312,15 @@ class PlannerPromptTests(unittest.TestCase):
         self.repo = Path(self.tmp.name)
         (self.repo / "crustify").mkdir()
 
-    def test_the_prompt_carries_its_objective(self) -> None:
+    def test_every_run_brings_the_plan_up_to_date(self) -> None:
         from crustify.agents.plan import PlanAgent
-        for objective in ("emit", "review"):
-            with self.subTest(objective=objective):
-                agent = PlanAgent(self.repo, objective=objective)
-                body = agent.system_preamble()
-                self.assertIn(f"- objective: `{objective}`", body)
-                self.assertEqual(agent.stage, f"plan-{objective}")
+        agent = PlanAgent(self.repo)
+        body = agent.system_preamble()
+        self.assertEqual(agent.stage, "plan")
         self.assertIn(f"{self.repo.resolve()}/crustify/CRUSTIFY.md", body)
-        self.assertIn("#### Emit (`emit`)", body)
-        self.assertIn("#### Review (`review`)", body)
+        self.assertIn("### 1. The committed plan", body)
+        self.assertIn("Only a correction is a finding", body)
+        self.assertIn("re-emit that\nsubsystem's `schedule.json`", body)
         self.assertIn("under `crustify/reviews/planner/`", body)
+        self.assertNotIn("objective: `", body)
         self.assertNotIn("scaffold", body.split("### 3. Planning")[1].split("### 4.")[0])
-
-    def test_an_unknown_objective_is_refused(self) -> None:
-        from crustify.agents.plan import PlanAgent
-        with self.assertRaises(SystemExit):
-            PlanAgent(self.repo, objective="amend")

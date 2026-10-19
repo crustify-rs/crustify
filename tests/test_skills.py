@@ -311,7 +311,7 @@ class PromptArgumentTests(unittest.TestCase):
         self._check(agent)
 
     def test_planner_arguments_match_its_placeholders(self) -> None:
-        self._check(PlanAgent(self.repo, objective="emit",
+        self._check(PlanAgent(self.repo,
                               artifact_dir=self.repo, log_stem="x"))
 
     def test_orchestrator_arguments_match_its_placeholders(self) -> None:

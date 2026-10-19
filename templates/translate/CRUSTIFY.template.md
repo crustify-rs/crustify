@@ -47,8 +47,8 @@ Unanswered optional questions use their defaults.
 ## Campaign execution
 
 7. **Which model and billing should plan the campaign, and how many planner runs
-   should it make? The first run emits the plan; each later run reviews and amends
-   what the runs before it committed.** (`id: plan-agent`)
+   should it make? Each run emits what the plan lacks and corrects what the runs
+   before it committed.** (`id: plan-agent`)
    - Answer: `<provider/model, api | subscription>, runs: N | orchestrator's
      choice>`
    - By default: the translation model and billing, 2 runs.

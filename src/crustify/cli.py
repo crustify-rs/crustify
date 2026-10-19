@@ -128,12 +128,12 @@ def main() -> None:
 
     # -- spawn-planner (one planner run on the campaign branch) --------------
     _spawn_planner_blurb = (
-        "Run one planner over the campaign checkout, for the objective its "
-        "batch names. `emit` creates the plan -- subsystems.json, each "
-        "subsystem's schedule.json and the skills' planning artifacts -- or adds what "
-        "the committed plan lacks, leaving its judgements alone; `review` "
-        "assesses the committed judgements and corrects them. Runs are "
-        "sequential; each commits on the campaign branch.")
+        "Run one planner over the campaign checkout. It emits what the plan "
+        "-- subsystems.json, each subsystem's schedule.json and the skills' "
+        "planning artifacts -- lacks, updates what follows an earlier schema, "
+        "corrects what earlier runs decided, filing a report per correction, "
+        "and re-emits the schedules its changes move. Runs are sequential; "
+        "each commits on the campaign branch.")
     plan_p = sub.add_parser(
         "spawn-planner", parents=[agent_opts],
         help=_spawn_planner_blurb, description=_spawn_planner_blurb,
@@ -142,8 +142,8 @@ def main() -> None:
     add_workdir(plan_p, "the campaign checkout, on its campaign branch")
     plan_p.add_argument(
         "task", type=Path, metavar="TASK_JSON",
-        help="Path to the run's task.json: its objective (emit or review), "
-             "model and billing, and optional additional instructions.")
+        help="Path to the run's task.json: its model and billing, and "
+             "optional additional instructions.")
     plan_p.add_argument(
         "--log-dir", required=True, type=Path, metavar="DIR",
         help="Existing directory for the run's planner.session.json; give "

@@ -66,9 +66,8 @@ subsystem ran under:
 - `source` and `campaign` are fixed for the campaign: if they changed, keep their
   previous answers and report the change;
 - a changed `scope`, `workload` or `review-workload` re-plans the subsystems, waves and
-  batches that have not started: spawn planner runs as step 4 of Phase 1 describes, an
-  `emit` run under the new answers and then the `review` runs; landed work is never
-  re-planned;
+  batches that have not started: spawn planner runs as step 4 of Phase 1 describes, under
+  the new answers; landed work is never re-planned;
 - a newly selected sanitizer gets its build variant prepared before the subsystem starts;
 - every other change takes effect from the subsystem's first spawn.
 
@@ -159,11 +158,11 @@ and subsystems in execution order, each subsystem's
 `crustify/artifacts/<link-unit>/<subsystem>/schedule.json`, and the planning artifacts of
 the enabled skills. Spawn them one after another on the
 campaign branch, as many runs as `plan-agent` asks for (by default two, with the
-translation model and billing). The first run's objective is `emit`: it creates the plan,
-or adds what an existing plan lacks. Every later run's is `review`: it assesses what the
-earlier runs committed, amends it, and files a report per edit under
-`crustify/reviews/planner/`. Give each run its own artifact dir, write its task, such as
-`{{"objective": "emit", "model": "<model>", "billing": "<billing>"}}` (see
+translation model and billing). Every run does the same: it emits what the plan lacks,
+updates what follows an earlier schema, corrects what the earlier runs committed, filing a
+report per correction under `crustify/reviews/planner/`, and re-emits the schedules its
+changes move. Give each run its own artifact dir, write its task, such as
+`{{"model": "<model>", "billing": "<billing>"}}` (see
 `docs/translate/schemas/task.md`), as `task.json` in it, and spawn it:
 
 ```bash

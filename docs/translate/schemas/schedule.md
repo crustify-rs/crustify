@@ -5,8 +5,8 @@ the waves of one subsystem. Layout example:
 [`templates/schedule.json`](../../templates/schedule.json).
 
 The campaign's planner agents emit one per subsystem before the first binder or
-translator starts: the first run creates them and every later run reviews and amends
-them. Waves and batches are computable in advance, so writing them down makes a
+translator starts: the first run creates them, and every run re-emits those its changes
+move. Waves and batches are computable in advance, so writing them down makes a
 campaign's shape and cost reviewable before it spends anything.
 
 A schedule holds only its subsystem's waves. Which subsystem it is, is its path; where

@@ -62,7 +62,7 @@ Every task may carry `instructions`, the path of a Markdown file, relative to th
 own directory, that customizes the agent's task on top of its role:
 
 ```json
-{"objective": "review", "model": "anthropic/claude-opus-5-5", "billing": "subscription",
+{"model": "anthropic/claude-opus-5-5", "billing": "subscription",
  "instructions": "instructions.md"}
 ```
 
@@ -120,20 +120,20 @@ Without `fix`, the reviewer reports and reproduces what it finds but patches not
 
 ## Planner tasks
 
-A planner task names the one arm a planner run executes, and how it runs: the plan it works
-on is the campaign branch it is spawned on.
+A planner task says only how a planner run runs. What it plans is the campaign branch it is
+spawned on: every run emits what the committed plan lacks, updates what follows an earlier
+schema, corrects what earlier runs decided, and re-emits the schedules its changes move.
 
 ```json
-{"objective": "review", "model": "anthropic/claude-opus-5-5", "billing": "subscription"}
+{"model": "anthropic/claude-opus-5-5", "billing": "subscription"}
 ```
 
 | root field | meaning |
 |---|---|
-| `objective` | `emit`: create the plan, or add what the committed plan lacks, leaving its judgements as they are; `review`: assess the committed judgements, correct them, and file a report per edit |
 | `model`, `billing` | the [run fields](#run-fields) |
 | `instructions` | optional [additional instructions](#additional-instructions) |
 
-All three are required, and `instructions` is the only other root field accepted. The orchestrator writes it as
+Both run fields are required, and `instructions` is the only other root field accepted. The orchestrator writes it as
 `task.json` in the run's artifact dir, `crustify/artifacts/planning/run-<k>/`.
 
 ## items[*]

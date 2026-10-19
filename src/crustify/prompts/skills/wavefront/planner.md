@@ -6,33 +6,35 @@ Read wavefront's CLI helpstring via `--help` to learn how to use it.
 
 The following steps augment your base workflow.
 
-### For 1. Objective
+### For 1. The committed plan
 
-#### Emit (`emit`)
+Bring the wavefront artifacts up to date as you do the plan, as steps 2 and 3 describe:
 
-Emit the wavefront artifacts the plan lacks, as steps 2 and 3 describe: a configuration
-for every subsystem that has none, and the T3 tables under `crustify/wavefront/t3/` when
-they do not exist yet. For a subsystem or items the scope adds, add the T3 rows their
-erased slots, casts and macros call for, and leave the existing rows as they are.
+- emit a configuration for every subsystem that has none, and the T3 tables under
+  `crustify/wavefront/t3/` when they do not exist yet;
+- update a configuration or table that follows an earlier wavefront schema to the current
+  one, keeping its rows;
+- for a subsystem or items the scope adds, add the T3 rows their erased slots, casts and
+  macros call for; and
+- check the configurations under `crustify/wavefront/configs/` against
+  `subsystems.json`, and the T3 tables against the source and the T1/T2 tables, row by row
+  and for the rows they miss (step 3), and correct what is wrong.
 
-#### Review (`review`)
+A changed configuration or T3 row changes the DAGs wavefront builds from it: re-emit the
+`schedule.json` of every subsystem whose waves or batches it moves, and the order in
+`subsystems.json` when the campaign-wide configuration moves it.
 
-Review an earlier planner's wavefront artifacts as you review its plan: the
-configurations under `crustify/wavefront/configs/` against `subsystems.json`, and the T3
-tables under `crustify/wavefront/t3/` against the source and the T1/T2 tables, row by
-row and for the rows it missed (step 3).
-
-File each finding as the base workflow describes, in the reviews sub-directory of what it
-amends:
+File each correction as the base workflow describes, in the reviews sub-directory of what
+it amends:
 
 - `crustify/reviews/planner/subsystems/` for a configuration, with the
   `subsystems.json` finding it follows from;
-- `crustify/reviews/planner/chased-casts/` for `chased_casts.csv`: the rows added,
-  changed or removed, and for each `add` row the chain you followed, hop by hop with
-  `file:line`, or the hop that breaks it, and for each `drop` row the cast sites that
-  derive the edge, with `file:line`, and why they are no polymorphism; and
+- `crustify/reviews/planner/chased-casts/` for `chased_casts.csv`: the rows changed or
+  removed, and for each `add` row the chain you followed, hop by hop with `file:line`, or
+  the hop that breaks it, and for each `drop` row the cast sites that derive the edge,
+  with `file:line`, and why they are no polymorphism; and
 - `crustify/reviews/planner/type-generators/` for `type_generators.csv`: the rows
-  added, changed or removed, and for each the macro's invocation sites, conditional ones
+  changed or removed, and for each the macro's invocation sites, conditional ones
   included, and the shapes they mint.
 
 A report on a T3 table also states the DAG change the edit makes.
