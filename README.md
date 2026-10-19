@@ -179,6 +179,7 @@ Below is an overview of the campaign's stats:
 - [`docs/conventions.md`](docs/conventions.md): generated Rust
   conventions, including the Rust tree layout
 - [`docs/planning.md`](docs/planning.md): how a campaign is decomposed and scheduled
+- [`docs/reviewing.md`](docs/reviewing.md): how landed work and plans are reviewed
 - [`docs/binding.md`](docs/binding.md), [`docs/porting.md`](docs/porting.md): how an
   item is wrapped or ported
 - [`docs/testing.md`](docs/testing.md), [`docs/landing.md`](docs/landing.md),

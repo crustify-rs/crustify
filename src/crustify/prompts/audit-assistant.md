@@ -368,6 +368,13 @@ sanitizer covers.
 
 ---
 
+Here are additional instructions on how Crustify reviews: worklists, objectives, reports and
+fixes.
+
+<!-- INCLUDE docs/reviewing.md -->
+
+---
+
 Reach for the skills advertised by the headers in the following skill index and leverage
 them to conduct your workflow:
 

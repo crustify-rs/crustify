@@ -59,8 +59,8 @@ subsystem's waves or batches, re-emit that order or that subsystem's `schedule.j
 
 Only a correction is a finding: an entry an earlier run decided that you changed. Adding
 what the plan lacks, updating to the current schema and re-emitting the schedules a
-change moves file no report. File each finding as the planning instructions' Runs section
-describes, naming in its report the schedules you re-emitted.
+change moves file no report. File each finding as the reviewing instructions' Plan
+corrections section describes.
 
 ### 2. Subsystem decomposition
 
@@ -98,6 +98,13 @@ Here are additional instructions on how a campaign is planned: what each plannin
 holds, and how its decisions are made.
 
 <!-- INCLUDE docs/planning.md -->
+
+---
+
+Here are additional instructions on how Crustify reviews landed work, including how a
+planner files its corrections.
+
+<!-- INCLUDE docs/reviewing.md -->
 
 ---
 

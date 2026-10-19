@@ -184,16 +184,17 @@ class ReviewAgentTests(unittest.TestCase):
         _Checkouts(self)
         pre = self.agent(["ub", "lifecycle"]).system_preamble()
         self.assertIn("objectives: `lifecycle, ub`", pre)
-        self.assertIn("skip what the steps say about the others", pre)
-        self.assertIn("#### Equivalence (`equiv`)", pre)
+        self.assertIn("skip what the\ninstructions say about the others", pre)
+        self.assertIn("### Equivalence (`equiv`)", pre)
         self.assertNotIn("OBJECTIVE", pre)
 
     def test_every_objective_has_a_section_headed_by_its_id(self) -> None:
-        """The objectives are declared in code and described in prose; this
-        keeps the two in step."""
-        from crustify.agents.base import _PKG_ROOT
+        """The objectives are declared in code and described in the
+        reviewing doc the reviewer's prompt includes; this keeps the two in
+        step."""
+        from crustify.agents.base import _PKG_ROOT, deps
         from crustify.agents.review import OBJECTIVES, SKILL_OBJECTIVES
-        text = (_PKG_ROOT / "prompts" / "reviewer.md").read_text()
+        text = (deps.CHECKOUT / "docs/reviewing.md").read_text()
         for objective in OBJECTIVES:
             if objective == "fix":
                 continue

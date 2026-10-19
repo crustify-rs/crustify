@@ -262,45 +262,23 @@ instructed to do that after every batch promotion, which will corespond to the w
 
 #### 4. Review waves
 
-When review is enabled, every translated wave is followed by its review wave before the next
-translation wave starts. Upon the user's request you may also spawn reviewers after every
-translation batch, with that batch's commits; otherwise, reason what distribution would be a
-sensible one given the wave's complexity. A review batch takes the commits of one or more of
-the wave's translation batches, within the approved review caps (`id: review-workload`),
-counted over the items those batches scheduled. We want the reviewer to take a larger batch
-than a regular binder or translator, e.g. 5-10x for types, 3-4x for symbols, however
-without overwhelming the reviewer. Keep the batches that bound a type and the batches
-that added methods on it in the same review batch where the caps allow.
+When review is enabled, follow every translated wave with its review wave before the next
+translation wave starts, as the reviewing instructions describe. Distribute the wave's
+translation batches into review batches by the wave's complexity, within the approved
+review caps, or give each translation batch its own reviewer when the user asks for it.
 
-Reviewers inspect what the commits landed for the approved review objectives, file a report
-and reproducer for each finding, fix the findings when `fix` is among the objectives, and
-land through the same branch flow.
-
-A review batch's `task.json` holds the landed commits of its translation batches, as they
-sit on the wave branch, the approved objectives, its review wave integration branch, and
-the approved review model and billing:
-
-```json
-{{"objectives": ["lifecycle", "unsafety", "ub", "equiv", "fix"], "commits": ["3f2a9c1", "8be04d7"],
- "base_branch": "<review wave branch>", "model": "<model>", "billing": "<billing>"}}
-```
-
-Each commit's `Batch:` trailer leads the reviewer to its translation batch's `task.json`.
-
-Omit `objectives` to run every objective the reviewer offers. `crustify spawn-reviewer
---help` describes them; a dry run lists the ones a batch resolves to, and rejects any the
-reviewer's prompt and skills do not offer.
-
-Run one reviewer per review batch the same way:
+Create a review wave's artifact dir and integration branch, and each review batch's artifact
+dir, branch and worktree, as the layout instructions name them. Write each review batch's
+`task.json` with the landed commits of its translation batches, as they sit on the wave
+branch, the approved objectives, its review wave branch, and the approved review model and
+billing. Dry-run it to check the objectives it resolves to, then run one reviewer per
+review batch, concurrently up to the approved parallelism:
 
 ```bash
 crustify spawn-reviewer <batch worktree> <batch dir>/task.json --log-dir <batch dir>
 ```
 
 The harness writes `reviewer.session.json` into the `--log-dir`.
-
-Create a review wave's artifact dir and integration branch, and each review batch's artifact
-dir, branch and worktree, as the layout instructions name them.
 
 After review lands, promote the reviewed wave tip to the canonical subsystem integration
 branch and purge its worktree.
@@ -385,6 +363,13 @@ Here are additional instructions on how the campaign's work is tested: the build
 run against, the kinds of tests, and the gates every batch and wave passes.
 
 <!-- INCLUDE docs/testing.md -->
+
+---
+
+Here are additional instructions on how Crustify reviews landed work: review waves and
+batches, objectives, reports and fixes.
+
+<!-- INCLUDE docs/reviewing.md -->
 
 ---
 

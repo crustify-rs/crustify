@@ -21,179 +21,52 @@ supplied review integration branch.
 
 ## Worklists and objectives
 
-Your worklist has one route:
+Your worklist has one route, as the reviewing instructions' Worklists section describes.
+In a Crustify campaign it carries the commits of one or more translation batches of a
+wave; each commit's `Batch:` trailer leads you to the `task.json` of its batch. In an
+audit it names modules. Read what your workset calls and what implements its traits, but
+report only on your workset.
 
-| route | worklist | your workset |
-|---|---|---|
-| `commits` | commits that translation batches landed | the code they add or change, and what it reaches |
-| `modules` | source files and directories of a crate, or named types, trait impls and functions in one | everything they define, or the named parts |
-| `reports` | none: the batch only revisits reports | the code the reports name |
-
-In a Crustify campaign, your worklist carries the commits of one or more translation
-batches of a wave. Each commit's `Batch:` trailer names its batch id, and that batch's
-`task.json`, under `crustify/artifacts/<batch id>/`, lists the C items it bound or ported,
-with their routes: `type`, `symbol` or `raw-lifetime`.
-
-In an audit, your worklist names modules. A module named with `types`, `trait_impls` or
-`functions` limits your workset to those: a type with its fields and its inherent impls,
-wherever they are; a trait impl, named `<trait> for <type>` as its header spells it, with
-its methods and associated items; a free function with nothing else. Read what they call
-and what implements their traits, but report only on your workset.
-
-Your objectives are listed in your inputs. The workflow's steps describe each objective by
-its id, and a skill's role guidance describes the objectives it contributes. Review only for
-the objectives listed in your inputs, and skip what the steps say about the others.
-
-`fix` decides whether you patch what you find, as the Fixes step describes. `disclose`
-decides whether you draft a disclosure notice for each finding, as the Evidence step
-describes.
+Your objectives are listed in your inputs, and the reviewing instructions' Objectives
+section describes each by its id; a skill's role guidance describes the objectives it
+contributes. Review only for the objectives listed in your inputs, and skip what the
+instructions say about the others. `fix` decides whether you patch what you find, and
+`disclose` whether you draft a disclosure notice for each finding.
 
 ## Artifact dirs
 
 `<reviews-dir>` is your reviews dir, `crustify/reviews/<batch id>/`, with your batch id
-taken from your working branch's name as the layout instructions describe.
-
-You file each finding in its own `<slug>` directory, holding its report and, when it has
-one, its reproducer, under one of the following dirs, referred to by id in the rest of this
-prompt:
-
-- `unsafe-dir`: `<reviews-dir>/unsafe/`, for `unsafety`
-- `contracts-dir`: `<reviews-dir>/contracts/`, for `contracts`
-- `ub-safe-dir`: `<reviews-dir>/ub_safe/`, for `ub` on the safe interface
-- `ub-unsafe-dir`: `<reviews-dir>/ub_unsafe/`, for `ub` on the unsafe interface
-- `equiv-dir`: `<reviews-dir>/equiv/`, for `equiv`
-- `internal-dir`: `<reviews-dir>/internal/`, for `internal`
-- `conventions-dir`: `<reviews-dir>/conventions/`, for `conventions`
-- `misc-dir`: `<reviews-dir>/misc/`, for `misc`
-
-A skill may define dirs of its own for findings on its tool's output.
+taken from your working branch's name as the layout instructions describe. File each
+finding in the sub-directory of its objective, as the reviewing instructions' Reports
+section lists them. A skill may define sub-directories of its own for findings on its
+tool's output.
 
 A defect in a tool rather than in the reviewed codebase (crustify, or from your skill index)
-is not filed in your reviews dir. Emit its reproducer and
-report on a dedicated branch and worktree of that tool's local checkout. If `fix` is
-enabled, add the patch there too. If `fix` is not enabled, do not.
+is not filed in your reviews dir. Emit its reproducer and report on a dedicated branch and
+worktree of that tool's local checkout. If `fix` is enabled, add the patch there too. If
+`fix` is not enabled, do not.
 
 ---
 
 ## Workflow
 
+The reviewing instructions below describe what each objective looks for, what makes a
+finding, and how it is filed and fixed.
+
 ### 1. Analysis
 
 Analyze your workset in the Rust code and the C code it binds or ports. Use the hints given
-in the how-to.
-
-Look for the findings of each objective listed in your inputs:
-
-#### Unsafety (`unsafety`)
-
-Unsafe annotations and raw pointers on your workset's public API that could be replaced
-with safe, idiomatic variants, so that API consumers write less unsafe code.
-
-#### Contracts (`contracts`)
-
-Safety contracts in your workset that are incorrect, incomplete or ambiguous:
-
-- the `# Safety` obligation of a public entry point that must legitimately stay unsafe: a
-  caller who honours it can still reach undefined behaviour, or it asks for something the
-  implementation does not need;
-- the `// SAFETY:` justification of an `unsafe` block: the invariant it claims does not
-  hold on every path that reaches the block, or no comment justifies the block at all.
-
-Try to break each contract: look for an input, a call sequence or an interleaving that
-honours the obligation, or reaches the block through safe code, and still violates what
-the `unsafe` relies on.
-
-#### UB (`ub`)
-
-UB in your workset's public API that its UB tests might have missed. The unsafe surface
-includes only the API your workset adds; if it made no API item unsafe, there is nothing to
-evaluate there.
-
-#### Equivalence (`equiv`)
-
-Functional equivalence defects in your workset's public API that its equivalence tests
-might have missed.
-
-#### Internal (`internal`)
-
-Defects in your workset's private implementation that its unit tests might have missed.
-
-#### Conventions (`conventions`)
-
-Deviations from the conventions below, in a Crustify-generated batch only.
-
-#### Misc (`misc`)
-
-Any other defect in your workset.
-
-#### Revisit (`revisit`)
-
-The reports in your inputs, which an earlier review filed. Rerun each one's reproducer on
-your tree:
-
-- one that still reproduces stays a finding of its objective, and is yours to fix when
-  `fix` is enabled;
-- one that no longer reproduces gets its report updated with the commit that changed the
-  verdict;
-- one you find was never a defect is removed, and your commit message says why.
-
-#### Coverage (`coverage`)
-
-Gaps the codebase's existing external and inline test suites leave in your workset's C and
-Rust execution paths. Find them by reading those suites against the C code, and measure
-them as the testing instructions describe.
+in the binding instructions' Item analysis. Look for the findings of each objective listed
+in your inputs. Try to break every contract you review, and rerun every report you
+revisit.
 
 ### 2. Evidence
 
-File every finding in its own `<slug>` directory in its objective's dir, with a report that
-describes it: what is wrong, where, the evidence that proves it, and, when `fix` is
-enabled, how it was fixed.
-
-A `ub` or `equiv` candidate becomes a finding only once a reproducer proves it, and so
-does a `contracts` candidate that claims a contract can be broken: its reproducer honours
-the `# Safety` obligation, or reaches the `unsafe` block through safe code, and still
-triggers a sanitizer, as a UB reproducer on the unsafe or the safe interface does. A
-contract that merely asks for more than the implementation needs, or a missing
-justification, is a finding without one:
-
-- a UB reproducer triggers one of the available sanitizers from Rust code, and its report
-  carries a trace of the sanitizer crash. One targeting the safe public API is annotated
-  with `#[forbid(unsafe_code)]`; one targeting the unsafe API honours its safety
-  requirement;
-- an equivalence reproducer fails at least one of the testing instructions' equivalence
-  comparisons while executing the raw C and the public Rust APIs, and its report carries a
-  trace of the failing assertion.
-
-An `equiv` divergence is a defect only when it is unintended. Before filing one, check the
-crate for evidence that it is deliberate: a doc comment, a `CHANGELOG` entry, a named test
-asserting the new behaviour, or a commit message explaining it. A documented divergence, or
-one that corrects a C defect on purpose, is not a finding.
-
-Each reproducer is a standalone Cargo package: its `Cargo.toml` declares an empty
-`[workspace]` table and depends on the affected crate through a relative `path` under
-`[dependencies]`. Its `src/main.rs` runs one scenario, so that `cargo run` exits non-zero
-on the affected commit.
-
-A report carries everything needed to run its reproducer from a clean checkout: the exact
-command and the sanitizer output or failing assertion it produced. Neither a reproducer nor
-a report carries an API key, in a core dump or anywhere else: the reviews dir may be
-published.
-
-Coverage gaps are not filed: the tests that fill them show the delta in the coverage
-measurement itself.
-
-#### Disclosure (`disclose`)
-
-For each finding, draft a `disclosure.md` beside its report that the user could send to the
-affected project's maintainers without further adjustments. Follow the project's
-conventions for disclosing security and UB issues; if it should first be sent by email, use
-an email-friendly format and name the maintainers it goes to. Keep it under 450 words.
-Offer fix patches or PRs only when `fix` is enabled. Reproducers are provided on request,
-but the notice includes a small snippet and the sanitizer crash or failing assertion.
-
-End it with: `Found by [Crustify](https://github.com/crustify-rs/crustify), an experimental
-UB/soundness auditing agent developed at UC Berkeley and running on <model name>, then
-manually reviewed and independently reproduced.`
+File every finding in its own `<slug>` directory, with its report and, where the Reproducers
+section asks for one, its reproducer. Prove every `ub` and `equiv` candidate, and every
+contract you claim can be broken, with a reproducer before you file it, and check that an
+`equiv` divergence is not deliberate. If `disclose` is listed, draft each finding's
+`disclosure.md`.
 
 ### 3. Fixes
 
@@ -201,52 +74,42 @@ If `fix` is not enabled, skip this step, except for coverage gaps when `coverage
 and for the gates in Regressions below: change nothing in the Rust tree outside
 `crustify/reviews/` but the tests that fill the coverage gaps.
 
-If `fix` is enabled, patch every finding of your objectives:
-
-- `unsafety`: make the entry point safe;
-- `contracts`: correct the `# Safety` obligation or `// SAFETY:` justification, or, when
-  the contract can be broken, the code it guards, and turn the reproducer into a UB
-  regression test;
-- `ub`, `equiv` and `internal`: patch the defect, and turn the reproducer into a regression
-  test of the same kind: a UB test, an equivalence test, or, for an internal defect, a
-  unit test. A UB regression test either compiles and runs without triggering a sanitizer,
-  or fails to compile because the patch removed the safe path that reached the defect;
-- `conventions` and `misc`: fix the deviation or defect;
-- `revisit`: patch every report that still reproduces, as for its objective.
-
-Outside a Crustify-generated batch, follow the repository's contributor instructions.
+If `fix` is enabled, patch every finding of your objectives as the reviewing instructions'
+Fixes section describes, and turn each reproducer into the regression test it names.
 
 If `coverage` is listed, whether or not `fix` is, add the tests that fill the coverage gaps
-you found to the codebase's test suites.
-
-Classify every test you add given the instructions in the testing how-to, and place it
-where the conventions place tests of its kind, or, outside a Crustify-generated batch, in
-the reviewed crate's own suite for that kind.
+you found to the codebase's test suites. Classify and place every test you add as the
+Fixes section describes.
 
 #### Regressions
 
 Validate the tree you land as the testing instructions' Regressions section describes. If
 you patched something, run any regression suites that might be available for it.
 
-In a Crustify campaign, your review wave follows a translated wave, so you own its gates:
+In a Crustify campaign, your review wave follows a translated wave, so you own its gates,
+as the reviewing instructions' Gates section describes:
 
 - Miri, in every wave: run its gate on the wave tip before any change.
-- BSan at subsystem end, when your wave is the subsystem's last: its index is the
-  highest of your subsystem's waves in its
-  `crustify/artifacts/<link-unit>/<subsystem>/schedule.json`,
-  and your branch's name gives the link unit, subsystem and wave. Run its gate on the wave
-  tip before any change. It covers everything the subsystem landed, so a report on an
-  earlier wave's items is yours to triage as well. In every other wave, run BSan only on
-  the individual reproducers you emit.
+- BSan at subsystem end, when your wave is the subsystem's last: your branch's name gives
+  the link unit, subsystem and wave, and its index is the highest in the subsystem's
+  `crustify/artifacts/<link-unit>/<subsystem>/schedule.json`. Run its gate on the wave tip
+  before any change, and triage its reports on earlier waves' items too. In every other
+  wave, run BSan only on the individual reproducers you emit.
 
 If `fix` is enabled, rerun the gates you own on the tree you land, after your last rebase.
 If `fix` is not enabled, file each true positive a gate finds as a UB report.
 
 ### 4. Landing
 
-Make two commits: first the `crustify/reviews/` changes, so one can check out the affected
-commit and run the reproducers, then the Rust tree changes, if you made any. Land them on
-`{git_base}` as the landing instructions below describe.
+Make two commits, first the `crustify/reviews/` changes, then the Rust tree changes, if you
+made any, and land them on `{git_base}` as the landing instructions below describe.
+
+---
+
+Here are additional instructions on how Crustify reviews landed work: the worklists, the
+objectives, and how findings are filed and fixed.
+
+<!-- INCLUDE docs/reviewing.md -->
 
 ---
 

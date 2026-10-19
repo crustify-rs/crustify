@@ -132,6 +132,7 @@ class IncludeTests(unittest.TestCase):
         "landing": "docs/landing.md",
         "layout": "docs/layout.md",
         "planning": "docs/planning.md",
+        "reviewing": "docs/reviewing.md",
     }
     _REF = re.compile(r"^## ([a-z]+) › (.+?)(?:, for `[a-z]+`)?$", re.M)
 
@@ -151,13 +152,14 @@ class IncludeTests(unittest.TestCase):
                           "landing", "layout"})
         self.assertEqual(self._included("reviewer.md"),
                          {"conventions", "binding", "porting", "testing",
-                          "landing", "layout"})
+                          "landing", "layout", "reviewing"})
         self.assertEqual(self._included("planner.md"),
-                         {"conventions", "planning"})
+                         {"conventions", "planning", "reviewing"})
         self.assertEqual(self._included("translate-assistant.md"),
-                         {"conventions", "layout", "planning", "testing"})
+                         {"conventions", "layout", "planning", "testing",
+                          "reviewing"})
         self.assertEqual(self._included("audit-assistant.md"),
-                         {"layout", "testing"})
+                         {"layout", "testing", "reviewing"})
 
     def test_included_documents_are_plain_markdown(self) -> None:
         """Public documents, not skills: no frontmatter for an agent to see."""

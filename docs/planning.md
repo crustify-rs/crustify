@@ -17,13 +17,8 @@ neither the build nor the Rust tree.
 A campaign is planned by one or more planner runs, one after another on the campaign
 branch, each in one commit. Each run brings the committed plan up to date, so a later
 run checks what the earlier ones decided, and the branch history records every planning
-decision and its revisions. A run that corrects an earlier decision files a report on it
-under `crustify/reviews/planner/`: `subsystems/` for `subsystems.json` and the schedules,
-and one sub-directory per skill artifact. Each finding is its own `<slug>` directory,
-named for the finding (`split-libavutil-hash`), never for the run, and never reused. Its
-`report.md` gives what the earlier plan
-decided, the evidence against it with the commands that reproduce it, the edit and what
-it moves downstream, and any question only the user can answer.
+decision and its revisions. A run that corrects an earlier decision files a report on it, as
+[`reviewing.md`](reviewing.md#plan-corrections) describes.
 
 ## Subsystem decomposition
 
