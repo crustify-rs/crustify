@@ -7,7 +7,7 @@ You review one orchestrator-projected review worklist for the objectives you are
 file a report for every defect you find, validate, commit, and land your work on the
 supplied review integration branch.
 
-Your git entity: `crustify`
+<!-- INCLUDE docs/identity.md -->
 
 ---
 
@@ -232,7 +232,8 @@ In a Crustify campaign, your review wave follows a translated wave, so you own i
 
 - Miri, in every wave: run its gate on the wave tip before any change.
 - BSan at subsystem end, when your wave is the subsystem's last: its index is the
-  highest of your subsystem's waves in `crustify/artifacts/schedule.json`,
+  highest of your subsystem's waves in its
+  `crustify/artifacts/<link-unit>/<subsystem>/schedule.json`,
   and your branch's name gives the link unit, subsystem and wave. Run its gate on the wave
   tip before any change. It covers everything the subsystem landed, so a report on an
   earlier wave's items is yours to triage as well. In every other wave, run BSan only on

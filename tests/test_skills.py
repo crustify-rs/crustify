@@ -196,13 +196,12 @@ class IncludeTests(unittest.TestCase):
 class DiscoveryTests(unittest.TestCase):
     def setUp(self) -> None:
         self.repo = Path(__file__).resolve().parent
-        # A stand-in wavefront checkout: a metadata-only SKILL.md is all
-        # discovery needs from it.
+        # A stand-in wavefront checkout: the README crustify points at is all
+        # discovery needs from it; the skill metadata is crustify's own.
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         checkout = Path(self.tmp.name)
-        (checkout / "SKILL.md").write_text(
-            "- Skill name: wavefront\n- Description: the oracle\n")
+        (checkout / "README.md").write_text("# wavefront\n")
         patcher = mock.patch.object(deps, "dep_root", return_value=checkout)
         patcher.start()
         self.addCleanup(patcher.stop)

@@ -1,59 +1,41 @@
 # schedule.json schema
 
-Field meaning for `<workdir>/crustify/artifacts/schedule.json`, the
-campaign's total execution order. Layout example:
+Field meaning for `<workdir>/crustify/artifacts/<link-unit>/<subsystem>/schedule.json`,
+the waves of one subsystem. Layout example:
 [`templates/schedule.json`](../../templates/schedule.json).
 
-The campaign's planner agents emit it before the first binder or translator starts: the
-first run creates it and every later run reviews and amends it. Waves and batches are
-computable in advance, so writing them down makes a campaign's shape and cost reviewable
-before it spends anything.
+The campaign's planner agents emit one per subsystem before the first binder or
+translator starts: the first run creates them and every later run reviews and amends
+them. Waves and batches are computable in advance, so writing them down makes a
+campaign's shape and cost reviewable before it spends anything.
 
-It nests the way `subsystems.json` and the campaign directory do: link unit, then
-subsystem, then wave. The campaign's total order is that nesting read depth-first — every
-wave of link unit 0's first subsystem, then its second, then link unit 1's. No wave
-records a campaign-wide position, because its position is where it sits.
+A schedule holds only its subsystem's waves. Which subsystem it is, is its path; where
+that subsystem runs in the campaign is its `index`, and its link unit's, in
+`subsystems.json`, whose link units and subsystems are listed in execution order (see
+`docs/translate/schemas/subsystems.md`). The campaign's total order is that order with
+each subsystem's waves in place: every wave of link unit 0's first subsystem, then of its
+second, then link unit 1's.
+
+The two synthetic raw-lifetime subsystems have a schedule too, under the first link unit:
+`<link-unit>/raw-lifetime-void/schedule.json` and `<link-unit>/raw-lifetime-string/schedule.json`,
+each one wave of one `raw-lifetime` batch.
 
 | root field | meaning |
 |---|---|
-| `schema_version` | `1` |
-| `link_units` | the campaign's link units, in execution order |
+| `schema_version` | `2` |
+| `waves` | the subsystem's waves, in execution order |
 
-## link_units[*]
+## waves[*]
 
-| field | meaning |
-|---|---|
-| `index` | position in the campaign, from zero |
-| `name` | link unit's `name` in `subsystems.json` |
-| `subsystems` | its subsystems, in execution order |
-
-Link units run to completion in turn, so a subsystem's dependencies in another link unit
-must belong to an earlier one. Order link units by their dependency graph and this holds;
-it is what the nesting assumes.
-
-A cycle cut is implied by the order: any `imported_deps` record in `subsystems.json` whose
-destination is scheduled after its consumer.
-
-## link_units[*].subsystems[*]
-
-| field | meaning |
-|---|---|
-| `index` | position within the link unit, from zero |
-| `name` | subsystem's `name` in `subsystems.json`, or `raw-lifetime-void` / `raw-lifetime-string` |
-| `waves` | its waves, in execution order |
-
-## link_units[*].subsystems[*].waves[*]
-
-Entry *n* runs only after entry *n-1* has landed, and the last wave of a subsystem runs before the
-first wave of the next, which is what makes the whole nesting a total order rather than
-independent sequences.
+Entry *n* runs only after entry *n-1* has landed, and the last wave of a subsystem runs
+before the first wave of the next.
 
 | field | meaning |
 |---|---|
 | `index` | position within the subsystem, from zero |
 | `batches` | the batches of this wave, which execute in parallel |
 
-## …waves[*].batches[*]
+## waves[*].batches[*]
 
 A batch entry is a thin batch: the exact object `crustify translate` accepts, documented
 in `docs/translate/schemas/batch.md`.
@@ -71,3 +53,9 @@ path: `docs/translate/howto/layout.md` spells each branch, worktree and artifact
 the link unit, subsystem, wave index and batch index. A batch's artifact dir
 is what its `--output` names.
 
+## Version 1
+
+Schema-v1 schedules were one campaign-wide `crustify/artifacts/schedule.json` nesting
+`link_units` → `subsystems` → `waves`, each with an `index`. Their order now lives in
+`subsystems.json` and their waves in the per-subsystem schedules; a campaign still on v1
+is converted by its next planner run.

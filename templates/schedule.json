@@ -1,93 +1,47 @@
 {
   "_comment": [
-    "Example `<workdir>/crustify/artifacts/schedule.json`.",
-    "The campaign's total execution order, emitted once before the first",
-    "agent starts. It nests link unit, subsystem, wave -- the same shape as",
-    "subsystems.json and as the campaign directory -- and the total order is",
-    "that nesting read depth-first. The batches within one wave run in",
-    "parallel. A batch entry is exactly the object `crustify translate`",
-    "accepts, so writing it out to batch-<n>/batch.json is a copy.",
-    "Every index also addresses the filesystem, so no path is recorded.",
-    "libbase precedes libwidget because libwidget depends on it: a subsystem's",
-    "dependencies in another link unit must belong to an earlier link unit.",
-    "Raw-lifetime discovery runs first, as the synthetic subsystems",
-    "raw-lifetime-void and raw-lifetime-string of the first link unit.",
-    "Homes follow the coding conventions: crustify/rust/<repo>/<link-unit>/,",
-    "here for a repo named widgets. An independent illustration: it is not",
-    "the schedule for templates/subsystems.json."
+    "Example `<workdir>/crustify/artifacts/libwidget/core/schedule.json`: the",
+    "waves of one subsystem, emitted by the planner before the first agent starts.",
+    "The subsystem and its position in the campaign are in subsystems.json, whose",
+    "link units and subsystems are listed in execution order; the path names",
+    "which subsystem this is. Waves run in order; the batches within one wave run",
+    "in parallel. A batch entry is exactly the object `crustify translate`",
+    "accepts, so writing it out to wave-<w>/batch-<b>/batch.json is a copy. Every",
+    "index also addresses the filesystem, so no path is recorded. Homes follow the",
+    "coding conventions: crustify/rust/<repo>/<link-unit>/, here for a repo named",
+    "widgets. A raw-lifetime subsystem's schedule holds one wave of one",
+    "raw-lifetime batch. An independent illustration: it is not a schedule for",
+    "templates/subsystems.json."
   ],
-  "schema_version": 1,
-  "link_units": [
+  "schema_version": 2,
+  "waves": [
     {
       "index": 0,
-      "name": "libbase",
-      "subsystems": [
+      "batches": [
         {
-          "index": 0,
-          "name": "raw-lifetime-void",
-          "waves": [
+          "objective": "wrap",
+          "items": [
             {
-              "index": 0,
-              "batches": [
-                {
-                  "objective": "wrap",
-                  "items": [
-                    {
-                      "name": "void",
-                      "defined_in": null,
-                      "kind": "raw-lifetime",
-                      "field_anchors": [],
-                      "home": "crustify/rust/widgets/libbase/raw.rs"
-                    }
-                  ]
-                }
-              ]
+              "name": "widget_handle",
+              "defined_in": "include/widget/core.h",
+              "kind": "type",
+              "field_anchors": [
+                "refcount",
+                "flags"
+              ],
+              "home": "crustify/rust/widgets/libwidget/core.rs"
             }
           ]
         },
         {
-          "index": 1,
-          "name": "raw-lifetime-string",
-          "waves": [
+          "objective": "port",
+          "items": [
             {
-              "index": 0,
-              "batches": [
-                {
-                  "objective": "wrap",
-                  "items": [
-                    {
-                      "name": "string",
-                      "defined_in": null,
-                      "kind": "raw-lifetime",
-                      "field_anchors": [],
-                      "home": "crustify/rust/widgets/libbase/raw.rs"
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "index": 2,
-          "name": "alloc",
-          "waves": [
-            {
-              "index": 0,
-              "batches": [
-                {
-                  "objective": "wrap",
-                  "items": [
-                    {
-                      "name": "base_pool",
-                      "defined_in": "include/base/alloc.h",
-                      "kind": "type",
-                      "field_anchors": ["used", "cap"],
-                      "home": "crustify/rust/widgets/libbase/alloc.rs"
-                    }
-                  ]
-                }
-              ]
+              "name": "widget_opts",
+              "defined_in": "include/widget/core.h",
+              "kind": "type",
+              "field_anchors": [],
+              "home": "crustify/rust/widgets/libwidget/core.rs"
             }
           ]
         }
@@ -95,57 +49,16 @@
     },
     {
       "index": 1,
-      "name": "libwidget",
-      "subsystems": [
+      "batches": [
         {
-          "index": 0,
-          "name": "core",
-          "waves": [
+          "objective": "wrap",
+          "items": [
             {
-              "index": 0,
-              "batches": [
-                {
-                  "objective": "wrap",
-                  "items": [
-                    {
-                      "name": "widget_handle",
-                      "defined_in": "include/widget/core.h",
-                      "kind": "type",
-                      "field_anchors": ["refcount", "flags"],
-                      "home": "crustify/rust/widgets/libwidget/core.rs"
-                    }
-                  ]
-                },
-                {
-                  "objective": "port",
-                  "items": [
-                    {
-                      "name": "widget_opts",
-                      "defined_in": "include/widget/core.h",
-                      "kind": "type",
-                      "field_anchors": [],
-                      "home": "crustify/rust/widgets/libwidget/core.rs"
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "index": 1,
-              "batches": [
-                {
-                  "objective": "wrap",
-                  "items": [
-                    {
-                      "name": "widget_open",
-                      "defined_in": "src/core.c",
-                      "kind": "symbol",
-                      "field_anchors": [],
-                      "home": "crustify/rust/widgets/libwidget/core.rs"
-                    }
-                  ]
-                }
-              ]
+              "name": "widget_open",
+              "defined_in": "src/core.c",
+              "kind": "symbol",
+              "field_anchors": [],
+              "home": "crustify/rust/widgets/libwidget/core.rs"
             }
           ]
         }

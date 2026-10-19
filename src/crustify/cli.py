@@ -100,8 +100,8 @@ def main() -> None:
     # -- spawn-planner (one planner run on the campaign branch) --------------
     _spawn_planner_blurb = (
         "Run one planner over the campaign checkout, for the objective its "
-        "batch names. `emit` creates the plan -- subsystems.json, "
-        "schedule.json and the skills' planning artifacts -- or adds what "
+        "batch names. `emit` creates the plan -- subsystems.json, each "
+        "subsystem's schedule.json and the skills' planning artifacts -- or adds what "
         "the committed plan lacks, leaving its judgements alone; `review` "
         "assesses the committed judgements and corrects them. Runs are "
         "sequential; each commits on the campaign branch.")

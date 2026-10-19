@@ -47,17 +47,17 @@ Every level of a campaign has an artifact dir under `crustify/artifacts/`:
 ```text
 crustify/artifacts/                             the campaign
 ├── build.json                                  the prebuilt variants of the target
-├── subsystems.json                             the subsystem decomposition
-├── schedule.json                               the waves and batches of every subsystem
+├── subsystems.json                             the subsystem decomposition, in execution order
 ├── dashboard.md                                the campaign dashboard; audit-dashboard.md for an audit
 ├── orchestrator/                               the orchestrator's records
 │   ├── orchestrator-<timestamp>.log            one per orchestrator run
 │   └── orchestrator-<timestamp>.usage.json
 └── <link-unit>/<subsystem>/                    a subsystem
+    ├── schedule.json                           its waves and batches
     ├── TASK.md                                 the settings the subsystem ran under
     ├── wave-<index>/                           a wave
     │   └── batch-<index>/                      a batch
-    │       ├── batch.json                      the thin batch, written out from schedule.json
+    │       ├── batch.json                      the thin batch, written out from its schedule.json
     │       ├── <role>.log                      binder, translator or reviewer
     │       └── <role>.usage.json
     └── review-wave-<index>/                    a review wave

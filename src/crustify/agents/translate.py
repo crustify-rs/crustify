@@ -23,8 +23,9 @@ _SKILLS = (
         role_header="skills/ffimap/translator.md",
     ),
     SkillSpec(
-        "wavefront", "SKILL.md", capability="wavefront",
+        "wavefront", "README.md", capability="wavefront",
         role_header="skills/wavefront/translator.md",
+        meta="skills/wavefront/SKILL.md",
     ),
     SkillSpec(
         "ffibox", "SKILL.md", capability="ffibox",

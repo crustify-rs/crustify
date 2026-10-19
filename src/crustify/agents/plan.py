@@ -3,7 +3,7 @@
 The orchestrator spawns planners one after another on the campaign branch,
 after setup and before the Rust tree is scaffolded, each with one objective
 (`crustify.plan.OBJECTIVES`). An `emit` run creates the plan --
-`subsystems.json`, `schedule.json` and the skills' planning artifacts -- or
+`subsystems.json`, each subsystem's `schedule.json` and the skills' planning artifacts -- or
 adds what an existing plan lacks, and leaves its judgements alone; a
 `review` run assesses those judgements, amends them and files a report per
 edit under `crustify/reviews/planner/`. The branch history and the reports
@@ -21,8 +21,9 @@ from crustify.agents.base import (
 #: it actually carries. Each lives at `prompts/skills/<skill>/planner.md`.
 _SKILLS = (
     SkillSpec(
-        "wavefront", "SKILL.md", capability="wavefront",
+        "wavefront", "README.md", capability="wavefront",
         role_header="skills/wavefront/planner.md",
+        meta="skills/wavefront/SKILL.md",
     ),
 )
 

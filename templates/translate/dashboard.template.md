@@ -48,10 +48,10 @@ the campaign's.
 - `subsystem` — `<link-unit>/<subsystem>`, or `raw-lifetime-void` /
   `raw-lifetime-string`. In the Types and Symbols tables it names the batch's subsystem,
   the same name as its Overview row, and with `wave` and `batch` keys the row to
-  `schedule.json`
+  the subsystem's `schedule.json`
 - `wave` / `batch` — the batch's position in its subsystem's plan: the index
   of its wave in `waves` and of the batch within that wave's `batches`, so a
-  batch row joins to `schedule.json`, to the agent that landed it, and to its
+  batch row joins to its subsystem's `schedule.json`, to the agent that landed it, and to its
   Overview subsystem row. Schema-v2 plans carry `steps` and `plan_items`
   rather than indexed waves and batches, so historical rows leave both blank
 - `types` / `symbols` — scheduler units in the batch. Callbacks are scheduled
@@ -129,8 +129,8 @@ the campaign's.
   It is a reach figure only — it mixes four verdict sources and so bounds no
   single obligation, which is why the four stay reported apart above it
 - `total types` / `total symbols` — the units the target's public API exports, deprecated
-  items excluded: every type, and every symbol and callback, scheduled across all of
-  `schedule.json`, raw-lifetime items aside. They are fixed for the campaign
+  items excluded: every type, and every symbol and callback, scheduled across all the
+  subsystems' `schedule.json`, raw-lifetime items aside. They are fixed for the campaign
 - `wrapped types` / `wrapped symbols` — scheduled units whose `Wraps:` or `Replaces:` anchor
   is present at the campaign tip; the parenthesized share is of `total types` /
   `total symbols`

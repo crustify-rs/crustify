@@ -23,12 +23,12 @@ share one generic plus per-instance aliases.
 
 ## binding › Type route › Surface
 
-Leverage Wavefront's `--schema` CLI flag to get hints on identifying a type's lifecycle
-primitives and submit your findings through the CLI's `--update`.
+Read `docs/type-lifecycle.md` beside Wavefront's README for how to identify a type's lifecycle
+primitives, and submit your findings through the CLI's `--update`.
 
 ---
 
 ## binding › Symbol route › Raw lifetime strategies
 
-Leverage Wavefront's `--schema` CLI flag to get hints on identifying raw lifecycle
-primitives for void and string and submit your findings through the CLI's `--update`.
+Read `docs/type-lifecycle.md` beside Wavefront's README for how to identify raw lifecycle
+primitives for void and string, and submit your findings through the CLI's `--update`.

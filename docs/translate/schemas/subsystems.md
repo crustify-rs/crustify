@@ -15,19 +15,38 @@ subsystem's headers and translation units share one module.
 | root field | meaning |
 |---|---|
 | `version` | the analyzed tree's revision — a commit, not a counter. What this decomposition describes, pinned |
-| `link_units` | ordered list of the campaign's link units |
+| `link_units` | the campaign's link units, in execution order |
+
+## Execution order
+
+`link_units`, and each link unit's `subsystems`, are listed in the order the campaign
+runs them, bottom-up, producers before consumers, and each entry's `index` is its
+position, from zero. Each subsystem's waves are in its own
+`<link-unit>/<subsystem>/schedule.json` (see `docs/translate/schemas/schedule.md`), so
+the order here with each subsystem's waves in place is the campaign's total order.
+
+Link units run to completion in turn, so a subsystem's dependencies in another link unit
+must belong to an earlier one. Order link units by their dependency graph and this holds.
+
+A cycle cut is implied by the order: any `imported_deps` record whose destination is
+scheduled after its consumer.
+
+The first link unit opens with the two synthetic subsystems `raw-lifetime-void` and
+`raw-lifetime-string`, at indices 0 and 1: raw lifetime discovery runs first. They carry
+only `index` and `name`: they own no files, publish no headers and import nothing.
 
 ## link_units[*]
 
-`link_units` is an ordered list. Each entry's `name` is its identifier; clients may build
-a name index without losing the authored order.
+Each entry's `name` is its identifier; clients may build a name index without losing the
+order.
 
 | field | meaning |
 |---|---|
+| `index` | position in the campaign, from zero |
 | `name` | unique link-unit identifier, normally the linked artifact's filename stem |
 | `kind` | `library` or `executable` |
 | `linkage` | `shared` or `static` for a library; `null` for an executable |
-| `subsystems` | ordered list of the link unit's covered subsystems |
+| `subsystems` | the link unit's covered subsystems, in execution order |
 
 ## link_units[*].subsystems[*]
 
@@ -36,6 +55,7 @@ addressable identity is therefore `(link_unit.name, subsystem.name)`.
 
 | field | meaning |
 |---|---|
+| `index` | position within the link unit, from zero |
 | `name` | subsystem identifier, unique within the link unit |
 | `implementation_files` | repo-relative translation units and private headers homed in the subsystem |
 | `api_headers` | repo-relative public headers the subsystem publishes: those the build installs |

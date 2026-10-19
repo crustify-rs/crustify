@@ -7,7 +7,7 @@ safe Rust, preserving the C interoperability and observable behaviour C consumer
 require. You validate your work, commit once, and land it on the supplied wave integration
 branch.
 
-Your git entity: `crustify`
+<!-- INCLUDE docs/identity.md -->
 
 ---
 

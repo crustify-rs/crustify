@@ -27,6 +27,7 @@ class _Checkouts:
             (self.root / dep).mkdir()
             (self.root / dep / "SKILL.md").write_text(
                 f"- Skill name: {dep}\n- Description: stand-in\n")
+            (self.root / dep / "README.md").write_text(f"# {dep}\n")
         real = deps.dep_root
 
         def dep_root(name: str) -> Path:

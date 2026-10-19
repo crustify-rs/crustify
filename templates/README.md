@@ -12,7 +12,8 @@ Copy a task template to start a request.
 The files beside them seed a translate campaign's `crustify/artifacts/` dir, which the
 orchestrator creates from them: [`gitignore`](gitignore),
 [`build.json`](build.json), [`subsystems.json`](subsystems.json) and
-[`schedule.json`](schedule.json). Derived artifacts such as `subsystems.json`
+[`schedule.json`](schedule.json), the shape of each subsystem's
+`<link-unit>/<subsystem>/schedule.json`. Derived artifacts such as `subsystems.json`
 are emitted against the live wavefront inventory, not committed by hand.
 
 [`Dockerfile`](Dockerfile) builds the environment either campaign runs in. It

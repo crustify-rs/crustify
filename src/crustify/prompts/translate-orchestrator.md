@@ -11,7 +11,7 @@ Each binder, translator or reviewer runs in an isolated worktree forked from its
 integration branch, sees only its scheduled worklist and reports only on that work. You
 alone reconcile the subsystem- and campaign-wide results.
 
-Your git entity: `crustify`.
+<!-- INCLUDE docs/identity.md -->
 
 ---
 
@@ -114,8 +114,10 @@ disabled test in the campaign dashboard. Post-campaign results must match this b
 
 #### 4. Planning
 
-Planner agents produce `crustify/artifacts/subsystems.json`, `crustify/artifacts/schedule.json`
-and the planning artifacts of the enabled skills. Spawn them one after another on the
+Planner agents produce `crustify/artifacts/subsystems.json`, which lists the link units
+and subsystems in execution order, each subsystem's
+`crustify/artifacts/<link-unit>/<subsystem>/schedule.json`, and the planning artifacts of
+the enabled skills. Spawn them one after another on the
 campaign branch, as many runs as `plan-agent` asks for (by default two, with the
 translation model and billing). The first run's objective is `emit`: it creates the plan,
 or adds what an existing plan lacks. Every later run's is `review`: it assesses what the
@@ -129,8 +131,8 @@ crustify spawn-planner <repo> crustify/artifacts/planning/run-<k>/batch.json \
     --output crustify/artifacts/planning/run-<k> --model <model> --billing <billing>
 ```
 
-Do not start a run before the previous one has committed. After the last run, check that `schedule.json`
-covers the approved scope and that every run committed, and record each run's changes,
+Do not start a run before the previous one has committed. After the last run, check that the
+subsystems' schedules cover the approved scope and that every run committed, and record each run's changes,
 reports and cost in the dashboard.
 
 
@@ -139,8 +141,8 @@ reports and cost in the dashboard.
 Scaffold the top-level manifest, raw `-sys` and safe crates according to the conventions
 skill. Do this only for the link units included in the scope established by the
 user. Scaffold source files and modules lazily: create the home of each batch's items, as
-the planner assigned it in `schedule.json`, on disk only before you spawn the binder or
-translator agent of that batch.
+the planner assigned it in its subsystem's `schedule.json`, on disk only before you spawn
+the binder or translator agent of that batch.
 
 Create the integration test suites for the public interface that the conventions' Testing
 section describes, so binders, translators and reviewers can emit tests into them.
@@ -171,7 +173,7 @@ Before launching translation or review waves:
 
 ##### Subsystems
 
-Pick the next subsystem from this campaign's `schedule.json`.
+Pick the next subsystem in the order `subsystems.json` lists them.
 
 Reread `crustify/TASK.md` and apply its changes, as the Settings changes section
 describes.
@@ -187,7 +189,7 @@ subsystem's base. Promote completed subsystems in the canonical campaign integra
 
 ##### Waves and batches
 
-Pick the next wave from the live subsystem's `schedule.json` record and:
+Pick the next wave from the live subsystem's `schedule.json` and:
 
 - create the wave's integration branch and artifact dir, as the layout instructions name
   them;

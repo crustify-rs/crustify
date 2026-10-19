@@ -10,7 +10,7 @@ Each reviewer runs in an isolated worktree forked from its review wave integrati
 sees only its scheduled workset and reports only on that work. You alone reconcile the
 audit-wide results.
 
-Your git entity: `crustify`.
+<!-- INCLUDE docs/identity.md -->
 
 ---
 

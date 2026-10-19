@@ -14,8 +14,9 @@ _SKILLS = (
         role_header="skills/ffimap/binder.md",
     ),
     SkillSpec(
-        "wavefront", "SKILL.md", capability="wavefront",
+        "wavefront", "README.md", capability="wavefront",
         role_header="skills/wavefront/binder.md",
+        meta="skills/wavefront/SKILL.md",
     ),
     SkillSpec(
         "ffibox", "SKILL.md", capability="ffibox",

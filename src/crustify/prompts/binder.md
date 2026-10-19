@@ -7,7 +7,7 @@ You emit safe bindings for the items in your worklist: you keep their C implemen
 put a safe Rust API in front of it. You validate your work, commit once, and land it on the supplied
 wave integration branch.
 
-Your git entity: `crustify`
+<!-- INCLUDE docs/identity.md -->
 
 ---
 

@@ -28,7 +28,7 @@ Open questions:
   its scope is a closure over `out_of_tree` counters rather than a subsystem span.
 - **Ordering.** A side campaign is a producer of the parent's link units, so it precedes
   them — but it lives in another repository with its own branches, build baseline and
-  results, which the current `schedule.json` nesting (`link_unit` → `subsystem` → `wave`)
+  results, which the current nesting (`link_unit` → `subsystem` in `subsystems.json`, → `wave` in each subsystem's `schedule.json`)
   cannot express.
 - **Results and accounting.** Whether a side campaign reports into the parent's results
   table or its own.
@@ -41,7 +41,7 @@ A wheel install has no `docs/` there, so every agent runs without its convention
 how-tos. Only the editable install the Dockerfile performs hides this.
 
 Ship `docs/` as data-files to `share/crustify/`, the way Wavefront ships its schemas to
-`share/wavefront/schemas`, and resolve crustify's own skills there before the checkout.
+`share/wavefront/artifacts`, and resolve crustify's own skills there before the checkout.
 `deps.share_dir()` already resolves that prefix.
 
 This is also the prerequisite for moving `src/crustify/prompts/` into `docs/`: prompts

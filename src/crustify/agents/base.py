@@ -71,12 +71,18 @@ class SkillSpec:
     and that skill leaves one role's prompt, delete the directory and it
     leaves every role's, even though the generic skill it wraps is still
     installed.
+
+    ``meta`` is set when crustify keeps a dependency's skill metadata itself,
+    as ``skills/<skill>/SKILL.md``: the name, description and binary come from
+    that file, and ``path`` names the document in the dependency's checkout
+    that the agent reads in full.
     """
 
     dep: str
     path: str
     capability: str | None = None
     role_header: str | None = None
+    meta: str | None = None
 
 
 def _skill_meta(path: Path) -> tuple[str, str, str | None, Path | None]:
@@ -330,6 +336,8 @@ class CrustifyAgent:
         """Whether every file ``spec`` names is on disk."""
         if not (deps.dep_root(spec.dep) / spec.path).exists():
             return False
+        if spec.meta is not None and not (_PKG_ROOT / "prompts" / spec.meta).is_file():
+            return False
         return (spec.role_header is None
                 or (_PKG_ROOT / "prompts" / spec.role_header).is_file())
 
@@ -367,14 +375,19 @@ class CrustifyAgent:
             # files are known to exist -- skill_specs() dropped any spec whose
             # did not, which is how an ablation is expressed.
             p = deps.dep_root(spec.dep) / spec.path
-            name, desc, binname, doc = _skill_meta(p)
+            if spec.meta is not None:
+                name, desc, binname, _ = _skill_meta(_PKG_ROOT / "prompts" / spec.meta)
+                doc = p
+            else:
+                name, desc, binname, doc = _skill_meta(p)
             block = f"- {name} — {desc}"
             # What to open, if anything. A frontmatter skill carries its own
             # procedure, so the path is the skill file. A metadata-only one
             # points at wherever the procedure actually lives (`Doc path`), and
             # when it names nothing there is nothing to open — pointing back at
             # the file would spend a tool call re-reading what was just inlined.
-            body = p if p.read_text().startswith("---") else doc
+            body = (doc if spec.meta is not None
+                    else p if p.read_text().startswith("---") else doc)
             if body:
                 if not body.is_file():
                     # Not an ablation: `path` and `role_header` decide whether

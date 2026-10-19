@@ -36,8 +36,9 @@ TRANSLATE_SKILLS = (
     #: and the oracle an orchestrator plans with are the same tool used for
     #: different work, so the metadata is shared and only the guidance splits.
     SkillSpec(
-        "wavefront", "SKILL.md", capability="wavefront",
+        "wavefront", "README.md", capability="wavefront",
         role_header="skills/wavefront/translate-orchestrator.md",
+        meta="skills/wavefront/SKILL.md",
     ),
 )
 
