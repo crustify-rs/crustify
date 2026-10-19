@@ -168,6 +168,12 @@ class ClaudeCliBackend:
                 if override_base_prompt
                 else ["--append-system-prompt", system_preamble])
         env = dict(os.environ)
+        # Claude Code marks the processes it starts as child sessions, and a
+        # child session saves no transcript. Crustify run from a Claude Code
+        # session would pass that marker on, and its agents would leave no
+        # transcript to log or price them by. Each agent is a session of its
+        # own, whatever started crustify.
+        env.pop("CLAUDE_CODE_CHILD_SESSION", None)
         if route.provider == "openrouter":
             if billing != "api":
                 raise SystemExit(

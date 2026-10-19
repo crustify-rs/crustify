@@ -52,7 +52,8 @@ class ProviderRoutingTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             provider_home = Path(tmp) / "claude"
             with (mock.patch.dict(
-                    "os.environ", {"OPENROUTER_API_KEY": "test-key"}, clear=True),
+                    "os.environ", {"OPENROUTER_API_KEY": "test-key",
+                                   "CLAUDE_CODE_CHILD_SESSION": "1"}, clear=True),
                   mock.patch("shutil.which", return_value="/bin/claude"),
                   mock.patch("subprocess.Popen", side_effect=popen),
                   mock.patch(
@@ -77,6 +78,9 @@ class ProviderRoutingTests(unittest.TestCase):
         self.assertEqual(env["ANTHROPIC_AUTH_TOKEN"], "test-key")
         self.assertEqual(env["ANTHROPIC_API_KEY"], "")
         self.assertNotIn("--bare", command)
+        # An agent is a session of its own, so it keeps its transcript even
+        # when crustify runs inside a Claude Code session.
+        self.assertNotIn("CLAUDE_CODE_CHILD_SESSION", env)
 
     def test_openrouter_openai_model_gets_high_reasoning_effort(self) -> None:
         from crustify.agents.backends.codex_cli import CodexCliBackend
