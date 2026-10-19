@@ -18,6 +18,26 @@ Test objects are constructed through safe constructors. While a type has none, o
 documented unsafe fixture per type adopts the raw constructor's result, and is replaced
 once the safe constructor exists.
 
+## Builds
+
+Tests run against the target's prebuilt, immutable builds, recorded as the `variants` of
+`crustify/artifacts/build.json`: each an out-of-tree `dir` and the `configure` and `build`
+commands run from it, its `version` raised whenever a command changes. They are:
+
+- `plain`, the functional baseline;
+- `coverage`, the coverage-instrumented build for campaign measurements; and
+- one variant per sanitizer the campaign enables:
+  - `asan-ubsan`, the general build, which FFI and lifecycle tests use;
+  - `msan`, which instruments every component, the standard library included;
+  - `tsan`, separate from `asan-ubsan`, since ASan and TSan instrument the same memory
+    operations and their runtimes conflict; and
+  - `bsan`, when BorrowSanitizer's `bsan` toolchain is installed (`cargo bsan --version`
+    succeeds); it instruments the C through its own matched clang.
+
+A Rust- or bindgen-only change reuses a matching variant: same C revision, `build.json`
+version, compiler and instrumentation. A change to the compiled target needs a private
+build, and the shared variants are rebuilt once that change lands.
+
 ## UB tests
 
 UB tests show that a workset's public API is free of UB.

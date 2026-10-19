@@ -131,6 +131,7 @@ class IncludeTests(unittest.TestCase):
         "testing": "docs/testing.md",
         "landing": "docs/landing.md",
         "layout": "docs/layout.md",
+        "planning": "docs/planning.md",
     }
     _REF = re.compile(r"^## ([a-z]+) › (.+?)(?:, for `[a-z]+`)?$", re.M)
 
@@ -151,8 +152,10 @@ class IncludeTests(unittest.TestCase):
         self.assertEqual(self._included("reviewer.md"),
                          {"conventions", "binding", "porting", "testing",
                           "landing", "layout"})
+        self.assertEqual(self._included("planner.md"),
+                         {"conventions", "planning"})
         self.assertEqual(self._included("translate-assistant.md"),
-                         {"conventions", "layout"})
+                         {"conventions", "layout", "planning", "testing"})
         self.assertEqual(self._included("audit-assistant.md"),
                          {"layout", "testing"})
 

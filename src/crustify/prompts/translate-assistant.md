@@ -86,7 +86,8 @@ agent's task: write the instructions to `instructions.md` in its artifact dir, b
 prompt where the two conflict.
 
 Keep them within the conventions, the layout and the branch flow this prompt describes,
-as far as the request allows. Depart from those only where the user asked for it, and
+as far as the request allows. Depart from those only where the user asked for it, or when you
+think the role needs a genuine adjustment to carry the task, and
 then name the departure explicitly, so the agent does not reconcile it away. Write each
 file for its own run: state what that agent needs beyond its role, without restating the
 role. Log every instructions file you write and the request behind it.
@@ -123,32 +124,19 @@ git -C <repo> checkout -b crustify/main
 
 #### 3. Prebuilds and test baselines
 
-Create immutable builds of the target so that binder and translator agents can reuse them:
+Build the variants the testing instructions' Builds section describes, so that binder,
+translator and reviewer agents reuse them: `plain`, `coverage`, and one per sanitizer
+the campaign enables (`id: sanitizers`; by default, every one the toolchain supports).
+A sanitizer you do not build is one no agent tests for or runs.
 
-- **plain** build for the functional baseline;
-- **coverage-instrumented** build for campaign measurements;
-- one build per sanitizer the campaign enables (`id: sanitizers`; by default, every one
-  below the toolchain supports):
-  - **ASan + UBSan** — the general build. FFI and lifecycle tests use it;
-  - **MSan** — a separate build that instruments every component, the standard library
-    included, for uninitialized-memory tests;
-  - **TSan** — a separate build, for race tests. Do not combine it with ASan:
-    the two instrument the same memory operations and their runtimes conflict;
-  - **BSan** — when `cargo bsan --version` succeeds (BorrowSanitizer's bsan rustup
-    toolchain); it instruments the C through its own matched clang.
+Record them in `crustify/artifacts/build.json`, from `templates/build.json`. Configure
+every variant as `target-config` asks: by default, the target's default configuration
+with deprecated features disabled. Use parallel builds. Refresh the shared variants after
+a change to the compiled target lands.
 
-A Rust- or bindgen-only change may reuse a matching build. A change to the compiled target
-requires a private build; refresh shared builds after that change lands.
-
-Create `crustify/artifacts/build.json` from `templates/build.json`. Record each prebuild above as one
-of its `variants`, naming the sanitizer builds `asan-ubsan`, `msan`, `tsan` and `bsan`: binders,
-translators and reviewers take the sanitizers available to them from these variants, so a
-sanitizer the campaign does not build is one they neither test for nor run. Each variant is an
-out-of-tree `dir` plus the `configure` and `build` commands run from it.
-Increment `version` whenever any command changes. Configure every variant as `target-config`
-asks: by default, the target's default configuration with deprecated features disabled. Use
-parallel builds. Disable unstable baseline tests as needed, record pass/total and every
-disabled test in the campaign dashboard. Post-campaign results must match this baseline.
+Run the baseline tests on `plain`. Disable unstable baseline tests as needed, and record
+pass/total and every disabled test in the campaign dashboard. Post-campaign results must
+match this baseline.
 
 
 #### 4. Planning
@@ -390,6 +378,13 @@ Here are additional instructions on how a campaign is planned: what each plannin
 holds, how its decisions are made, and how planner runs follow one another.
 
 <!-- INCLUDE docs/planning.md -->
+
+---
+
+Here are additional instructions on how the campaign's work is tested: the builds tests
+run against, the kinds of tests, and the gates every batch and wave passes.
+
+<!-- INCLUDE docs/testing.md -->
 
 ---
 
