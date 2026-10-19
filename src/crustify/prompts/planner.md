@@ -65,7 +65,9 @@ corrections section describes.
 ### 2. Subsystem decomposition
 
 Emit `crustify/artifacts/subsystems.json` from `templates/subsystems.json`, as the
-planning instructions' Subsystem decomposition section describes. Use the actual linker
+planning instructions' Subsystem decomposition section describes. Select the foundational
+`void` and `string` subsystems' members as its Foundational subsystems section describes,
+reading each candidate's body, and establish each member's lifecycle role. Use the actual linker
 outputs; before you list a `rust_native_equivalent`, verify its semantics, platform
 support, performance and licensing.
 

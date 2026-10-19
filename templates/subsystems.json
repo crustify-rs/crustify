@@ -1,5 +1,5 @@
 {
-  "_comment": "Example `<workdir>/crustify/artifacts/subsystems.json` (REPO-ROOT tier), emitted by the planner. `link_units` and each link unit's `subsystems` are ordered lists in execution order, bottom-up, and each entry's `index` is its position: libcrypto runs before libssl, which depends on it, and statem before record. Their `name` fields are identifiers. The first link unit opens with the synthetic raw-lifetime-void and raw-lifetime-string subsystems, which carry only `index` and `name`. Each subsystem's waves are in its own `<link-unit>/<subsystem>/schedule.json`. `objective` records translation intent and any well established Rust replacement. The Rust tree mirrors this decomposition; there is no second placement document. All paths are workdir-relative.",
+  "_comment": "Example `<workdir>/crustify/artifacts/subsystems.json` (REPO-ROOT tier), emitted by the planner. `link_units` and each link unit's `subsystems` are ordered lists in execution order, bottom-up, and each entry's `index` is its position: libcrypto runs before libssl, which depends on it, and statem before record. Their `name` fields are identifiers. The first link unit opens with the foundational void and string subsystems, here item-granular: their `items` narrow them to the entities they own in files that other subsystems of a full decomposition also list. Each subsystem's waves are in its own `<link-unit>/<subsystem>/schedule.json`. `objective` records translation intent and any well established Rust replacement. The Rust tree mirrors this decomposition; there is no second placement document. All paths are workdir-relative.",
   "version": "1f053298e30c0a9b5d0f3c1e7a4b8d2f6c9e0a11",
   "link_units": [
     {
@@ -10,11 +10,138 @@
       "subsystems": [
         {
           "index": 0,
-          "name": "raw-lifetime-void"
+          "name": "void",
+          "objective": {
+            "objective": "wrap",
+            "rust_native_equivalent": []
+          },
+          "implementation_files": [
+            "crypto/mem.c",
+            "crypto/o_str.c"
+          ],
+          "api_headers": [
+            "include/openssl/crypto.h"
+          ],
+          "items": [
+            {
+              "name": "CRYPTO_malloc",
+              "defined_in": "crypto/mem.c"
+            },
+            {
+              "name": "CRYPTO_zalloc",
+              "defined_in": "crypto/mem.c"
+            },
+            {
+              "name": "CRYPTO_free",
+              "defined_in": "crypto/mem.c"
+            },
+            {
+              "name": "CRYPTO_memdup",
+              "defined_in": "crypto/o_str.c"
+            }
+          ],
+          "counters": {
+            "implementation": {
+              "files": 2,
+              "loc": 96,
+              "structs": 0,
+              "functions": 4,
+              "global_variables": 0,
+              "enums": 0,
+              "unions": 0,
+              "callbacks": 0,
+              "macros": 0
+            },
+            "api": {
+              "files": 1,
+              "loc": 12,
+              "structs": 0,
+              "opaque_structs": 0,
+              "functions": 4,
+              "global_variables": 0,
+              "enums": 0,
+              "unions": 0,
+              "callbacks": 0,
+              "macros": 0
+            }
+          },
+          "imported_deps": {
+            "in_tree": [],
+            "out_of_tree": []
+          }
         },
         {
           "index": 1,
-          "name": "raw-lifetime-string"
+          "name": "string",
+          "objective": {
+            "objective": "wrap",
+            "rust_native_equivalent": []
+          },
+          "implementation_files": [
+            "crypto/o_str.c"
+          ],
+          "api_headers": [
+            "include/openssl/crypto.h"
+          ],
+          "items": [
+            {
+              "name": "CRYPTO_strdup",
+              "defined_in": "crypto/o_str.c"
+            },
+            {
+              "name": "CRYPTO_strndup",
+              "defined_in": "crypto/o_str.c"
+            },
+            {
+              "name": "OPENSSL_strlcpy",
+              "defined_in": "crypto/o_str.c"
+            }
+          ],
+          "counters": {
+            "implementation": {
+              "files": 1,
+              "loc": 58,
+              "structs": 0,
+              "functions": 3,
+              "global_variables": 0,
+              "enums": 0,
+              "unions": 0,
+              "callbacks": 0,
+              "macros": 0
+            },
+            "api": {
+              "files": 1,
+              "loc": 6,
+              "structs": 0,
+              "opaque_structs": 0,
+              "functions": 3,
+              "global_variables": 0,
+              "enums": 0,
+              "unions": 0,
+              "callbacks": 0,
+              "macros": 0
+            }
+          },
+          "imported_deps": {
+            "in_tree": [
+              {
+                "link_unit": "libcrypto",
+                "subsystem": "void",
+                "outgoing_edges": 3,
+                "incoming_edges": 0,
+                "counters": {
+                  "structs": 0,
+                  "functions": 2,
+                  "global_variables": 0,
+                  "enums": 0,
+                  "unions": 0,
+                  "callbacks": 0,
+                  "macros": 0
+                }
+              }
+            ],
+            "out_of_tree": []
+          }
         },
         {
           "index": 2,

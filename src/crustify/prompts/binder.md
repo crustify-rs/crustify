@@ -25,7 +25,6 @@ Each worklist has one homogeneous route:
 |---|---|---|
 | `type` | structs, unions, enums, type-generating macros | representation, lifecycle, field accessors |
 | `symbol` | functions, globals, callback typedefs | safe wrapper |
-| `raw-lifetime` | one `void` or `string` marker | reusable release and clone strategies |
 
 Verify the route before editing. Type-generating macros use `type`; callback typedefs use
 `symbol`.
@@ -43,9 +42,8 @@ Use the hints given in the how-to.
 
 ### 2. Rust home
 
-Every item in the worklist names the authored `.rs` file it belongs in. Use it. A
-raw-lifetime batch discovers its concrete primitives first, then homes them beside the
-translation unit that defines them. Use the conventions below for homing un-homed items.
+Every item in the worklist names the authored `.rs` file it belongs in. Use it. Use the
+conventions below for homing un-homed items.
 
 Use filled anchors as context: they are completed work, not yours to revisit.
 
@@ -71,7 +69,8 @@ library.
 
 Emit your worklist's Rust for your route using the binding how-to below.
 
-For a `raw-lifetime` worklist, follow its Raw lifetime strategies section.
+When your batch id names the foundational `void` or `string` subsystem, bind its items
+with a lifecycle role as its Lifecycle strategies section describes.
 
 ### 5. Testing
 

@@ -49,6 +49,21 @@ Every configuration shares `crustify/wavefront/` as its `state_dir` and sets
 `"t3_dir": "t3"`, so one campaign-wide pair of T3 tables serves them all. Verify each
 configuration you author against the CLI.
 
+An item-granular subsystem's configuration lists its `items` beside the files they are
+defined in or published by. The configuration of each file-granular subsystem that lists
+the same files names those entities in `out_of_scope.items`, so that no two schedules
+hold one entity.
+
+Select the foundational subsystems' candidates from the campaign-wide configuration's
+graph, after the T3 tables are written, so that their cast edges resolve type-erased
+values: the type-erased units that no cast edge ties to a named type, and the units whose
+pointers carry the `string` property, that depend on no other subsystem's types. Read
+each candidate's body before you admit it.
+
+Submit each member's lifecycle role (allocator or constructor, releaser, disposer,
+cloner) to the ownership store through the CLI's `--update`, as `docs/type-lifecycle.md`
+describes, so that the binders of the foundational subsystems find it there.
+
 ### For 3. Planning
 
 #### T3 tables

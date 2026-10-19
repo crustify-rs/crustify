@@ -31,9 +31,9 @@ must belong to an earlier one. Order link units by their dependency graph and th
 A cycle cut is implied by the order: any `imported_deps` record whose destination is
 scheduled after its consumer.
 
-The first link unit opens with the two synthetic subsystems `raw-lifetime-void` and
-`raw-lifetime-string`, at indices 0 and 1: raw lifetime discovery runs first. They carry
-only `index` and `name`: they own no files, publish no headers and import nothing.
+The first link unit opens with the two foundational subsystems `void` and `string`, at
+indices 0 and 1 (see `docs/planning.md`). They are ordinary entries, usually narrowed to
+their `items`.
 
 ## link_units[*]
 
@@ -62,8 +62,10 @@ addressable identity is therefore `(link_unit.name, subsystem.name)`.
 | `objective` | the translation intent recorded for this subsystem |
 | `counters` | what the subsystem contains |
 | `imported_deps` | what it depends on, in tree and out |
+| `items` | optional: the entities the subsystem owns, which narrow it to them |
 
-TUs must be homed in exactly one subsystem; headers generally too, although there
+TUs must be homed in exactly one subsystem, apart from the items an item-granular
+subsystem takes; headers generally too, although there
 might be cases when a header is shared by multiple subsystems. A header appears in one
 list only: `api_headers` when the build installs it, `implementation_files` otherwise.
 A public header belongs to the subsystem that implements what it declares.
@@ -72,6 +74,23 @@ A shared header is listed by every subsystem that shares it, but each entity it 
 is owned by exactly one of them: the one scheduled first. The owner counts, homes and
 translates the entity; the other subsystems reach it through an ordinary `imported_deps`
 record.
+
+## link_units[*].subsystems[*].items
+
+A subsystem is file-granular by default: it owns every entity its files define or
+publish. One with `items` is item-granular: it owns only the entities listed, and lists
+in `implementation_files` and `api_headers` only the files those entities are defined in
+or published by. Those files stay listed by the file-granular subsystem that owns the
+rest of them, which does not own the listed entities.
+
+| `items[*]` field | meaning |
+|---|---|
+| `name` | C entity name |
+| `defined_in` | repo-relative path of its definition, as a batch item's `defined_in` |
+
+`(name, defined_in)` is unique across the decomposition's `items`: an entity belongs to at
+most one item-granular subsystem. An item-granular subsystem's `counters` count its items
+only, and its `imported_deps` record what those items depend on.
 
 ## link_units[*].subsystems[*].objective
 

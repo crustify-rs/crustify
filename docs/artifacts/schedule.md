@@ -16,9 +16,8 @@ that subsystem runs in the campaign is its `index`, and its link unit's, in
 each subsystem's waves in place: every wave of link unit 0's first subsystem, then of its
 second, then link unit 1's.
 
-The two synthetic raw-lifetime subsystems have a schedule too, under the first link unit:
-`<link-unit>/raw-lifetime-void/schedule.json` and `<link-unit>/raw-lifetime-string/schedule.json`,
-each one wave of one `raw-lifetime` batch.
+The foundational subsystems `void` and `string` are scheduled like any other, under the
+first link unit.
 
 | root field | meaning |
 |---|---|

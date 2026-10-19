@@ -238,7 +238,7 @@ changesets; failure to do so uses up disk space.
 #### 3. Launch and monitoring
 
 Run one agent per batch, concurrently up to approved parallelism: a binder for a `wrap`
-batch, raw-lifetime ones included, and a translator for a `port` batch. Pass its batch
+batch and a translator for a `port` batch. Pass its batch
 worktree as the workdir, its `task.json`, and its batch directory as `--log-dir`:
 
 ```bash

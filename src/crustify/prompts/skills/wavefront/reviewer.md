@@ -29,7 +29,8 @@ ownership, access, nullability, cardinality and keepalive. A wrong inference is 
 
 ### Lifecycle (`lifecycle`)
 
-For commits whose batches bound or ported `type` or `raw-lifetime` items, verify that the lifecycles
+For commits whose batches bound or ported `type` items, or items of the foundational `void`
+and `string` subsystems, verify that the lifecycles
 submitted to Wavefront are complete: that the earlier runs missed no releaser, disposer,
 cloner or constructor. Read `docs/type-lifecycle.md` beside Wavefront's README for how to identify
 lifecycle primitives, and compare them with the findings submitted earlier. An incomplete

@@ -17,7 +17,7 @@ account it later.
 
 ---
 
-## binding › Symbol route › Raw lifetime strategies
+## binding › Symbol route › Lifecycle strategies
 
 `CBox` and `CArc` own only `CCell` layout types: a single C struct is a `CBox<Foo, P>` with matching
 constructor / destructor pairs, which asserts the right validity claim based on the allocator (e.g. zeroed

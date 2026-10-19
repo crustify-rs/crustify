@@ -29,7 +29,10 @@ primitives, and submit your findings through the CLI's `--update`.
 
 ---
 
-## binding › Symbol route › Raw lifetime strategies
+## binding › Symbol route › Lifecycle strategies
 
-Read `docs/type-lifecycle.md` beside Wavefront's README for how to identify raw lifecycle
-primitives for void and string, and submit your findings through the CLI's `--update`.
+The planner submitted each foundational item's lifecycle role to the ownership store:
+query it for every item of your batch. Read `docs/type-lifecycle.md` beside Wavefront's
+README for how lifecycle primitives are identified, and correct a role that the item's
+body contradicts through the CLI's `--update`, naming the correction in your commit
+message.

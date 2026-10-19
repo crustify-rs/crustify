@@ -198,13 +198,15 @@ function-pointer type.
 
 An inline function pointer is wrapped when no ownership-compatible callable wrapper exists.
 
-### Raw lifetime strategies
+### Lifecycle strategies
 
-A `raw-lifetime` worklist discovers the releaser, disposer, cloner and allocator or
-constructor routines for type-erased `void` or string handles. Each becomes a generic
+The foundational `void` and `string` subsystems hold the allocator or constructor,
+releaser, disposer and cloner routines of type-erased `void` and string handles, each
+with the lifecycle role the planner established. In a batch of either
+subsystem, which the batch id names, an item with a lifecycle role becomes a generic
 policy or strategy that calls the primitive via FFI, so that owned string and generic
 array or singleton handles bind it to implement RAII. The primitive itself is not also
-exposed as an ordinary safe function.
+exposed as an ordinary safe function. The subsystem's other items follow their route.
 
-Singleton and array handles have separate policies, each homed with its primitive's
-translation unit.
+Singleton and array handles have separate policies, each in its primitive's home. A
+family's allocator, releaser and cloner form one policy and share a batch.

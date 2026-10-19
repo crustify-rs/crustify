@@ -27,7 +27,8 @@ example is [`templates/subsystems.json`](../templates/subsystems.json).
 
 Link units are identified from the actual linker outputs. The decomposition covers the
 selected target and its complete imported producer closure. Every translation unit
-belongs to exactly one subsystem; a header may be shared by several. A subsystem's
+belongs to exactly one subsystem, unless an item-granular subsystem takes some of its
+items; a header may be shared by several. A subsystem's
 `api_headers` are the headers the build installs, listed with the subsystem that
 implements them.
 
@@ -50,6 +51,34 @@ Each consumer-to-producer relation is one `imported_deps` record, with its
 destinations apart from out-of-tree libraries. The record keeps the graph as it is,
 cycles included.
 
+### Foundational subsystems
+
+The decomposition opens with two foundational subsystems, `void` and `string`, that every
+other subsystem may depend on:
+
+- `void` holds the allocators, releasers, disposers and cloners of type-erased memory,
+  with the units that share their definitions; and
+- `string` holds the units whose text pointers, the pointers that refer to
+  NUL-terminated strings, depend on nothing but `void`.
+
+Their members are selected from the dependency graph with each type-erased value
+resolved to the types it is read as, so that a `void *` read as a named type is a
+dependency on that type, not an erased value. What
+stays erased is a candidate, and the planner reads each candidate's body before it
+admits it. A foundational subsystem may keep a few dependencies of its own, such as
+logging or assertions on its failure paths, which the order cuts; otherwise nothing it
+holds depends on another subsystem.
+
+The planner establishes each member's lifecycle role (allocator or constructor,
+releaser, disposer, cloner), so that the binders of these subsystems bind those members
+as strategies, as [Lifecycle strategies](binding.md#lifecycle-strategies) describes.
+
+A foundational subsystem owns whole files where its members make up their files, and
+narrows to its `items` where they share a file with another subsystem, as
+[`artifacts/subsystems.md`](artifacts/subsystems.md) describes. The foundational
+subsystems are planned and scheduled like any other: waves of batches of units. As
+generic facilities, they are `wrap` in every campaign.
+
 ## Order
 
 `subsystems.json` lists the campaign's link units and subsystems in execution order,
@@ -61,26 +90,25 @@ edges between tied members break ties.
 
 The plan holds only the link units and subsystems the campaign's scope includes, without
 those that this campaign, before it was resumed, or a previous campaign completed. The
-raw-lifetime discoveries for `void` and `string` are the only synthetic subsystems:
-campaign leaves listed first in the first link unit, with only their `index` and `name`.
-They run first.
+foundational subsystems are listed first in the first link unit, `void` then `string`,
+and run first.
 
 ## Waves and batches
 
 Each subsystem's `schedule.json` follows [`artifacts/schedule.md`](artifacts/schedule.md);
 its layout example is [`templates/schedule.json`](../templates/schedule.json). It holds only
-that subsystem's waves, and the raw-lifetime subsystems have one too. Waves execute
+that subsystem's waves. Waves execute
 sequentially, bottom-up, producers before consumers; the batches of a wave execute in
 parallel, up to the campaign's parallelism, and the `workload` caps bound each batch.
 
 A batch entry is a `task.json` without the run fields the orchestrator adds when it
 launches the batch (`base_branch`, `model` and `billing`):
-[`artifacts/task.md`](artifacts/task.md) gives its format, routing and the raw-lifetime
-rule. Each item's `home` follows the [conventions](conventions.md).
+[`artifacts/task.md`](artifacts/task.md) gives its format and routing. Each item's `home`
+follows the [conventions](conventions.md).
 
-Raw and typed lifecycle primitives stay in the schedules as free symbols, although the
-raw-lifetime subsystems and the type batches discover them on the fly; their binders
-skip them.
+Type-erased and string lifecycle primitives are units of the foundational subsystems.
+Typed lifecycle primitives stay in the schedules as free symbols, although the type
+batches discover them on the fly; their binders skip them.
 
 In a wrap campaign every batch is `wrap`. In a port campaign:
 

@@ -10,8 +10,8 @@
     "it writes the entry to wave-<w>/batch-<b>/task.json. Every",
     "index also addresses the filesystem, so no path is recorded. Homes follow the",
     "coding conventions: crustify/rust/<repo>/<link-unit>/, here for a repo named",
-    "widgets. A raw-lifetime subsystem's schedule holds one wave of one",
-    "raw-lifetime batch. An independent illustration: it is not a schedule for",
+    "widgets. The foundational void and string subsystems are scheduled the",
+    "same way. An independent illustration: it is not a schedule for",
     "templates/subsystems.json."
   ],
   "schema_version": 2,

@@ -143,8 +143,8 @@ Every field is required on every item, and no other field is accepted.
 | field | meaning |
 |---|---|
 | `name` | C entity name, non-empty |
-| `defined_in` | repo-relative path of its definition; `null` only for `raw-lifetime` |
-| `kind` | `type`, `symbol`, `callback` or `raw-lifetime` |
+| `defined_in` | repo-relative path of its definition |
+| `kind` | `type`, `symbol` or `callback` |
 | `field_anchors` | C field identifiers assigned to this item; empty unless `kind` is `type` |
 | `home` | repo-relative `.rs` path the item is authored into |
 
@@ -164,8 +164,7 @@ batch mixing routes is rejected.
 |---|---|
 | `type` | `type` |
 | `symbol`, `callback` | `symbol` |
-| `raw-lifetime` | `raw-lifetime` |
 
-A `raw-lifetime` batch holds exactly one item, named `void` or `string`, with `defined_in:
-null`. Its task objective is always `wrap`: raw lifetime discovery wraps a C primitive, so
-`port` normalizes to `wrap`, and the batch runs under the binder.
+A batch of the foundational `void` or `string` subsystem routes like any other. Its batch
+id names the subsystem, and its binder binds the items with a lifecycle role as
+strategies (`docs/binding.md`, Lifecycle strategies).

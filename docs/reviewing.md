@@ -44,7 +44,7 @@ A review batch has one route:
 
 Each commit's `Batch:` trailer names its translation batch, whose `task.json`, under
 `crustify/artifacts/<batch id>/`, lists the C items it bound or ported with their routes:
-`type`, `symbol` or `raw-lifetime`.
+`type` or `symbol`.
 
 A module named with `types`, `trait_impls` or `functions` limits the workset to those: a
 type with its fields and its inherent impls, wherever they are; a trait impl, named

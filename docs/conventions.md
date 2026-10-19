@@ -73,6 +73,11 @@ Rust has no headers, they are homed using the following rules:
   - headers that export implementation (e.g. `static inline` functions) which logically do
     not belong to any TU get their own `_h.rs` sub-module; headers shared by multiple
     subsystems become sub-modules for each subsystem homing the units belonging to that subsystem;
+  - a TU an item-granular subsystem takes items from likewise becomes a sub-module of each
+    subsystem, homing the units it owns.
+
+In a wrap campaign, an item-granular subsystem's items home in the module of the public
+header that publishes them, which the subsystem that owns the header's other items shares.
 
 ## Anchors
 
