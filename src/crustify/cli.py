@@ -9,7 +9,7 @@ import argparse
 def main() -> None:
     parser = argparse.ArgumentParser(
         prog="crustify",
-        description="Multi-agent C-to-Rust translation pipeline.",
+        description="Crustify, your co-translator for C-to-Rust work.",
     )
     sub = parser.add_subparsers(dest="command", required=True, metavar="COMMAND")
 
@@ -296,7 +296,7 @@ def _handle_orchestrate(args: argparse.Namespace) -> None:
     run_start = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
     # Created here, not by the agent, so the orchestrator's log and usage
     # record land in it from its first turn.
-    artifact_dir = workdir / "crustify" / ARTIFACTS / "orchestrator"
+    artifact_dir = workdir / "crustify" / ARTIFACTS / "assistant"
     artifact_dir.mkdir(parents=True, exist_ok=True)
     print(f"[crustify {args.kind}] artifacts: {artifact_dir}")
     # Interactive whenever a person is at the terminal: the orchestrator asks
@@ -306,7 +306,7 @@ def _handle_orchestrate(args: argparse.Namespace) -> None:
     OrchestrateAgent(workdir, kind=args.kind, task=task, model=model,
                      task_only=args.task_only, interactive=interactive,
                      artifact_dir=artifact_dir,
-                     log_stem=f"orchestrator-{run_start}").run()
+                     log_stem=f"assistant-{run_start}").run()
 
 
 def _handle_spawn_planner(args: argparse.Namespace) -> None:

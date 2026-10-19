@@ -84,6 +84,9 @@ def kind(stage):
                  ("review-modules", "review-modules"),
                  ("review-reports", "review-reports"),
                  ("plan-emit", "plan-emit"), ("plan-review", "plan-review"),
+                 # The assistant's own sessions; `orchestrate` is its earlier
+                 # stage name, bucketed with it so old records read the same.
+                 ("assist", "assist"), ("orchestrate", "assist"),
                  # Historical pre-`translate` log prefixes remain bucketed so
                  # existing campaign measurements stay readable.
                  ("port_", "port"), ("wrap_", "wrap"), ("merge", "merge"),

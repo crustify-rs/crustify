@@ -49,9 +49,9 @@ crustify/artifacts/                             the campaign
 ├── build.json                                  the prebuilt variants of the target
 ├── subsystems.json                             the subsystem decomposition, in execution order
 ├── dashboard.md                                the campaign dashboard; audit-dashboard.md for an audit
-├── orchestrator/                               the orchestrator's records
-│   ├── orchestrator-<timestamp>.log            one per orchestrator run
-│   └── orchestrator-<timestamp>.usage.json
+├── assistant/                                  Crustify's own records, as the assistant
+│   ├── assistant-<timestamp>.log               one per run of `crustify translate` or `audit`
+│   └── assistant-<timestamp>.usage.json
 └── <link-unit>/<subsystem>/                    a subsystem
     ├── schedule.json                           its waves and batches
     ├── wave-<index>/                           a wave

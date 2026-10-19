@@ -75,5 +75,5 @@ audit's dashboard from
 
 ## Reference
 
-- [Audit orchestrator prompt](../../src/crustify/prompts/audit-orchestrator.md)
+- [Audit assistant prompt](../../src/crustify/prompts/audit-assistant.md)
 - [Reviewer prompt](../../src/crustify/prompts/reviewer.md)

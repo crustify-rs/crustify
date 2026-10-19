@@ -18,13 +18,13 @@ from crustify.agents.bind import BindAgent
 from crustify.agents.translate import TranslateAgent
 
 _ROLES = (BindAgent, TranslateAgent, ReviewAgent, OrchestrateAgent, PlanAgent,
-          SimpleNamespace(name="audit-orchestrator", SKILLS=AUDIT_SKILLS))
+          SimpleNamespace(name="audit-assistant", SKILLS=AUDIT_SKILLS))
 _ROLE_NAMES = ((BindAgent, "binder"), (TranslateAgent, "translator"),
                (ReviewAgent, "reviewer"),
-               (OrchestrateAgent, "translate-orchestrator"),
+               (OrchestrateAgent, "translate-assistant"),
                (PlanAgent, "planner"),
-               (SimpleNamespace(name="audit-orchestrator", SKILLS=AUDIT_SKILLS),
-                "audit-orchestrator"))
+               (SimpleNamespace(name="audit-assistant", SKILLS=AUDIT_SKILLS),
+                "audit-assistant"))
 
 
 class DeclaredPathTests(unittest.TestCase):
@@ -151,9 +151,9 @@ class IncludeTests(unittest.TestCase):
         self.assertEqual(self._included("reviewer.md"),
                          {"conventions", "binding", "porting", "testing",
                           "landing", "layout"})
-        self.assertEqual(self._included("translate-orchestrator.md"),
+        self.assertEqual(self._included("translate-assistant.md"),
                          {"conventions", "layout"})
-        self.assertEqual(self._included("audit-orchestrator.md"),
+        self.assertEqual(self._included("audit-assistant.md"),
                          {"layout", "testing"})
 
     def test_included_documents_are_plain_markdown(self) -> None:
@@ -218,7 +218,7 @@ class DiscoveryTests(unittest.TestCase):
         """The role header is one file under prompts/skills/, and deleting it
         removes the skill from that role even with its checkout installed."""
         real = Path.is_file
-        header = _PKG_ROOT / "prompts" / "skills/wavefront/translate-orchestrator.md"
+        header = _PKG_ROOT / "prompts" / "skills/wavefront/translate-assistant.md"
         with mock.patch.object(
                 Path, "is_file",
                 lambda p: False if p == header else real(p)):

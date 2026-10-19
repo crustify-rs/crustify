@@ -1,48 +1,43 @@
-
-Crustify is an agent harness for incrementally migrating production C and C++
-code to safe, idiomatic Rust. It can:
+**Crustify** is your co-translator for C-to-Rust work. You describe the task, and
+Crustify plans it with you, runs it, and reports back. It can:
 
 - port an implementation to native Rust, fully or partially;
-- generate safe Rust wrappers over an unsafe API; or
-- find undefined behavior and memory safety bugs in safe Rust code.
+- generate safe Rust wrappers over an unsafe C API; or
+- find undefined behavior and memory-safety bugs in safe Rust code.
 
-Reliable translation takes more than a capable model, so Crustify equips its
-agents with the tools and skills the job actually requires:
-- [wavefront](https://github.com/crustify-rs/wavefront): a CodeQL-backed
-  dependency oracle that resolves the semantic order of a closure
-- [ffibox](https://github.com/crustify-rs/ffibox): a crate of smart pointers
-  and lifetime traits for safe interop across the FFI boundary
-- [ffimap](https://github.com/crustify-rs/ffimap): a deterministic map of a
-  Rust crate's FFI and unsafe surface
-- [audit campaigns](docs/audit/audit.md): reviewers hunting undefined behavior
-  in any Rust crate that wraps C.
+For a large task, Crustify orchestrates an end-to-end workflow. It splits the codebase
+into subsystems, schedules them in dependency order, and hands each batch to a focused
+sub-agent. Sub-agents run in parallel, each in its own worktree with only its own
+worklist in context, so none of them carries the whole codebase. Crustify keeps the
+campaign's state, lands their work behind build, test and safety gates, and asks you
+whenever a decision is yours.
 
-Agents write and review code inside isolated worktrees, behind build, test, and
-safety gates.
+Deterministic tools ground the agents' judgement:
 
-## Agent harness
+- [wavefront](https://github.com/crustify-rs/wavefront) orders the C codebase into
+  dependency-sorted waves, from CodeQL facts;
+- [ffibox](https://github.com/crustify-rs/ffibox) provides the smart pointers and
+  lifetime traits the generated Rust builds on;
+- [ffimap](https://github.com/crustify-rs/ffimap) measures the resulting unsafe and FFI
+  surface; and
+- the target's own tests run under sanitizers.
 
-Crustify uses a **two-agent architecture**:
+## Agents
 
-- The **orchestrator** configures campaigns, scaffolds repositories, schedules
-  subsystems, creates wave branches, invokes batch harnesses, verifies
-  landings, and runs regression gates.
-- The **translator** agent ports or wraps scheduled types and symbols, writes
-  tests, validates its work, and commits the result. Translator instances can
-  also be dispatched in review mode. Several translator instances can run
-  concurrently.
+| Agent | Role |
+|---|---|
+| **Crustify**, the assistant | Talks to you, configures the campaign, prepares builds and baselines, launches the other agents, lands and promotes their work, and keeps the dashboard. |
+| planner | Splits the codebase into subsystems and schedules each one's waves and batches. |
+| binder | Wraps a batch: keeps its C implementation and puts a safe Rust API in front of it. |
+| translator | Ports a batch to safe Rust. |
+| reviewer | Reviews what a wave landed, for unsafety, undefined behavior and equivalence with the C, files a report and reproducer per finding, and fixes them. |
 
-The harness supports two complementary reliability mechanisms:
+The assistant also repairs: it diagnoses failed agents, merge conflicts and regressions,
+then retries or reschedules the affected work. The reviewers test adversarially: they are
+independent of the agents whose work they review.
 
-- **Self-repair:** the orchestrator diagnoses failed agents, incomplete work,
-  merge conflicts, and regression failures, then retries or reschedules the
-  affected work.
-- **Adversarial testing:** independent translator instances review completed
-  code, challenge unsafe assumptions and behavioral equivalence, and repair
-  confirmed defects.
-
-The oracle, ffibox, and ffimap serve both the orchestrator and its agents
-as skills.
+The [audit campaign](docs/audit/audit.md) runs the reviewers alone over any Rust crate
+that wraps C.
 
 ## Components
 
@@ -58,7 +53,7 @@ Claude Code and OpenAI Codex are supported as agent backends with access to late
 closed- and open-weight models. Campaigns can use
 API or subscription billing and can select a model independently for each
 agentic stage. The recommended baseline is `claude-opus-5` for the
-orchestrator, `gpt-5.6-sol` for translators, and `claude-opus-5` again for the
+assistant, `gpt-5.6-sol` for translators, and `claude-opus-5` again for the
 review and UB passes.
 
 ## Quick start
@@ -76,27 +71,26 @@ python -m pip install -e crustify
 python -m pip install -e wavefront
 ```
 
-Optionally copy and pre-fill the campaign questionnaire before starting the
-orchestrator:
+Optionally copy and pre-fill the campaign questionnaire before starting
+Crustify:
 
 ```bash
 cp crustify/templates/translate/CRUSTIFY.template.md campaign-CRUSTIFY.md
 # Edit campaign-CRUSTIFY.md and answer as many questions as you want.
 ```
 
-Start the orchestrator with it:
+Start Crustify with it:
 
 ```bash
 crustify translate /path/to/repo ./campaign-CRUSTIFY.md
 ```
 
-The settings are copied to the repository's `crustify/CRUSTIFY.md`, which the orchestrator reads
-and the campaign tracks. Edit that copy to change settings mid-campaign; the orchestrator
-rereads it before each subsystem. Questions left unanswered are asked live. The
-orchestrator asks which repository and revision to use, whether to port or wrap
-it, where the campaign should start, which models to use, and how much autonomy
-it has. It presents a consolidated campaign brief for approval before mutating
-the target repository.
+The settings are copied to the repository's `crustify/CRUSTIFY.md`, which Crustify
+reads and the campaign tracks. Edit that copy to change settings mid-campaign; Crustify
+rereads it before each subsystem. Questions left unanswered are asked live: which
+repository and revision to use, whether to port or wrap it, where the campaign should
+start, which models to use, and how much autonomy Crustify has. It presents a
+consolidated campaign brief for approval before it changes the target repository.
 
 Campaign dashboards follow the
 [`templates/translate/dashboard.template.md`](templates/translate/dashboard.template.md)
@@ -108,7 +102,7 @@ For a reproducible container environment and the campaign templates, see
 ## Campaign lifecycle
 
 1. **Scope:** choose a target and objective, then define subsystems now or
-   brainstorm them with the orchestrator.
+   brainstorm them with Crustify.
 2. **Setup:** establish the build and test baseline, extract CodeQL data,
    configure the campaign-wide oracle target, decompose its targeted and
    imported translation units into `subsystems.json`, and scaffold compiling
@@ -118,15 +112,15 @@ For a reproducible container environment and the campaign templates, see
    `wavefront-config.json`; Wavefront computes its exact imported-producer
    closure, waves and batches. Wrap campaigns select the public API graph with
    `--api-headers-only`.
-4. **Translate and review:** the orchestrator invokes one isolated translator
-   per recorded batch. After all translation batches in a wave land, an
+4. **Translate and review:** Crustify launches one isolated binder or translator
+   per scheduled batch. After all translation batches in a wave land, an
    adversarial review wave runs before any consumer wave starts.
-5. **Promote and audit:** the orchestrator reconciles parallel landings, runs
+5. **Promote and audit:** Crustify reconciles parallel landings, runs
    regression and deterministic safety gates, then promotes the reviewed wave.
 
 Each role's authoritative procedure is its own prompt:
-[`translate-orchestrator`](src/crustify/prompts/translate-orchestrator.md),
-[`audit-orchestrator`](src/crustify/prompts/audit-orchestrator.md),
+[`translate-assistant`](src/crustify/prompts/translate-assistant.md),
+[`audit-assistant`](src/crustify/prompts/audit-assistant.md),
 [`binder`](src/crustify/prompts/binder.md),
 [`translator`](src/crustify/prompts/translator.md) and
 [`reviewer`](src/crustify/prompts/reviewer.md).
@@ -137,8 +131,8 @@ This repository installs one command:
 
 ```text
 crustify           one entry point for every stage:
-                     translate         start a translation campaign's orchestrator
-                     audit             start an audit campaign's orchestrator
+                     translate         start Crustify on a translation campaign
+                     audit             start Crustify on an audit campaign
                      spawn-planner     run one planner over its task.json
                      spawn-binder      run one binder over its task.json
                      spawn-translator  run one translator over its task.json

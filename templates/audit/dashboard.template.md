@@ -58,7 +58,7 @@ API-equivalent comparison value, not a charged amount.
 |---|---|---:|---|---:|---:|
 | `<batch id>` | `<modules / reports>` | `<n>` | `<n>h<n>m<n>s` | `$<n>` | `<n>` |
 | `<batch id>` | `<modules / reports>` | `<n>` | `<n>h<n>m<n>s` | `$<n>` | `<n>` |
-| orchestrator | — | — | — | `$<n>`+ | — |
+| assistant | — | — | — | `$<n>`+ | — |
 | **Σ `<n>` agents** | | **`<n>`** | **`<n>`h`<n>`m** | **`$<n>`** | **`<n>`** |
 
 ## Legend

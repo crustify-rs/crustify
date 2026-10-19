@@ -16,7 +16,7 @@ Copy this template into the campaign checkout, then fill it as work lands.
 - **`--max-syms`** — `<n>`
 - **`--max-loc`** — `<n>`
 - **`--min-fields`** — `<n>`
-- **orchestrator parallelism** — `<n>` concurrent batch processes
+- **assistant parallelism** — `<n>` concurrent batch processes
 - **branch** — `<branch>`, tip `<sha>`
 - **deps** — crustify `<sha>` (`<branch>`), ffibox `<sha>` (`<branch>`)
 - **build version** — `<build.json version>`
@@ -33,7 +33,7 @@ Review batches run by `crustify spawn-reviewer`, LLM-as-a-Judge over each landed
 - **`--max-syms`** — `<n>`
 - **`--max-loc`** — `<n>`
 - **`--min-fields`** — `<n>`
-- **orchestrator parallelism** — `<n>` concurrent batch processes
+- **assistant parallelism** — `<n>` concurrent batch processes
 - **branch** — `<branch>`, tip `<sha>`
 - **agents** — `<n>`, over `<n>` wave(s)
 
@@ -73,12 +73,12 @@ the campaign's.
   and regression gate
 - `batch` / `review` — in the Overview, the computed cost of the subsystem's
   translation batches and of its review batches; `—` where it ran none
-- `total` — `batch` + `review`; for the orchestrator, its own cost
-- `orchestrator` — the Overview row for every orchestrator session of the campaign, priced
-  from the `orchestrator-*.usage.json` records in `crustify/artifacts/orchestrator/`; `total` is their sum. A
+- `total` — `batch` + `review`; for the assistant, its own cost
+- `assistant` — the Overview row for every assistant session of the campaign, priced
+  from the `assistant-*.usage.json` records in `crustify/artifacts/assistant/`; `total` is their sum. A
   session that died before writing its record is recovered from its transcript (Notes)
 - `Σ recorded agents` / `Σ campaign` — the batch and review agents alone, then those plus the
-  orchestrator. `$/type` and `$/sym` are given for the agents only, since the orchestrator's
+  assistant. `$/type` and `$/sym` are given for the agents only, since the assistant's
   cost cannot be split by unit kind
 - `$/type` / `$/sym` — in the Overview, a subsystem's cost over the types or
   symbols it was scheduled for; `—` where it was scheduled for none
@@ -100,7 +100,7 @@ the campaign's.
   `+lifecycle` covers type and raw-lifetime items only, so it reads `—` for
   symbols. `total` is the row's sum
 - `+rejected PoCs` — the `ub_safe`, `ub_unsafe` and `equiv` PoCs that review
-  batch filed which the orchestrator rejected after rerunning them: they did not
+  batch filed which the assistant rejected after rerunning them: they did not
   reproduce, or did not show a real bug, and their fixes were reverted. They
   stay counted in their categories; `total` minus this column is the confirmed
   defects
@@ -164,7 +164,7 @@ Implementation `<provider>/<model>` via `<backend>`; review
 | `raw-lifetime-string` | `0` | `<n>` | `<n>m<n>s` | `$<n>` | `<n>M` | `$<n>` | `<n>M` | `$<n>` | `<n>M` | — | `$<n>` |
 | `<link-unit>/<subsystem>` | `<n>` | `<n>` | `<n>h<n>m<n>s` | `$<n>` | `<n>M` | `$<n>` | `<n>M` | `$<n>` | `<n>M` | `$<n>` | `$<n>` |
 | planners | — | — | `<n>h<n>m<n>s` | — | — | — | — | `$<n>` | `<n>M` | — | — |
-| orchestrator | — | — | — | — | — | — | — | `$<n>` | `<n>M` | — | — |
+| assistant | — | — | — | — | — | — | — | `$<n>` | `<n>M` | — | — |
 | **Σ recorded agents** | **`<n>`** | **`<n>`** | **`<n>h<n>m`** | **`$<n>`** | **`<n>M`** | **`$<n>`** | **`<n>M`** | **`$<n>`** | **`<n>M`** | **`$<n>`** | **`$<n>`** |
 | **Σ campaign** | **`<n>`** | **`<n>`** | **`<n>h<n>m`** | **`$<n>`** | **`<n>M`** | **`$<n>`** | **`<n>M`** | **`$<n>`** | **`<n>M`** | — | — |
 

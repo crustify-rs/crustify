@@ -20,7 +20,7 @@ from crustify.agents.base import (
 #: Every skill an orchestrator can carry, per campaign kind, in prompt order.
 #: Which of them it actually carries is decided by discovery: a skill whose
 #: files are on disk is rendered, one whose files are not is silently absent.
-#: Each lives at `prompts/skills/<skill>/<kind>-orchestrator.md`, named like
+#: Each lives at `prompts/skills/<skill>/<kind>-assistant.md`, named like
 #: the kind's prompt — one directory per skill, one file per role — so
 #: deleting the file ablates it for that kind and deleting the directory
 #: ablates it everywhere.
@@ -30,14 +30,14 @@ TRANSLATE_SKILLS = (
     SkillSpec(
         "crustify", "src/crustify/prompts/skills/ffimap/SKILL.md",
         capability="ffimap",
-        role_header="skills/ffimap/translate-orchestrator.md",
+        role_header="skills/ffimap/translate-assistant.md",
     ),
     #: One wavefront skill, two role overlays. The oracle a translator queries
     #: and the oracle an orchestrator plans with are the same tool used for
     #: different work, so the metadata is shared and only the guidance splits.
     SkillSpec(
         "wavefront", "README.md", capability="wavefront",
-        role_header="skills/wavefront/translate-orchestrator.md",
+        role_header="skills/wavefront/translate-assistant.md",
         meta="skills/wavefront/SKILL.md",
     ),
 )
@@ -48,7 +48,7 @@ AUDIT_SKILLS = (
     SkillSpec(
         "crustify", "src/crustify/prompts/skills/ffimap/SKILL.md",
         capability="ffimap",
-        role_header="skills/ffimap/audit-orchestrator.md",
+        role_header="skills/ffimap/audit-assistant.md",
     ),
 )
 
@@ -58,8 +58,8 @@ SKILLS_BY_KIND = {"translate": TRANSLATE_SKILLS, "audit": AUDIT_SKILLS}
 class OrchestrateAgent(CrustifyAgent):
     """One campaign orchestrator, for a `translate` or `audit` campaign."""
 
-    name = "orchestrator"
-    stage = "orchestrate"
+    name = "assistant"
+    stage = "assist"
     prompt_in_system_slot = True
     SKILLS = TRANSLATE_SKILLS
 
@@ -95,7 +95,7 @@ class OrchestrateAgent(CrustifyAgent):
         edit made mid-campaign is what the next subsystem runs under."""
         self._task_text()
         return expand_includes(
-            (_PKG_ROOT / "prompts" / f"{self.kind}-orchestrator.md").read_text())
+            (_PKG_ROOT / "prompts" / f"{self.kind}-assistant.md").read_text())
 
     def _prompt(self) -> str:
         if self.task_only:
