@@ -11,6 +11,15 @@ from crustify import deps, review, translate
 from crustify.agents.review import ReviewAgent
 
 _COMMIT = "3f2a9c1"
+#: What every review task carries beside its worklist.
+_RUN = {"model": "anthropic/claude-opus-5", "billing": "subscription",
+        "base_branch": "review-wave-0"}
+
+
+def _reset_run() -> None:
+    from crustify import config
+    config.MODEL_OVERRIDE = None
+    config.BILLING = "subscription"
 _ITEM = {"name": "T", "defined_in": "include/t.h", "kind": "type",
          "field_anchors": [], "home": "crustify/rust/demo/src/t.rs"}
 
@@ -44,10 +53,10 @@ class ReviewBatchTests(unittest.TestCase):
     def setUp(self) -> None:
         tmp = tempfile.TemporaryDirectory()
         self.addCleanup(tmp.cleanup)
-        self.path = Path(tmp.name) / "batch.json"
+        self.path = Path(tmp.name) / "task.json"
 
-    def load(self, doc: object) -> review.ReviewBatch:
-        self.path.write_text(json.dumps(doc))
+    def load(self, doc: dict) -> review.ReviewBatch:
+        self.path.write_text(json.dumps({**_RUN, **doc}))
         return review.load_batch(self.path)
 
     def test_objectives_are_optional(self) -> None:
@@ -60,7 +69,7 @@ class ReviewBatchTests(unittest.TestCase):
         self.assertEqual(batch.objectives, ["ub", "fix"])
 
     def test_a_translator_objective_is_not_a_review_field(self) -> None:
-        with self.assertRaisesRegex(SystemExit, "unknown batch field"):
+        with self.assertRaisesRegex(SystemExit, "unknown task field"):
             self.load({"objective": "review", "commits": [_COMMIT]})
 
     def test_malformed_objectives_are_rejected(self) -> None:
@@ -75,7 +84,7 @@ class ReviewBatchTests(unittest.TestCase):
                 self.load({"commits": commits})
 
     def test_c_items_are_not_a_review_worklist(self) -> None:
-        with self.assertRaisesRegex(SystemExit, "unknown batch field"):
+        with self.assertRaisesRegex(SystemExit, "unknown task field"):
             self.load({"items": [_ITEM]})
 
     def test_an_audit_reviews_modules(self) -> None:
@@ -121,7 +130,7 @@ class ReviewBatchTests(unittest.TestCase):
             self.load({"objectives": ["revisit"], "modules": ["a.rs"]})
 
     def test_the_translator_no_longer_reviews(self) -> None:
-        self.path.write_text(json.dumps({"objective": "review", "items": [_ITEM]}))
+        self.path.write_text(json.dumps({**_RUN, "objective": "review", "items": [_ITEM]}))
         with self.assertRaisesRegex(SystemExit, "spawn-reviewer"):
             translate.load_batch(self.path)
 
@@ -255,26 +264,26 @@ class ExecuteTests(unittest.TestCase):
         (self.repo / "crustify").mkdir()
         self.output = self.repo / "out"
         self.output.mkdir()
-        self.batch = self.repo / "batch.json"
+        self.batch = self.output / "task.json"
         _Checkouts(self)
+        self.addCleanup(_reset_run)
+
+    def write(self, doc: dict) -> None:
+        self.batch.write_text(json.dumps({**_RUN, **doc}))
 
     def test_dry_run_lists_the_resolved_objectives(self) -> None:
-        self.batch.write_text(json.dumps(
-            {"objectives": ["fix", "ub"], "commits": [_COMMIT]}))
+        self.write({"objectives": ["fix", "ub"], "commits": [_COMMIT]})
         with mock.patch("builtins.print") as printed:
-            review.execute(self.repo, self.batch, base_branch="review-wave-0",
-                           output=self.output, dry_run=True)
+            review.execute(self.repo, self.batch, log_dir=self.output, dry_run=True)
         self.assertIn("objectives ub, fix", printed.call_args.args[0])
 
     def test_dry_run_rejects_an_objective_no_skill_offers(self) -> None:
-        self.batch.write_text(json.dumps(
-            {"objectives": ["nonesuch"], "commits": [_COMMIT]}))
+        self.write({"objectives": ["nonesuch"], "commits": [_COMMIT]})
         with self.assertRaisesRegex(SystemExit, "nonesuch"):
-            review.execute(self.repo, self.batch, base_branch="review-wave-0",
-                           output=self.output, dry_run=True)
+            review.execute(self.repo, self.batch, log_dir=self.output, dry_run=True)
 
     def test_artifacts_take_the_reviewer_names(self) -> None:
-        self.batch.write_text(json.dumps({"commits": [_COMMIT]}))
+        self.write({"commits": [_COMMIT]})
         seen = {}
 
         def run(agent):
@@ -282,8 +291,7 @@ class ExecuteTests(unittest.TestCase):
 
         with mock.patch.object(ReviewAgent, "run", run), \
                 mock.patch("builtins.print"):
-            review.execute(self.repo, self.batch, base_branch="review-wave-0",
-                           output=self.output)
+            review.execute(self.repo, self.batch, log_dir=self.output)
         self.assertEqual(seen, {"stem": "reviewer", "dir": self.output})
 
 

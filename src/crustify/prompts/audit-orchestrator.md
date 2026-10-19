@@ -16,7 +16,7 @@ audit-wide results.
 
 ## Task
 
-The audit's task and settings are in `{workdir}/crustify/TASK.md`, which the user
+The audit's settings are in `{workdir}/crustify/CRUSTIFY.md`, which the user
 configured. Read it.
 
 It is similar to a questionnaire that the user filled by answering questions that have
@@ -36,9 +36,11 @@ before approval. Do not silently broaden the instrument scope.
 
 ### Settings changes
 
-The user may edit `crustify/TASK.md` while the audit runs, to change its settings for the
+The user may edit `crustify/CRUSTIFY.md` while the audit runs, to change its settings for the
 review waves that have not started. Reread it before starting each review wave, and
-compare it with the copy the previous wave ran under:
+compare it with the settings the previous wave ran under: the file as committed when that
+wave started, in the campaign branch's history. Commit the file on the campaign branch
+whenever you apply a change, so its history records the settings every wave ran under:
 
 - the target and revision are fixed for the audit: if they changed, keep their previous
   answers and report the change;
@@ -75,7 +77,7 @@ continue from them and the existing branches instead of starting over.
 cp templates/gitignore <repo>/crustify/.gitignore
 ```
 
-Create the campaign branch, unless it exists, and commit `crustify/TASK.md` on it:
+Create the campaign branch, unless it exists, and commit `crustify/CRUSTIFY.md` on it:
 
 ```bash
 git -C <repo> checkout -b crustify/main
@@ -172,12 +174,11 @@ Before launching review waves:
 
 ##### Review waves
 
-Reread `crustify/TASK.md` and apply its changes, as the Settings changes section
+Reread `crustify/CRUSTIFY.md` and apply its changes, as the Settings changes section
 describes.
 
 Create the review wave's integration branch and artifact dir, as the layout instructions
-name them for an audit. Copy `crustify/TASK.md` into the review wave's artifact dir, so it
-records the settings the wave ran under, and commit both on the campaign branch.
+name them for an audit.
 
 Create the review wave branch before launching its batches, and never check it out: a
 failed landing push has already been paid for.
@@ -189,18 +190,23 @@ notes, and correct or delete those the audit has made stale.
 ##### Review batches
 
 For each review batch:
-- create its artifact dir, and write its `batch.json` inside it;
+- create its artifact dir, and write its `task.json` inside it, with its review wave
+  integration branch as `base_branch` and the approved model and billing as `model` and
+  `billing`;
 - create its batch branch and fork its worktree, as the layout instructions name them;
 - symlink any gitignored state from the main checkout that is shared and required for a
   complete crustify tree: `crustify/.providers`, etc.
 
-A review batch's `batch.json` holds its workset and the approved objectives:
+A review batch's `task.json` holds its workset, the approved objectives, its review wave
+integration branch, and the approved model and billing:
 
 ```json
-{{"objectives": ["ub", "equiv", "disclose"], "modules": ["src/frame.rs", "src/codec/"]}}
+{{"objectives": ["ub", "equiv", "disclose"], "modules": ["src/frame.rs", "src/codec/"],
+ "base_branch": "<review wave branch>", "model": "<model>", "billing": "<billing>"}}
 ```
 
-A part of a module names its types, trait impls and functions:
+A part of a module names its types, trait impls and functions (the run fields are left out
+of this example and the next):
 
 ```json
 {{"objectives": ["ub", "contracts", "disclose"], "modules": [{{"path": "src/codec.rs", "types": ["Decoder"], "trait_impls": ["Drop for Decoder", "Iterator for Packets<'_>"], "functions": ["open_input"]}}]}}
@@ -219,17 +225,15 @@ batch resolves to, and rejects any the reviewer's prompt and skills do not offer
 #### 3. Launch and monitoring
 
 Run one reviewer per review batch, concurrently up to the approved concurrency. Pass its
-batch worktree as the workdir, its `batch.json`, its batch directory as `--output`, its
-review wave integration branch as `--base-branch`, and the approved model and billing:
+batch worktree as the workdir, its `task.json`, and its batch directory as `--log-dir`:
 
 ```bash
-crustify spawn-reviewer <batch worktree> <batch dir>/batch.json \
-    --base-branch <review wave branch> --output <batch dir> --model <model> --billing <billing>
+crustify spawn-reviewer <batch worktree> <batch dir>/task.json --log-dir <batch dir>
 ```
 
 Leave a short buffer window between launches so they don't get assigned the same
 timestamp. The harness validates the batch, starts the backend, and writes `reviewer.log`
-and `reviewer.usage.json` there.
+and `reviewer.usage.json` into the `--log-dir`.
 
 The reviewer commits its reports and fixes and atomically fast-forwards the review wave
 branch. On rejection, it rebases its own branch onto the current wave tip, revalidates, and

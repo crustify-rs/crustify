@@ -315,7 +315,7 @@ class PromptArgumentTests(unittest.TestCase):
                               artifact_dir=self.repo, log_stem="x"))
 
     def test_orchestrator_arguments_match_its_placeholders(self) -> None:
-        task = self.repo / "TASK.md"
+        task = self.repo / "CRUSTIFY.md"
         task.write_text("- Answer: none")
         agent = OrchestrateAgent(self.repo, kind="translate", task=task,
                                  model="anthropic/claude-opus-5")
@@ -329,7 +329,7 @@ class OrchestratorPromptTests(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.repo = Path(self.tmp.name)
         (self.repo / "crustify").mkdir()
-        self.task = self.repo / "TASK.md"
+        self.task = self.repo / "CRUSTIFY.md"
         self.task.write_text("1. **Q** (`id: source`)\n   - Answer: `{brace}`")
 
     def tearDown(self) -> None:
@@ -348,7 +348,7 @@ class OrchestratorPromptTests(unittest.TestCase):
                     self.repo, kind=kind, task=self.task,
                     model="anthropic/claude-opus-5").system_preamble()
                 self.assertNotIn("`{brace}`", pre)
-                self.assertIn(f"{self.repo}/crustify/TASK.md", pre)
+                self.assertIn(f"{self.repo}/crustify/CRUSTIFY.md", pre)
 
     def test_the_user_turn_carries_no_instruction(self) -> None:
         """Everything the agent is told is in the system slot; neither backend

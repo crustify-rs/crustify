@@ -11,7 +11,7 @@ Copy this template into the campaign checkout, then fill it as work lands.
 - **`api_headers`** — `<dirs / files>`
 - **agent backend** — `<codex | claude>`
 - **model** — `<provider>/<model>`
-- **`--billing`** — `<api | subscription>`
+- **billing** — `<api | subscription>`
 - **`--max-types`** — `<n>`
 - **`--max-syms`** — `<n>`
 - **`--max-loc`** — `<n>`
@@ -28,7 +28,7 @@ Review batches run by `crustify spawn-reviewer`, LLM-as-a-Judge over each landed
 
 - **agent backend** — `<codex | claude>`
 - **model** — `<provider>/<model>`
-- **`--billing`** — `<api | subscription>`
+- **billing** — `<api | subscription>`
 - **`--max-types`** — `<n>`
 - **`--max-syms`** — `<n>`
 - **`--max-loc`** — `<n>`

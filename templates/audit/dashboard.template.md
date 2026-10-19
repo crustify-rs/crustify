@@ -11,7 +11,7 @@ prose belongs in Notes.
 - **reviewer objectives** — `<ub, equiv, disclose, fix, ...>`
 - **agent backend** — `<claude | codex>`
 - **model** — `<provider>/<model>`
-- **`--billing`** — `<api | subscription>`
+- **billing** — `<api | subscription>`
 - **maximum spend** — `$<n>`; reached: `<yes | no>`
 - **instruments** — `<miri | asan/ubsan | bsan | msan | tsan | equivalence | combination>`
 - **deps** — crustify `<sha>` (`<branch>`)

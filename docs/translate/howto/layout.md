@@ -54,10 +54,9 @@ crustify/artifacts/                             the campaign
 │   └── orchestrator-<timestamp>.usage.json
 └── <link-unit>/<subsystem>/                    a subsystem
     ├── schedule.json                           its waves and batches
-    ├── TASK.md                                 the settings the subsystem ran under
     ├── wave-<index>/                           a wave
     │   └── batch-<index>/                      a batch
-    │       ├── batch.json                      the thin batch, written out from its schedule.json
+    │       ├── task.json                       its schedule.json entry, with the run fields
     │       ├── <role>.log                      binder, translator or reviewer
     │       └── <role>.usage.json
     └── review-wave-<index>/                    a review wave
@@ -68,8 +67,12 @@ An audit's review waves sit directly in the campaign's artifact dir, as
 `crustify/artifacts/review-wave-<index>/batch-<index>/`.
 
 Each level also holds its `ffimap.json` once the orchestrator records it. A batch's artifact
-dir is what its `--output` names, and holds everything about that batch: its input and the
-artifacts its agent produced.
+dir holds its `task.json` and is what its `--log-dir` names, so it holds everything about
+that batch: its input, the model and billing it ran under, and the artifacts its agent
+produced.
+
+The settings each subsystem or review wave ran under are not copied anywhere: they are
+`crustify/CRUSTIFY.md` as committed when it started, in the campaign branch's history.
 
 ## Scratch
 

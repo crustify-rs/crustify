@@ -12,10 +12,10 @@ a report and a reproducer for every finding it confirms.
 ## Running one
 
 ```sh
-crustify audit /path/to/repo /path/to/TASK.md --model anthropic/claude-opus-5
+crustify audit /path/to/repo /path/to/CRUSTIFY.md --model anthropic/claude-opus-5
 ```
 
-Fill in [`TASK.template.md`](../../templates/audit/TASK.template.md) first; a
+Fill in [`CRUSTIFY.template.md`](../../templates/audit/CRUSTIFY.template.md) first; a
 headless run needs every mandatory answer. Rerunning the command resumes the audit, and
 `--task-only` runs the ablation control described in
 [`BARE.md`](../../templates/audit/BARE.md).
@@ -48,7 +48,7 @@ reruns:
 {"objectives": ["revisit", "disclose", "fix"], "reports": ["crustify/reviews/<batch id>/ub_safe/<slug>"]}
 ```
 
-[`batch.md`](../translate/schemas/batch.md) gives the fields, and
+[`task.md`](../translate/schemas/task.md) gives the fields, and
 [`layout.md`](../translate/howto/layout.md) the branches and artifact dirs an audit's
 review waves use.
 

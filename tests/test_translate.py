@@ -7,18 +7,29 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from crustify import translate
+from crustify import config, translate
+
+#: The run settings every task carries.
+RUN = {"model": "anthropic/claude-opus-5", "billing": "subscription"}
+
+
+def _reset_run() -> None:
+    """A task applies its run settings process-wide; tests put them back."""
+    config.MODEL_OVERRIDE = None
+    config.BILLING = "subscription"
 
 
 class BatchValidationTests(unittest.TestCase):
     def setUp(self) -> None:
         self.tmp = tempfile.TemporaryDirectory()
-        self.path = Path(self.tmp.name) / "batch.json"
+        self.path = Path(self.tmp.name) / "task.json"
 
     def tearDown(self) -> None:
         self.tmp.cleanup()
 
-    def load(self, doc: object) -> translate.Batch:
+    def load(self, doc: dict, *, complete: bool = True) -> translate.Batch:
+        if complete:
+            doc = {**RUN, "base_branch": "wave-0", **doc}
         self.path.write_text(json.dumps(doc))
         return translate.load_batch(self.path)
 
@@ -37,6 +48,25 @@ class BatchValidationTests(unittest.TestCase):
         })
         self.assertEqual(batch.route, "symbol")
         self.assertEqual(batch.objective, "wrap")
+        self.assertEqual(batch.base_branch, "wave-0")
+        self.assertEqual(batch.run, translate.RunSettings(**RUN))
+
+    def test_run_settings_and_branch_are_required_and_checked(self) -> None:
+        doc = {"objective": "wrap", "items": [self.item()]}
+        for field in ("model", "billing", "base_branch"):
+            with self.subTest(missing=field), \
+                    self.assertRaisesRegex(SystemExit, f"missing task field.*{field}"):
+                full = {**RUN, "base_branch": "wave-0", **doc}
+                del full[field]
+                self.load(full, complete=False)
+        with self.assertRaisesRegex(SystemExit, "unknown provider"):
+            self.load({**doc, "model": "nowhere/model-1"})
+        with self.assertRaisesRegex(SystemExit, "billing must be one of"):
+            self.load({**doc, "billing": "free"})
+        with self.assertRaisesRegex(SystemExit, "base_branch must name a branch"):
+            self.load({**doc, "base_branch": ""})
+        self.assertEqual(
+            self.load({**doc, "base_branch": "refs/heads/wave-1"}).base_branch, "wave-1")
 
     def test_type_field_anchors_are_preserved(self) -> None:
         batch = self.load({
@@ -54,7 +84,7 @@ class BatchValidationTests(unittest.TestCase):
 
     def test_rejects_unknown_fields_and_duplicate_items(self) -> None:
         item = self.item()
-        with self.assertRaisesRegex(SystemExit, "unknown batch field"):
+        with self.assertRaisesRegex(SystemExit, "unknown task field"):
             self.load({"objective": "wrap", "items": [item], "route": "symbol"})
         with self.assertRaisesRegex(SystemExit, "duplicate item"):
             self.load({"objective": "wrap", "items": [item, item]})
@@ -107,8 +137,10 @@ class GitHarnessTests(unittest.TestCase):
         self.git("branch", "wave-0")
         self.output = Path(self.tmp.name) / "logs"
         self.output.mkdir()
-        self.batch = Path(self.tmp.name) / "batch.json"
+        self.batch = self.output / "task.json"
         self.batch.write_text(json.dumps({
+            **RUN,
+            "base_branch": "wave-0",
             "objective": "wrap",
             "items": [{
                 "name": "Frame",
@@ -120,6 +152,7 @@ class GitHarnessTests(unittest.TestCase):
         }))
 
     def tearDown(self) -> None:
+        _reset_run()
         self.tmp.cleanup()
 
     def git(self, *args: str, check: bool = True) -> subprocess.CompletedProcess:
@@ -151,8 +184,7 @@ class GitHarnessTests(unittest.TestCase):
                 pass
 
         with mock.patch("crustify.agents.bind.BindAgent", FakeAgent):
-            translate.execute(tree, self.batch, role="binder", base_branch="wave-0",
-                              output=self.output)
+            translate.execute(tree, self.batch, role="binder", log_dir=self.output)
         self.assertEqual(calls, [tree])
         # Only the worktree the test forked itself is new.
         self.assertEqual(
@@ -167,10 +199,8 @@ class GitHarnessTests(unittest.TestCase):
     def test_dry_run_does_not_create_refs_or_worktrees(self) -> None:
         before_refs = self.git("for-each-ref", "--format=%(refname)", "refs/heads").stdout
         before_trees = self.git("worktree", "list", "--porcelain").stdout
-        translate.execute(
-            self.repo, self.batch, role="binder", base_branch="wave-0",
-            output=self.output, dry_run=True,
-        )
+        translate.execute(self.repo, self.batch, role="binder", log_dir=self.output,
+                          dry_run=True)
         self.assertEqual(
             self.git("for-each-ref", "--format=%(refname)", "refs/heads").stdout,
             before_refs,
@@ -181,23 +211,22 @@ class GitHarnessTests(unittest.TestCase):
     def test_each_role_refuses_the_other_objective(self) -> None:
         with self.assertRaisesRegex(SystemExit, "spawn-binder"):
             translate.execute(self.repo, self.batch, role="translator",
-                              base_branch="wave-0", output=self.output,
-                              dry_run=True)
+                              log_dir=self.output, dry_run=True)
         port = Path(self.tmp.name) / "port.json"
         doc = json.loads(self.batch.read_text())
         port.write_text(json.dumps(dict(doc, objective="port")))
         with self.assertRaisesRegex(SystemExit, "spawn-translator"):
-            translate.execute(self.repo, port, role="binder",
-                              base_branch="wave-0", output=self.output,
+            translate.execute(self.repo, port, role="binder", log_dir=self.output,
                               dry_run=True)
 
-    def test_output_directory_must_already_exist(self) -> None:
+    def test_the_task_file_and_log_dir_must_exist(self) -> None:
+        with self.assertRaisesRegex(SystemExit, "no task file at"):
+            translate.execute(self.repo, self.output / "missing.json",
+                              role="binder", log_dir=self.output, dry_run=True)
         missing = Path(self.tmp.name) / "missing-logs"
-        with self.assertRaisesRegex(SystemExit, "existing directory"):
-            translate.execute(
-                self.repo, self.batch, role="binder", base_branch="wave-0",
-                output=missing, dry_run=True,
-            )
+        with self.assertRaisesRegex(SystemExit, "--log-dir must name an existing directory"):
+            translate.execute(self.repo, self.batch, role="binder",
+                              log_dir=missing, dry_run=True)
         self.assertFalse(missing.exists())
 
     def test_bind_agent_renders_thin_worklist_and_base_branch(self) -> None:
@@ -222,8 +251,9 @@ class GitHarnessTests(unittest.TestCase):
         self.assertNotIn("{", agent._prompt())
 
     def test_artifacts_take_fixed_names_in_the_batch_directory(self) -> None:
-        """`--output` is the batch's own directory, so nothing has to be
-        unique; the orchestrator names a batch by choosing where it writes."""
+        """`--log-dir` is the batch's own directory, so nothing has to be
+        unique; the orchestrator names a batch by choosing where it writes.
+        The agent runs under the task's model and billing."""
         tree = self._worktree("batch-b")
         calls: list[dict] = []
 
@@ -241,14 +271,14 @@ class GitHarnessTests(unittest.TestCase):
                     log.usage({"provider": "test", "model": "test", "requests": []})
 
         with mock.patch("crustify.agents.bind.BindAgent", FakeAgent):
-            translate.execute(
-                tree, self.batch, role="binder", base_branch="wave-0",
-                output=self.output)
+            translate.execute(tree, self.batch, role="binder", log_dir=self.output)
 
         self.assertEqual(len(calls), 1)
         call = calls[0]
         self.assertEqual(call["git_base"], "wave-0")
         self.assertEqual(call["log_stem"], "binder")
+        self.assertEqual(config.MODEL_OVERRIDE, RUN["model"])
+        self.assertEqual(config.BILLING, RUN["billing"])
         self.assertTrue((self.output / "binder.log").is_file())
         self.assertTrue((self.output / "binder.usage.json").is_file())
         usage = json.loads((self.output / "binder.usage.json").read_text())
@@ -272,8 +302,7 @@ class GitHarnessTests(unittest.TestCase):
 
         with (mock.patch("crustify.agents.bind.BindAgent", FailingAgent),
               self.assertRaisesRegex(RuntimeError, "agent failed")):
-            translate.execute(tree, self.batch, role="binder", base_branch="wave-0",
-                              output=self.output)
+            translate.execute(tree, self.batch, role="binder", log_dir=self.output)
         self.assertTrue(tree.is_dir())
 
     def test_concurrent_sibling_landings_reject_loser_then_rebase(self) -> None:

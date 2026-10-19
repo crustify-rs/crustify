@@ -37,21 +37,22 @@ before the first wave of the next.
 
 ## waves[*].batches[*]
 
-A batch entry is a thin batch: the exact object `crustify translate` accepts, documented
-in `docs/translate/schemas/batch.md`.
+A batch entry is a binder's or translator's `task.json` without its run fields
+(`base_branch`, `model` and `billing`), which the orchestrator decides when it launches the
+batch; see `docs/translate/schemas/task.md`.
 
 `objective` is per batch, not per wave. A port campaign wraps a type while C still reads
 its fields and ports it afterwards, so one wave holds batches of differing objectives.
 
-Writing one out is a copy: serialized verbatim to its `batch.json`, no field added or
-removed.
+The orchestrator writes each entry out as the batch's `task.json`, adding the run fields
+and changing nothing else.
 
 ## Derived paths
 
 Every index also addresses the filesystem and the branch namespace, so nothing records a
 path: `docs/translate/howto/layout.md` spells each branch, worktree and artifact dir from
-the link unit, subsystem, wave index and batch index. A batch's artifact dir
-is what its `--output` names.
+the link unit, subsystem, wave index and batch index. A batch's artifact dir holds its
+`task.json` and is what its `--log-dir` names.
 
 ## Version 1
 

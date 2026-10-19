@@ -1,4 +1,4 @@
-"""Execute one orchestrator-projected review batch."""
+"""Execute one orchestrator-written review task."""
 from __future__ import annotations
 
 import re
@@ -6,7 +6,8 @@ from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import NoReturn
 
-from crustify.translate import check_fields, read_object
+from crustify.translate import (RUN_FIELDS, RunSettings, check_fields, parse_branch,
+                                parse_run, read_object, task_and_log_dir)
 
 _OBJECTIVE = re.compile(r"^[a-z]+$")
 
@@ -31,6 +32,8 @@ class ReviewBatch:
     modules: list[object]
     reports: list[str]
     objectives: list[str] | None
+    base_branch: str
+    run: RunSettings
 
 
 def _fail(message: str) -> NoReturn:
@@ -118,8 +121,8 @@ def load_batch(path: Path) -> ReviewBatch:
     the skills the reviewer carries, so they are checked against the agent,
     not here."""
     raw = read_object(path, _fail)
-    check_fields(raw, set(), {"commits", "modules", "reports", "objectives"},
-                 _fail)
+    check_fields(raw, {"base_branch"} | RUN_FIELDS,
+                 {"commits", "modules", "reports", "objectives"}, _fail)
     if "commits" in raw and "modules" in raw:
         _fail("a batch carries commits or modules, not both")
     if not {"commits", "modules", "reports"} & set(raw):
@@ -147,27 +150,27 @@ def load_batch(path: Path) -> ReviewBatch:
     elif "modules" in raw:
         route, modules = "modules", _modules(raw["modules"])
     return ReviewBatch(route=route, commits=list(commits), modules=modules,
-                       reports=reports, objectives=objectives)
+                       reports=reports, objectives=objectives,
+                       base_branch=parse_branch(raw, _fail),
+                       run=parse_run(raw, _fail))
 
 
 def execute(
     workdir: Path,
-    batch_path: Path,
+    task_path: Path,
     *,
-    base_branch: str,
-    output: Path,
+    log_dir: Path,
     dry_run: bool = False,
 ) -> None:
     """Run exactly one reviewer in ``workdir``.
 
     As for a translator, ``workdir`` is the worktree the orchestrator forked
-    for this batch and ``output`` the directory its artifacts land in; the
-    harness creates and purges neither.
+    for this batch and ``log_dir`` the existing directory its log and usage
+    record land in; the harness creates and purges neither.
     """
-    batch = load_batch(batch_path)
-    output = output.resolve()
-    if not output.is_dir():
-        _fail(f"--output must name an existing directory: {output}")
+    task_path, output = task_and_log_dir(task_path, log_dir, _fail)
+    batch = load_batch(task_path)
+    base_branch = batch.base_branch
 
     from crustify.agents.review import ReviewAgent
 
@@ -180,7 +183,7 @@ def execute(
         modules=batch.modules,
         reports=batch.reports,
         objectives=batch.objectives,
-        git_base=base_branch.removeprefix("refs/heads/"),
+        git_base=base_branch,
         artifact_dir=output,
         log_stem=_LOG_STEM,
     )
@@ -190,13 +193,15 @@ def execute(
             f"{len(batch.commits)} commit(s), {len(batch.modules)} module(s), "
             f"{len(batch.reports)} report(s); objectives "
             f"{', '.join(agent.objectives)}; landing on {base_branch}; "
-            "no agent spawned."
+            f"model {batch.run.model} ({batch.run.billing}); no agent spawned."
         )
         return
 
     print(f"[crustify spawn-reviewer] workdir: {agent.workdir}")
     print(f"[crustify spawn-reviewer] landing on: {base_branch}")
     print(f"[crustify spawn-reviewer] objectives: {', '.join(agent.objectives)}")
+    print(f"[crustify spawn-reviewer] model: {batch.run.model} ({batch.run.billing})")
     print(f"[crustify spawn-reviewer] log: {output / f'{_LOG_STEM}.log'}")
+    batch.run.apply()
     agent.run()
     print("[crustify spawn-reviewer] batch completed.")

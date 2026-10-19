@@ -15,7 +15,7 @@ def main() -> None:
 
     # Options of every command that starts a crustify agent. A parent parser
     # rather than options on `crustify` itself, so they follow the command
-    # like any other option: `crustify translate <wd> <TASK> --model ...`.
+    # like any other option: `crustify translate <wd> <CRUSTIFY.md> --model ...`.
     agent_opts = argparse.ArgumentParser(add_help=False)
     agent_opts.add_argument(
         "--no-console",
@@ -23,7 +23,11 @@ def main() -> None:
         default=False,
         help="Suppress live console output from agents.",
     )
-    agent_opts.add_argument(
+    # Model and billing of the commands that start an orchestrator. A spawned
+    # agent reads both from its task.json instead, so its batch dir records
+    # everything the run depended on.
+    model_opts = argparse.ArgumentParser(add_help=False)
+    model_opts.add_argument(
         "--model",
         default=None,
         metavar="NAME",
@@ -34,7 +38,7 @@ def main() -> None:
              "while other OpenRouter models use Codex. Default: the agent's "
              "hard-coded model.",
     )
-    agent_opts.add_argument(
+    model_opts.add_argument(
         "--billing",
         default=None,
         choices=["subscription", "api"],
@@ -71,7 +75,7 @@ def main() -> None:
     _orch_blurbs = {
         "translate": (
             "Start a translation campaign's orchestrator. It reads the "
-            "campaign task, sets the campaign up, spawns the planners that "
+            "campaign settings, sets the campaign up, spawns the planners that "
             "decompose and schedule it, and spawns the binders, translators "
             "and reviewers that execute the schedule."),
         "audit": (
@@ -79,18 +83,19 @@ def main() -> None:
             "task and spawns the reviewers itself."),
     }
     for kind, blurb in _orch_blurbs.items():
-        orch_p = sub.add_parser(kind, parents=[agent_opts],
+        orch_p = sub.add_parser(kind, parents=[agent_opts, model_opts],
                                 help=blurb, description=blurb)
         orch_p.set_defaults(kind=kind, handler=_handle_orchestrate)
         add_workdir(orch_p, "the checkout the campaign works in; its "
                             "artifacts live under <workdir>/crustify/")
         orch_p.add_argument(
-            "task", type=Path, metavar="TASK", nargs="?",
-            help="Campaign TASK.md, copied to <workdir>/crustify/TASK.md, "
-                 "the canonical copy the orchestrator reads and you edit to "
-                 "change settings mid-campaign. Omit it once that copy "
-                 "exists; a TASK that differs from it is refused, so "
-                 "resuming never overwrites your edits.")
+            "task", type=Path, metavar="CRUSTIFY_MD", nargs="?",
+            help="The campaign's settings, copied to "
+                 "<workdir>/crustify/CRUSTIFY.md, the canonical copy the "
+                 "orchestrator reads and you edit to change settings "
+                 "mid-campaign. Omit it once that copy exists; a file that "
+                 "differs from it is refused, so resuming never overwrites "
+                 "your edits.")
         orch_p.add_argument(
             "--task-only", action="store_true",
             help="Ablation control: the task file is the entire prompt and "
@@ -112,13 +117,13 @@ def main() -> None:
     plan_p.set_defaults(handler=_handle_spawn_planner)
     add_workdir(plan_p, "the campaign checkout, on its campaign branch")
     plan_p.add_argument(
-        "batch", type=Path,
-        help="Planner batch JSON: {\"objective\": \"emit\" | \"review\"}.")
+        "task", type=Path, metavar="TASK_JSON",
+        help="Path to the run's task.json: its objective (emit or review), "
+             "model and billing.")
     plan_p.add_argument(
-        "--output", required=True, type=Path, metavar="DIR",
-        help="Existing directory for this run's artifacts. The agent writes "
-             "planner.log and planner.usage.json into it, so give each run "
-             "its own directory.")
+        "--log-dir", required=True, type=Path, metavar="DIR",
+        help="Existing directory for the run's planner.log and "
+             "planner.usage.json; give each run its own.")
     plan_p.add_argument(
         "--dry-run", action="store_true",
         help="Validate and summarize the batch without spawning an agent.")
@@ -136,22 +141,20 @@ def main() -> None:
             "The workdir is the isolated worktree the orchestrator forked for "
             "it; the harness neither creates nor purges that tree. The batch "
             "is the whole input: which items, their objective, and the Rust "
-            "home each item belongs in.")
+            "home each item belongs in, and how it runs.")
         p = sub.add_parser(f"spawn-{role}", parents=[agent_opts],
                            help=blurb, description=blurb)
         p.set_defaults(handler=_handle_spawn_worklist, role=role)
         add_workdir(p, "the batch's worktree, forked by the orchestrator")
         p.add_argument(
-            "batch", type=Path,
-            help="Thin batch JSON containing objective and scheduled items.")
+            "task", type=Path, metavar="TASK_JSON",
+            help="Path to the batch's task.json: its objective and items, the "
+                 "wave integration branch it lands on, and its model and "
+                 "billing.")
         p.add_argument(
-            "--base-branch", required=True, metavar="BRANCH",
-            help="Unchecked-out wave integration branch the batch lands on.")
-        p.add_argument(
-            "--output", required=True, type=Path, metavar="DIR",
-            help=f"Existing directory for this batch's artifacts. The agent "
-                 f"writes {role}.log and {role}.usage.json into it, so give "
-                 "each batch its own directory.")
+            "--log-dir", required=True, type=Path, metavar="DIR",
+            help=f"Existing directory for the batch's {role}.log and "
+                 f"{role}.usage.json; give each batch its own.")
         p.add_argument(
             "--dry-run", action="store_true",
             help="Validate and summarize the batch without spawning an agent.")
@@ -172,17 +175,14 @@ def main() -> None:
     review_p.set_defaults(handler=_handle_spawn_reviewer)
     add_workdir(review_p, "the batch's worktree, forked by the orchestrator")
     review_p.add_argument(
-        "batch", type=Path,
-        help="Review batch JSON containing commits or modules, reports, and "
-             "optional objectives.")
+        "task", type=Path, metavar="TASK_JSON",
+        help="Path to the batch's task.json: commits or modules, reports, "
+             "optional objectives, the review wave integration branch it lands "
+             "on, and its model and billing.")
     review_p.add_argument(
-        "--base-branch", required=True, metavar="BRANCH",
-        help="Unchecked-out review wave integration branch the batch lands on.")
-    review_p.add_argument(
-        "--output", required=True, type=Path, metavar="DIR",
-        help="Existing directory for this batch's artifacts. The agent writes "
-             "reviewer.log and reviewer.usage.json into it, so give each "
-             "batch its own directory.")
+        "--log-dir", required=True, type=Path, metavar="DIR",
+        help="Existing directory for the batch's reviewer.log and "
+             "reviewer.usage.json; give each batch its own.")
     review_p.add_argument(
         "--dry-run", action="store_true",
         help="Validate and summarize the batch without spawning an agent.")
@@ -252,10 +252,11 @@ def _handle_cost(args: argparse.Namespace) -> None:
                             price_cache=args.price_cache))
 
 
-#: Where a campaign's task lives in its checkout. Tracked, and read by the
+#: Where a campaign's settings live in its checkout. Tracked, and read by the
 #: orchestrator rather than handed to it once, so editing it changes the
-#: settings of the subsystems that have not started yet.
-TASK = "crustify/TASK.md"
+#: settings of the subsystems that have not started yet; its git history
+#: records the settings each subsystem ran under.
+TASK = "crustify/CRUSTIFY.md"
 
 
 def canonical_task(workdir: Path, given: Path | None) -> Path:
@@ -267,16 +268,16 @@ def canonical_task(workdir: Path, given: Path | None) -> Path:
     task = workdir / TASK
     if given is None:
         if not task.is_file():
-            raise SystemExit(f"no campaign task at {task}; pass one to start")
+            raise SystemExit(f"no campaign settings at {task}; pass a CRUSTIFY.md to start")
         return task
     if not given.is_file():
-        raise SystemExit(f"no campaign task at {given}")
+        raise SystemExit(f"no campaign settings at {given}")
     text = given.read_text()
     if task.is_file() and given.resolve() != task.resolve():
         if task.read_text() != text:
             raise SystemExit(
                 f"{task} differs from {given}: edit {task} to change the "
-                "campaign's settings, or omit TASK to run it as it is")
+                "campaign's settings, or omit CRUSTIFY_MD to run it as it is")
         return task
     task.parent.mkdir(parents=True, exist_ok=True)
     if not task.is_file():
@@ -311,7 +312,7 @@ def _handle_orchestrate(args: argparse.Namespace) -> None:
 def _handle_spawn_planner(args: argparse.Namespace) -> None:
     """Run one planner over the campaign checkout."""
     from crustify.plan import execute
-    execute(Path(args.workdir), args.batch, output=args.output,
+    execute(Path(args.workdir), args.task, log_dir=args.log_dir,
             dry_run=args.dry_run)
 
 
@@ -319,13 +320,12 @@ def _handle_spawn_worklist(args: argparse.Namespace) -> None:
     """Execute one orchestrator-projected batch under its binder or
     translator."""
     from crustify.translate import execute
-    execute(Path(args.workdir), args.batch, role=args.role,
-            base_branch=args.base_branch, output=args.output,
-            dry_run=args.dry_run)
+    execute(Path(args.workdir), args.task, role=args.role,
+            log_dir=args.log_dir, dry_run=args.dry_run)
 
 
 def _handle_spawn_reviewer(args: argparse.Namespace) -> None:
     """Execute one orchestrator-projected review batch."""
     from crustify.review import execute
-    execute(Path(args.workdir), args.batch, base_branch=args.base_branch,
-            output=args.output, dry_run=args.dry_run)
+    execute(Path(args.workdir), args.task, log_dir=args.log_dir,
+            dry_run=args.dry_run)

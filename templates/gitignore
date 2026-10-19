@@ -15,6 +15,7 @@ rust.bak
 artifacts/**/binder.log
 artifacts/**/translator.log
 artifacts/**/reviewer.log
+artifacts/**/planner.log
 artifacts/orchestrator/*.log
 artifacts/orchestrator/*.usage.json
 

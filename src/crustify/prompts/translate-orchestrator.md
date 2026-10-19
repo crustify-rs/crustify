@@ -17,7 +17,7 @@ alone reconcile the subsystem- and campaign-wide results.
 
 ## Task
 
-The campaign's task and settings are in `{workdir}/crustify/TASK.md`, which the user
+The campaign's settings are in `{workdir}/crustify/CRUSTIFY.md`, which the user
 configured. Read it.
 
 It is similar to a questionnaire that the user filled by answering questions that have
@@ -35,9 +35,12 @@ for approval. Do not begin Phase 1 or mutate the campaign repository before appr
 
 ### Settings changes
 
-The user may edit `crustify/TASK.md` while the campaign runs, to change its settings for
+The user may edit `crustify/CRUSTIFY.md` while the campaign runs, to change its settings for
 the subsystems that have not started. Reread it before starting each subsystem, and
-compare it with the copy the previous subsystem ran under:
+compare it with the settings the previous subsystem ran under: the file as committed at
+that subsystem's base, `git show <its base>:crustify/CRUSTIFY.md`. Commit the file on the
+campaign branch whenever you apply a change, so its history records the settings every
+subsystem ran under:
 
 - `source` and `objective` are fixed for the campaign: if they changed, keep their
   previous answers and report the change;
@@ -75,7 +78,7 @@ cp templates/gitignore <repo>/crustify/.gitignore
 ```
 
 If you're working in a git repo, create the campaign branch, unless it exists, and
-commit `crustify/TASK.md` on it:
+commit `crustify/CRUSTIFY.md` on it:
 
 ```bash
 git -C <repo> checkout -b crustify/main
@@ -122,13 +125,13 @@ campaign branch, as many runs as `plan-agent` asks for (by default two, with the
 translation model and billing). The first run's objective is `emit`: it creates the plan,
 or adds what an existing plan lacks. Every later run's is `review`: it assesses what the
 earlier runs committed, amends it, and files a report per edit under
-`crustify/reviews/planner/`. Give each run its own artifact dir, write its batch,
-`{{"objective": "emit"}}` or `{{"objective": "review"}}` (see
-`docs/translate/schemas/batch.md`), as `batch.json` in it, and spawn it:
+`crustify/reviews/planner/`. Give each run its own artifact dir, write its task, such as
+`{{"objective": "emit", "model": "<model>", "billing": "<billing>"}}` (see
+`docs/translate/schemas/task.md`), as `task.json` in it, and spawn it:
 
 ```bash
-crustify spawn-planner <repo> crustify/artifacts/planning/run-<k>/batch.json \
-    --output crustify/artifacts/planning/run-<k> --model <model> --billing <billing>
+crustify spawn-planner <repo> crustify/artifacts/planning/run-<k>/task.json \
+    --log-dir crustify/artifacts/planning/run-<k>
 ```
 
 Do not start a run before the previous one has committed. After the last run, check that the
@@ -175,13 +178,12 @@ Before launching translation or review waves:
 
 Pick the next subsystem in the order `subsystems.json` lists them.
 
-Reread `crustify/TASK.md` and apply its changes, as the Settings changes section
+Reread `crustify/CRUSTIFY.md` and apply its changes, as the Settings changes section
 describes.
 
 Create the subsystem branch and artifact dir, as the layout instructions name them. Keep
 the subsystem branch checked out in the repository's base dir, without creating a new
-workdir for it. Copy `crustify/TASK.md` into the subsystem's artifact dir, so it records the
-settings the subsystem ran under, and commit both on the subsystem branch.
+workdir for it.
 
 Scaffold the Rust subsystem root on disk according to the conventions. Emit TU and
 header modules lazily before scheduling their first units. Commit the canonical tip as the
@@ -203,8 +205,9 @@ every agent reads it at startup. Before launching each wave, curate it: merge du
 notes, and correct or delete those the campaign has made stale.
 
 For each scheduled batch:
-- create its artifact dir, and write its `schedule.json` entry out verbatim as `batch.json`
-  inside it;
+- create its artifact dir, and write its `schedule.json` entry as `task.json` inside it,
+  adding the wave integration branch it lands on as `base_branch` and the approved
+  translation model and billing as `model` and `billing`;
 - create its batch branch and fork its worktree, as the layout instructions name them;
 - symlink any gitignored state from the main checkout that is shared and required for a
   complete crustify tree: `crustify/.providers`, etc.
@@ -217,19 +220,16 @@ changesets; failure to do so uses up disk space.
 
 Run one agent per batch, concurrently up to approved parallelism: a binder for a `wrap`
 batch, raw-lifetime ones included, and a translator for a `port` batch. Pass its batch
-worktree as the workdir, its `batch.json`, its batch directory as `--output`, its wave
-integration branch as `--base-branch`, and the approved translation model and billing:
+worktree as the workdir, its `task.json`, and its batch directory as `--log-dir`:
 
 ```bash
-crustify spawn-binder <batch worktree> <batch dir>/batch.json \
-    --base-branch <wave branch> --output <batch dir> --model <model> --billing <billing>
-crustify spawn-translator <batch worktree> <batch dir>/batch.json \
-    --base-branch <wave branch> --output <batch dir> --model <model> --billing <billing>
+crustify spawn-binder <batch worktree> <batch dir>/task.json --log-dir <batch dir>
+crustify spawn-translator <batch worktree> <batch dir>/task.json --log-dir <batch dir>
 ```
 
 The harness validates the batch, rejects one whose objective belongs to the other agent,
 starts the backend, and writes `binder.log` and `binder.usage.json`, or `translator.log`
-and `translator.usage.json`, there.
+and `translator.usage.json`, into the `--log-dir`.
 
 The agent commits its changes and atomically fast-forwards the wave branch. On rejection,
 it rebases its own branch onto the current wave tip, revalidates, and retries. Failed
@@ -257,27 +257,28 @@ Reviewers inspect what the commits landed for the approved review objectives, fi
 and reproducer for each finding, fix the findings when `fix` is among the objectives, and
 land through the same branch flow.
 
-A review batch's `batch.json` holds the landed commits of its translation batches, as they
-sit on the wave branch, and the approved objectives:
+A review batch's `task.json` holds the landed commits of its translation batches, as they
+sit on the wave branch, the approved objectives, its review wave integration branch, and
+the approved review model and billing:
 
 ```json
-{{"objectives": ["lifecycle", "unsafety", "ub", "equiv", "fix"], "commits": ["3f2a9c1", "8be04d7"]}}
+{{"objectives": ["lifecycle", "unsafety", "ub", "equiv", "fix"], "commits": ["3f2a9c1", "8be04d7"],
+ "base_branch": "<review wave branch>", "model": "<model>", "billing": "<billing>"}}
 ```
 
-Each commit's `Batch:` trailer leads the reviewer to its translation batch's `batch.json`.
+Each commit's `Batch:` trailer leads the reviewer to its translation batch's `task.json`.
 
 Omit `objectives` to run every objective the reviewer offers. `crustify spawn-reviewer
 --help` describes them; a dry run lists the ones a batch resolves to, and rejects any the
 reviewer's prompt and skills do not offer.
 
-Run one reviewer per review batch the same way, with the approved review model and billing:
+Run one reviewer per review batch the same way:
 
 ```bash
-crustify spawn-reviewer <batch worktree> <batch dir>/batch.json \
-    --base-branch <review wave branch> --output <batch dir> --model <model> --billing <billing>
+crustify spawn-reviewer <batch worktree> <batch dir>/task.json --log-dir <batch dir>
 ```
 
-The harness writes `reviewer.log` and `reviewer.usage.json` there.
+The harness writes `reviewer.log` and `reviewer.usage.json` into the `--log-dir`.
 
 Create a review wave's artifact dir and integration branch, and each review batch's artifact
 dir, branch and worktree, as the layout instructions name them.

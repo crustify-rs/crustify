@@ -4,8 +4,8 @@ Two kinds of campaign, one image, one directory of templates each.
 
 | directory | campaign | task template | dashboard template |
 |---|---|---|---|
-| [`translate/`](translate) | translate C to Rust, or wrap it | [`TASK.template.md`](translate/TASK.template.md) | [`dashboard.template.md`](translate/dashboard.template.md) |
-| [`audit/`](audit) | hunt UB in an existing Rust crate with reviewers | [`TASK.template.md`](audit/TASK.template.md) | [`dashboard.template.md`](audit/dashboard.template.md) |
+| [`translate/`](translate) | translate C to Rust, or wrap it | [`CRUSTIFY.template.md`](translate/CRUSTIFY.template.md) | [`dashboard.template.md`](translate/dashboard.template.md) |
+| [`audit/`](audit) | hunt UB in an existing Rust crate with reviewers | [`CRUSTIFY.template.md`](audit/CRUSTIFY.template.md) | [`dashboard.template.md`](audit/dashboard.template.md) |
 
 Copy a task template to start a request.
 
@@ -46,7 +46,7 @@ docker run -d --init --name crustify-libgit2 \
     -v "$(dirname "$PWD")/ffibox:/opt/venv/share/ffibox" \
     -v "$(dirname "$PWD")/ffimap:/opt/venv/share/ffimap" \
     -v /absolute/path/to/your/target-fork:/target \
-    -v /absolute/path/to/your/TASK.md:/campaign/TASK.md:ro \
+    -v /absolute/path/to/your/CRUSTIFY.md:/campaign/CRUSTIFY.md:ro \
     -v crustify-libgit2-work:/work \
     crustify
 ```
@@ -55,7 +55,7 @@ Translate:
 
 ```sh
 docker exec -it crustify-libgit2 \
-    crustify translate /target /campaign/TASK.md \
+    crustify translate /target /campaign/CRUSTIFY.md \
     --model anthropic/claude-opus-5 --billing api
 ```
 
@@ -64,11 +64,11 @@ volume:
 
 ```sh
 docker exec -it audit-zstd \
-    crustify audit /target /campaign/TASK.md \
+    crustify audit /target /campaign/CRUSTIFY.md \
     --model anthropic/claude-opus-5 --billing api
 ```
 
-The first run copies the task to the target's `crustify/TASK.md`, which is tracked on the
+The first run copies the task to the target's `crustify/CRUSTIFY.md`, which is tracked on the
 campaign branch. Edit that copy to change a campaign's settings while it runs, such as its
 models or batch sizes: the orchestrator rereads it before each subsystem, or each review
 wave of an audit, and keeps a copy of the settings each one ran under in its artifact dir.
@@ -131,7 +131,7 @@ Set with `--build-arg` on `docker build`.
 | path | mode | used by | lifetime |
 |---|---|---|---|
 | `/target` | read-write, required | both | existing target checkout; its partial campaign, CodeQL data, branches and logs stay on the host |
-| `/campaign/TASK.md` | read-only, conventional | both | the campaign task passed to the orchestrate command on the first run, which copies it to `/target/crustify/TASK.md`; any path works |
+| `/campaign/CRUSTIFY.md` | read-only, conventional | both | the campaign settings passed to the orchestrate command on the first run, which copies it to `/target/crustify/CRUSTIFY.md`; any path works |
 | `/opt/crustify` | read-write, optional | both | baked into the image; mount a checkout to run live harness sources |
 | `/opt/venv/share/wavefront` | read-write, optional | translate | replaces the build-time clone, which is installed editable |
 | `/opt/venv/share/ffibox` | read-write, optional | translate | replaces the build-time clone used by generated Cargo manifests |

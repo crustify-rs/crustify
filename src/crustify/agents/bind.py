@@ -1,4 +1,4 @@
-"""One binder: binds one orchestrator-projected thin batch."""
+"""One binder: binds the items of one orchestrator-written task."""
 from __future__ import annotations
 
 from crustify.agents.base import SkillSpec

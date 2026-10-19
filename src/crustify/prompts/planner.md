@@ -26,7 +26,7 @@ revision of it.
 
 ## Task
 
-The campaign's task and settings are in `{workdir}/crustify/TASK.md`. Read it: its
+The campaign's settings are in `{workdir}/crustify/CRUSTIFY.md`. Read it: its
 `objective` (port or wrap), `scope`, `target-config` and `workload` answers bound
 everything you plan; a feature the target is configured without is out of scope. Do not
 edit it; report an unanswered or ambiguous question instead.
@@ -186,8 +186,10 @@ selected migration set, an embedding struct that stays C, or a definition in an 
 header, whose concrete body every public C consumer receives. Name each type that stays
 wrapped, and the C user that keeps it there, in your commit message.
 
-See `docs/translate/schemas/batch.md` for schema format, field meaning, routing and the
-raw-lifetime rule. Every field shown is required.
+A batch entry is a `task.json` without the fields the orchestrator adds when it launches
+the batch (`base_branch`, `model` and `billing`). See `docs/translate/schemas/task.md` for
+its format, field meaning, routing and the raw-lifetime rule; every other field shown is
+required.
 
 Home each batch's set of items using the conventions.
 

@@ -1,22 +1,28 @@
-# Thin batch schema
+# task.json schema
 
-Field meaning for the JSON the orchestrator passes to `crustify spawn-binder <workdir>
-<batch.json> --base-branch <wave branch> --output <batch dir>` for a `wrap` batch, to
-`crustify spawn-translator` with the same arguments for a `port` batch, or to `crustify
-spawn-reviewer` for a review batch. One batch is one agent's entire worklist, and each
-command rejects a batch whose objective belongs to another. `crustify spawn-planner` takes
-a planner batch.
+Field meaning for `task.json`, the one input of a spawned agent: `crustify spawn-binder
+<workdir> <batch dir>/task.json --log-dir <batch dir>` for a `wrap` batch, `crustify
+spawn-translator` with the same arguments for a `port` batch, `crustify spawn-reviewer`
+for a review batch, and `crustify spawn-planner <workdir> <run dir>/task.json --log-dir
+<run dir>` for a planner run. The path names the file itself; a missing file fails the
+command. One task is one
+agent's entire worklist and how that agent runs, and each command rejects a task whose
+objective belongs to another.
 
-A planner plans it as one batch entry of `docs/translate/schemas/schedule.md`, and the
-orchestrator writes it out verbatim.
+A planner plans a binder's or translator's task as one batch entry of
+`docs/translate/schemas/schedule.md`. The orchestrator writes that entry as `task.json`,
+adding the [run fields](#run-fields) it decides when it launches the batch.
 
-It lands as `batch.json` in that batch's own directory, beside the log and usage record
-the agent writes there. The harness reads it once and the file names no wave, branch, log
-path or dependency: everything about where the batch sits is the directory it sits in.
+`task.json` sits in the batch's own directory, which the orchestrator also passes as
+`--log-dir`. The agent writes its log and usage record there, so the directory holds
+everything about the batch: what it was given, how it ran, and what it produced. The file names no wave, log path or dependency.
 
 ```json
 {
   "objective": "wrap",
+  "base_branch": "crustify/waves/libavutil/frame/wave-0",
+  "model": "anthropic/claude-opus-5-5",
+  "billing": "subscription",
   "items": [
     {
       "name": "AVFrame",
@@ -33,8 +39,24 @@ path or dependency: everything about where the batch sits is the directory it si
 |---|---|
 | `objective` | execution objective for every item: `wrap` or `port` |
 | `items` | non-empty worklist; every item routes to the same agent |
+| `base_branch`, `model`, `billing` | the [run fields](#run-fields) |
 
-Both are required and no other root field is accepted.
+All five are required and no other root field is accepted.
+
+## Run fields
+
+| field | meaning |
+|---|---|
+| `base_branch` | the unchecked-out integration branch the agent lands on: its wave branch, or its review wave branch; a `refs/heads/` prefix is accepted |
+| `model` | the agent's model, `<provider>/<model>`, such as `anthropic/claude-opus-5-5`; an unknown provider is rejected |
+| `billing` | how the provider CLI authenticates: `subscription`, its own logged-in account, or `api`, an API key from the environment |
+
+A binder, translator or reviewer task carries all three. A planner task carries `model`
+and `billing` only: a planner commits on the campaign branch it is spawned on, and lands on
+no other.
+
+The settings a campaign ran under are recorded twice: per batch in its `task.json`, and per
+campaign in the history of `crustify/CRUSTIFY.md`.
 
 ## Review batches
 
@@ -45,7 +67,10 @@ landed; in an audit, modules of the crate.
 ```json
 {
   "objectives": ["lifecycle", "unsafety", "ub", "equiv", "fix"],
-  "commits": ["3f2a9c1", "8be04d7"]
+  "commits": ["3f2a9c1", "8be04d7"],
+  "base_branch": "crustify/reviews/libavutil/frame/wave-0",
+  "model": "anthropic/claude-opus-5-5",
+  "billing": "subscription"
 }
 ```
 
@@ -59,10 +84,11 @@ landed; in an audit, modules of the crate.
 | root field | meaning |
 |---|---|
 | `objectives` | the review objectives to run; optional, every one the reviewer offers that applies when absent |
-| `commits` | distinct commit ids, as they sit on the wave branch; route `commits`. Each commit's `Batch:` trailer names the translation batch whose `batch.json` lists its C items |
+| `commits` | distinct commit ids, as they sit on the wave branch; route `commits`. Each commit's `Batch:` trailer names the translation batch whose `task.json` lists its C items |
 | `modules` | repo-relative source files and directories; route `modules`. An entry may instead be `{"path", "types", "trait_impls", "functions"}`, naming the parts of a module too large to review whole: types, each with its fields and inherent impls; trait impls, each `<trait> for <type>` as its impl header spells it; and free functions |
 | `reports` | repo-relative report dirs, `crustify/reviews/<batch id>/<kind>/<slug>`, to revisit |
 
+The run fields are required, as on a translation task; the second example leaves them out.
 A batch carries `commits` or `modules`, not both, and needs one of them or `reports`; one
 with only `reports` has route `reports`. A module path appears once, and a module object
 names one or more of `types`, `trait_impls` and `functions`, each a distinct list. `reports` is given exactly when `revisit` is among the
@@ -75,21 +101,22 @@ applying to a Crustify-generated batch only. Its skills add their own. A batch n
 an objective the installed skills do not offer is rejected.
 Without `fix`, the reviewer reports and reproduces what it finds but patches nothing.
 
-## Planner batches
+## Planner tasks
 
-A planner batch names the one arm a planner run executes, and nothing else: the plan it
-works on is the campaign branch it is spawned on.
+A planner task names the one arm a planner run executes, and how it runs: the plan it works
+on is the campaign branch it is spawned on.
 
 ```json
-{"objective": "review"}
+{"objective": "review", "model": "anthropic/claude-opus-5-5", "billing": "subscription"}
 ```
 
 | root field | meaning |
 |---|---|
 | `objective` | `emit`: create the plan, or add what the committed plan lacks, leaving its judgements as they are; `review`: assess the committed judgements, correct them, and file a report per edit |
+| `model`, `billing` | the [run fields](#run-fields) |
 
-It is required and no other root field is accepted. The orchestrator writes it as
-`batch.json` in the run's artifact dir, `crustify/artifacts/planning/run-<k>/`.
+All three are required and no other root field is accepted. The orchestrator writes it as
+`task.json` in the run's artifact dir, `crustify/artifacts/planning/run-<k>/`.
 
 ## items[*]
 

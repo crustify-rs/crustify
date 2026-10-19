@@ -1,4 +1,4 @@
-"""One translator: ports one orchestrator-projected thin batch."""
+"""One translator: ports the items of one orchestrator-written task."""
 from __future__ import annotations
 
 from crustify.agents.base import SkillSpec

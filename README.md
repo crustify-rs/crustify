@@ -80,17 +80,17 @@ Optionally copy and pre-fill the campaign questionnaire before starting the
 orchestrator:
 
 ```bash
-cp crustify/templates/translate/TASK.template.md campaign-TASK.md
-# Edit campaign-TASK.md and answer as many questions as you want.
+cp crustify/templates/translate/CRUSTIFY.template.md campaign-CRUSTIFY.md
+# Edit campaign-CRUSTIFY.md and answer as many questions as you want.
 ```
 
 Start the orchestrator with it:
 
 ```bash
-crustify translate /path/to/repo ./campaign-TASK.md
+crustify translate /path/to/repo ./campaign-CRUSTIFY.md
 ```
 
-The task is copied to the repository's `crustify/TASK.md`, which the orchestrator reads
+The settings are copied to the repository's `crustify/CRUSTIFY.md`, which the orchestrator reads
 and the campaign tracks. Edit that copy to change settings mid-campaign; the orchestrator
 rereads it before each subsystem. Questions left unanswered are asked live. The
 orchestrator asks which repository and revision to use, whether to port or wrap
@@ -137,11 +137,13 @@ This repository installs one command:
 
 ```text
 crustify           one entry point for every stage:
-                     orchestrate  spawn a translate or audit campaign supervisor
-                     translate    execute one thin batch
-                     audit        unsafe metrics; optional undefined-behavior pass
-                     crates       validate crate placement
-                     cost         price per-agent usage.json records
+                     translate         start a translation campaign's orchestrator
+                     audit             start an audit campaign's orchestrator
+                     spawn-planner     run one planner over its task.json
+                     spawn-binder      run one binder over its task.json
+                     spawn-translator  run one translator over its task.json
+                     spawn-reviewer    run one reviewer over its task.json
+                     cost              price per-agent usage.json records
 ```
 
 The oracle interface is owned by its own repository. Use `<command> --help` for
@@ -177,7 +179,7 @@ Below is an overview of the campaign's stats:
 - [`docs/translate/schemas/`](docs/translate/schemas/): crate-placement and wave schemas
 - [`docs/translate/schemas/subsystems.md`](docs/translate/schemas/subsystems.md): link-unit and
   subsystem decomposition artifact
-- [`templates/translate/TASK.template.md`](templates/translate/TASK.template.md): optional pre-filled
+- [`templates/translate/CRUSTIFY.template.md`](templates/translate/CRUSTIFY.template.md): optional pre-filled
   campaign questionnaire
 - [`templates/translate/dashboard.template.md`](templates/translate/dashboard.template.md): campaign
   dashboard template

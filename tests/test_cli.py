@@ -18,7 +18,7 @@ class CommandShapeTests(unittest.TestCase):
         self.addCleanup(self.tmp.cleanup)
         self.repo = Path(self.tmp.name)
         (self.repo / "crustify").mkdir()
-        self.task = self.repo / "TASK.md"
+        self.task = self.repo / "CRUSTIFY.md"
         self.task.write_text("task")
         for name in ("MODEL_OVERRIDE", "BILLING"):
             patcher = mock.patch.object(config, name, getattr(config, name))
@@ -55,50 +55,59 @@ class CommandShapeTests(unittest.TestCase):
         self.assertEqual(seen["args"].kind, "audit")
         self.assertTrue(seen["args"].task_only)
 
-    def test_spawn_translator_runs_one_batch(self) -> None:
-        seen = self._run("spawn-translator", str(self.repo), "batch.json",
-                         "--base-branch", "wave", "--output", "out",
-                         "--model", "openai/gpt-5.6")
+    def test_spawn_translator_runs_one_task(self) -> None:
+        seen = self._run("spawn-translator", str(self.repo), "task.json",
+                         "--log-dir", "out")
         self.assertEqual(seen["handler"], "spawn-worklist")
         self.assertEqual(seen["args"].role, "translator")
-        self.assertEqual(seen["args"].base_branch, "wave")
-        self.assertEqual(config.MODEL_OVERRIDE, "openai/gpt-5.6")
+        self.assertEqual(seen["args"].task, Path("task.json"))
 
-    def test_spawn_binder_runs_one_batch(self) -> None:
-        seen = self._run("spawn-binder", str(self.repo), "batch.json",
-                         "--base-branch", "wave", "--output", "out")
+    def test_spawn_binder_runs_one_task(self) -> None:
+        seen = self._run("spawn-binder", str(self.repo), "task.json",
+                         "--log-dir", "out")
+        self.assertEqual(seen["args"].log_dir, Path("out"))
         self.assertEqual(seen["handler"], "spawn-worklist")
         self.assertEqual(seen["args"].role, "binder")
 
-    def test_spawn_reviewer_runs_one_review_batch(self) -> None:
-        seen = self._run("spawn-reviewer", str(self.repo), "batch.json",
-                         "--base-branch", "review-wave", "--output", "out",
-                         "--dry-run")
+    def test_spawn_reviewer_runs_one_review_task(self) -> None:
+        seen = self._run("spawn-reviewer", str(self.repo), "task.json",
+                         "--log-dir", "out", "--dry-run")
         self.assertEqual(seen["handler"], "spawn-reviewer")
-        self.assertEqual(seen["args"].base_branch, "review-wave")
         self.assertTrue(seen["args"].dry_run)
 
     def test_spawn_planner_runs_one_planner(self) -> None:
-        seen = self._run("spawn-planner", str(self.repo), "batch.json",
-                         "--output", "crustify/artifacts/planning/run-2",
-                         "--model", "anthropic/claude-opus-5", "--dry-run")
+        seen = self._run("spawn-planner", str(self.repo),
+                         "crustify/artifacts/planning/run-2/task.json",
+                         "--log-dir", "crustify/artifacts/planning/run-2", "--dry-run")
         self.assertEqual(seen["handler"], "spawn-planner")
-        self.assertEqual(seen["args"].batch, Path("batch.json"))
+        self.assertEqual(seen["args"].task,
+                         Path("crustify/artifacts/planning/run-2/task.json"))
         self.assertTrue(seen["args"].dry_run)
-        self.assertEqual(config.MODEL_OVERRIDE, "anthropic/claude-opus-5")
+
+    def test_a_spawned_agent_takes_its_settings_from_its_task(self) -> None:
+        """Model, billing and branch live in task.json, so the spawn commands
+        no longer accept them as flags; the log dir is still a flag, and a
+        required one."""
+        for command in ("spawn-binder", "spawn-translator", "spawn-reviewer",
+                        "spawn-planner"):
+            for flag in (("--model", "openai/gpt-5.6"), ("--billing", "api"),
+                         ("--base-branch", "wave"), ("--output", "out"), ()):
+                with self.subTest(command=command, flag=flag[:1]), \
+                        mock.patch("sys.stderr"), self.assertRaises(SystemExit):
+                    self._run(command, str(self.repo), "task.json", *flag,
+                              *(("--log-dir", "out") if flag else ()))
 
     def test_spawn_planner_needs_a_campaign_tree(self) -> None:
         bare = self.repo / "bare"
         bare.mkdir()
         with self.assertRaises(SystemExit):
-            self._run("spawn-planner", str(bare), "batch.json", "--output", "out")
+            self._run("spawn-planner", str(bare), "task.json")
 
     def test_spawn_reviewer_needs_a_campaign_tree(self) -> None:
         bare = self.repo / "bare"
         bare.mkdir()
         with self.assertRaises(SystemExit):
-            self._run("spawn-reviewer", str(bare), "batch.json",
-                      "--base-branch", "wave", "--output", "out")
+            self._run("spawn-reviewer", str(bare), "task.json")
 
     def test_spawn_auditor_is_gone(self) -> None:
         with mock.patch("sys.stderr"), self.assertRaises(SystemExit):
@@ -119,8 +128,7 @@ class CommandShapeTests(unittest.TestCase):
         bare = self.repo / "bare"
         bare.mkdir()
         with self.assertRaises(SystemExit):
-            self._run("spawn-translator", str(bare), "batch.json",
-                      "--base-branch", "wave", "--output", "out")
+            self._run("spawn-translator", str(bare), "task.json")
 
     def test_old_spellings_are_rejected(self) -> None:
         for argv in (
@@ -133,7 +141,7 @@ class CommandShapeTests(unittest.TestCase):
 
 
 class CanonicalTaskTests(unittest.TestCase):
-    """The orchestrator reads its task from `<workdir>/crustify/TASK.md`."""
+    """The orchestrator reads its settings from `<workdir>/crustify/CRUSTIFY.md`."""
 
     def setUp(self) -> None:
         self.tmp = tempfile.TemporaryDirectory()
@@ -141,7 +149,7 @@ class CanonicalTaskTests(unittest.TestCase):
         self.repo = Path(self.tmp.name)
         self.given = self.repo / "given.md"
         self.given.write_text("answers")
-        self.canonical = self.repo / "crustify/TASK.md"
+        self.canonical = self.repo / "crustify/CRUSTIFY.md"
 
     def test_the_first_run_installs_the_task(self) -> None:
         self.assertEqual(cli.canonical_task(self.repo, self.given),
@@ -162,7 +170,7 @@ class CanonicalTaskTests(unittest.TestCase):
                          self.canonical)
 
     def test_no_task_at_all_is_an_error(self) -> None:
-        with self.assertRaisesRegex(SystemExit, "no campaign task"):
+        with self.assertRaisesRegex(SystemExit, "no campaign settings"):
             cli.canonical_task(self.repo, None)
 
 
@@ -181,7 +189,7 @@ class PlannerPromptTests(unittest.TestCase):
                 body = agent.system_preamble()
                 self.assertIn(f"- objective: `{objective}`", body)
                 self.assertEqual(agent.stage, f"plan-{objective}")
-        self.assertIn(f"{self.repo.resolve()}/crustify/TASK.md", body)
+        self.assertIn(f"{self.repo.resolve()}/crustify/CRUSTIFY.md", body)
         self.assertIn("#### Emit (`emit`)", body)
         self.assertIn("#### Review (`review`)", body)
         self.assertIn("under `crustify/reviews/planner/`", body)

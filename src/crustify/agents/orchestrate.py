@@ -81,7 +81,7 @@ class OrchestrateAgent(CrustifyAgent):
     def _task_text(self) -> str:
         text = self.task.read_text().strip()
         if not text:
-            raise SystemExit(f"campaign task is empty: {self.task}")
+            raise SystemExit(f"campaign settings file is empty: {self.task}")
         return text
 
     def skill_specs(self) -> tuple[SkillSpec, ...]:
@@ -90,7 +90,7 @@ class OrchestrateAgent(CrustifyAgent):
         return () if self.task_only else super().skill_specs()
 
     def _body(self) -> str:
-        """The stage prompt. The campaign task is not in it: the prompt says
+        """The stage prompt. The campaign settings are not in it: the prompt says
         where the task lives, and the orchestrator reads it from there, so an
         edit made mid-campaign is what the next subsystem runs under."""
         self._task_text()

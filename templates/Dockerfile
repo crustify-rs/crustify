@@ -19,11 +19,11 @@
 #       -v "$(dirname "$PWD")/ffibox:/opt/venv/share/ffibox" \
 #       -v "$(dirname "$PWD")/ffimap:/opt/venv/share/ffimap" \
 #       -v /absolute/path/to/your/target-fork:/target \
-#       -v /absolute/path/to/your/TASK.md:/campaign/TASK.md:ro \
+#       -v /absolute/path/to/your/CRUSTIFY.md:/campaign/CRUSTIFY.md:ro \
 #       -v crustify-libgit2-work:/work \
 #       crustify
 #   docker exec -it crustify-libgit2 \
-#       crustify translate /target /campaign/TASK.md \
+#       crustify translate /target /campaign/CRUSTIFY.md \
 #       --model openrouter/anthropic/claude-opus-5 --billing api
 #
 # `crustify audit` starts an audit campaign instead, and `--task-only` makes
@@ -43,9 +43,9 @@
 #                      CodeQL data, partial translation and logs are used in
 #                      place and remain on the host. The orchestrator must not
 #                      clone, reset or replace it.
-#   /campaign/TASK.md  The campaign task, read-only, by convention: the
+#   /campaign/CRUSTIFY.md  The campaign settings, read-only, by convention: the
 #                      orchestrate command takes any path, and copies it to
-#                      /target/crustify/TASK.md on the first run. Edit that
+#                      /target/crustify/CRUSTIFY.md on the first run. Edit that
 #                      copy on the host to change settings mid-campaign; the
 #                      orchestrator rereads it before each subsystem.
 #   /opt/crustify      The harness, baked into the image. Mount a checkout here
@@ -69,7 +69,7 @@
 #
 # The dashboard template rides the /opt/crustify mount: the orchestrator reads
 # templates/translate/dashboard.template.md from the checkout and writes the filled
-# dashboard where the campaign task says. Nothing is seeded into /target.
+# dashboard where the campaign settings say. Nothing is seeded into /target.
 #
 # One container name per campaign: `docker exec -it <name> bash` opens a shell
 # beside the orchestrator, and `docker start <name>` brings a stopped container

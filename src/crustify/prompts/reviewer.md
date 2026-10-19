@@ -31,7 +31,7 @@ Your worklist has one route:
 
 In a Crustify campaign, your worklist carries the commits of one or more translation
 batches of a wave. Each commit's `Batch:` trailer names its batch id, and that batch's
-`batch.json`, under `crustify/artifacts/<batch id>/`, lists the C items it bound or ported,
+`task.json`, under `crustify/artifacts/<batch id>/`, lists the C items it bound or ported,
 with their routes: `type`, `symbol` or `raw-lifetime`.
 
 In an audit, your worklist names modules. A module named with `types`, `trait_impls` or
