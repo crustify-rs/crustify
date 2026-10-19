@@ -381,9 +381,10 @@ and when you home each batch's items.
 
 ---
 
-For reference: the following describe how the agents you spawn do their work. You do not
-bind, port or land batches yourself; use them to brief the user, to write additional
-instructions, and to judge what the agents report.
+For reference: the following describe how the agents you spawn do their work. Prefer
+spawning those agents for binding, porting and landing batches, unless the user instructs
+otherwise or asks you to do parts of that work yourself. Use them also to brief the user,
+to write additional instructions, and to judge what the agents report.
 
 Here is how binders and translators generate safe bindings.
 
