@@ -30,6 +30,8 @@ class BindAgent(WorklistAgent):
     put a safe Rust API in front of it."""
 
     name = "BindAgent"
+    #: The agent its session record names.
+    role = "binder"
     objective = "wrap"
     prompt = "binder.md"
     SKILLS = _SKILLS

@@ -134,3 +134,85 @@ def read_rollout_usage(rollout: Path) -> list[dict]:
                 "cache_write_1h_tokens": 0,
             })
     return requests
+
+
+# ---------------------------------------------------------- crustify usage
+
+def transcript_format(path: Path) -> str:
+    """``claude`` or ``codex``: which CLI wrote the transcript at ``path``,
+    read off its events rather than its name or location."""
+    with open(path, errors="replace") as fh:
+        for n, line in enumerate(fh):
+            if n > 200:
+                break
+            try:
+                e = json.loads(line)
+            except ValueError:
+                continue
+            if e.get("type") == "session_meta":
+                return "codex"
+            if "sessionId" in e or e.get("type") in ("assistant", "user"):
+                return "claude"
+    raise ValueError(f"{path}: not a Claude Code transcript or a Codex rollout")
+
+
+def _codex_identity(rollout: Path) -> tuple[str, str]:
+    """``(provider, model)`` a rollout records: its session's provider, and
+    the model of its last turn."""
+    provider = model = ""
+    with open(rollout, errors="replace") as fh:
+        for line in fh:
+            try:
+                e = json.loads(line)
+            except ValueError:
+                continue
+            p = e.get("payload") or {}
+            if e.get("type") == "session_meta":
+                provider = p.get("model_provider") or provider
+            elif e.get("type") == "turn_context" and p.get("model"):
+                model = p["model"]
+    return provider, model
+
+
+def _interval(path: Path) -> tuple[str | None, str | None, int | None]:
+    """First and last event timestamps, and the span between them in ms."""
+    from datetime import datetime
+    stamps = []
+    with open(path, errors="replace") as fh:
+        for line in fh:
+            try:
+                ts = json.loads(line).get("timestamp")
+            except (ValueError, AttributeError):
+                continue
+            if isinstance(ts, str):
+                try:
+                    stamps.append(datetime.fromisoformat(ts.replace("Z", "+00:00")))
+                except ValueError:
+                    pass
+    if not stamps:
+        return None, None, None
+    first, last = min(stamps), max(stamps)
+    iso = lambda d: d.isoformat(timespec="seconds")  # noqa: E731
+    return iso(first), iso(last), round((last - first).total_seconds() * 1000)
+
+
+def transcript_record(path: Path, *, provider: str | None = None,
+                      model: str | None = None) -> dict:
+    """The usage record of one session, from its transcript: one entry per
+    API request, in crustify's exclusive buckets, with the session's
+    interval. ``provider`` overrides what the transcript implies, which
+    matters for a Claude Code session billed through OpenRouter: the
+    transcript cannot tell the two services apart."""
+    fmt = transcript_format(path)
+    if fmt == "claude":
+        requests, seen_model = _read_usage(path)
+        provider = provider or "anthropic"
+        model = model or seen_model
+    else:
+        requests = read_rollout_usage(path)
+        seen_provider, seen_model = _codex_identity(path)
+        provider = provider or seen_provider
+        model = model or seen_model
+    started, ended, duration = _interval(path)
+    return {"provider": provider, "model": model, "requests": requests,
+            "started_at": started, "ended_at": ended, "duration_ms": duration}

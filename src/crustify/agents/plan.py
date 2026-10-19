@@ -32,6 +32,8 @@ class PlanAgent(CrustifyAgent):
     """Plan one campaign for one objective: `emit` or `review`."""
 
     name = "PlanAgent"
+    #: The agent its session record names.
+    role = "planner"
     model = "anthropic/claude-opus-5"
     #: A planner runs for many turns over one procedure; keep it out of
     #: compaction's reach, as for the orchestrator.
@@ -48,7 +50,7 @@ class PlanAgent(CrustifyAgent):
 
     @property
     def stage(self) -> str:  # type: ignore[override]
-        """``plan-emit`` or ``plan-review``, as ``crustify cost`` buckets them."""
+        """``plan-emit`` or ``plan-review``."""
         return f"plan-{self.objective}"
 
     def _body(self) -> str:

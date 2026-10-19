@@ -243,16 +243,9 @@ class ReviewAgentTests(unittest.TestCase):
                 self.assertIn(heading, pre)
         self.assertIn("otherwise, ignore them", pre)
 
-    def test_the_stage_keeps_the_review_cost_buckets(self) -> None:
+    def test_the_session_names_the_reviewer(self) -> None:
         _Checkouts(self)
-        from crustify.log_cost import kind
-        stage = self.agent(None).stage
-        self.assertEqual(stage, f"review-commits_{_COMMIT}")
-        self.assertEqual(kind(stage), "review-commits")
-        modules = ReviewAgent(self.repo, route="modules", modules=["src/a.rs"],
-                              objectives=None, git_base="w",
-                              artifact_dir=self.repo, log_stem="reviewer")
-        self.assertEqual(kind(modules.stage), "review-modules")
+        self.assertEqual(self.agent(None).role, "reviewer")
         self.assertIn(_COMMIT, self.agent(None).system_preamble())
 
 

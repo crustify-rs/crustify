@@ -67,6 +67,8 @@ class AssistAgent(CrustifyAgent):
     the user and orchestrates the campaign's sub-agents."""
 
     name = "assistant"
+    #: The agent its session record names.
+    role = "assistant"
     stage = "assist"
     prompt_in_system_slot = True
     SKILLS = TRANSLATE_SKILLS

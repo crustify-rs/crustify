@@ -201,7 +201,7 @@ def execute(
     print(f"[crustify spawn-reviewer] landing on: {base_branch}")
     print(f"[crustify spawn-reviewer] objectives: {', '.join(agent.objectives)}")
     print(f"[crustify spawn-reviewer] model: {batch.run.model} ({batch.run.billing})")
-    print(f"[crustify spawn-reviewer] log: {output / f'{_LOG_STEM}.log'}")
+    print(f"[crustify spawn-reviewer] session: {output / f'{_LOG_STEM}.session.json'}")
     batch.run.apply()
     agent.run()
     print("[crustify spawn-reviewer] batch completed.")

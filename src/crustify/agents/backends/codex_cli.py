@@ -8,7 +8,7 @@ from the session rollout the CLI persists independently of stdout format.
 Codex never reports cost - not in text mode, not under ``--json``, and its
 JSON stream does not even name the model - so the per-run ``.usage.json`` is
 built from the rollout's ``token_count`` events and priced by
-``crustify cost`` against the billing service's rates.
+``crustify usage`` against the billing service's rates.
 
 Two codex-specific traps, both handled below: its ``input_tokens`` is
 *inclusive* of cached reads (Anthropic's is not), and its tool surface is
@@ -155,7 +155,6 @@ _REASONING_EFFORT = {
 
 
 from crustify.core.usage import (  # noqa: F401 - re-exported
-    read_rollout_usage as _read_usage,
     rollout_path as _rollout_path,
 )
 
@@ -314,15 +313,21 @@ class CodexCliBackend:
 
         if rollout is not None:
             log.line(f"[crustify] rollout: {rollout}")
-            log.usage({
-                "provider": route.provider,
-                "model": route.model,
-                "requests": _read_usage(rollout),
-            })
+            # The interactive CLI never prints its id; the rollout's name ends
+            # with it, a UUID of five dash-separated groups.
+            session_id = session_id or "-".join(rollout.stem.split("-")[-5:])
         else:
             log.line(f"[crustify] {name}: no session rollout found"
                      f"{' for ' + session_id if session_id else ''}; "
                      f"this run is unaccounted.")
+        log.session({
+            "cli": "codex",
+            "provider": route.provider,
+            "model": route.model,
+            "session_id": session_id,
+            "transcript": str(rollout) if rollout is not None else None,
+            "exit_code": rc,
+        })
 
         if rc != 0:
             raise SystemExit(

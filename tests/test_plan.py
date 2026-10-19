@@ -11,7 +11,6 @@ from crustify import plan
 from crustify.translate import RunSettings
 
 RUN = {"model": "anthropic/claude-opus-5", "billing": "subscription"}
-from crustify.log_cost import kind
 
 
 class PlanBatchTests(unittest.TestCase):
@@ -65,9 +64,9 @@ class PlanBatchTests(unittest.TestCase):
                          log_dir=self.repo / "missing", dry_run=True)
         self.assertIn("--log-dir must name an existing directory", str(cm.exception))
 
-    def test_cost_buckets_each_arm(self) -> None:
-        self.assertEqual((kind("plan-emit"), kind("plan-review")),
-                         ("plan-emit", "plan-review"))
+    def test_the_session_names_the_planner(self) -> None:
+        from crustify.agents.plan import PlanAgent
+        self.assertEqual(PlanAgent.role, "planner")
 
 
 if __name__ == "__main__":

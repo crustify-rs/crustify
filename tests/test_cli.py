@@ -37,7 +37,7 @@ class CommandShapeTests(unittest.TestCase):
               mock.patch.object(cli, "_handle_spawn_worklist", record("spawn-worklist")),
               mock.patch.object(cli, "_handle_spawn_reviewer", record("spawn-reviewer")),
               mock.patch.object(cli, "_handle_spawn_planner", record("spawn-planner")),
-              mock.patch.object(cli, "_handle_cost", record("cost"))):
+              mock.patch.object(cli, "_handle_usage", record("usage"))):
             cli.main()
         return seen
 
@@ -128,10 +128,17 @@ class CommandShapeTests(unittest.TestCase):
             self._run("translate", str(self.repo), str(self.task),
                       "--campaign", "x")
 
-    def test_cost_needs_no_workdir(self) -> None:
-        seen = self._run("cost", "a.usage.json", "b.usage.json")
-        self.assertEqual(seen["handler"], "cost")
-        self.assertEqual(len(seen["args"].usage), 2)
+    def test_usage_needs_no_workdir(self) -> None:
+        seen = self._run("usage", "a.transcript.jsonl", "b.transcript.jsonl")
+        self.assertEqual(seen["handler"], "usage")
+        self.assertEqual(len(seen["args"].files), 2)
+        self.assertIsNone(seen["args"].output)
+
+    def test_cost_is_folded_into_usage(self) -> None:
+        """`cost` is no longer a command, so it opens the assistant on a
+        workdir named `cost`, which takes no extra positional."""
+        with mock.patch("sys.stderr"), self.assertRaises(SystemExit):
+            self._run("cost", "a.usage.json", "b.usage.json")
 
     def test_spawn_translator_needs_a_campaign_tree(self) -> None:
         bare = self.repo / "bare"

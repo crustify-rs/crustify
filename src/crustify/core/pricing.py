@@ -97,29 +97,37 @@ def load_prices(cache_path: str = DEFAULT_PRICE_CACHE,
     """`{provider: {model_id: rate_set}}`, cached on disk.
 
     Rates only move when a provider changes them, so the cache is the normal
-    path. `--refresh` is how you pick up a newly released model; `--offline`
-    refuses to fetch and leaves unknown models unpriced rather than guessing.
+    path. ``refresh`` fetches again, which is how a newly released model gets
+    a price; a provider whose fetch fails keeps the rates it had in the cache.
+    ``offline`` refuses to fetch and leaves unknown models unpriced rather
+    than guessing.
     """
-    if os.path.exists(cache_path) and not refresh:
+    cached_prices: dict = {}
+    if os.path.exists(cache_path):
         try:
             with open(cache_path) as fh:
                 cached = json.load(fh)
-            return {prov: {m: {"base": rs["base"],
-                               "tiers": [(int(k), v) for k, v in rs["tiers"]]}
-                           for m, rs in table.items()}
-                    for prov, table in cached.items()}
+            cached_prices = {prov: {m: {"base": rs["base"],
+                                        "tiers": [(int(k), v) for k, v in rs["tiers"]]}
+                                    for m, rs in table.items()}
+                             for prov, table in cached.items()}
         except Exception:
-            pass
+            cached_prices = {}
+        if not refresh:
+            return cached_prices
     if offline:
-        return {}
+        return cached_prices
     prices = {}
     for prov, fetch in _SOURCES.items():
         try:
             prices[prov] = fetch()
         except Exception as exc:
+            kept = cached_prices.get(prov) or {}
             print(f"warning: could not fetch {prov} prices ({exc}); "
-                  f"{prov}-billed runs will be unpriced", file=sys.stderr)
-            prices[prov] = {}
+                  + (f"keeping the {len(kept)} cached {prov} rates"
+                     if kept else f"{prov}-billed runs will be unpriced"),
+                  file=sys.stderr)
+            prices[prov] = kept
     os.makedirs(os.path.dirname(cache_path) or ".", exist_ok=True)
     with open(cache_path, "w") as fh:
         json.dump(prices, fh)

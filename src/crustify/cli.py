@@ -9,7 +9,7 @@ import argparse
 #: The commands that run one job rather than the assistant. Only these names
 #: are read as a command; any other first argument is the assistant's workdir.
 SUBCOMMANDS = ("spawn-planner", "spawn-binder", "spawn-translator",
-               "spawn-reviewer", "cost")
+               "spawn-reviewer", "usage")
 
 #: The campaign kinds a settings file can name, and the assistant prompt each
 #: one runs: port and wrap are both translation campaigns.
@@ -138,8 +138,8 @@ def main() -> None:
              "model and billing.")
     plan_p.add_argument(
         "--log-dir", required=True, type=Path, metavar="DIR",
-        help="Existing directory for the run's planner.log and "
-             "planner.usage.json; give each run its own.")
+        help="Existing directory for the run's planner.session.json; give "
+             "each run its own.")
     plan_p.add_argument(
         "--dry-run", action="store_true",
         help="Validate and summarize the batch without spawning an agent.")
@@ -169,8 +169,8 @@ def main() -> None:
                  "billing.")
         p.add_argument(
             "--log-dir", required=True, type=Path, metavar="DIR",
-            help=f"Existing directory for the batch's {role}.log and "
-                 f"{role}.usage.json; give each batch its own.")
+            help=f"Existing directory for the batch's {role}.session.json; "
+                 "give each batch its own.")
         p.add_argument(
             "--dry-run", action="store_true",
             help="Validate and summarize the batch without spawning an agent.")
@@ -197,27 +197,33 @@ def main() -> None:
              "on, and its model and billing.")
     review_p.add_argument(
         "--log-dir", required=True, type=Path, metavar="DIR",
-        help="Existing directory for the batch's reviewer.log and "
-             "reviewer.usage.json; give each batch its own.")
+        help="Existing directory for the batch's reviewer.session.json; give "
+             "each batch its own.")
     review_p.add_argument(
         "--dry-run", action="store_true",
         help="Validate and summarize the batch without spawning an agent.")
 
-    # -- cost (accounting over the usage records) ------------------------
-    _cost_blurb = (
-        "Price the per-agent usage.json records named on the command line. "
-        "It reads the files it is given and assumes nothing about where they "
-        "live: a caller that knows which batch it is asking about says so, "
-        "and one that wants a wave passes the wave's records.")
-    cost_p = sub.add_parser(
-        "cost", help=_cost_blurb, description=_cost_blurb,
-    )
-    cost_p.set_defaults(handler=_handle_cost)
-    cost_p.add_argument(
-        "usage", nargs="+", type=Path, metavar="USAGE_JSON",
-        help="One or more per-agent .usage.json records.")
-    from crustify.log_cost import add_flags as _add_cost_flags
-    _add_cost_flags(cost_p)
+    # -- usage (tokens and cost of agent sessions) ----------------------------
+    _usage_blurb = (
+        "Report the tokens and cost of agent sessions as JSON, from the "
+        "transcripts their CLIs kept: a Claude Code session transcript or a "
+        "Codex rollout, recognized by its contents. One entry per session, "
+        "priced request by request, and a total.")
+    usage_p = sub.add_parser("usage", help=_usage_blurb,
+                             description=_usage_blurb)
+    usage_p.set_defaults(handler=_handle_usage)
+    usage_p.add_argument(
+        "files", nargs="+", type=Path, metavar="TRANSCRIPT_JSONL",
+        help="Paths to session transcripts.")
+    usage_p.add_argument(
+        "-o", "--output", type=Path, default=None, metavar="FILE",
+        help="Write the JSON there instead of to standard output.")
+    usage_p.add_argument(
+        "--provider", default=None,
+        help="The service that billed the sessions, as their session.json "
+             "records it. Needed only for a Claude Code session billed through "
+             "OpenRouter: by default a Claude Code transcript is priced as "
+             "anthropic, and a Codex rollout as the provider it records.")
 
     argv = sys.argv[1:]
     if argv and argv[0] in SUBCOMMANDS:
@@ -269,20 +275,29 @@ ARTIFACTS = "artifacts"
 
 # -- dispatch -------------------------------------------------------------
 
-def _handle_cost(args: argparse.Namespace) -> None:
-    """Report agent cost and wall time for the usage records given."""
-    from crustify.log_cost import report
-
-    raise SystemExit(report(args.usage, offline=args.offline,
-                            price_cache=args.price_cache))
+def _handle_usage(args: argparse.Namespace) -> None:
+    """Report the tokens and cost of the sessions named, as JSON."""
+    import json
+    from crustify.usage import report
+    for path in args.files:
+        if not path.is_file():
+            raise SystemExit(f"no file at {path}")
+    try:
+        doc = report(args.files, provider=args.provider)
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from exc
+    text = json.dumps(doc, indent=1) + "\n"
+    if args.output is None:
+        sys.stdout.write(text)
+    else:
+        args.output.write_text(text)
 
 
 #: Where a campaign's settings live in its checkout. Tracked, and read by the
-#: orchestrator rather than handed to it once, so editing it changes the
-#: settings of the subsystems that have not started yet; its git history
-#: records the settings each subsystem ran under.
+#: assistant rather than handed to it once, so editing it changes the settings
+#: of the subsystems that have not started yet; its git history records the
+#: settings each subsystem ran under.
 TASK = "crustify/CRUSTIFY.md"
-
 
 def canonical_task(workdir: Path, given: Path | None) -> Path:
     """Install ``given`` as ``workdir``'s canonical task and return its path.

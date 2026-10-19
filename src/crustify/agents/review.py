@@ -60,6 +60,8 @@ class ReviewAgent(CrustifyAgent):
     """Review one orchestrator-projected batch for a set of objectives."""
 
     name = "ReviewAgent"
+    #: The agent its session record names.
+    role = "reviewer"
     model = "anthropic/claude-opus-5"
     #: As for the translator: the body carries this agent's worklist and
     #: objectives, and compaction reaching the procedure costs more than the
@@ -117,8 +119,8 @@ class ReviewAgent(CrustifyAgent):
 
     @property
     def stage(self) -> str:  # type: ignore[override]
-        """``review-<route>_<key>``, which ``crustify cost`` buckets as
-        ``review-commits`` / ``review-modules`` / ``review-reports``."""
+        """``review-<route>_<key>``: the name of a log stem when the harness
+        gives none."""
         if self._commits:
             key = self._commits[0][:12]
         elif self._modules:

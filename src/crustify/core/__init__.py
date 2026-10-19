@@ -5,7 +5,7 @@ routes to a backend, and how a run's token counts become dollars. Everything
 above that -- what an agent is asked to do, what an artifact tree looks like,
 what a campaign or an audit even is -- stays in the tool that means it.
 
-The line is drawn from experience rather than taste. `log_cost` existed on the
+The line is drawn from experience rather than taste. Cost reporting existed on the
 translation side for months while the audit side's `agentlog` docstring claimed
 to follow it; nobody ported it, and three published campaigns priced themselves
 from a rate card an agent recalled from memory -- every figure exactly 3x high.

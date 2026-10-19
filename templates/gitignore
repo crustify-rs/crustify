@@ -8,16 +8,11 @@ builds
 rust/target
 rust.bak
 
-# Campaign plans, the batches projected from them and each batch agent's usage
-# record are tracked: the records are the evidence behind dashboard.md's cost cells, and
-# the transcripts they are recovered from do not outlive the container. The
-# agent streams, and for now the assistant's records, are not.
-artifacts/**/binder.log
-artifacts/**/translator.log
-artifacts/**/reviewer.log
-artifacts/**/planner.log
-artifacts/assistant/*.log
-artifacts/assistant/*.usage.json
+# Campaign plans, the tasks written from them, and each agent's session and usage
+# records are tracked: the usage records are the evidence behind dashboard.md's cost
+# cells. The transcripts they are derived from are not: they are large, and hold
+# whatever an agent read or printed.
+artifacts/**/*.transcript.jsonl
 
 # Review reproducers are tracked; the cargo trees their builds leave are not.
 reviews/**/target

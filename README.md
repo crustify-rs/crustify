@@ -143,7 +143,7 @@ crustify           one entry point for every stage:
                      spawn-binder      run one binder over its task.json
                      spawn-translator  run one translator over its task.json
                      spawn-reviewer    run one reviewer over its task.json
-                     cost              price per-agent usage.json records
+                     usage             tokens and cost of agent sessions, as JSON
 ```
 
 The oracle interface is owned by its own repository. Use `<command> --help` for

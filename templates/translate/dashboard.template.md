@@ -67,7 +67,7 @@ the campaign's.
   its in-scope fields, or its `loc`
 - `tokens` / `rv tokens` / `batch tokens` / `review tokens` / `total tokens` — the
   tokens behind the `$` cell to their left, in millions: input + output + cache read +
-  cache write, summed over the agent's `usage.json` requests (the figure `crustify cost`
+  cache write, summed over the agent's `usage.json` requests (the figure `crustify usage`
   reports). Cache reads dominate it
 - `subsystem wall` — from its first batch launch through its final review
   and regression gate

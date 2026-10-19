@@ -22,7 +22,7 @@ You are the user's assistant first. A session opens in one of two ways:
 
 - with the instruction to start the campaign (the user passed `--start`): run your
   workflow end to end, as it is described below;
-- with no instruction: wait for the user and do what they ask, with the workflow below
+- with no instruction: do what the user asks, with the workflow below
   as your reference for how each part is done. Run the whole workflow only when the
   user asks for it.
 
@@ -36,7 +36,7 @@ answers in the file.
 
 ---
 
-## Task
+## Settings
 
 The campaign's settings are in `{workdir}/crustify/CRUSTIFY.md`, which the user
 configured. Read it.
@@ -249,8 +249,8 @@ crustify spawn-translator <batch worktree> <batch dir>/task.json --log-dir <batc
 ```
 
 The harness validates the batch, rejects one whose objective belongs to the other agent,
-starts the backend, and writes `binder.log` and `binder.usage.json`, or `translator.log`
-and `translator.usage.json`, into the `--log-dir`.
+starts the backend, and writes `binder.session.json` or `translator.session.json` into the
+`--log-dir`.
 
 The agent commits its changes and atomically fast-forwards the wave branch. On rejection,
 it rebases its own branch onto the current wave tip, revalidates, and retries. Failed
@@ -299,7 +299,7 @@ Run one reviewer per review batch the same way:
 crustify spawn-reviewer <batch worktree> <batch dir>/task.json --log-dir <batch dir>
 ```
 
-The harness writes `reviewer.log` and `reviewer.usage.json` into the `--log-dir`.
+The harness writes `reviewer.session.json` into the `--log-dir`.
 
 Create a review wave's artifact dir and integration branch, and each review batch's artifact
 dir, branch and worktree, as the layout instructions name them.
@@ -319,13 +319,38 @@ workload that cannot run those lines reads low, and the unit tests are credited 
 executing themselves. Run each workload alone against the coverage-instrumented build,
 and take the total from the union of their lines, never from summing the workloads.
 
+##### Transcripts and usage
+
+Each agent's `--log-dir` receives its `<role>.session.json`: the CLI that ran it, the
+provider and model, its session id, which agent it was, its exit status and interval, and where its
+transcript was when it ended. The transcript is the agent's full log and the source of its
+accounting. Copy it into the batch directory as `<role>.transcript.jsonl` as soon as the
+batch lands or fails: the CLIs move and prune their own files. If it is no longer where the
+session record says, find it by its session id: Claude Code keeps each session's transcript
+under its configuration directory, and Codex each session's rollout under its
+`CODEX_HOME`; the file name contains the session id. Then derive its usage record:
+
+```bash
+crustify usage <batch dir>/<role>.transcript.jsonl -o <batch dir>/<role>.usage.json
+```
+
+`crustify usage` prices every request the transcript records and reports the session's
+tokens, cost and interval as JSON. Pass `--provider openrouter` when the session record
+names that provider for a Claude Code session: the transcript cannot tell it apart from
+Anthropic.
+
+Your own sessions leave `assistant-<timestamp>.session.json` in
+`crustify/artifacts/assistant/`; collect the transcripts of the sessions before this one
+the same way, at the start of each session. Transcripts stay untracked; commit the session
+and usage records.
+
 ##### Cost
 
-After each batch, both translation and review, run `crustify cost` over the batch
-directories' usage records: `binder.usage.json` for a `wrap` batch,
-`translator.usage.json` for a `port` batch, and `reviewer.usage.json` for a review batch. Use its computed cost and token counts, not
-provider-reported dollar totals. Commit each batch's usage record with the dashboard update
-that cites it. Record agent wall times from usage files. Record wave
+After each batch, both translation and review, take its cost and token counts from its
+usage record: `binder.usage.json` for a `wrap` batch, `translator.usage.json` for a `port`
+batch, and `reviewer.usage.json` for a review batch: its `total.cost_usd` and
+`total.tokens`. Use the computed cost, not provider-reported dollar totals. Commit each
+batch's usage record with the dashboard update that cites it. Record agent wall times from usage files. Record wave
 wall time from first batch launch through final review and regression completion. Fill the
 dashboard the task names, by default `crustify/artifacts/dashboard.md` from
 `templates/translate/dashboard.template.md`, matching its format exactly.

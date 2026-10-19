@@ -268,7 +268,7 @@ def execute(
     print(f"[crustify spawn-{role}] workdir: {workdir}")
     print(f"[crustify spawn-{role}] landing on: {base_branch}")
     print(f"[crustify spawn-{role}] model: {batch.run.model} ({batch.run.billing})")
-    print(f"[crustify spawn-{role}] log: {output / f'{role}.log'}")
+    print(f"[crustify spawn-{role}] session: {output / f'{role}.session.json'}")
 
     if role == "binder":
         from crustify.agents.bind import BindAgent as Agent

@@ -50,15 +50,17 @@ crustify/artifacts/                             the campaign
 ├── subsystems.json                             the subsystem decomposition, in execution order
 ├── dashboard.md                                the campaign dashboard; audit-dashboard.md for an audit
 ├── assistant/                                  Crustify's own records, as the assistant
-│   ├── assistant-<timestamp>.log               one per assistant session
-│   └── assistant-<timestamp>.usage.json
+│   ├── assistant-<timestamp>.session.json      one per assistant session
+│   ├── assistant-<timestamp>.transcript.jsonl  its transcript, untracked
+│   └── assistant-<timestamp>.usage.json        derived by `crustify usage`
 └── <link-unit>/<subsystem>/                    a subsystem
     ├── schedule.json                           its waves and batches
     ├── wave-<index>/                           a wave
     │   └── batch-<index>/                      a batch
     │       ├── task.json                       its schedule.json entry, with the run fields
-    │       ├── <role>.log                      binder, translator or reviewer
-    │       └── <role>.usage.json
+    │       ├── <role>.session.json             binder, translator or reviewer
+    │       ├── <role>.transcript.jsonl         its transcript, copied in; untracked
+    │       └── <role>.usage.json               derived by `crustify usage`
     └── review-wave-<index>/                    a review wave
         └── batch-<index>/                      a review batch, laid out as a batch
 ```

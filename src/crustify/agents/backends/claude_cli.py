@@ -11,7 +11,7 @@ is the trade the module previously declined; observability during the run
 turned out to be worth more than not owning one.
 
 Accounting still comes from the session transcript the CLI persists
-independently of stdout format, priced by ``crustify cost``.
+independently of stdout format, priced by ``crustify usage``.
 
 Why not ``--output-format json``, which reports ``total_cost_usd``
 directly: it is the same buffering problem (one JSON blob at exit), and
@@ -105,7 +105,7 @@ def _render(evt: dict) -> list[str]:
                    f"duration: {evt.get('duration_ms')}ms]")
     return out
 
-from crustify.core.usage import _read_usage, _transcript_path  # noqa: F401
+from crustify.core.usage import _transcript_path  # noqa: F401
 
 
 class ClaudeCliBackend:
@@ -217,15 +217,17 @@ class ClaudeCliBackend:
         transcript = _transcript_path(session_id, wd)
         if transcript is not None:
             log.line(f"[crustify] transcript: {transcript}")
-            requests, transcript_model = _read_usage(transcript)
-            log.usage({
-                "provider": route.provider,
-                "model": transcript_model or route.model,
-                "requests": requests,
-            })
         else:
             log.line(f"[crustify] {name}: no session transcript for "
                      f"{session_id}; this run is unaccounted.")
+        log.session({
+            "cli": "claude",
+            "provider": route.provider,
+            "model": route.model,
+            "session_id": session_id,
+            "transcript": str(transcript) if transcript is not None else None,
+            "exit_code": rc,
+        })
 
         if rc != 0:
             raise SystemExit(

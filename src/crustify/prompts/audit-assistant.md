@@ -253,8 +253,8 @@ crustify spawn-reviewer <batch worktree> <batch dir>/task.json --log-dir <batch 
 ```
 
 Leave a short buffer window between launches so they don't get assigned the same
-timestamp. The harness validates the batch, starts the backend, and writes `reviewer.log`
-and `reviewer.usage.json` into the `--log-dir`.
+timestamp. The harness validates the batch, starts the backend, and writes
+`reviewer.session.json` into the `--log-dir`.
 
 The reviewer commits its reports and fixes and atomically fast-forwards the review wave
 branch. On rejection, it rebases its own branch onto the current wave tip, revalidates, and
@@ -268,14 +268,40 @@ worktrees.
 
 #### 4. Accounting
 
+##### Transcripts and usage
+
+Each agent's `--log-dir` receives its `<role>.session.json`: the CLI that ran it, the
+provider and model, its session id, which agent it was, its exit status and interval, and where its
+transcript was when it ended. The transcript is the agent's full log and the source of its
+accounting. Copy it into the batch directory as `<role>.transcript.jsonl` as soon as the
+batch lands or fails: the CLIs move and prune their own files. If it is no longer where the
+session record says, find it by its session id: Claude Code keeps each session's transcript
+under its configuration directory, and Codex each session's rollout under its
+`CODEX_HOME`; the file name contains the session id. Then derive its usage record:
+
+```bash
+crustify usage <batch dir>/<role>.transcript.jsonl -o <batch dir>/<role>.usage.json
+```
+
+`crustify usage` prices every request the transcript records and reports the session's
+tokens, cost and interval as JSON. Pass `--provider openrouter` when the session record
+names that provider for a Claude Code session: the transcript cannot tell it apart from
+Anthropic.
+
+Your own sessions leave `assistant-<timestamp>.session.json` in
+`crustify/artifacts/assistant/`; collect the transcripts of the sessions before this one
+the same way, at the start of each session. Transcripts stay untracked; commit the session
+and usage records.
+
 ##### Cost
 
-After each review batch, run `crustify cost` over its `reviewer.usage.json`. Use its
-computed cost and token counts, not provider-reported dollar totals. Commit each batch's
-usage record with the dashboard update that cites it. Record agent wall times from usage
+After each review batch, take its cost and token counts from its `reviewer.usage.json`
+(`total.cost_usd`, `total.tokens`). Use the computed cost, not provider-reported dollar
+totals. Commit each batch's usage record with the dashboard update that cites it. Record agent wall times from usage
 files, and review wave wall time from first batch launch through its landing.
 
-Before launching each reviewer, price every usage record the audit has written so far.
+Before launching each reviewer, add up `total.cost_usd` over every usage record the audit
+has written so far.
 Once that total reaches the maximum spend, launch no further reviewers: let the running
 ones land, then fill the dashboard and state that the budget was reached.
 

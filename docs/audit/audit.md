@@ -61,8 +61,8 @@ classes each sanitizer covers.
 
 ## Spending
 
-The task sets a maximum spend. Before each launch, the orchestrator prices every usage
-record the audit has written with `crustify cost`, and once the total reaches the
+The settings set a maximum spend. Before each launch, the assistant adds up the cost of
+every usage record the audit has written, and once the total reaches the
 maximum it launches no further reviewers.
 
 ## Output

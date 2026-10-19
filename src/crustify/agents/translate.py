@@ -38,6 +38,8 @@ class TranslateAgent(WorklistAgent):
     """Port one orchestrator-projected batch to safe Rust."""
 
     name = "TranslateAgent"
+    #: The agent its session record names.
+    role = "translator"
     objective = "port"
     prompt = "translator.md"
     SKILLS = _SKILLS

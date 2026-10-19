@@ -266,9 +266,11 @@ class GitHarnessTests(unittest.TestCase):
                 from crustify.agentlog import open_agent_log
                 with open_agent_log(
                         call["artifact_dir"], call["log_stem"],
-                        stage="wrap-type_Frame") as log:
+                        agent="binder") as log:
                     log.line("fake binder")
-                    log.usage({"provider": "test", "model": "test", "requests": []})
+                    log.session({"cli": "claude", "provider": "test", "model": "test",
+                                 "session_id": "s-1", "transcript": None,
+                                 "exit_code": 0})
 
         with mock.patch("crustify.agents.bind.BindAgent", FakeAgent):
             translate.execute(tree, self.batch, role="binder", log_dir=self.output)
@@ -279,10 +281,13 @@ class GitHarnessTests(unittest.TestCase):
         self.assertEqual(call["log_stem"], "binder")
         self.assertEqual(config.MODEL_OVERRIDE, RUN["model"])
         self.assertEqual(config.BILLING, RUN["billing"])
-        self.assertTrue((self.output / "binder.log").is_file())
-        self.assertTrue((self.output / "binder.usage.json").is_file())
-        usage = json.loads((self.output / "binder.usage.json").read_text())
-        self.assertEqual(usage["stage"], "wrap-type_Frame")
+        session = json.loads((self.output / "binder.session.json").read_text())
+        self.assertEqual((session["agent"], session["session_id"]),
+                         ("binder", "s-1"))
+        # The harness keeps no log and prices nothing: the transcript is the
+        # log, and `crustify usage` prices it.
+        self.assertFalse((self.output / "binder.log").exists())
+        self.assertFalse((self.output / "binder.usage.json").exists())
         # The worktree is the agent's, forked from the wave branch, and the
         # authored home the batch names is present in it.
         home = call["workdir"] / "crustify/rust/demo/src/lib.rs"

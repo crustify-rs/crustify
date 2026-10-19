@@ -162,6 +162,9 @@ class CrustifyAgent:
 
     name: str         # subclasses set this
     model: str        # subclasses set this
+    #: The agent a session record names: binder, translator, reviewer, planner
+    #: or assistant. Subclasses set this.
+    role: str = "agent"
     stage: str        # label recorded in the usage record + log filename
     # Every skill this role can carry, in prompt order. Which of them it
     # ACTUALLY carries is decided by discovery, not by configuration: a skill
@@ -273,7 +276,7 @@ class CrustifyAgent:
         return open_agent_log(
             self.artifact_dir or self.layout.root / "logs",
             self.log_stem or self._log_stem(),
-            stage=self.stage,
+            agent=self.role,
         )
 
     # ------------------------------------------------------------------

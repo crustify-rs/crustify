@@ -62,7 +62,7 @@ def execute(workdir: Path, task_path: Path, *, log_dir: Path,
     print(f"[crustify spawn-planner] workdir: {agent.workdir}")
     print(f"[crustify spawn-planner] objective: {batch.objective}")
     print(f"[crustify spawn-planner] model: {batch.run.model} ({batch.run.billing})")
-    print(f"[crustify spawn-planner] log: {output / f'{_LOG_STEM}.log'}")
+    print(f"[crustify spawn-planner] session: {output / f'{_LOG_STEM}.session.json'}")
     batch.run.apply()
     agent.run()
     print("[crustify spawn-planner] run completed.")

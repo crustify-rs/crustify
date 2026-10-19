@@ -42,11 +42,10 @@ class WorklistAgent(CrustifyAgent):
 
     @property
     def stage(self) -> str:  # type: ignore[override]
-        """The stage recorded in this agent's usage record:
-        ``<objective>-<route>_<key>``, e.g. ``port-type_git_delta_index`` /
-        ``wrap-symbol_access``. ``crustify cost`` buckets by its prefix.
-
-        The log file itself takes the harness's fixed stem, the role's name."""
+        """This agent's stage, ``<objective>-<route>_<key>``, e.g.
+        ``port-type_git_delta_index`` / ``wrap-symbol_access``: the name of a
+        log stem when the harness gives none. Its session record names the
+        agent, the role."""
         key = self._items[0]["name"] if self._items else "batch"
         return (f"{self.objective}-{self._route}_"
                 f"{re.sub(r'[^A-Za-z0-9_]+', '_', key or 'batch')}")
