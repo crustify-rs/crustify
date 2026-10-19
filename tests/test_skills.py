@@ -125,12 +125,12 @@ class IncludeTests(unittest.TestCase):
     role headers name their sections when they augment them."""
 
     _DOCS = {
-        "conventions": "docs/translate/conventions.md",
-        "binding": "docs/translate/howto/binding.md",
-        "porting": "docs/translate/howto/porting.md",
-        "testing": "docs/translate/howto/testing.md",
-        "landing": "docs/translate/howto/landing.md",
-        "layout": "docs/translate/howto/layout.md",
+        "conventions": "docs/conventions.md",
+        "binding": "docs/binding.md",
+        "porting": "docs/porting.md",
+        "testing": "docs/testing.md",
+        "landing": "docs/landing.md",
+        "layout": "docs/layout.md",
     }
     _REF = re.compile(r"^## ([a-z]+) › (.+?)(?:, for `[a-z]+`)?$", re.M)
 
@@ -168,7 +168,7 @@ class IncludeTests(unittest.TestCase):
         is formatted after the include."""
         from crustify.agents.base import expand_includes
         body = expand_includes(
-            "<!-- INCLUDE docs/translate/conventions.md -->")
+            "<!-- INCLUDE docs/conventions.md -->")
         self.assertIn("{.<field>}", body.format())
 
     def test_every_how_to_section_a_header_names_exists(self) -> None:

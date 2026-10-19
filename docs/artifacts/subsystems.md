@@ -22,7 +22,7 @@ subsystem's headers and translation units share one module.
 `link_units`, and each link unit's `subsystems`, are listed in the order the campaign
 runs them, bottom-up, producers before consumers, and each entry's `index` is its
 position, from zero. Each subsystem's waves are in its own
-`<link-unit>/<subsystem>/schedule.json` (see `docs/translate/schemas/schedule.md`), so
+`<link-unit>/<subsystem>/schedule.json` (see `docs/artifacts/schedule.md`), so
 the order here with each subsystem's waves in place is the campaign's total order.
 
 Link units run to completion in turn, so a subsystem's dependencies in another link unit

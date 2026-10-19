@@ -36,7 +36,7 @@ The assistant also repairs: it diagnoses failed agents, merge conflicts and regr
 then retries or reschedules the affected work. The reviewers test adversarially: they are
 independent of the agents whose work they review.
 
-The [audit campaign](docs/audit/audit.md) runs the reviewers alone over any Rust crate
+The [audit campaign](docs/audit.md) runs the reviewers alone over any Rust crate
 that wraps C.
 
 ## Components
@@ -45,7 +45,7 @@ that wraps C.
 |---|---|
 | `crustify` | Agent execution, isolated worktrees, crate placement, logging, and campaign artifacts |
 | [`wavefront`](https://github.com/crustify-rs/wavefront) | CodeQL-backed dependency analysis, scope selection, and deterministic scheduling |
-| [audit campaigns](docs/audit/audit.md) | UB review of any Rust crate that wraps C, by the same reviewers a translation uses |
+| [audit campaigns](docs/audit.md) | UB review of any Rust crate that wraps C, by the same reviewers a translation uses |
 | [`ffibox`](https://github.com/crustify-rs/ffibox) | Safe FFI smart pointers and lifetime traits used by generated wrappers |
 | [`ffimap`](https://github.com/crustify-rs/ffimap) | Deterministic unsafe and FFI surface counts, recorded per batch, wave, subsystem and campaign |
 
@@ -176,11 +176,17 @@ Below is an overview of the campaign's stats:
 
 ## Documentation
 
-- [`docs/translate/conventions.md`](docs/translate/conventions.md): generated Rust
+- [`docs/conventions.md`](docs/conventions.md): generated Rust
   conventions, including the Rust tree layout
-- [`docs/translate/schemas/`](docs/translate/schemas/): crate-placement and wave schemas
-- [`docs/translate/schemas/subsystems.md`](docs/translate/schemas/subsystems.md): link-unit and
-  subsystem decomposition artifact
+- [`docs/planning.md`](docs/planning.md): how a campaign is decomposed and scheduled
+- [`docs/binding.md`](docs/binding.md), [`docs/porting.md`](docs/porting.md): how an
+  item is wrapped or ported
+- [`docs/testing.md`](docs/testing.md), [`docs/landing.md`](docs/landing.md),
+  [`docs/layout.md`](docs/layout.md): tests, landing, and a campaign's branches and
+  artifact dirs
+- [`docs/audit.md`](docs/audit.md): audit campaigns
+- [`docs/artifacts/`](docs/artifacts/): field meaning of the campaign's artifacts:
+  `subsystems.json`, `schedule.json` and `task.json`
 - [`templates/translate/CRUSTIFY.template.md`](templates/translate/CRUSTIFY.template.md): optional pre-filled
   campaign questionnaire
 - [`templates/translate/dashboard.template.md`](templates/translate/dashboard.template.md): campaign

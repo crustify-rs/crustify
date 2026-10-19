@@ -15,10 +15,10 @@ a report and a reproducer for every finding it confirms.
 crustify /path/to/repo --settings /path/to/CRUSTIFY.md --model anthropic/claude-opus-5
 ```
 
-Fill in [`CRUSTIFY.template.md`](../../templates/audit/CRUSTIFY.template.md) first; a
+Fill in [`CRUSTIFY.template.md`](../templates/audit/CRUSTIFY.template.md) first; a
 headless run needs every mandatory answer. Rerunning the command resumes the audit, and
 `--task-only` runs the ablation control described in
-[`BARE.md`](../../templates/audit/BARE.md).
+[`BARE.md`](../templates/audit/BARE.md).
 
 ## Objectives
 
@@ -48,15 +48,15 @@ reruns:
 {"objectives": ["revisit", "disclose", "fix"], "reports": ["crustify/reviews/<batch id>/ub_safe/<slug>"]}
 ```
 
-[`task.md`](../translate/schemas/task.md) gives the fields, and
-[`layout.md`](../translate/howto/layout.md) the branches and artifact dirs an audit's
+[`task.md`](artifacts/task.md) gives the fields, and
+[`layout.md`](layout.md) the branches and artifact dirs an audit's
 review waves use.
 
 ## Instruments
 
 Each selected sanitizer is a variant of `crustify/artifacts/build.json`, which the orchestrator
 prepares before the first review wave; the reviewers use only those variants. Miri and
-`equivalence` need no build. [`testing.md`](../translate/howto/testing.md) gives the bug
+`equivalence` need no build. [`testing.md`](testing.md) gives the bug
 classes each sanitizer covers.
 
 ## Spending
@@ -71,9 +71,9 @@ Each reviewer files its findings under its reviews dir, `crustify/reviews/<batch
 lands them on its review wave's branch. With `disclose`, every finding carries a
 `disclosure.md` ready to send to the project's maintainers. The orchestrator fills the
 audit's dashboard from
-[`dashboard.template.md`](../../templates/audit/dashboard.template.md).
+[`dashboard.template.md`](../templates/audit/dashboard.template.md).
 
 ## Reference
 
-- [Audit assistant prompt](../../src/crustify/prompts/audit-assistant.md)
-- [Reviewer prompt](../../src/crustify/prompts/reviewer.md)
+- [Audit assistant prompt](../src/crustify/prompts/audit-assistant.md)
+- [Reviewer prompt](../src/crustify/prompts/reviewer.md)

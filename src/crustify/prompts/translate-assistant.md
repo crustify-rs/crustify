@@ -81,7 +81,7 @@ Every agent you spawn runs from its role's fixed prompt. When the campaign chang
 direction, or the user asks for something an agent's role does not cover, customize that
 agent's task: write the instructions to `instructions.md` in its artifact dir, beside its
 `task.json`, and name the file in the task's `instructions` field (see
-`docs/translate/schemas/task.md`). The agent's prompt carries them in its
+`docs/artifacts/task.md`). The agent's prompt carries them in its
 `## Additional instructions` section, and the agent follows them over the rest of its
 prompt where the two conflict.
 
@@ -163,7 +163,7 @@ updates what follows an earlier schema, corrects what the earlier runs committed
 report per correction under `crustify/reviews/planner/`, and re-emits the schedules its
 changes move. Give each run its own artifact dir, write its task, such as
 `{{"model": "<model>", "billing": "<billing>"}}` (see
-`docs/translate/schemas/task.md`), as `task.json` in it, and spawn it:
+`docs/artifacts/task.md`), as `task.json` in it, and spawn it:
 
 ```bash
 crustify spawn-planner <repo> crustify/artifacts/planning/run-<k>/task.json \
@@ -387,7 +387,7 @@ validate the reusable fix there; do not mix it into campaign translation commits
 Here are additional instructions on how a campaign is laid out: its branches, worktrees and
 artifact dirs.
 
-<!-- INCLUDE docs/translate/howto/layout.md -->
+<!-- INCLUDE docs/layout.md -->
 
 ---
 
@@ -395,7 +395,7 @@ The following describes the conventions of the codebase the campaign generates. 
 wherever they apply: when you scaffold crates, subsystem roots, modules and test suites,
 and when you home each batch's items.
 
-<!-- INCLUDE docs/translate/conventions.md -->
+<!-- INCLUDE docs/conventions.md -->
 
 ---
 

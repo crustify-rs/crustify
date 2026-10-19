@@ -12,7 +12,7 @@ campaign's shape and cost reviewable before it spends anything.
 A schedule holds only its subsystem's waves. Which subsystem it is, is its path; where
 that subsystem runs in the campaign is its `index`, and its link unit's, in
 `subsystems.json`, whose link units and subsystems are listed in execution order (see
-`docs/translate/schemas/subsystems.md`). The campaign's total order is that order with
+`docs/artifacts/subsystems.md`). The campaign's total order is that order with
 each subsystem's waves in place: every wave of link unit 0's first subsystem, then of its
 second, then link unit 1's.
 
@@ -39,7 +39,7 @@ before the first wave of the next.
 
 A batch entry is a binder's or translator's `task.json` without its run fields
 (`base_branch`, `model` and `billing`), which the orchestrator decides when it launches the
-batch; see `docs/translate/schemas/task.md`.
+batch; see `docs/artifacts/task.md`.
 
 `objective` is per batch, not per wave. A port campaign wraps a type while C still reads
 its fields and ports it afterwards, so one wave holds batches of differing objectives.
@@ -50,7 +50,7 @@ and changing nothing else.
 ## Derived paths
 
 Every index also addresses the filesystem and the branch namespace, so nothing records a
-path: `docs/translate/howto/layout.md` spells each branch, worktree and artifact dir from
+path: `docs/layout.md` spells each branch, worktree and artifact dir from
 the link unit, subsystem, wave index and batch index. A batch's artifact dir holds its
 `task.json` and is what its `--log-dir` names.
 

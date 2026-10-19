@@ -10,7 +10,7 @@ agent's entire worklist and how that agent runs, and each command rejects a task
 objective belongs to another.
 
 A planner plans a binder's or translator's task as one batch entry of
-`docs/translate/schemas/schedule.md`. The orchestrator writes that entry as `task.json`,
+`docs/artifacts/schedule.md`. The orchestrator writes that entry as `task.json`,
 adding the [run fields](#run-fields) it decides when it launches the batch.
 
 `task.json` sits in the batch's own directory, which the orchestrator also passes as

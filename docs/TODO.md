@@ -35,8 +35,8 @@ Open questions:
 
 ## Ship `docs/` so a non-editable install keeps its conventions
 
-The conventions and the how-tos (`docs/translate/conventions.md`,
-`docs/translate/howto/*.md`) resolve under `deps.CHECKOUT`, which is the source checkout.
+The conventions and the how-tos (`docs/conventions.md`,
+`docs/*.md`) resolve under `deps.CHECKOUT`, which is the source checkout.
 A wheel install has no `docs/` there, so every agent runs without its conventions and
 how-tos. Only the editable install the Dockerfile performs hides this.
 

@@ -254,41 +254,41 @@ The following describes the conventions of Crustify-generated codebases. If you 
 reviewing a Crustify-generated batch, judge the Rust against them and follow them in every
 change you make; otherwise, ignore them.
 
-<!-- INCLUDE docs/translate/conventions.md -->
+<!-- INCLUDE docs/conventions.md -->
 
 ---
 
 Here are additional instructions on how Crustify generates safe bindings, which your workset
 is judged against.
 
-<!-- INCLUDE docs/translate/howto/binding.md -->
+<!-- INCLUDE docs/binding.md -->
 
 ---
 
 Here are additional instructions on how Crustify ports C to safe Rust, which the ported items
 of your workset are judged against.
 
-<!-- INCLUDE docs/translate/howto/porting.md -->
+<!-- INCLUDE docs/porting.md -->
 
 ---
 
 Here are additional instructions on how to test, including the gates and regressions a
 review batch owns.
 
-<!-- INCLUDE docs/translate/howto/testing.md -->
+<!-- INCLUDE docs/testing.md -->
 
 ---
 
 Here are additional instructions on how a campaign is laid out: its branches, worktrees and
 artifact dirs, and your reviews dir.
 
-<!-- INCLUDE docs/translate/howto/layout.md -->
+<!-- INCLUDE docs/layout.md -->
 
 ---
 
 Here are additional instructions on how to land your commits.
 
-<!-- INCLUDE docs/translate/howto/landing.md -->
+<!-- INCLUDE docs/landing.md -->
 
 ---
 

@@ -96,33 +96,33 @@ The following describes the conventions of the codebase you generate. Follow the
 your workflow wherever they apply: where your items are homed, how they are named and laid
 out, where their tests are placed, and how every unsafe block is documented.
 
-<!-- INCLUDE docs/translate/conventions.md -->
+<!-- INCLUDE docs/conventions.md -->
 
 ---
 
 Here are additional instructions on how to generate safe bindings. Generate your worklist's
 bindings as they describe, following the Type route or the Symbol route for your route.
 
-<!-- INCLUDE docs/translate/howto/binding.md -->
+<!-- INCLUDE docs/binding.md -->
 
 ---
 
 Here are additional instructions on how to test what you generate.
 
-<!-- INCLUDE docs/translate/howto/testing.md -->
+<!-- INCLUDE docs/testing.md -->
 
 ---
 
 Here are additional instructions on how a campaign is laid out: its branches, worktrees and
 artifact dirs.
 
-<!-- INCLUDE docs/translate/howto/layout.md -->
+<!-- INCLUDE docs/layout.md -->
 
 ---
 
 Here are additional instructions on how to land your commits.
 
-<!-- INCLUDE docs/translate/howto/landing.md -->
+<!-- INCLUDE docs/landing.md -->
 
 ---
 

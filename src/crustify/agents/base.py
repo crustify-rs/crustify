@@ -37,7 +37,7 @@ _GENERIC_SKILL_ANCHOR = "<!-- SKILL -->"
 #: the instructions file's text, or by nothing when the task gives none.
 INSTRUCTIONS_MARKER = "<!-- INSTRUCTIONS -->"
 
-#: `<!-- INCLUDE docs/translate/howto/binding.md -->`: a crustify document,
+#: `<!-- INCLUDE docs/binding.md -->`: a crustify document,
 #: by its path in the checkout, spliced whole into a stage prompt.
 _INCLUDE_RE = _re.compile(r"<!-- INCLUDE ([^ ]+) -->")
 

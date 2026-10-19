@@ -320,7 +320,9 @@ class PlannerPromptTests(unittest.TestCase):
         self.assertIn(f"{self.repo.resolve()}/crustify/CRUSTIFY.md", body)
         self.assertIn("### 1. The committed plan", body)
         self.assertIn("Only a correction is a finding", body)
-        self.assertIn("re-emit that\nsubsystem's `schedule.json`", body)
+        self.assertIn("re-emit that order or that subsystem's `schedule.json`", body)
+        # The details of how to plan come from the included planning doc.
+        self.assertIn("# Planning\n\nPlanning turns a campaign's settings", body)
         self.assertIn("under `crustify/reviews/planner/`", body)
         self.assertNotIn("objective: `", body)
         self.assertNotIn("scaffold", body.split("### 3. Planning")[1].split("### 4.")[0])

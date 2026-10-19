@@ -220,7 +220,7 @@ class ReviewAgentTests(unittest.TestCase):
 
     def test_testing_says_when_gates_run_the_prompts_who_runs_them(self) -> None:
         from crustify.agents.base import _PKG_ROOT, deps
-        testing = (deps.CHECKOUT / "docs/translate/howto/testing.md").read_text()
+        testing = (deps.CHECKOUT / "docs/testing.md").read_text()
         self.assertIn("BSan, when available, is run for every batch and at subsystem end",
                       testing)
         self.assertIn("Miri is run after every wave", testing)
