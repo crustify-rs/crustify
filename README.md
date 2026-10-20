@@ -2,7 +2,7 @@
 
 **Crustify is your AI-based co-translator and assistant for automating C-to-Rust tasks.**
 Point it at a C repository or a Rust crate, describe what you want, and Crustify plans
-the work with you, runs it, and reports back. It handles three kinds of task:
+the work with you, runs it, and reports back. It handles three kinds of tasks:
 
 - **Wrap public APIs.** Keep the C implementation and generate a safe, idiomatic Rust API
   in front of it.
