@@ -37,8 +37,8 @@ Review batches run by `crustify spawn-reviewer`, LLM-as-a-Judge over each landed
 - **branch** — `<branch>`, tip `<sha>`
 - **agents** — `<n>`, over `<n>` wave(s)
 
-`rv`-prefixed columns below carry the review pass; the unprefixed ones remain
-the campaign's.
+Review batches are rows of the kind tables below, marked `review` in their `pass`
+column, beside the translation batches they review.
 
 ## Legend
 
@@ -54,16 +54,21 @@ the campaign's.
   batch row joins to its subsystem's `schedule.json`, to the agent that landed it, and to its
   Overview subsystem row. Schema-v2 plans carry `steps` and `plan_items`
   rather than indexed waves and batches, so historical rows leave both blank
+- `pass` — `first` for a translation batch, `review` for a review batch; a review row's
+  units are those of the translation batches it reviewed
+- `Σ first` / `Σ review` — a table's totals over its `first` rows and over its `review`
+  rows, kept apart
 - `types` / `symbols` — scheduler units in the batch. Callbacks are scheduled
   in symbol batches and counted there
 - `fields` — in-scope fields: the field accessors the oracle assigned to that
   type batch, not the type's full declared field count
 - `$` / `wall` / `loc` — that agent's computed cost, its elapsed time, and the
   `.rs` insertions of its landing commit. `wall` is `ended_at − started_at` from
-  the agent's own `usage.json`, so it INCLUDES the per-worktree C rebuild
+  the agent's own `usage.json`, so it INCLUDES the per-worktree C rebuild. Under
+  subscription billing `$` is an API-equivalent comparison value, not a charged amount
 - `$/type` / `$/symbol` / `$/field` / `$/loc` — that row's `$` over its units,
   its in-scope fields, or its `loc`
-- `tokens` / `rv tokens` / `review tokens` / `total tokens` — the
+- `tokens` / `review tokens` / `total tokens` — the
   tokens behind the `$` cell to their left, in millions: input + output + cache read +
   cache write, summed over the agent's `usage.json` requests (the figure `crustify usage`
   reports). Cache reads dominate it
@@ -86,8 +91,8 @@ the campaign's.
 - `cov (C/Rust)` — in a `Batches` table, the absolute line coverage right after
   that batch landed, from ONE run of all four test workloads together (their
   union): C over the subsystem link unit's TUs in the `coverage` prebuild,
-  Rust over the authored non-test sources. Its **Σ** cell is the coverage at the
-  table's last landing, not a sum
+  Rust over the authored non-test sources. Its **Σ** cells are the coverage at the
+  table's last landing of that pass, not a sum
 - `+UB safe tests` / `+UB unsafe tests` / `+equiv tests` / `+unit tests` — in a
   `Batches …: tests` table, the tests added by that landed batch; each parenthesized pair is its C/Rust
   line-coverage change in percentage points. Negative coverage deltas are valid
@@ -103,14 +108,11 @@ the campaign's.
   reproduce, or did not show a real bug, and their fixes were reverted. They
   stay counted in their categories; `total` minus this column is the confirmed
   defects
-- `+pub unsafe fn` / `+pub raw ptr` — the change the landed batch made to the
-  public unsafe surface (`unsafe_fns_pub`) and to the raw pointers on the safe
-  public interface (`raw_ptr_ty_pub_fields_pub` + `raw_ptr_fn_pub_safe`) of the unseeded
-  static scan, at its landing against the commit before it; a review batch's fixes
-  show as negative values
-- `rv $` / `rv wall` / `rv loc` — the REVIEW agent's cost, elapsed time, and net
-  `.rs` line delta (`+ins/-del`) of its landing commit. Under subscription
-  billing `rv $` is an API-equivalent comparison value, not a charged amount
+- the Safety audit's metrics — in `Current tally`, each metric's value in the unseeded
+  ffimap scan of the campaign's base and of its tip, from the counters named beside
+  it; in a `Batches: safety audit` table, the change the landed batch made to each, at
+  its landing against the commit before it, so a review batch's fixes show as negative
+  values
 - `UB safe tests` / `UB unsafe tests` / `Equiv tests` / `Unit tests` — counts of
   `#[test]` functions in the `tests/ub_safe`, `tests/ub_unsafe` and `tests/equiv`
   test binaries and in the library's `#[cfg(test)]` modules. Each
@@ -167,6 +169,28 @@ Implementation `<provider>/<model>` via `<backend>`; review
 | **Σ recorded agents** | **`<n>`** | **`<n>`** | **`<n>h<n>m`** | **`$<n>`** | **`<n>M`** | **`$<n>`** | **`$<n>`** | **`$<n>`** | **`<n>M`** | **`$<n>`** | **`$<n>`** | **`$<n>`** | **`<n>M`** | **`$<n>`** | **`$<n>`** |
 | **Σ campaign** | **`<n>`** | **`<n>`** | **`<n>h<n>m`** | **`$<n>`** | **`<n>M`** | — | — | **`$<n>`** | **`<n>M`** | — | — | **`$<n>`** | **`<n>M`** | — | — |
 
+## Safety audit
+
+Deterministic `ffimap <workdir> --json`; no model. Every counter is in the `ffimap.json`
+tracked in the campaign's artifact dir and in each subsystem's, wave's and batch's.
+
+### Current tally
+
+| metric | counters | what it counts | campaign base (`<sha>`) | current (`<sha>`) | Δ |
+|---|---|---|---:|---:|---:|
+| pub raw ptr (safe) | `raw_ptr_pub_safe_interface` | raw pointers on the safe public interface: public fields and safe public fns | `<n>` | `<n>` | `±<n>` |
+| pub raw ptr | `raw_ptr_pub` | raw pointers anywhere on the public interface, `unsafe fn`s included | `<n>` | `<n>` | `±<n>` |
+| pub void ptr | `void_ptr_ty_pub_fields_pub` + `void_ptr_fn_pub_safe` + `void_ptr_fn_pub_unsafe` | type-erased pointers left to the API's users | `<n>` | `<n>` | `±<n>` |
+| pub unsafe fn | `unsafe_fns_pub` | the obligations the crate exports to its callers | `<n>` | `<n>` | `±<n>` |
+| C borrow | `c_type_borrow_non_sanctioned` | Rust references into C memory outside the sanctioned handle positions; target 0 | `<n>` | `<n>` | `±<n>` |
+| slice borrow | `raw_ptr_as_slice_borrow` | slices and strings borrowed over raw pointers, which C must neither free nor change | `<n>` | `<n>` | `±<n>` |
+| unsafe loc % | `unsafe_loc_ratio` | unsafe block lines over code lines; context, not a score | `<n>` | `<n>` | `±<n>` pp |
+| unsafe blocks | `unsafe_blocks` | unsafe blocks, the denominator of the ratio's reading | `<n>` | `<n>` | `±<n>` |
+| Send/Sync | `unsafe_send_impl` + `unsafe_sync_impl` | thread safety asserted rather than derived from the fields | `<n>` | `<n>` | `±<n>` |
+| C by value | Σ `c_type_by_val_*` + Σ `c_type_std_owner_*` | C types held outside an ffibox owner, which a move can leave dangling | `<n>` | `<n>` | `±<n>` |
+| Drop/Clone | `drop_impl` + `clone_impl` | lifecycles written by hand rather than through an owner | `<n>` | `<n>` | `±<n>` |
+| deref outside impl | `raw_ptr_derefs_outside_impl` | raw pointer dereferences outside any `impl` or trait body | `<n>` | `<n>` | `±<n>` |
+
 ## Planning
 
 `<provider>/<model>` via `<backend>`. One row per planner run, in order; its reports are
@@ -184,55 +208,57 @@ the corrections it made to what earlier runs committed.
 
 `<provider>/<model>` via `<backend>`.
 
-| subsystem | wave | batch | types | fields | +LoC | cov (C/Rust) | +pub unsafe fn | +pub raw ptr | $ | tokens | wall | $/type | $/field |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-|`<link-unit>/<subsystem>`|`<n>`|`<n>`| `<n>` | `<n>` |`+<n>/-<n>`| `<n>`% / `<n>`% | `±<n>` | `±<n>` | `$<n>` | `<n>M` | `<n>m<n>s` | `$<n>` | `$<n>` |
-| **Σ** |  |  | **`<n>`** | **`<n>`** | **`+<n>/-<n>`** | **`<n>`% / `<n>`%** | **`±<n>`** | **`±<n>`** | **`$<n>`** | **`<n>M`** | — | **`$<n>`** | **`$<n>`** |
+| subsystem | wave | batch | pass | types | fields | +LoC | cov (C/Rust) | $ | tokens | wall | $/type | $/field |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| `<link-unit>/<subsystem>` | `<n>` | `<n>` | first | `<n>` | `<n>` | `+<n>/-<n>` | `<n>`% / `<n>`% | `$<n>` | `<n>M` | `<n>m<n>s` | `$<n>` | `$<n>` |
+| `<link-unit>/<subsystem>` | `<n>` | `<n>` | review | `<n>` | `<n>` | `+<n>/-<n>` | `<n>`% / `<n>`% | `$<n>` | `<n>M` | `<n>m<n>s` | `$<n>` | `$<n>` |
+| **Σ first** |  |  |  | **`<n>`** | **`<n>`** | **`+<n>/-<n>`** | **`<n>`% / `<n>`%** | **`$<n>`** | **`<n>M`** | — | **`$<n>`** | **`$<n>`** |
+| **Σ review** |  |  |  | **`<n>`** | **`<n>`** | **`+<n>/-<n>`** | **`<n>`% / `<n>`%** | **`$<n>`** | **`<n>M`** | — | **`$<n>`** | **`$<n>`** |
 
 ### Batches — wrap: tests
 
 `<provider>/<model>` via `<backend>`.
 
-| subsystem | wave | batch | +UB safe tests (+C/+Rust pp) | +UB unsafe tests (+C/+Rust pp) | +equiv tests (+C/+Rust pp) | +unit tests (+C/+Rust pp) |
-|---|---|---|---|---|---|---|
-|`<link-unit>/<subsystem>`|`<n>`|`<n>`|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|
-| **Σ** |  |  | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** |
+| subsystem | wave | batch | pass | +UB safe tests (+C/+Rust pp) | +UB unsafe tests (+C/+Rust pp) | +equiv tests (+C/+Rust pp) | +unit tests (+C/+Rust pp) |
+|---|---|---|---|---|---|---|---|
+| `<link-unit>/<subsystem>` | `<n>` | `<n>` | first | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) |
+| `<link-unit>/<subsystem>` | `<n>` | `<n>` | review | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) |
+| **Σ first** |  |  |  | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** |
+| **Σ review** |  |  |  | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** |
 
 ### Batches — port
 
 `<provider>/<model>` via `<backend>`.
 
-| subsystem | wave | batch | types | fields | +LoC | cov (C/Rust) | +pub unsafe fn | +pub raw ptr | $ | tokens | wall | $/type | $/field |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-|`<link-unit>/<subsystem>`|`<n>`|`<n>`| `<n>` | `<n>` |`+<n>/-<n>`| `<n>`% / `<n>`% | `±<n>` | `±<n>` | `$<n>` | `<n>M` | `<n>m<n>s` | `$<n>` | `$<n>` |
-| **Σ** |  |  | **`<n>`** | **`<n>`** | **`+<n>/-<n>`** | **`<n>`% / `<n>`%** | **`±<n>`** | **`±<n>`** | **`$<n>`** | **`<n>M`** | — | **`$<n>`** | **`$<n>`** |
+| subsystem | wave | batch | pass | types | fields | +LoC | cov (C/Rust) | $ | tokens | wall | $/type | $/field |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| `<link-unit>/<subsystem>` | `<n>` | `<n>` | first | `<n>` | `<n>` | `+<n>/-<n>` | `<n>`% / `<n>`% | `$<n>` | `<n>M` | `<n>m<n>s` | `$<n>` | `$<n>` |
+| `<link-unit>/<subsystem>` | `<n>` | `<n>` | review | `<n>` | `<n>` | `+<n>/-<n>` | `<n>`% / `<n>`% | `$<n>` | `<n>M` | `<n>m<n>s` | `$<n>` | `$<n>` |
+| **Σ first** |  |  |  | **`<n>`** | **`<n>`** | **`+<n>/-<n>`** | **`<n>`% / `<n>`%** | **`$<n>`** | **`<n>M`** | — | **`$<n>`** | **`$<n>`** |
+| **Σ review** |  |  |  | **`<n>`** | **`<n>`** | **`+<n>/-<n>`** | **`<n>`% / `<n>`%** | **`$<n>`** | **`<n>M`** | — | **`$<n>`** | **`$<n>`** |
 
 ### Batches — port: tests
 
 `<provider>/<model>` via `<backend>`.
 
-| subsystem | wave | batch | +UB safe tests (+C/+Rust pp) | +UB unsafe tests (+C/+Rust pp) | +equiv tests (+C/+Rust pp) | +unit tests (+C/+Rust pp) |
-|---|---|---|---|---|---|---|
-|`<link-unit>/<subsystem>`|`<n>`|`<n>`|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|
-| **Σ** |  |  | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** |
+| subsystem | wave | batch | pass | +UB safe tests (+C/+Rust pp) | +UB unsafe tests (+C/+Rust pp) | +equiv tests (+C/+Rust pp) | +unit tests (+C/+Rust pp) |
+|---|---|---|---|---|---|---|---|
+| `<link-unit>/<subsystem>` | `<n>` | `<n>` | first | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) |
+| `<link-unit>/<subsystem>` | `<n>` | `<n>` | review | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) |
+| **Σ first** |  |  |  | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** |
+| **Σ review** |  |  |  | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** |
 
-### Batches — review
+### Batches: safety audit
 
-`<provider>/<model>` via `<backend>`.
+Deterministic `ffimap`; no model.
 
-| subsystem | wave | batch | types | +LoC | cov (C/Rust) | +pub unsafe fn | +pub raw ptr | rv loc | rv $ | rv tokens | rv wall | rv $/type |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|
-|`<link-unit>/<subsystem>`|`<n>`|`<n>`| `<n>` |`+<n>/-<n>`| `<n>`% / `<n>`% | `±<n>` | `±<n>` | `+<n>/-<n>` | `$<n>` | `<n>M` | `<n>m<n>s` | `$<n>` |
-| **Σ** |  |  | **`<n>`** | **`+<n>/-<n>`** | **`<n>`% / `<n>`%** | **`±<n>`** | **`±<n>`** | **`+<n>/-<n>`** | **`$<n>`** | **`<n>M`** | — | **`$<n>`** |
-
-### Batches — review: tests
-
-`<provider>/<model>` via `<backend>`.
-
-| subsystem | wave | batch | +UB safe tests (+C/+Rust pp) | +UB unsafe tests (+C/+Rust pp) | +equiv tests (+C/+Rust pp) | +unit tests (+C/+Rust pp) |
-|---|---|---|---|---|---|---|
-|`<link-unit>/<subsystem>`|`<n>`|`<n>`|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|
-| **Σ** |  |  | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** |
+| subsystem | wave | batch | objective | pass | pub raw ptr (safe) | pub raw ptr | pub void ptr | pub unsafe fn | C borrow | slice borrow | unsafe loc % | unsafe blocks | Send/Sync | C by value | Drop/Clone | deref outside impl |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| `<link-unit>/<subsystem>` | `<n>` | `<n>` | wrap | first | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` pp | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` |
+| `<link-unit>/<subsystem>` | `<n>` | `<n>` | port | first | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` pp | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` |
+| `<link-unit>/<subsystem>` | `<n>` | `<n>` | wrap | review | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` pp | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` |
+| **Σ first** |  |  |  |  | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>` pp** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** |
+| **Σ review** |  |  |  |  | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>` pp** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** |
 
 ### Batches — review: PoC + reports
 
@@ -249,39 +275,36 @@ the corrections it made to what earlier runs committed.
 
 `<provider>/<model>` via `<backend>`.
 
-| subsystem | wave | batch | objective | symbols | loc | +LoC | cov (C/Rust) | +pub unsafe fn | +pub raw ptr | $ | tokens | wall | $/symbol | $/loc |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-|`<link-unit>/<subsystem>`|`<n>`|`<n>`| wrap | `<n>` | `<n>` |`+<n>/-<n>`| `<n>`% / `<n>`% | `±<n>` | `±<n>` | `$<n>` | `<n>M` | `<n>m<n>s` | `$<n>` | `$<n>` |
-|`<link-unit>/<subsystem>`|`<n>`|`<n>`| port | `<n>` | `<n>` |`+<n>/-<n>`| `<n>`% / `<n>`% | `±<n>` | `±<n>` | `$<n>` | `<n>M` | `<n>m<n>s` | `$<n>` | `$<n>` |
-| **Σ** |  |  |  | **`<n>`** | **`<n>`** | **`+<n>/-<n>`** | **`<n>`% / `<n>`%** | **`±<n>`** | **`±<n>`** | **`$<n>`** | **`<n>M`** | — | **`$<n>`** | **`$<n>`** |
+| subsystem | wave | batch | objective | pass | symbols | loc | +LoC | cov (C/Rust) | $ | tokens | wall | $/symbol | $/loc |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| `<link-unit>/<subsystem>` | `<n>` | `<n>` | wrap | first | `<n>` | `<n>` | `+<n>/-<n>` | `<n>`% / `<n>`% | `$<n>` | `<n>M` | `<n>m<n>s` | `$<n>` | `$<n>` |
+| `<link-unit>/<subsystem>` | `<n>` | `<n>` | port | first | `<n>` | `<n>` | `+<n>/-<n>` | `<n>`% / `<n>`% | `$<n>` | `<n>M` | `<n>m<n>s` | `$<n>` | `$<n>` |
+| `<link-unit>/<subsystem>` | `<n>` | `<n>` | wrap | review | `<n>` | `<n>` | `+<n>/-<n>` | `<n>`% / `<n>`% | `$<n>` | `<n>M` | `<n>m<n>s` | `$<n>` | `$<n>` |
+| **Σ first** |  |  |  |  | **`<n>`** | **`<n>`** | **`+<n>/-<n>`** | **`<n>`% / `<n>`%** | **`$<n>`** | **`<n>M`** | — | **`$<n>`** | **`$<n>`** |
+| **Σ review** |  |  |  |  | **`<n>`** | **`<n>`** | **`+<n>/-<n>`** | **`<n>`% / `<n>`%** | **`$<n>`** | **`<n>M`** | — | **`$<n>`** | **`$<n>`** |
 
 ### Batches: tests
 
 `<provider>/<model>` via `<backend>`.
 
-| subsystem | wave | batch | +UB safe tests (+C/+Rust pp) | +UB unsafe tests (+C/+Rust pp) | +equiv tests (+C/+Rust pp) | +unit tests (+C/+Rust pp) |
-|---|---|---|---|---|---|---|
-|`<link-unit>/<subsystem>`|`<n>`|`<n>`|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|
-|`<link-unit>/<subsystem>`|`<n>`|`<n>`|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|
-| **Σ** |  |  | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** |
+| subsystem | wave | batch | pass | +UB safe tests (+C/+Rust pp) | +UB unsafe tests (+C/+Rust pp) | +equiv tests (+C/+Rust pp) | +unit tests (+C/+Rust pp) |
+|---|---|---|---|---|---|---|---|
+| `<link-unit>/<subsystem>` | `<n>` | `<n>` | first | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) |
+| `<link-unit>/<subsystem>` | `<n>` | `<n>` | review | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) |
+| **Σ first** |  |  |  | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** |
+| **Σ review** |  |  |  | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** |
 
-### Batches — review
+### Batches: safety audit
 
-`<provider>/<model>` via `<backend>`.
+Deterministic `ffimap`; no model.
 
-| subsystem | wave | batch | symbols | +LoC | cov (C/Rust) | +pub unsafe fn | +pub raw ptr | rv loc | rv $ | rv tokens | rv wall | rv $/symbol |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|
-|`<link-unit>/<subsystem>`|`<n>`|`<n>`| `<n>` |`+<n>/-<n>`| `<n>`% / `<n>`% | `±<n>` | `±<n>` | `+<n>/-<n>` | `$<n>` | `<n>M` | `<n>m<n>s` | `$<n>` |
-| **Σ** |  |  | **`<n>`** | **`+<n>/-<n>`** | **`<n>`% / `<n>`%** | **`±<n>`** | **`±<n>`** | **`+<n>/-<n>`** | **`$<n>`** | **`<n>M`** | — | **`$<n>`** |
-
-### Batches — review: tests
-
-`<provider>/<model>` via `<backend>`.
-
-| subsystem | wave | batch | +UB safe tests (+C/+Rust pp) | +UB unsafe tests (+C/+Rust pp) | +equiv tests (+C/+Rust pp) | +unit tests (+C/+Rust pp) |
-|---|---|---|---|---|---|---|
-|`<link-unit>/<subsystem>`|`<n>`|`<n>`|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|`+<n>` (`+<n>`/`+<n>` pp)|
-| **Σ** |  |  | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** |
+| subsystem | wave | batch | objective | pass | pub raw ptr (safe) | pub raw ptr | pub void ptr | pub unsafe fn | C borrow | slice borrow | unsafe loc % | unsafe blocks | Send/Sync | C by value | Drop/Clone | deref outside impl |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| `<link-unit>/<subsystem>` | `<n>` | `<n>` | wrap | first | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` pp | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` |
+| `<link-unit>/<subsystem>` | `<n>` | `<n>` | port | first | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` pp | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` |
+| `<link-unit>/<subsystem>` | `<n>` | `<n>` | wrap | review | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` pp | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` |
+| **Σ first** |  |  |  |  | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>` pp** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** |
+| **Σ review** |  |  |  |  | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>` pp** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** |
 
 ### Batches — review: PoC + reports
 
@@ -291,84 +314,6 @@ the corrections it made to what earlier runs committed.
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | `<link-unit>/<subsystem>` | `<n>` | `<n>` | — | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `<n>` | `<n>` |
 | **Σ** |  |  | — | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`<n>`** | **`<n>`** |
-
-## Safety audit
-
-Deterministic `ffimap <workdir>` (`ffimap.json`); no model.
-
-### Final tally overview
-
-| | final (`<sha>`) |
-|---|---|
-| unsafe loc | `<n>` |
-| % of loc | `<n>`% |
-| blocks | `<n>` |
-| % in `impl T` | `<n>`% |
-| `unsafe fn` | `<n>` |
-| ...public | `<n>` |
-| raw ptrs on the safe public interface (types + safe fns) | `<n>` |
-| void ptrs on the safe public interface (types + safe fns) | `<n>` |
-| FFI calls | `<n>` |
-| `&`/`&mut` on a wrapper | `<n>` |
-| field proj outside an accessor | `<n>` |
-
-### All metrics
-
-| metric | final (`<sha>`) | `<link-unit>/<subsystem>` (`<sha>`) | … |
-|---|---|---|---|
-| `code_lines` | `<n>` | `<n>` | … |
-| `total_stmts` | `<n>` | `<n>` | … |
-| `safe_fns_pub` | `<n>` | `<n>` | … |
-| `safe_fns_priv` | `<n>` | `<n>` | … |
-| `unsafe_blocks` | `<n>` | `<n>` | … |
-| `unsafe_block_stmts` | `<n>` | `<n>` | … |
-| `unsafe_block_lines` | `<n>` | `<n>` | … |
-| `unsafe_block_code_lines` | `<n>` | `<n>` | … |
-| `unsafe_blocks_wrapper_impl` | `<n>` | `<n>` | … |
-| `unsafe_blocks_ffi_export` | `<n>` | `<n>` | … |
-| `unsafe_fns` | `<n>` | `<n>` | … |
-| **`unsafe_fns_pub`** | **`<n>`** | `<n>` | … |
-| `unsafe_fns_priv` | `<n>` | `<n>` | … |
-| `unsafe_impls` / `unsafe_traits` | `<n>` / `<n>` | `<n>` / `<n>` | … |
-| `ty_wrapper` | `<n>` | `<n>` | … |
-| `ty_wrapper_borrow_sanctioned` | `<n>` | `<n>` | … |
-| **`ty_wrapper_borrow_non_sanctioned`** | **`<n>`** | `<n>` | … |
-| `ty_wrapper_by_val_fn_sig_pub` | `<n>` | `<n>` | … |
-| `ty_wrapper_by_val_fn_sig_priv` | `<n>` | `<n>` | … |
-| `ty_wrapper_by_val_ty_pub_fields_pub` | `<n>` | `<n>` | … |
-| `ty_wrapper_by_val_ty_pub_fields_priv` | `<n>` | `<n>` | … |
-| `ty_wrapper_by_val_ty_priv` | `<n>` | `<n>` | … |
-| `ty_wrapper_std_owner_fn_sig_pub` | `<n>` | `<n>` | … |
-| `ty_wrapper_std_owner_fn_sig_priv` | `<n>` | `<n>` | … |
-| `ty_wrapper_std_owner_ty_pub_fields_pub` | `<n>` | `<n>` | … |
-| `ty_wrapper_std_owner_ty_pub_fields_priv` | `<n>` | `<n>` | … |
-| `ty_wrapper_std_owner_ty_priv` | `<n>` | `<n>` | … |
-| `ty_non_wrapper_borrow_pub_safe` | `<n>` | `<n>` | … |
-| `ty_non_wrapper_borrow_pub_unsafe` | `<n>` | `<n>` | … |
-| `ty_non_wrapper_borrow_priv_safe` | `<n>` | `<n>` | … |
-| `ty_non_wrapper_borrow_priv_unsafe` | `<n>` | `<n>` | … |
-| **`raw_ptr_ty_pub_fields_pub`** | **`<n>`** | `<n>` | … |
-| `raw_ptr_ty_pub_fields_priv` | `<n>` | `<n>` | … |
-| `raw_ptr_ty_priv` | `<n>` | `<n>` | … |
-| **`raw_ptr_fn_pub_safe`** | **`<n>`** | `<n>` | … |
-| `raw_ptr_fn_pub_unsafe` | `<n>` | `<n>` | … |
-| `raw_ptr_fn_priv_safe` | `<n>` | `<n>` | … |
-| `raw_ptr_fn_priv_unsafe` | `<n>` | `<n>` | … |
-| `raw_ptr_has_ty_wrapper` | `<n>` | `<n>` | … |
-| `raw_ptr_derefs` | `<n>` | `<n>` | … |
-| `raw_ptr_derefs_outside_impl` | `<n>` | `<n>` | … |
-| `void_ptr_ty_pub_fields_pub` | `<n>` | `<n>` | … |
-| `void_ptr_ty_pub_fields_priv` | `<n>` | `<n>` | … |
-| `void_ptr_ty_priv` | `<n>` | `<n>` | … |
-| `void_ptr_fn_pub_safe` | `<n>` | `<n>` | … |
-| `void_ptr_fn_pub_unsafe` | `<n>` | `<n>` | … |
-| `void_ptr_fn_priv_safe` | `<n>` | `<n>` | … |
-| `void_ptr_fn_priv_unsafe` | `<n>` | `<n>` | … |
-| `ty_field_proj_wrapped` | `<n>` | `<n>` | … |
-| `ty_field_proj_outside_impl` | `<n>` | `<n>` | … |
-| `ty_field_borrow_wrapped` | `<n>` | `<n>` | … |
-| `deref_impl_on_wrapper` | `<n>` | `<n>` | … |
-| `ffi_calls` | `<n>` | `<n>` | … |
 
 ## Notes
 
@@ -396,7 +341,7 @@ beside it for scale.
 `crustify/rust`, excluding anything generated into `target/`, and split by
 `#[cfg(test)]` module.
 
-Say why that non-test figure differs from the `code_lines` the Safety audit
+Say why that non-test figure differs from the `code_lines` ffimap
 reports. The audit measures the union of HIR definition spans, so it counts
 only what sits inside an item — no `use`, `mod` or free-standing attribute
 lines — and by construction cannot see `cfg`-disabled code, which is why it
