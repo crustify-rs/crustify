@@ -33,9 +33,7 @@ and in Notes.
   the link unit's TUs, Rust over non-test sources; a `Σ` cell is the pass's last landing
 - `+UB safe tests` … `+unit tests` — the tests the landing added, with its C/Rust coverage
   change in pp
-- `+lifecycle` … `+misc`, `total` — the reports a review batch filed, by kind;
-  `+rejected PoCs` — those the assistant rejected on rerun, so `total` − `+rejected PoCs`
-  is the confirmed defects
+- `+lifecycle` … `+misc`, `total` — the reports a review batch filed, by kind
 - safety audit columns — the Safety audit's metrics, as a landing changed them
 - `cost` / `review cost` / `total` — a subsystem's translation, review and combined cost;
   `subsystem wall` — first launch to final gate; `Σ recorded agents` leaves the assistant
@@ -181,10 +179,10 @@ Deterministic `ffimap`; no model.
 
 `<provider>/<model>` via `<backend>`.
 
-| subsystem | wave | batch | +lifecycle | +unsafe | +UB safe | +UB unsafe | +equiv | +internal | +conventions | +misc | total | +rejected PoCs |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `<link-unit>/<subsystem>` | `<n>` | `<n>` | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `<n>` | `<n>` |
-| **Σ** |  |  | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`<n>`** | **`<n>`** |
+| subsystem | wave | batch | +lifecycle | +unsafe | +UB safe | +UB unsafe | +equiv | +internal | +conventions | +misc | total |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `<link-unit>/<subsystem>` | `<n>` | `<n>` | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `<n>` |
+| **Σ** |  |  | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`<n>`** |
 
 ## Symbols
 
@@ -227,10 +225,10 @@ Deterministic `ffimap`; no model.
 
 `<provider>/<model>` via `<backend>`.
 
-| subsystem | wave | batch | +lifecycle | +unsafe | +UB safe | +UB unsafe | +equiv | +internal | +conventions | +misc | total | +rejected PoCs |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `<link-unit>/<subsystem>` | `<n>` | `<n>` | — | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `<n>` | `<n>` |
-| **Σ** |  |  | — | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`<n>`** | **`<n>`** |
+| subsystem | wave | batch | +lifecycle | +unsafe | +UB safe | +UB unsafe | +equiv | +internal | +conventions | +misc | total |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `<link-unit>/<subsystem>` | `<n>` | `<n>` | — | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `<n>` |
+| **Σ** |  |  | — | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`<n>`** |
 
 ## Notes
 

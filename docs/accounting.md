@@ -40,8 +40,6 @@ An agent cannot see:
 
 - its own cost, tokens and wall, which its usage record gives only once it has ended, nor
   the per-unit costs derived from them;
-- whether the orchestrator accepts its PoCs, the `+rejected PoCs` it decides by rerunning
-  them;
 - its own commit, which the `Planning` row names; and
 - what spans agents: `Subsystem stats`, the Overview's branch line and the `Settings`
   lines.

@@ -341,7 +341,7 @@ work lands:
 
 - when a batch lands: its agent has filled every cell it can measure, as the accounting
   instructions describe. Once its usage record exists, fill the rest: its cost, tokens,
-  wall and per-unit cells, a review batch's `+rejected PoCs`, and their `Σ` cells. Make
+  wall and per-unit cells, and their `Σ` cells. Make
   these edits on the subsystem branch, after the wave's review is promoted;
 - when a planner run commits: its `Planning` row's commit, cost, tokens and wall;
 - when a subsystem is promoted: its row in `Subsystem stats` and the Overview's branch
