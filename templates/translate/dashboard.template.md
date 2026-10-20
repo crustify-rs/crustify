@@ -2,145 +2,57 @@
 
 Copy this template into the campaign checkout, then fill it as work lands.
 
-## Campaign
+## Settings
 
-- **target repo** — `<repo>` @ `<commit>`
-- **target** — `<target>`
-- **campaign objective** — `<port | wrap>`
-- **`impl_files`** — `<dirs / files>`
-- **`api_headers`** — `<dirs / files>`
-- **agent backend** — `<codex | claude>`
-- **model** — `<provider>/<model>`
-- **billing** — `<api | subscription>`
-- **`--max-types`** — `<n>`
-- **`--max-syms`** — `<n>`
-- **`--max-loc`** — `<n>`
-- **`--min-fields`** — `<n>`
-- **assistant parallelism** — `<n>` concurrent batch processes
-- **branch** — `<branch>`, tip `<sha>`
-- **deps** — crustify `<sha>` (`<branch>`), ffibox `<sha>` (`<branch>`)
-- **build version** — `<build.json version>`
-- **C test baseline** — `<passed>/<total>, <skipped>, and every disabled test`
+As answered in `crustify/CRUSTIFY.md`; a change during the campaign is in its history
+and in Notes.
 
-## Review pass
-
-Review batches run by `crustify spawn-reviewer`, LLM-as-a-Judge over each landed wave.
-
-- **agent backend** — `<codex | claude>`
-- **model** — `<provider>/<model>`
-- **billing** — `<api | subscription>`
-- **`--max-types`** — `<n>`
-- **`--max-syms`** — `<n>`
-- **`--max-loc`** — `<n>`
-- **`--min-fields`** — `<n>`
-- **assistant parallelism** — `<n>` concurrent batch processes
-- **branch** — `<branch>`, tip `<sha>`
-- **agents** — `<n>`, over `<n>` wave(s)
-
-Review batches are rows of the kind tables below, marked `review` in their `pass`
-column, beside the translation batches they review.
+- **source** — `<repo>` @ `<commit>`
+- **campaign** — `<port | wrap>`
+- **scope** — `<scope>`
+- **translate-agent** — `<provider>/<model>`, `<api | subscription>`
+- **review-agent** — `<provider>/<model>`, `<api | subscription>`; objectives `<objectives>`
+- **plan-agent** — `<provider>/<model>`, `<api | subscription>`; `<n>` runs
+- **workload** — max-types `<n>`, max-syms `<n>`, max-loc `<n>`, parallelism `<n>`
+- **review-workload** — `<caps>`
+- **sanitizers** — `<variants>`
+- **target-config** — `<configuration>`, `build.json` version `<n>`
 
 ## Legend
 
-- `objective` — what the batch's agents were told to do: `wrap` or `port`. The
-  Types tables are split by it, so it appears as a column
-  only in the Symbols `Batches` table, which mixes the two
-- `subsystem` — `<link-unit>/<subsystem>`, the foundational `<link-unit>/void` and
-  `<link-unit>/string` included. In the Types and Symbols tables it names the batch's subsystem,
-  the same name as its Overview row, and with `wave` and `batch` keys the row to
-  the subsystem's `schedule.json`
-- `wave` / `batch` — the batch's position in its subsystem's plan: the index
-  of its wave in `waves` and of the batch within that wave's `batches`, so a
-  batch row joins to its subsystem's `schedule.json`, to the agent that landed it, and to its
-  Overview subsystem row. Schema-v2 plans carry `steps` and `plan_items`
-  rather than indexed waves and batches, so historical rows leave both blank
-- `pass` — `first` for a translation batch, `review` for a review batch; a review row's
-  units are those of the translation batches it reviewed
-- `Σ first` / `Σ review` — a table's totals over its `first` rows and over its `review`
-  rows, kept apart
-- `types` / `symbols` — scheduler units in the batch. Callbacks are scheduled
-  in symbol batches and counted there
-- `fields` — in-scope fields: the field accessors the oracle assigned to that
-  type batch, not the type's full declared field count
-- `$` / `wall` / `loc` — that agent's computed cost, its elapsed time, and the
-  `.rs` insertions of its landing commit. `wall` is `ended_at − started_at` from
-  the agent's own `usage.json`, so it INCLUDES the per-worktree C rebuild. Under
-  subscription billing `$` is an API-equivalent comparison value, not a charged amount
-- `$/type` / `$/symbol` / `$/field` / `$/loc` — that row's `$` over its units,
-  its in-scope fields, or its `loc`
-- `tokens` / `review tokens` / `total tokens` — the
-  tokens behind the `$` cell to their left, in millions: input + output + cache read +
-  cache write, summed over the agent's `usage.json` requests (the figure `crustify usage`
-  reports). Cache reads dominate it
-- `subsystem wall` — from its first batch launch through its final review
-  and regression gate
-- `cost` / `review cost` — in the Overview, the computed cost of the subsystem's
-  translation batches and of its review batches; `—` where it ran none
-- `total` — `cost` + `review cost`; for the planners and the assistant, their own cost
-- `assistant` — the Overview row for every assistant session of the campaign, priced
-  from the `assistant-*.usage.json` records in `crustify/artifacts/assistant/`; `total` is their sum. A
-  session that died before writing its record is recovered from its transcript (Notes)
-- `Σ recorded agents` / `Σ campaign` — the batch and review agents alone, then those plus the
-  assistant. The per-unit columns are given for the agents only, since the assistant's
-  cost cannot be split by unit kind
-- `$/type` / `$/sym`, `review $/type` / `review $/sym`, `total $/type` / `total $/sym` — in
-  the Overview, a subsystem's `cost`, `review cost` and `total` over the types or symbols
-  it was scheduled for; `—` where it was scheduled for none
-- `+LoC` — the landed batch's Rust-source insertions/deletions relative to its
-  wave's base
-- `cov (C/Rust)` — in a `Batches` table, the absolute line coverage right after
-  that batch landed, from ONE run of all four test workloads together (their
-  union): C over the subsystem link unit's TUs in the `coverage` prebuild,
-  Rust over the authored non-test sources. Its **Σ** cells are the coverage at the
-  table's last landing of that pass, not a sum
-- `+UB safe tests` / `+UB unsafe tests` / `+equiv tests` / `+unit tests` — in a
-  `Batches …: tests` table, the tests added by that landed batch; each parenthesized pair is its C/Rust
-  line-coverage change in percentage points. Negative coverage deltas are valid
-  when the landed source adds more executable lines than the new tests cover
-- `+lifecycle` … `+misc` — in a `Batches — review: PoC + reports` table, the
-  defect reports that review batch filed under
-  `crustify/reviews/<artifact-dir>/<category>/`, one per defect it reported;
-  `+UB safe` / `+UB unsafe` are its `ub_safe` and `ub_unsafe` categories.
-  `+lifecycle` covers type items and the foundational subsystems' items only, so it
-  reads `—` for other symbols. `total` is the row's sum
-- `+rejected PoCs` — the `ub_safe`, `ub_unsafe` and `equiv` PoCs that review
-  batch filed which the assistant rejected after rerunning them: they did not
-  reproduce, or did not show a real bug, and their fixes were reverted. They
-  stay counted in their categories; `total` minus this column is the confirmed
-  defects
-- the Safety audit's metrics — in `Current tally`, each metric's value in the unseeded
-  ffimap scan of the campaign's base and of its tip, from the counters named beside
-  it; in a `Batches: safety audit` table, the change the landed batch made to each, at
-  its landing against the commit before it, so a review batch's fixes show as negative
-  values
-- `UB safe tests` / `UB unsafe tests` / `Equiv tests` / `Unit tests` — counts of
-  `#[test]` functions in the `tests/ub_safe`, `tests/ub_unsafe` and `tests/equiv`
-  test binaries and in the library's `#[cfg(test)]` modules. Each
-  coverage pair comes from running only that workload, against the
-  coverage-instrumented target C sources and authored Rust sources; state any
-  excluded files or generated code in Notes. The four workloads bound different
-  obligations, so report them apart and never sum them. Report the UB
-  workload once, from a single coverage run on the plain build: it executes once
-  per prepared sanitizer, but those runs share one test set and re-counting them
-  inflates the figure. Name the instruments it ran under in Notes
-- `Total tests` — the four counts added. Its coverage pair is NOT the four
-  pairs added: it comes from one run of all four workloads together and is the
-  union of the lines any of them reached, which is smaller than the sum wherever
-  two workloads cover the same line. Deriving it arithmetically overstates it.
-  It is a reach figure only — it mixes four verdict sources and so bounds no
-  single obligation, which is why the four stay reported apart above it
-- `total types` / `total symbols` — the units the target's public API exports, deprecated
-  items excluded: every type, and every symbol and callback, scheduled across all the
-  subsystems' `schedule.json`. They are fixed for the campaign
-- `wrapped types` / `wrapped symbols` — scheduled units whose `Wraps:` or `Replaces:` anchor
-  is present at the campaign tip; the parenthesized share is of `total types` /
-  `total symbols`
+- `subsystem` / `wave` / `batch` — the batch's place in its subsystem's `schedule.json`
+- `objective` — `wrap` or `port`; `pass` — `first` for a translation batch, `review` for a
+  review batch; `Σ first` / `Σ review` total each pass apart
+- `types` / `symbols` / `fields` — the batch's scheduled units (callbacks count as
+  symbols) and its types' assigned field accessors; a review row counts what it reviewed
+- `$` / `tokens` / `wall` — the agent's computed cost (API-equivalent under
+  subscription), its tokens in millions as `crustify usage` reports them, and its elapsed
+  time, C rebuild included; `$/<unit>` divides `$` by the row's units
+- `+LoC` — the landing's Rust insertions/deletions; `loc` — its `.rs` insertions
+- `cov (C/Rust)` — line coverage after the landing, all test workloads in one run: C over
+  the link unit's TUs, Rust over non-test sources; a `Σ` cell is the pass's last landing
+- `+UB safe tests` … `+unit tests` — the tests the landing added, with its C/Rust coverage
+  change in pp
+- `+lifecycle` … `+misc`, `total` — the reports a review batch filed, by kind;
+  `+rejected PoCs` — those the assistant rejected on rerun, so `total` − `+rejected PoCs`
+  is the confirmed defects
+- safety audit columns — the Current tally's metrics, as a landing changed them
+- `cost` / `review cost` / `total` — a subsystem's translation, review and combined cost;
+  `subsystem wall` — first launch to final gate; `Σ recorded agents` leaves the assistant
+  out, `Σ campaign` adds it, without per-unit cells
+- `UB safe tests` … `Unit tests` — `#[test]` functions per suite, each with the coverage of
+  running it alone; `Total tests` — all four, whose coverage is one joint run's union,
+  never the sum
+- `total`, `ported` and `wrapped` types and symbols — the scheduled public-API units, and
+  those with a `Replaces:` or a `Wraps:` anchor at the tip
 
 Every table below is a heading, a model line and the table. All prose belongs
 in Notes.
 
 ## Overview
 
+- **branch** — `crustify/main`, tip `<sha>`; crustify `<sha>`, ffibox `<sha>`, wavefront `<sha>`
+- **C test baseline** — `<passed>/<total>`, `<n>` skipped; disabled: `<tests>`
 - **Rust LoC, non-test** — `<n>`
 - **Rust LoC, tests** — `<n>`
 - **UB safe tests** — `<count of #[test]>` (`<n>`% C LoC coverage, `<n>`% Rust LoC coverage)
