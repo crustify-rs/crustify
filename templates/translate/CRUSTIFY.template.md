@@ -95,8 +95,9 @@ Answer these approval-gate questions only if question 6 is answered `no`.
 
 # Benchmark recording questions
 
-17. **Where and in what format should the dashboard be recorded?** (`id: dashboard`)
-    - Answer: `<dashboard path>, <standard | custom template>`
+17. **Where and in what format should the dashboard be recorded? By default, at
+    `crustify/artifacts/dashboard.md`, from the standard template.** (`id: dashboard`)
+    - Answer: `<default | <dashboard path>, <standard | custom template>>`
 
 # Additional instructions
 

@@ -69,8 +69,9 @@ Unanswered optional questions are decided by the orchestrator.
 
 ## Reporting
 
-9. **Where and in what format should the dashboard be recorded?**
-   - Answer: `<dashboard path>, <templates/audit/dashboard.template.md | custom template>`
+9. **Where and in what format should the dashboard be recorded? By default, at
+   `crustify/artifacts/audit-dashboard.md`, from `templates/audit/dashboard.template.md`.**
+   - Answer: `<default | <dashboard path>, <templates/audit/dashboard.template.md | custom template>>`
 
 
 ## Additional instructions

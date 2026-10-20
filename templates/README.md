@@ -136,8 +136,9 @@ Set with `--build-arg` on `docker build`.
 
 ## Dashboards
 
-Campaign dashboards are written into the target checkout, at the path the task
-names, filled from [`dashboard.template.md`](translate/dashboard.template.md).
+Campaign dashboards are written into the target checkout, at
+`crustify/artifacts/dashboard.md` (`audit-dashboard.md` for an audit) unless the
+settings name another path, filled from [`dashboard.template.md`](translate/dashboard.template.md).
 
 The Dockerfile header documents the rest: what each mount buys and why the base
 image is pinned by digest.
