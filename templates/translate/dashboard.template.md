@@ -36,7 +36,7 @@ and in Notes.
 - `+lifecycle` … `+misc`, `total` — the reports a review batch filed, by kind;
   `+rejected PoCs` — those the assistant rejected on rerun, so `total` − `+rejected PoCs`
   is the confirmed defects
-- safety audit columns — the Current tally's metrics, as a landing changed them
+- safety audit columns — the Safety audit's metrics, as a landing changed them
 - `cost` / `review cost` / `total` — a subsystem's translation, review and combined cost;
   `subsystem wall` — first launch to final gate; `Σ recorded agents` leaves the assistant
   out, `Σ campaign` adds it, without per-unit cells
@@ -44,7 +44,7 @@ and in Notes.
   running it alone; `Total tests` — all four, whose coverage is one joint run's union,
   never the sum
 - `total`, `ported` and `wrapped` types and symbols — the scheduled public-API units, and
-  those with a `Replaces:` or a `Wraps:` anchor at the tip
+  those with a `Replaces:` or a `Wraps:` anchor at the tip; `share` is of the total
 
 Every table below is a heading, a model line and the table. All prose belongs
 in Notes.
@@ -53,20 +53,25 @@ in Notes.
 
 - **branch** — `crustify/main`, tip `<sha>`; crustify `<sha>`, ffibox `<sha>`, wavefront `<sha>`
 - **C test baseline** — `<passed>/<total>`, `<n>` skipped; disabled: `<tests>`
-- **Rust LoC, non-test** — `<n>`
-- **Rust LoC, tests** — `<n>`
-- **UB safe tests** — `<count of #[test]>` (`<n>`% C LoC coverage, `<n>`% Rust LoC coverage)
-- **UB unsafe tests** — `<count of #[test]>` (`<n>`% C LoC coverage, `<n>`% Rust LoC coverage)
-- **Equiv tests** — `<count of #[test]>` (`<n>`% C LoC coverage, `<n>`% Rust LoC coverage)
-- **Unit tests** — `<count of #[test]>` (`<n>`% C LoC coverage, `<n>`% Rust LoC coverage)
-- **Total tests** — `<sum of the four counts>` (`<n>`% C LoC coverage, `<n>`% Rust LoC coverage)
-- **C LoC** — `<n>`
-- **total types** — `<n>`
-- **total symbols** — `<n>`
-- **ported types** — `<n>`
-- **ported symbols** — `<n>`
-- **wrapped types** — `<n>` (`<n>`% of total types)
-- **wrapped symbols** — `<n>` (`<n>`% of total symbols)
+- **Rust LoC** — `<n>` non-test, `<n>` tests; **C LoC** — `<n>`
+
+### Coverage stats
+
+| | count | share | C LoC coverage | Rust LoC coverage |
+|---|---:|---:|---:|---:|
+| UB safe tests | `<n>` | — | `<n>`% | `<n>`% |
+| UB unsafe tests | `<n>` | — | `<n>`% | `<n>`% |
+| Equiv tests | `<n>` | — | `<n>`% | `<n>`% |
+| Unit tests | `<n>` | — | `<n>`% | `<n>`% |
+| **Total tests** | **`<n>`** | — | **`<n>`%** | **`<n>`%** |
+| total types | `<n>` | — | — | — |
+| ported types | `<n>` | `<n>`% | — | — |
+| wrapped types | `<n>` | `<n>`% | — | — |
+| total symbols | `<n>` | — | — | — |
+| ported symbols | `<n>` | `<n>`% | — | — |
+| wrapped symbols | `<n>` | `<n>`% | — | — |
+
+### Subsystem stats
 
 Implementation `<provider>/<model>` via `<backend>`; review
 `<provider>/<model>` via `<backend>`.
@@ -86,22 +91,22 @@ Implementation `<provider>/<model>` via `<backend>`; review
 Deterministic `ffimap <workdir> --json`; no model. Every counter is in the `ffimap.json`
 tracked in the campaign's artifact dir and in each subsystem's, wave's and batch's.
 
-### Current tally
+### Metrics
 
-| metric | counters | what it counts | campaign base (`<sha>`) | current (`<sha>`) | Δ |
-|---|---|---|---:|---:|---:|
-| pub raw ptr (safe) | `raw_ptr_pub_safe_interface` | raw pointers on the safe public interface: public fields and safe public fns | `<n>` | `<n>` | `±<n>` |
-| pub raw ptr | `raw_ptr_pub` | raw pointers anywhere on the public interface, `unsafe fn`s included | `<n>` | `<n>` | `±<n>` |
-| pub void ptr | `void_ptr_ty_pub_fields_pub` + `void_ptr_fn_pub_safe` + `void_ptr_fn_pub_unsafe` | type-erased pointers left to the API's users | `<n>` | `<n>` | `±<n>` |
-| pub unsafe fn | `unsafe_fns_pub` | the obligations the crate exports to its callers | `<n>` | `<n>` | `±<n>` |
-| C borrow | `c_type_borrow_non_sanctioned` | Rust references into C memory outside the sanctioned handle positions; target 0 | `<n>` | `<n>` | `±<n>` |
-| slice borrow | `raw_ptr_as_slice_borrow` | slices and strings borrowed over raw pointers, which C must neither free nor change | `<n>` | `<n>` | `±<n>` |
-| unsafe loc % | `unsafe_loc_ratio` | unsafe block lines over code lines; context, not a score | `<n>` | `<n>` | `±<n>` pp |
-| unsafe blocks | `unsafe_blocks` | unsafe blocks, the denominator of the ratio's reading | `<n>` | `<n>` | `±<n>` |
-| Send/Sync | `unsafe_send_impl` + `unsafe_sync_impl` | thread safety asserted rather than derived from the fields | `<n>` | `<n>` | `±<n>` |
-| C by value | Σ `c_type_by_val_*` + Σ `c_type_std_owner_*` | C types held outside an ffibox owner, which a move can leave dangling | `<n>` | `<n>` | `±<n>` |
-| Drop/Clone | `drop_impl` + `clone_impl` | lifecycles written by hand rather than through an owner | `<n>` | `<n>` | `±<n>` |
-| deref outside impl | `raw_ptr_derefs_outside_impl` | raw pointer dereferences outside any `impl` or trait body | `<n>` | `<n>` | `±<n>` |
+| metric | counters | what it counts |
+|---|---|---|
+| pub raw ptr (safe) | `raw_ptr_pub_safe_interface` | raw pointers on the safe public interface: public fields and safe public fns |
+| pub raw ptr | `raw_ptr_pub` | raw pointers anywhere on the public interface, `unsafe fn`s included |
+| pub void ptr | `void_ptr_ty_pub_fields_pub` + `void_ptr_fn_pub_safe` + `void_ptr_fn_pub_unsafe` | type-erased pointers left to the API's users |
+| pub unsafe fn | `unsafe_fns_pub` | the obligations the crate exports to its callers |
+| C borrow | `c_type_borrow_non_sanctioned` | Rust references into C memory outside the sanctioned handle positions; target 0 |
+| slice borrow | `raw_ptr_as_slice_borrow` | slices and strings borrowed over raw pointers, which C must neither free nor change |
+| unsafe loc % | `unsafe_loc_ratio` | unsafe block lines over code lines; context, not a score |
+| unsafe blocks | `unsafe_blocks` | unsafe blocks, the denominator of the ratio's reading |
+| Send/Sync | `unsafe_send_impl` + `unsafe_sync_impl` | thread safety asserted rather than derived from the fields |
+| C by value | Σ `c_type_by_val_*` + Σ `c_type_std_owner_*` | C types held outside an ffibox owner, which a move can leave dangling |
+| Drop/Clone | `drop_impl` + `clone_impl` | lifecycles written by hand rather than through an owner |
+| deref outside impl | `raw_ptr_derefs_outside_impl` | raw pointer dereferences outside any `impl` or trait body |
 
 ## Planning
 
