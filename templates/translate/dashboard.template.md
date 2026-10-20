@@ -42,11 +42,11 @@ the campaign's.
 
 ## Legend
 
-- `objective` — what the batch's agents were told to do: `wrap`, `port`, or
-  `raw lifetime`. The Types tables are split by it, so it appears as a column
+- `objective` — what the batch's agents were told to do: `wrap` or `port`. The
+  Types tables are split by it, so it appears as a column
   only in the Symbols `Batches` table, which mixes the two
-- `subsystem` — `<link-unit>/<subsystem>`, or `raw-lifetime-void` /
-  `raw-lifetime-string`. In the Types and Symbols tables it names the batch's subsystem,
+- `subsystem` — `<link-unit>/<subsystem>`, the foundational `<link-unit>/void` and
+  `<link-unit>/string` included. In the Types and Symbols tables it names the batch's subsystem,
   the same name as its Overview row, and with `wave` and `batch` keys the row to
   the subsystem's `schedule.json`
 - `wave` / `batch` — the batch's position in its subsystem's plan: the index
@@ -58,8 +58,6 @@ the campaign's.
   in symbol batches and counted there
 - `fields` — in-scope fields: the field accessors the oracle assigned to that
   type batch, not the type's full declared field count
-- `strategies emitted` — in `Raw lifetime discovery`, the release and clone
-  strategies that tier's batch emitted for its `void` or string primitives
 - `$` / `wall` / `loc` — that agent's computed cost, its elapsed time, and the
   `.rs` insertions of its landing commit. `wall` is `ended_at − started_at` from
   the agent's own `usage.json`, so it INCLUDES the per-worktree C rebuild
@@ -97,8 +95,8 @@ the campaign's.
   defect reports that review batch filed under
   `crustify/reviews/<artifact-dir>/<category>/`, one per defect it reported;
   `+UB safe` / `+UB unsafe` are its `ub_safe` and `ub_unsafe` categories.
-  `+lifecycle` covers type and raw-lifetime items only, so it reads `—` for
-  symbols. `total` is the row's sum
+  `+lifecycle` covers type items and the foundational subsystems' items only, so it
+  reads `—` for other symbols. `total` is the row's sum
 - `+rejected PoCs` — the `ub_safe`, `ub_unsafe` and `equiv` PoCs that review
   batch filed which the assistant rejected after rerunning them: they did not
   reproduce, or did not show a real bug, and their fixes were reverted. They
@@ -130,7 +128,7 @@ the campaign's.
   single obligation, which is why the four stay reported apart above it
 - `total types` / `total symbols` — the units the target's public API exports, deprecated
   items excluded: every type, and every symbol and callback, scheduled across all the
-  subsystems' `schedule.json`, raw-lifetime items aside. They are fixed for the campaign
+  subsystems' `schedule.json`. They are fixed for the campaign
 - `wrapped types` / `wrapped symbols` — scheduled units whose `Wraps:` or `Replaces:` anchor
   is present at the campaign tip; the parenthesized share is of `total types` /
   `total symbols`
@@ -160,8 +158,8 @@ Implementation `<provider>/<model>` via `<backend>`; review
 
 | subsystem | nr types | nr symbols | subsystem wall | batch | batch tokens | review | review tokens | total | total tokens | $/type | $/sym |
 |---|---:|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|
-| `raw-lifetime-void` | `0` | `<n>` | `<n>m<n>s` | `$<n>` | `<n>M` | `$<n>` | `<n>M` | `$<n>` | `<n>M` | — | `$<n>` |
-| `raw-lifetime-string` | `0` | `<n>` | `<n>m<n>s` | `$<n>` | `<n>M` | `$<n>` | `<n>M` | `$<n>` | `<n>M` | — | `$<n>` |
+| `<link-unit>/void` | `<n>` | `<n>` | `<n>h<n>m<n>s` | `$<n>` | `<n>M` | `$<n>` | `<n>M` | `$<n>` | `<n>M` | `$<n>` | `$<n>` |
+| `<link-unit>/string` | `<n>` | `<n>` | `<n>h<n>m<n>s` | `$<n>` | `<n>M` | `$<n>` | `<n>M` | `$<n>` | `<n>M` | `$<n>` | `$<n>` |
 | `<link-unit>/<subsystem>` | `<n>` | `<n>` | `<n>h<n>m<n>s` | `$<n>` | `<n>M` | `$<n>` | `<n>M` | `$<n>` | `<n>M` | `$<n>` | `$<n>` |
 | planners | — | — | `<n>h<n>m<n>s` | — | — | — | — | `$<n>` | `<n>M` | — | — |
 | assistant | — | — | — | — | — | — | — | `$<n>` | `<n>M` | — | — |
@@ -178,26 +176,6 @@ the corrections it made to what earlier runs committed.
 | 1 | `<sha>` | `<n>` | `<n>` | `<files>` | `<n>` | `$<n>` | `<n>M` | `<n>m<n>s` |
 | 2 | `<sha>` | `<n>` | `<n>` | `<files>` | `<n>` | `$<n>` | `<n>M` | `<n>m<n>s` |
 | **Σ** | | **`<n>`** | **`<n>`** | | **`<n>`** | **`$<n>`** | **`<n>M`** | **`<n>m<n>s`** |
-
-## Raw lifetime discovery
-
-`<provider>/<model>` via `<backend>`.
-
-| tier | strategies emitted | $ | tokens | wall |
-|---|---|---|---|---|
-| void | `<n>` | `$<n>` | `<n>M` | `<n>m<n>s` |
-| string | `<n>` | `$<n>` | `<n>M` | `<n>m<n>s` |
-| **Σ** | **`<n>`** | **`$<n>`** | **`<n>M`** | **`<n>m<n>s`** |
-
-### Review
-
-`<provider>/<model>` via `<backend>`.
-
-| tier | rv loc | rv $ | rv tokens | rv wall |
-|---|---|---|---|---|
-| void | `+<n>/-<n>` | `$<n>` | `<n>M` | `<n>m<n>s` |
-| string | `+<n>/-<n>` | `$<n>` | `<n>M` | `<n>m<n>s` |
-| **Σ** | **`+<n>/-<n>`** | **`$<n>`** | **`<n>M`** | **`<n>m<n>s`** |
 
 ## Types
 
