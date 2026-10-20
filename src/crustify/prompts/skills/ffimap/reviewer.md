@@ -29,3 +29,7 @@ ffimap <workdir> --json --sites <counter> ...
   `raw_ptr_derefs_rd`, the dereferences whose validity the implementer vouches for, first
   where a write meets a reference into the same object; and `drop_impl` and `clone_impl`,
   hand-written teardown and copies.
+
+Your batch's row in the dashboard's `Batches: safety audit` table is the change in each of
+the Safety audit's metrics, from a scan of the tip you rebased onto to a scan of the tree
+you land.

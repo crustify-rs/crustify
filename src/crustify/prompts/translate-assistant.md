@@ -340,12 +340,14 @@ Fill the dashboard the task names, by default `crustify/artifacts/dashboard.md` 
 `templates/translate/dashboard.template.md`, matching its format exactly. Update it as the
 work lands, not at the end:
 
-- when a translation or review batch lands: its row, under its `pass`, in its kind's
-  `Batches`, tests and `Batches: safety audit` tables, and a review batch's row in
-  `Batches — review: PoC + reports`; then those tables' `Σ first` and `Σ review` rows;
+- when a batch lands: its agent has filled every cell it can measure, as the landing
+  instructions' Dashboard rows section describes. Once its usage record exists, fill the
+  rest: its cost, tokens, wall and per-unit cells, a review batch's `+rejected PoCs`, and
+  their `Σ` cells. Make these edits on the subsystem branch, after the wave's review is
+  promoted;
 - when a planner run commits: its row in `Planning`;
-- when a subsystem is promoted: its row in `Subsystem stats`, the `Coverage stats` table
-  and the Overview's lines; and
+- when a subsystem is promoted: its row in `Subsystem stats` and the Overview's branch
+  line; and
 - when you apply a settings change: the `Settings` lines, with a Notes entry.
 
 Commit each update with the usage records and scans it cites.

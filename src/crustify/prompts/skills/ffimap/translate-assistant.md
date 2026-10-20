@@ -12,7 +12,3 @@ It counts what the safe crate itself defines. The public unsafe surface is
 `raw_ptr_ty_pub_fields_pub` (in public fields of public types) plus `raw_ptr_fn_pub_safe`
 (in the signatures of public safe fns). Use `--sites` with those counters to list where
 they are.
-
-A batch's row in a `Batches: safety audit` table of the dashboard is the change, in each
-of the Safety audit's metrics, from the scan of the commit its landing followed to the scan
-of its landing.

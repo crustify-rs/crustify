@@ -10,3 +10,7 @@ ffimap <workdir> --json --sites unsafe_fns_pub raw_ptr_ty_pub_fields_pub raw_ptr
 
 `--sites` lists the public `unsafe fn`s, the raw pointers in public fields of public types,
 and the raw pointers in the signatures of public safe fns.
+
+Your batch's row in the dashboard's `Batches: safety audit` table is the change in each of
+the Safety audit's metrics, from a scan of the tip you rebased onto to a scan of the tree
+you land.

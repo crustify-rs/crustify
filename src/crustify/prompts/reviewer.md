@@ -102,7 +102,8 @@ If `fix` is not enabled, file each true positive a gate finds as a UB report.
 ### 4. Landing
 
 Make two commits, first the `crustify/reviews/` changes, then the Rust tree changes, if you
-made any, and land them on `{git_base}` as the landing instructions below describe.
+made any, with your batch's dashboard rows in the last, and land them on `{git_base}` as the
+landing instructions below describe.
 
 ---
 

@@ -86,8 +86,8 @@ tests under Miri; the wave's and the subsystem's gates belong to the review that
 
 ### 6. Landing
 
-Commit one changeset, and land it on `{git_base}` as the landing instructions below
-describe.
+Commit one changeset, with your batch's dashboard rows, and land it on `{git_base}` as
+the landing instructions below describe.
 
 ---
 
