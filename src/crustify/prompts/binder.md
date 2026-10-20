@@ -125,6 +125,13 @@ Here are additional instructions on how to land your commits.
 
 ---
 
+Here is how a campaign accounts for its work: what the dashboard records, and which of its
+cells you fill.
+
+<!-- INCLUDE docs/accounting.md -->
+
+---
+
 ## Additional instructions
 
 The user or the assistant may customize this run on top of your role. Their instructions,

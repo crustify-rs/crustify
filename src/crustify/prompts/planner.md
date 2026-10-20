@@ -83,8 +83,8 @@ wrapped, with the C user that keeps it there, in your commit message.
 
 ### 4. Commit
 
-Commit everything you created or changed on the campaign branch, reports included, in one
-commit whose message summarizes what you added, updated to the current schema and
+Commit everything you created or changed on the campaign branch, reports and your run's
+dashboard row included, in one commit whose message summarizes what you added, updated to the current schema and
 corrected, names the schedules you re-emitted, and lists the reports you filed.
 
 ---
@@ -107,6 +107,13 @@ Here are additional instructions on how Crustify reviews landed work, including 
 planner files its corrections.
 
 <!-- INCLUDE docs/reviewing.md -->
+
+---
+
+Here is how a campaign accounts for its work: what the dashboard records, and which of its
+cells you fill.
+
+<!-- INCLUDE docs/accounting.md -->
 
 ---
 

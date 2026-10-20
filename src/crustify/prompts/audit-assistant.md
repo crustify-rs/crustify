@@ -386,6 +386,13 @@ fixes.
 
 ---
 
+Here is how a campaign accounts for its work: what the dashboard records, and who fills
+each of its cells.
+
+<!-- INCLUDE docs/accounting.md -->
+
+---
+
 Reach for the skills advertised by the headers in the following skill index and leverage
 them to conduct your workflow:
 

@@ -330,27 +330,23 @@ records; the transcripts stay in crustify's home.
 After each batch, both translation and review, take its cost and token counts from its
 usage record: `binder.usage.json` for a `wrap` batch, `translator.usage.json` for a `port`
 batch, and `reviewer.usage.json` for a review batch: its `total.cost_usd` and
-`total.tokens`. Use the computed cost, not provider-reported dollar totals. Commit each
-batch's usage record with the dashboard update that cites it. Record agent wall times from usage files. Record wave
-wall time from first batch launch through final review and regression completion.
+`total.tokens`. Use the computed cost, not provider-reported dollar totals. Record agent
+wall times from usage files, and wave wall time from first batch launch through final
+review and regression completion.
 
 ##### Dashboard
 
-Fill the dashboard the task names, by default `crustify/artifacts/dashboard.md` from
-`templates/translate/dashboard.template.md`, matching its format exactly. Update it as the
-work lands, not at the end:
+Fill your cells of the dashboard, as the accounting instructions below describe, as the
+work lands:
 
-- when a batch lands: its agent has filled every cell it can measure, as the landing
-  instructions' Dashboard rows section describes. Once its usage record exists, fill the
-  rest: its cost, tokens, wall and per-unit cells, a review batch's `+rejected PoCs`, and
-  their `Σ` cells. Make these edits on the subsystem branch, after the wave's review is
-  promoted;
-- when a planner run commits: its row in `Planning`;
+- when a batch lands: its agent has filled every cell it can measure, as the accounting
+  instructions describe. Once its usage record exists, fill the rest: its cost, tokens,
+  wall and per-unit cells, a review batch's `+rejected PoCs`, and their `Σ` cells. Make
+  these edits on the subsystem branch, after the wave's review is promoted;
+- when a planner run commits: its `Planning` row's commit, cost, tokens and wall;
 - when a subsystem is promoted: its row in `Subsystem stats` and the Overview's branch
   line; and
 - when you apply a settings change: the `Settings` lines, with a Notes entry.
-
-Commit each update with the usage records and scans it cites.
 
 ---
 
@@ -429,6 +425,13 @@ Here is how binders, translators and reviewers land their commits on an integrat
 branch.
 
 <!-- INCLUDE docs/landing.md -->
+
+---
+
+Here is how a campaign accounts for its work: what the dashboard records, and who fills
+each of its cells.
+
+<!-- INCLUDE docs/accounting.md -->
 
 ---
 
