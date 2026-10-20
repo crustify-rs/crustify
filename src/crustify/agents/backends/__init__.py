@@ -41,6 +41,7 @@ class Backend(Protocol):
         provider_home: Path | None = None,
         interactive: bool = False,
         resume: str | None = None,
+        session_id: str | None = None,
     ) -> None:
         """Drive one agent to completion.
 
@@ -61,7 +62,8 @@ class Backend(Protocol):
         usage record once the CLI exits.
 
         ``resume`` continues the session with that id instead of starting one:
-        same id, same transcript.
+        same id, same transcript. ``session_id`` is the id a new session takes,
+        where the CLI accepts one (claude does, codex picks its own).
         """
         ...
 

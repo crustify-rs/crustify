@@ -54,7 +54,7 @@ crustify/artifacts/                             the campaign
 ├── dashboard.md                                the campaign dashboard; audit-dashboard.md for an audit
 ├── planning/run-<index>/                       a planner run: its task.json, session and usage records
 ├── assistant/                                  Crustify's own records, as the assistant
-│   ├── assistant-<timestamp>.session.json      one per assistant session
+│   ├── assistant-<timestamp>.session.json      one per assistant run, copied from its home
 │   └── assistant-<timestamp>.usage.json        derived by `crustify usage`
 └── <link-unit>/<subsystem>/                    a subsystem
     ├── schedule.json                           its waves and batches
@@ -86,9 +86,20 @@ Crustify keeps what belongs to its user rather than to a campaign in its home,
 ```text
 ~/.crustify/
 ├── providers/codex/                  Codex's home under API-key billing
-├── sessions/<session id>.json        an index of the assistant's sessions, for `--resume`
+├── sessions/<session id>/            one assistant session
+│   ├── index.json                    where it runs and its repository, for `--resume`
+│   ├── workdir                       the repository it established, when it opened outside it
+│   └── assistant-<timestamp>.*       its session and usage records, one per run
 └── transcripts/<session id>.jsonl    the agents' transcripts, copied from the CLIs' homes
 ```
+
+An assistant session's records live in its directory there from its first turn, so a
+session can open before its repository is established: it opens on the repository when the
+directory it starts in holds `crustify/CRUSTIFY.md`, and the assistant writes that file
+once it and the user have established the repository otherwise. The assistant copies its
+records into the repository's `crustify/artifacts/assistant/`, where the campaign tracks
+them. A session's directory is
+named by crustify's id for it, which is its CLI's own session id under Claude Code.
 
 ## Scratch
 

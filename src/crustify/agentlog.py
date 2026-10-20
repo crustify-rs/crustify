@@ -17,8 +17,8 @@ from crustify.core.agentlog import AgentLog
 
 
 def open_agent_log(log_root: Path, stem: str, *, agent: str | None = None,
-                   workdir: Path | None = None,
-                   index_dir: Path | None = None) -> AgentLog:
+                   index_path: Path | None = None,
+                   index_facts: dict | None = None) -> AgentLog:
     """Build an :class:`AgentLog` for ``stem`` in the requested directory;
     its session record names ``agent``."""
     from crustify import config as _cfg
@@ -28,8 +28,8 @@ def open_agent_log(log_root: Path, stem: str, *, agent: str | None = None,
         stem,
         console=_cfg.LOG_TO_CONSOLE,
         metadata={"agent": agent} if agent else None,
-        index_dir=index_dir,
-        # Only the index needs the workdir: a resume launches there. The
+        index_path=index_path,
+        # Only the index carries paths: a resume launches from them. The
         # tracked record would carry a dead worktree path, or a machine's.
-        index_facts={"workdir": str(workdir)} if workdir else None,
+        index_facts=index_facts,
     )

@@ -183,6 +183,7 @@ class CodexCliBackend:
         provider_home: Path | None = None,
         interactive: bool = False,
         resume: str | None = None,
+        session_id: str | None = None,
     ) -> None:
         exe = shutil.which("codex")
         if exe is None:

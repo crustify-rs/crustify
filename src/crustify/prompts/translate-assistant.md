@@ -34,6 +34,23 @@ If the settings are not configured yet, because their questions still hold the t
 whether they want to configure the settings now or use the defaults, and record their
 answers in the file.
 
+### Repository
+
+Your session's records live in crustify's home, in `{session_dir}`. The campaign works in
+one repository, `<repo>`, and keeps its settings at `<repo>/crustify/CRUSTIFY.md`. When the
+session opens on it, it is `{workdir}`. Otherwise the session opened in `{cwd}`, and the
+repository is not established yet: you may talk with the user, but before any work on it,
+establish it with them:
+
+1. take the repository from the settings in `{settings}`, their `source`, or ask the user
+   for it: the directory the session opened in, another checkout, or a source to clone;
+2. to clone one, propose `~/<repository name>`, and wait for the user to confirm or name
+   another directory; in a session started with `--start`, use that default and say so;
+   then clone it and check out its revision;
+3. write the settings, with their answers so far, as `<repo>/crustify/CRUSTIFY.md`; and
+4. write `<repo>`'s absolute path to `{session_dir}/workdir`, so that resuming the
+   session finds it, and work in it from then on.
+
 ---
 
 ## Settings
@@ -319,9 +336,10 @@ tokens, cost and interval as JSON. Pass `--provider openrouter` when the session
 names that provider for a Claude Code session: the transcript cannot tell it apart from
 Anthropic.
 
-Your own sessions leave `assistant-<timestamp>.session.json` in
-`crustify/artifacts/assistant/`; collect the transcripts of the sessions before this one
-the same way, at the start of each session. A resumed session keeps its id and its
+Your own sessions leave `assistant-<timestamp>.session.json` in their directories in
+crustify's home, `sessions/<session id>/`, this one's in `{session_dir}`. At the start of
+each session, copy the records of the sessions before this one into the checkout's
+`crustify/artifacts/assistant/`, and collect their transcripts the same way. A resumed session keeps its id and its
 transcript grows, so it leaves several session records with one id: copy its transcript
 again after each run, replacing the earlier copy, and derive its usage record once, from
 the latest copy, into the newest of those records' directory. Commit the session and usage

@@ -29,13 +29,13 @@ class AgentLog:
 
     def __init__(self, log_dir: Path | None, stem: str, *, console: bool,
                  metadata: dict | None = None,
-                 index_dir: Path | None = None,
+                 index_path: Path | None = None,
                  index_facts: dict | None = None) -> None:
         self.console = console
-        #: Where a copy of the record goes, named by its session id, so the
-        #: session can be found from anywhere (the assistant's: `--resume`),
-        #: with what only that copy needs, such as the session's workdir.
-        self.index_dir = index_dir
+        #: Where a copy of the record goes, so the session can be found from
+        #: anywhere (the assistant's: `--resume`), with what only that copy
+        #: needs, such as the directory the session runs in.
+        self.index_path = index_path
         self.index_facts = dict(index_facts or {})
         self.metadata = dict(metadata or {})
         self.session_path: Path | None = None
@@ -87,9 +87,9 @@ class AgentLog:
                     "ended_at": _iso(time.time()),
                     "duration_ms": round((time.monotonic() - self._t0) * 1000)}
             self.session_path.write_text(json.dumps(full, indent=1) + "\n")
-            if self.index_dir is not None and full.get("session_id"):
-                self.index_dir.mkdir(parents=True, exist_ok=True)
-                (self.index_dir / f"{full['session_id']}.json").write_text(
+            if self.index_path is not None and full.get("session_id"):
+                self.index_path.parent.mkdir(parents=True, exist_ok=True)
+                self.index_path.write_text(
                     json.dumps({**full, **self.index_facts,
                                 "record": str(self.session_path)},
                                indent=1) + "\n")

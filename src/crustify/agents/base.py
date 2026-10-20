@@ -7,7 +7,7 @@ from pathlib import Path
 
 from crustify import deps
 from crustify.agentlog import AgentLog, open_agent_log
-from crustify.layout import Layout, crustify_home
+from crustify.layout import Layout
 
 # Package root — used to locate prompts/.
 _PKG_ROOT = Path(__file__).parent.parent
@@ -259,6 +259,9 @@ class CrustifyAgent:
                 provider_home=provider_home,
                 interactive=self.interactive,
                 **({"resume": resume} if resume else {}),
+                # A session id chosen before the run, where the CLI takes one.
+                **({"session_id": self.session_id}
+                   if getattr(self, "session_id", None) else {}),
             )
 
     def _log_stem(self) -> str:
@@ -289,12 +292,13 @@ class CrustifyAgent:
             self.artifact_dir or self.layout.root / "logs",
             self.log_stem or self._log_stem(),
             agent=self.role,
-            workdir=self.workdir,
-            # The assistant's sessions are indexed in crustify's home, so
-            # `crustify --resume` finds them from any directory.
-            index_dir=(crustify_home() / "sessions"
-                       if self.role == "assistant" else None),
+            **self._index(),
         )
+
+    def _index(self) -> dict:
+        """Where this agent's session is indexed, and with which facts:
+        nowhere, but for the assistant."""
+        return {}
 
     # ------------------------------------------------------------------
     # Helpers
