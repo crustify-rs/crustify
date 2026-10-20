@@ -101,23 +101,18 @@ class BatchValidationTests(unittest.TestCase):
                 "items": [self.item(fields=["field"])],
             })
 
-    def test_raw_lifetime_is_exactly_one_known_tier(self) -> None:
-        batch = self.load({
-            "objective": "port",
-            "items": [self.item("void", kind="raw-lifetime", defined_in=None)],
-        })
-        self.assertEqual(batch.route, "raw-lifetime")
-        self.assertEqual(translate._task_objective(batch), "wrap")
-
-        with self.assertRaisesRegex(SystemExit, "exactly one void or string"):
+    def test_raw_lifetime_is_no_kind(self) -> None:
+        # The foundational void and string subsystems schedule ordinary
+        # symbols and types: no marker item stands for them.
+        with self.assertRaisesRegex(SystemExit, "kind must be one of"):
             self.load({
                 "objective": "wrap",
-                "items": [self.item("other", kind="raw-lifetime", defined_in=None)],
+                "items": [self.item("void", kind="raw-lifetime", defined_in=None)],
             })
-        with self.assertRaisesRegex(SystemExit, "must be null"):
+        with self.assertRaisesRegex(SystemExit, "defined_in must be"):
             self.load({
                 "objective": "wrap",
-                "items": [self.item("void", kind="raw-lifetime")],
+                "items": [self.item("av_free", kind="symbol", defined_in=None)],
             })
 
 

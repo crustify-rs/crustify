@@ -153,8 +153,7 @@ def main() -> None:
         help="Validate and summarize the batch without spawning an agent.")
 
     # -- spawn-binder / spawn-translator (one agent over one projected batch)
-    # A binder runs `wrap` batches, raw-lifetime ones included; a translator
-    # runs `port` batches. Same arguments, so one loop builds both.
+    # A binder runs `wrap` batches; a translator runs `port` batches. Same arguments, so one loop builds both.
     for role, objective, does in (
             ("binder", "wrap", "binds them: keeps the C implementation and "
              "puts a safe Rust API in front of it"),

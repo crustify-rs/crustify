@@ -9,10 +9,9 @@ from typing import Callable, NoReturn
 
 
 _OBJECTIVES = frozenset({"wrap", "port"})
-_KINDS = frozenset({"type", "symbol", "callback", "raw-lifetime"})
+_KINDS = frozenset({"type", "symbol", "callback"})
 _ITEM_FIELDS = frozenset({"name", "defined_in", "kind", "field_anchors", "home"})
 _FIELD_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
-_LIFETIME_TIERS = frozenset({"void", "string"})
 
 #: How a provider CLI authenticates: its own logged-in account, or an API key
 #: from the environment.
@@ -66,11 +65,7 @@ def _fail(message: str) -> NoReturn:
 
 
 def _route(kind: str) -> str:
-    if kind == "type":
-        return "type"
-    if kind in ("symbol", "callback"):
-        return "symbol"
-    return "raw-lifetime"
+    return "type" if kind == "type" else "symbol"
 
 
 def read_object(path: Path, fail: Callable[[str], NoReturn]) -> dict:
@@ -193,7 +188,7 @@ def parse_items(items: object, fail: Callable[[str], NoReturn]
             fail(f"{label}.name must be a non-empty string")
         if not isinstance(kind, str) or kind not in _KINDS:
             fail(
-                f"{label}.kind must be one of: callback, raw-lifetime, symbol, type")
+                f"{label}.kind must be one of: callback, symbol, type")
         if not isinstance(anchors, list):
             fail(f"{label}.field_anchors must be an array")
         if any(not isinstance(anchor, str) or not _FIELD_NAME.fullmatch(anchor)
@@ -210,10 +205,7 @@ def parse_items(items: object, fail: Callable[[str], NoReturn]
         if not isinstance(home, str) or not home or not home.endswith(".rs"):
             fail(f"{label}.home must be a repo-relative .rs path")
 
-        if kind == "raw-lifetime":
-            if defined_in is not None:
-                fail(f"{label}.defined_in must be null for raw-lifetime")
-        elif not isinstance(defined_in, str) or not defined_in:
+        if not isinstance(defined_in, str) or not defined_in:
             fail(f"{label}.defined_in must be a non-empty string")
 
         identity = (name, defined_in)
@@ -231,11 +223,7 @@ def parse_items(items: object, fail: Callable[[str], NoReturn]
 
     if len(routes) != 1:
         fail("items resolve to mixed agent routes: " + ", ".join(sorted(routes)))
-    route = routes.pop()
-    if route == "raw-lifetime":
-        if len(validated) != 1 or validated[0]["name"] not in _LIFETIME_TIERS:
-            fail("raw-lifetime batches must contain exactly one void or string item")
-    return route, validated
+    return routes.pop(), validated
 
 
 def load_batch(path: Path) -> Batch:
@@ -256,13 +244,6 @@ def load_batch(path: Path) -> Batch:
                  instructions=parse_instructions(raw, path, _fail))
 
 
-def _task_objective(batch: Batch) -> str:
-    """Raw-lifetime discovery always wraps, in a port campaign too."""
-    if batch.route == "raw-lifetime":
-        return "wrap"
-    return batch.objective
-
-
 def execute(
     workdir: Path,
     task_path: Path,
@@ -273,8 +254,7 @@ def execute(
 ) -> None:
     """Run exactly one binder or translator, as ``role`` says, in ``workdir``.
 
-    A binder runs `wrap` tasks, raw-lifetime ones included; a translator
-    runs `port` tasks. ``workdir`` is the isolated worktree the
+    A binder runs `wrap` tasks; a translator runs `port` tasks. ``workdir`` is the isolated worktree the
     orchestrator forked for this batch, and ``log_dir`` the existing
     directory its log and usage record land in; the harness creates and
     purges neither.
@@ -282,21 +262,15 @@ def execute(
     task_path, output = task_and_log_dir(task_path, log_dir, _fail)
     batch = load_batch(task_path)
     base_branch = batch.base_branch
-    effective = _task_objective(batch)
-    if _ROLE[effective] != role:
-        _fail(f"a {effective} batch runs under `crustify spawn-{_ROLE[effective]}`"
-              + (" (raw-lifetime discovery always wraps)"
-                 if effective != batch.objective else ""))
+    if _ROLE[batch.objective] != role:
+        _fail(f"a {batch.objective} batch runs under "
+              f"`crustify spawn-{_ROLE[batch.objective]}`")
     workdir = workdir.resolve()
     if dry_run:
-        normalized = (
-            f"; task objective normalized to {effective}"
-            if effective != batch.objective else ""
-        )
         print(
             f"[{role} dry-run] one {batch.route} agent; "
             f"{len(batch.items)} item(s); campaign objective "
-            f"{batch.objective}{normalized}; landing on {base_branch}; "
+            f"{batch.objective}; landing on {base_branch}; "
             f"model {batch.run.model} ({batch.run.billing}); "
             f"{instructions_note(batch.instructions)}; no agent spawned."
         )
