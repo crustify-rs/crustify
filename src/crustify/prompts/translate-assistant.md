@@ -332,9 +332,23 @@ usage record: `binder.usage.json` for a `wrap` batch, `translator.usage.json` fo
 batch, and `reviewer.usage.json` for a review batch: its `total.cost_usd` and
 `total.tokens`. Use the computed cost, not provider-reported dollar totals. Commit each
 batch's usage record with the dashboard update that cites it. Record agent wall times from usage files. Record wave
-wall time from first batch launch through final review and regression completion. Fill the
-dashboard the task names, by default `crustify/artifacts/dashboard.md` from
-`templates/translate/dashboard.template.md`, matching its format exactly.
+wall time from first batch launch through final review and regression completion.
+
+##### Dashboard
+
+Fill the dashboard the task names, by default `crustify/artifacts/dashboard.md` from
+`templates/translate/dashboard.template.md`, matching its format exactly. Update it as the
+work lands, not at the end:
+
+- when a translation or review batch lands: its row, under its `pass`, in its kind's
+  `Batches`, tests and `Batches: safety audit` tables, and a review batch's row in
+  `Batches — review: PoC + reports`; then those tables' `Σ first` and `Σ review` rows;
+- when a planner run commits: its row in `Planning`;
+- when a subsystem is promoted: its row in `Subsystem stats`, the `Coverage stats` table
+  and the Overview's lines; and
+- when you apply a settings change: the `Settings` lines, with a Notes entry.
+
+Commit each update with the usage records and scans it cites.
 
 ---
 
