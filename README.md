@@ -169,8 +169,10 @@ The full campaign results and code are available at
   including the tree layout
 - [`docs/artifacts/`](docs/artifacts/): the fields of `subsystems.json`,
   `schedule.json` and `task.json`
-- [`templates/`](templates/README.md): settings and dashboard templates, and the
-  Dockerfile
+- [`docs/prompting.md`](docs/prompting.md): how the agents' prompts, documents and skills
+  are composed
+- [`templates/`](templates/README.md): an example of each artifact, the settings and
+  dashboard templates, and the Dockerfile
 
 Each agent's authoritative procedure is its prompt, under
 [`src/crustify/prompts/`](src/crustify/prompts/).

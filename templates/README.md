@@ -9,12 +9,11 @@ Two kinds of campaign, one image, one directory of templates each.
 
 Copy a task template to start a request.
 
-The files beside them seed a translate campaign's `crustify/artifacts/` dir, which the
-orchestrator creates from them: [`gitignore`](gitignore),
-[`build.json`](build.json), [`subsystems.json`](subsystems.json) and
-[`schedule.json`](schedule.json), the shape of each subsystem's
-`<link-unit>/<subsystem>/schedule.json`. Derived artifacts such as `subsystems.json`
-are emitted against the live wavefront inventory, not committed by hand.
+[`gitignore`](gitignore) seeds a campaign's `crustify/.gitignore`. The files beside it
+are examples of the campaign's artifacts, whose fields are described under
+[`docs/artifacts/`](../docs/artifacts): [`build.json`](build.json),
+[`subsystems.json`](subsystems.json) and [`schedule.json`](schedule.json), the shape of
+each subsystem's `<link-unit>/<subsystem>/schedule.json`.
 
 [`Dockerfile`](Dockerfile) builds the environment either campaign runs in. It
 starts nothing: the container idles, and `crustify` is run inside it: the command

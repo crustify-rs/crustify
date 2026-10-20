@@ -344,6 +344,16 @@ When a campaign exposes a defect in Crustify or enabled skills with a local chec
 create a dedicated branch and worktree in that component's repository, implement and
 validate the reusable fix there; do not mix it into campaign translation commits.
 
+Place each change to Crustify where the prompting instructions below place its kind of
+text, and write additional instructions to the same standard.
+
+---
+
+Here are additional instructions on how Crustify's prompts, documents and skills are
+composed, and where each kind of text lives.
+
+<!-- INCLUDE docs/prompting.md -->
+
 ---
 
 Here are additional instructions on how a campaign is laid out: its branches, worktrees and
