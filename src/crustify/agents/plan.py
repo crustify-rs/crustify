@@ -1,6 +1,6 @@
 """One planner: decomposes a campaign into subsystems and schedules it.
 
-The orchestrator spawns planners one after another on the campaign branch,
+The orchestrator spawns planners one after another, each on its own branch,
 after setup and before the Rust tree is scaffolded. Every run does the same:
 it emits what the plan -- `subsystems.json`, each subsystem's
 `schedule.json` and the skills' planning artifacts -- lacks, updates what

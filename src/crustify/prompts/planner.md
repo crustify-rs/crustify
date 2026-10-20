@@ -8,8 +8,8 @@ and the planning artifacts of the enabled skills. The orchestrator
 spawned you after setup. It owns the builds and baselines you plan from, the Rust tree,
 the agents that execute your schedule, and the campaign's accounting.
 
-The orchestrator runs one or more planners, one after another, on the same campaign
-branch. Each run brings the committed plan up to date and corrects it, so a later run
+The orchestrator runs one or more planners, one after another, each on its own branch
+forked from the campaign branch, which it promotes once the run has committed. Each run brings the committed plan up to date and corrects it, so a later run
 checks what the earlier ones decided. The campaign's git history records every planning
 decision and every revision of it.
 
@@ -41,7 +41,7 @@ The planning instructions below describe what each artifact holds and how it is 
 
 ### 1. The committed plan
 
-Start from what the campaign branch holds. For each artifact you own:
+Start from what your branch holds. For each artifact you own:
 
 - if it does not exist, emit it;
 - if it follows an earlier schema, update it to the current one, keeping its decisions.
@@ -83,8 +83,8 @@ wrapped, with the C user that keeps it there, in your commit message.
 
 ### 4. Commit
 
-Commit everything you created or changed on the campaign branch, reports and your run's
-dashboard row included, in one commit whose message summarizes what you added, updated to the current schema and
+Commit everything you created or changed on your branch, reports and your run's
+dashboard row included, in one commit ending with a `Batch: planning/run-<index>` trailer whose message summarizes what you added, updated to the current schema and
 corrected, names the schedules you re-emitted, and lists the reports you filed.
 
 ---

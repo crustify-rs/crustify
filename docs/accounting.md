@@ -39,11 +39,10 @@ An audit's dashboard follows the same division over its own tables.
 An agent cannot see:
 
 - its own cost, tokens and wall, which its usage record gives only once it has ended, nor
-  the per-unit costs derived from them;
-- its own commit, which the `Planning` row names; and
+  the per-unit costs derived from them; and
 - what spans agents: `Subsystem stats`, the Overview's branch line and the `Settings`
   lines.
 
 The orchestrator fills those cells and their `Σ` cells, a batch's on the subsystem branch
 once its wave's review is promoted, and a planner run's on the campaign branch once the
-run has committed. Each usage record is committed with the dashboard update that cites it.
+run is promoted. Each usage record is committed with the dashboard update that cites it.

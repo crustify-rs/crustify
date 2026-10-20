@@ -126,20 +126,20 @@ def main() -> None:
              "the harness contributes nothing -- no conventions, no skill "
              "index, no stage prompt.")
 
-    # -- spawn-planner (one planner run on the campaign branch) --------------
+    # -- spawn-planner (one planner run on its planning branch) --------------
     _spawn_planner_blurb = (
         "Run one planner over the campaign checkout. It emits what the plan "
         "-- subsystems.json, each subsystem's schedule.json and the skills' "
         "planning artifacts -- lacks, updates what follows an earlier schema, "
         "corrects what earlier runs decided, filing a report per correction, "
         "and re-emits the schedules its changes move. Runs are sequential; "
-        "each commits on the campaign branch.")
+        "each commits on its own planning branch.")
     plan_p = sub.add_parser(
         "spawn-planner", parents=[agent_opts],
         help=_spawn_planner_blurb, description=_spawn_planner_blurb,
     )
     plan_p.set_defaults(handler=_handle_spawn_planner)
-    add_workdir(plan_p, "the campaign checkout, on its campaign branch")
+    add_workdir(plan_p, "the campaign checkout, on the run's planning branch")
     plan_p.add_argument(
         "task", type=Path, metavar="TASK_JSON",
         help="Path to the run's task.json: its model and billing, and "

@@ -10,6 +10,7 @@ index. Nothing records a path; each name below is spelled from those coordinates
 | branch | name | checked out |
 |---|---|---|
 | campaign | `crustify/main` | in the repository's base dir, between subsystems |
+| planner run | `crustify/planning/run-<index>` | in the repository's base dir, while its run is live |
 | subsystem | `crustify/subsystems/<link-unit>/<subsystem>` | in the repository's base dir, while live |
 | wave | `crustify/waves/<link-unit>/<subsystem>/wave-<index>` | never |
 | batch | `crustify/batches/<link-unit>/<subsystem>/wave-<index>/batch-<index>` | in its worktree |
@@ -32,13 +33,15 @@ under the campaign, and each is promoted to the campaign branch once it lands.
 ## Worktrees
 
 Each batch and review batch has its own worktree at `crustify/.worktrees/<its branch name>`.
+A planner run has none: it runs in the repository's base dir, on its branch.
 
 ## Batch ids
 
 A batch's id is the part of its branch name after `crustify/batches/` or
 `crustify/review-batches/`: `<link-unit>/<subsystem>/wave-<index>/batch-<index>`, or
 `wave-<index>/batch-<index>` in an audit. It gives the batch's link unit,
-subsystem and wave.
+subsystem and wave. A planner run's id is `planning/run-<index>`, the part of its branch
+name after `crustify/`, which names its artifact dir likewise.
 
 ## Artifact dirs
 
@@ -49,6 +52,7 @@ crustify/artifacts/                             the campaign
 ├── build.json                                  the prebuilt variants of the target
 ├── subsystems.json                             the subsystem decomposition, in execution order
 ├── dashboard.md                                the campaign dashboard; audit-dashboard.md for an audit
+├── planning/run-<index>/                       a planner run: its task.json, session and usage records
 ├── assistant/                                  Crustify's own records, as the assistant
 │   ├── assistant-<timestamp>.session.json      one per assistant session
 │   └── assistant-<timestamp>.usage.json        derived by `crustify usage`

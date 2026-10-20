@@ -14,8 +14,11 @@ neither the build nor the Rust tree.
 
 ## Runs
 
-A campaign is planned by one or more planner runs, one after another on the campaign
-branch, each in one commit. Each run brings the committed plan up to date, so a later
+A campaign is planned by one or more planner runs, one after another, each in one commit
+on its own branch, `crustify/planning/run-<index>`, which the orchestrator forks from the
+campaign branch's tip and checks out in the repository's base dir. Once the run has
+committed, the orchestrator fast-forwards the campaign branch to it, and the next run forks
+from there. Each run brings the committed plan up to date, so a later
 run checks what the earlier ones decided, and the branch history records every planning
 decision and its revisions. A run that corrects an earlier decision files a report on it, as
 [`reviewing.md`](reviewing.md#plan-corrections) describes.

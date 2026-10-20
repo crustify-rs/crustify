@@ -143,9 +143,10 @@ match this baseline.
 
 Planner agents produce the plan: `subsystems.json`, each subsystem's `schedule.json` and
 the planning artifacts of the enabled skills, as the planning instructions below describe.
-Spawn them one after another on the campaign branch, as many runs as `plan-agent` asks
-for (by default two, with the translation model and billing). Give each run its own
-artifact dir, write its task, such as `{{"model": "<model>", "billing": "<billing>"}}`
+Spawn them one after another, as many runs as `plan-agent` asks for (by default two,
+with the translation model and billing), each on its own branch: create
+`crustify/planning/run-<k>` from the campaign branch's tip and check it out in the
+repository's base dir. Give each run its own artifact dir, write its task, such as `{{"model": "<model>", "billing": "<billing>"}}`
 (see `docs/artifacts/task.md`), as `task.json` in it, and spawn it:
 
 ```bash
@@ -153,9 +154,10 @@ crustify spawn-planner <repo> crustify/artifacts/planning/run-<k>/task.json \
     --log-dir crustify/artifacts/planning/run-<k>
 ```
 
-Do not start a run before the previous one has committed. After the last run, check that
-the subsystems' schedules cover the approved scope and that every run committed, and record
-each run's changes, reports and cost in the dashboard.
+Once the run has committed, check out the campaign branch and fast-forward it to the
+run's branch; start the next run only after that. After the last run, check that the
+subsystems' schedules cover the approved scope and that every run committed, and record
+each run's cost in the dashboard.
 
 
 #### 5. Rust tree scaffolding
@@ -343,7 +345,7 @@ work lands:
   instructions describe. Once its usage record exists, fill the rest: its cost, tokens,
   wall and per-unit cells, and their `Σ` cells. Make
   these edits on the subsystem branch, after the wave's review is promoted;
-- when a planner run commits: its `Planning` row's commit, cost, tokens and wall;
+- when a planner run is promoted: its `Planning` row's cost, tokens and wall;
 - when a subsystem is promoted: its row in `Subsystem stats` and the Overview's branch
   line; and
 - when you apply a settings change: the `Settings` lines, with a Notes entry.

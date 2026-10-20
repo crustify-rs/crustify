@@ -27,8 +27,8 @@ def _fail(message: str) -> NoReturn:
 
 def load_batch(path: Path) -> PlanBatch:
     """Load and strictly validate a planner task: ``model`` and ``billing``,
-    and optionally ``instructions``. A planner commits on the checked-out
-    campaign branch, so it lands on no other."""
+    and optionally ``instructions``. A planner commits on the planning
+    branch checked out in the base dir; the orchestrator promotes it."""
     raw = read_object(path, _fail)
     check_fields(raw, set(RUN_FIELDS), {"instructions"}, _fail)
     return PlanBatch(run=parse_run(raw, _fail),
@@ -38,7 +38,7 @@ def load_batch(path: Path) -> PlanBatch:
 def execute(workdir: Path, task_path: Path, *, log_dir: Path,
             dry_run: bool = False) -> None:
     """Run exactly one planner in ``workdir``, the campaign checkout on its
-    campaign branch. ``log_dir`` is the existing directory that receives
+    planning branch. ``log_dir`` is the existing directory that receives
     the run's log and usage record."""
     task_path, output = task_and_log_dir(task_path, log_dir, _fail)
     batch = load_batch(task_path)

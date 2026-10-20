@@ -53,8 +53,8 @@ All five are required, and `instructions` is the only other root field accepted.
 | `billing` | how the provider CLI authenticates: `subscription`, its own logged-in account, or `api`, an API key from the environment |
 
 A binder, translator or reviewer task carries all three. A planner task carries `model`
-and `billing` only: a planner commits on the campaign branch it is spawned on, and lands on
-no other.
+and `billing` only: a planner commits on the planning branch it is spawned on, which the
+orchestrator promotes to the campaign branch.
 
 ## Additional instructions
 
@@ -120,8 +120,8 @@ Without `fix`, the reviewer reports and reproduces what it finds but patches not
 
 ## Planner tasks
 
-A planner task says only how a planner run runs. What it plans is the campaign branch it is
-spawned on: every run emits what the committed plan lacks, updates what follows an earlier
+A planner task says only how a planner run runs. What it plans is the branch it is spawned
+on, forked from the campaign branch: every run emits what the committed plan lacks, updates what follows an earlier
 schema, corrects what earlier runs decided, and re-emits the schedules its changes move.
 
 ```json
