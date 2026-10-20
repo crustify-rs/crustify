@@ -63,23 +63,24 @@ the campaign's.
   the agent's own `usage.json`, so it INCLUDES the per-worktree C rebuild
 - `$/type` / `$/symbol` / `$/field` / `$/loc` — that row's `$` over its units,
   its in-scope fields, or its `loc`
-- `tokens` / `rv tokens` / `batch tokens` / `review tokens` / `total tokens` — the
+- `tokens` / `rv tokens` / `review tokens` / `total tokens` — the
   tokens behind the `$` cell to their left, in millions: input + output + cache read +
   cache write, summed over the agent's `usage.json` requests (the figure `crustify usage`
   reports). Cache reads dominate it
 - `subsystem wall` — from its first batch launch through its final review
   and regression gate
-- `batch` / `review` — in the Overview, the computed cost of the subsystem's
+- `cost` / `review cost` — in the Overview, the computed cost of the subsystem's
   translation batches and of its review batches; `—` where it ran none
-- `total` — `batch` + `review`; for the assistant, its own cost
+- `total` — `cost` + `review cost`; for the planners and the assistant, their own cost
 - `assistant` — the Overview row for every assistant session of the campaign, priced
   from the `assistant-*.usage.json` records in `crustify/artifacts/assistant/`; `total` is their sum. A
   session that died before writing its record is recovered from its transcript (Notes)
 - `Σ recorded agents` / `Σ campaign` — the batch and review agents alone, then those plus the
-  assistant. `$/type` and `$/sym` are given for the agents only, since the assistant's
+  assistant. The per-unit columns are given for the agents only, since the assistant's
   cost cannot be split by unit kind
-- `$/type` / `$/sym` — in the Overview, a subsystem's cost over the types or
-  symbols it was scheduled for; `—` where it was scheduled for none
+- `$/type` / `$/sym`, `review $/type` / `review $/sym`, `total $/type` / `total $/sym` — in
+  the Overview, a subsystem's `cost`, `review cost` and `total` over the types or symbols
+  it was scheduled for; `—` where it was scheduled for none
 - `+LoC` — the landed batch's Rust-source insertions/deletions relative to its
   wave's base
 - `cov (C/Rust)` — in a `Batches` table, the absolute line coverage right after
@@ -156,15 +157,15 @@ in Notes.
 Implementation `<provider>/<model>` via `<backend>`; review
 `<provider>/<model>` via `<backend>`.
 
-| subsystem | nr types | nr symbols | subsystem wall | batch | batch tokens | review | review tokens | total | total tokens | $/type | $/sym |
-|---|---:|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|
-| `<link-unit>/void` | `<n>` | `<n>` | `<n>h<n>m<n>s` | `$<n>` | `<n>M` | `$<n>` | `<n>M` | `$<n>` | `<n>M` | `$<n>` | `$<n>` |
-| `<link-unit>/string` | `<n>` | `<n>` | `<n>h<n>m<n>s` | `$<n>` | `<n>M` | `$<n>` | `<n>M` | `$<n>` | `<n>M` | `$<n>` | `$<n>` |
-| `<link-unit>/<subsystem>` | `<n>` | `<n>` | `<n>h<n>m<n>s` | `$<n>` | `<n>M` | `$<n>` | `<n>M` | `$<n>` | `<n>M` | `$<n>` | `$<n>` |
-| planners | — | — | `<n>h<n>m<n>s` | — | — | — | — | `$<n>` | `<n>M` | — | — |
-| assistant | — | — | — | — | — | — | — | `$<n>` | `<n>M` | — | — |
-| **Σ recorded agents** | **`<n>`** | **`<n>`** | **`<n>h<n>m`** | **`$<n>`** | **`<n>M`** | **`$<n>`** | **`<n>M`** | **`$<n>`** | **`<n>M`** | **`$<n>`** | **`$<n>`** |
-| **Σ campaign** | **`<n>`** | **`<n>`** | **`<n>h<n>m`** | **`$<n>`** | **`<n>M`** | **`$<n>`** | **`<n>M`** | **`$<n>`** | **`<n>M`** | — | — |
+| subsystem | nr types | nr symbols | subsystem wall | cost | tokens | $/type | $/sym | review cost | review tokens | review $/type | review $/sym | total | total tokens | total $/type | total $/sym |
+|---|---:|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| `<link-unit>/void` | `<n>` | `<n>` | `<n>h<n>m<n>s` | `$<n>` | `<n>M` | `$<n>` | `$<n>` | `$<n>` | `<n>M` | `$<n>` | `$<n>` | `$<n>` | `<n>M` | `$<n>` | `$<n>` |
+| `<link-unit>/string` | `<n>` | `<n>` | `<n>h<n>m<n>s` | `$<n>` | `<n>M` | `$<n>` | `$<n>` | `$<n>` | `<n>M` | `$<n>` | `$<n>` | `$<n>` | `<n>M` | `$<n>` | `$<n>` |
+| `<link-unit>/<subsystem>` | `<n>` | `<n>` | `<n>h<n>m<n>s` | `$<n>` | `<n>M` | `$<n>` | `$<n>` | `$<n>` | `<n>M` | `$<n>` | `$<n>` | `$<n>` | `<n>M` | `$<n>` | `$<n>` |
+| planners | — | — | `<n>h<n>m<n>s` | — | — | — | — | — | — | — | — | `$<n>` | `<n>M` | — | — |
+| assistant | — | — | — | — | — | — | — | — | — | — | — | `$<n>` | `<n>M` | — | — |
+| **Σ recorded agents** | **`<n>`** | **`<n>`** | **`<n>h<n>m`** | **`$<n>`** | **`<n>M`** | **`$<n>`** | **`$<n>`** | **`$<n>`** | **`<n>M`** | **`$<n>`** | **`$<n>`** | **`$<n>`** | **`<n>M`** | **`$<n>`** | **`$<n>`** |
+| **Σ campaign** | **`<n>`** | **`<n>`** | **`<n>h<n>m`** | **`$<n>`** | **`<n>M`** | — | — | **`$<n>`** | **`<n>M`** | — | — | **`$<n>`** | **`<n>M`** | — | — |
 
 ## Planning
 
