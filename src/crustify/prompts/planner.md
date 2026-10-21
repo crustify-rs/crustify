@@ -110,8 +110,9 @@ planner files its corrections.
 
 ---
 
-Here is how a campaign accounts for its work: what the dashboard records, and which of its
-cells you fill.
+Here is how a campaign accounts for its work: what the dashboard records, and when each
+of its cells is measured. You fill your run's landing cells, its row in `Planning` but for
+its usage cells, in your commit; the usage and campaign cells are not yours.
 
 <!-- INCLUDE docs/accounting.md -->
 

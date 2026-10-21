@@ -2,7 +2,7 @@
 
 Deferred decisions and follow-up work on the crustify contracts and prompts.
 
-## Side campaigns for out-of-tree dependencies
+## 1. Side campaigns for out-of-tree dependencies
 
 A campaign wraps one repository, but its subsystems import libraries that live elsewhere —
 libz and pcre2 for libgit2, and so on. Today those are a boundary the campaign stops at:
@@ -33,7 +33,7 @@ Open questions:
 - **Results and accounting.** Whether a side campaign reports into the parent's results
   table or its own.
 
-## Ship `docs/` so a non-editable install keeps its conventions
+## 2. Ship `docs/` so a non-editable install keeps its conventions
 
 The conventions and the how-tos (`docs/conventions.md`,
 `docs/*.md`) resolve under `deps.CHECKOUT`, which is the source checkout.
@@ -48,13 +48,13 @@ This is also the prerequisite for moving `src/crustify/prompts/` into `docs/`: p
 package correctly today only because they sit inside the package, and moving them before
 the fix would lose them the same way.
 
-## Add an idiomaticity and ergonomics guide
+## 3. Add an idiomaticity and ergonomics guide
 
 Create `docs/idiomaticity.md` for Rust API-shaping hints and good practices. Keep
 mandatory mechanical rules in `conventions.md`. Make the guide available through an
 optional prompt skill so experiments can ablate it without changing the prompts.
 
-## Emit type-implementing symbols as inherent methods
+## 4. Emit type-implementing symbols as inherent methods
 
 A symbol whose first parameter is the type it operates on is currently emitted as a free
 function (`conventions.md`, "Naming › Functions"). Emitting it as an inherent
@@ -90,7 +90,7 @@ to defer the shape to the translator prompt.
 Also open: whether existing waves get retrofitted, or the crate carries two generations of
 shape side by side.
 
-## Enforce FFI lending windows with ARM MTE
+## 5. Enforce FFI lending windows with ARM MTE
 
 `FooRef<'a>` and `FooMut<'a>` assert that foreign code will not retain the pointer past
 `'a`. Nothing checks that today: it is an assumption the translator records in the
@@ -103,7 +103,7 @@ LLVM-supported foreign code" — it needs IR for the C. MTE checks in the core, 
 shared objects, hand-written assembly and anything else that issues a load is covered with
 no instrumentation of the foreign side.
 
-### What it cannot do
+### 5.1 What it cannot do
 
 MTE compares a pointer's tag against the granule's tag and faults on mismatch. The check
 is **symmetric across loads and stores**, so it expresses *identity*, not *permission*.
@@ -122,7 +122,7 @@ unwind path included.
 So MTE is a candidate to replace ASan for FFI-crossing memory-safety classes, not BSan for
 aliasing classes.
 
-### The part worth building
+### 5.2 The part worth building
 
 Retention: foreign code using a pointer after its lending window closed. No current
 instrument covers it well — the memory is still live, so ASan sees nothing — and it is
@@ -136,7 +136,7 @@ pointer stashed during window `i` aliases window `i+1` with p = 1/16.
 Object granularity, not field granularity — which suits opaque handle types like
 `git_commit`, where the whole object is lent anyway.
 
-### Why it is worth a paper paragraph
+### 5.3 Why it is worth a paper paragraph
 
 The miss rate is **computable**: a violation occurring `n` times is detected with
 probability at least `1 - 16^-n`. That makes MTE the only dynamic instrument here with a
@@ -146,9 +146,24 @@ false-negative bound at all; this does.
 It remains a falsifier — sound for positives, unsound for absence — so it cannot support a
 verification claim, only a sharper falsification one.
 
-### Blockers
+### 5.4 Blockers
 
 No MTE on the current machine: `/proc/cpuinfo` lists `bti paca pacg` but no `mte`. Needs
 v8.5 silicon or a model. Use synchronous tag-check mode for testing; async batches faults
 and loses the faulting site. HWASan is the software fallback at 1/256 rather than 1/16,
 but it needs the C instrumented, which forfeits the reach advantage.
+
+## 6. Port individual items without their subsystem
+
+A port campaign's scope is whole subsystems
+([`workflows/porting.md`](workflows/porting.md)'s Scope section). A campaign that ports
+only a few named types or symbols, and leaves the rest of their subsystem in C, has no
+workflow yet.
+
+Open questions:
+
+- how such a scope maps to a plan: whether its items are scheduled inside the subsystem
+  that owns them, or as a subsystem of their own;
+- how the subsystem's remaining C reaches them, and for how long; and
+- whether the subsystem's tests that reach those items are migrated, as a ported
+  subsystem's are, or only added.

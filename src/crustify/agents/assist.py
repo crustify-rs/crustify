@@ -55,6 +55,22 @@ AUDIT_SKILLS = (
 SKILLS_BY_KIND = {"translate": TRANSLATE_SKILLS, "audit": AUDIT_SKILLS}
 
 
+#: Where the assistant's one prompt, `prompts/assistant.md`, takes its campaign
+#: kind's part: replaced by `prompts/assistant/<kind>.md`, what the assistant
+#: owns in that kind of campaign and the documents only that kind includes.
+CAMPAIGN_MARKER = "<!-- CAMPAIGN -->"
+
+
+def campaign_prompt(kind: str) -> str:
+    """The assistant's prompt template for one campaign kind, its documents not
+    yet included: the shared prompt with the kind's part in its marker."""
+    shared = (_PKG_ROOT / "prompts" / "assistant.md").read_text()
+    if shared.count(CAMPAIGN_MARKER) != 1:
+        raise SystemExit(f"assistant.md must hold one {CAMPAIGN_MARKER} marker")
+    part = (_PKG_ROOT / "prompts" / "assistant" / f"{kind}.md").read_text().strip()
+    return shared.replace(CAMPAIGN_MARKER, part)
+
+
 #: The first turn of a session started with `--start`: the user's instruction
 #: to run the campaign as its settings configure it. Without `--start` there
 #: is no first turn, and the user types it.
@@ -146,8 +162,7 @@ class AssistAgent(CrustifyAgent):
         where the task lives, and the orchestrator reads it from there, so an
         edit made mid-campaign is what the next subsystem runs under."""
         self._task_text()
-        return expand_includes(
-            (_PKG_ROOT / "prompts" / f"{self.kind}-assistant.md").read_text())
+        return expand_includes(campaign_prompt(self.kind))
 
     def _prompt(self) -> str:
         if self.task_only:

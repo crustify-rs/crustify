@@ -12,18 +12,17 @@ configured without is out of scope. The plan derives from the builds recorded in
 `crustify/artifacts/build.json` and the linker outputs of those builds; planning changes
 neither the build nor the Rust tree.
 
-## Runs
+## 1. Runs
 
 A campaign is planned by one or more planner runs, one after another, each in one commit
-on its own branch, `crustify/planning/run-<index>`, which the orchestrator forks from the
-campaign branch's tip and checks out in the repository's base dir. Once the run has
-committed, the orchestrator fast-forwards the campaign branch to it, and the next run forks
-from there. Each run brings the committed plan up to date, so a later
+on its own branch, `crustify/planning/run-<index>`, forked from the campaign branch's tip
+and checked out in the repository's base dir. Once the run has committed, the campaign
+branch is fast-forwarded to it, and the next run forks from there. Each run brings the committed plan up to date, so a later
 run checks what the earlier ones decided, and the branch history records every planning
 decision and its revisions. A run that corrects an earlier decision files a report on it, as
-[`reviewing.md`](reviewing.md#plan-corrections) describes.
+[`reviewing.md`](reviewing.md#9-plan-corrections) describes.
 
-## Subsystem decomposition
+## 2. Subsystem decomposition
 
 `subsystems.json` follows [`artifacts/subsystems.md`](artifacts/subsystems.md); its layout
 example is [`templates/subsystems.json`](../templates/subsystems.json).
@@ -54,7 +53,7 @@ Each consumer-to-producer relation is one `imported_deps` record, with its
 destinations apart from out-of-tree libraries. The record keeps the graph as it is,
 cycles included.
 
-### Foundational subsystems
+### 2.1 Foundational subsystems
 
 The decomposition opens with two foundational subsystems, `void` and `string`, that every
 other subsystem may depend on:
@@ -67,14 +66,12 @@ other subsystem may depend on:
 Their members are selected from the dependency graph with each type-erased value
 resolved to the types it is read as, so that a `void *` read as a named type is a
 dependency on that type, not an erased value. What
-stays erased is a candidate, and the planner reads each candidate's body before it
-admits it. A foundational subsystem may keep a few dependencies of its own, such as
+stays erased is a candidate, admitted only once its body has been read. A foundational subsystem may keep a few dependencies of its own, such as
 logging or assertions on its failure paths, which the order cuts; otherwise nothing it
 holds depends on another subsystem.
 
-The planner establishes each member's lifecycle role (allocator or constructor,
-releaser, disposer, cloner), so that the binders of these subsystems bind those members
-as strategies, as [Lifecycle strategies](binding.md#lifecycle-strategies) describes.
+Each member's lifecycle role (allocator or constructor, releaser, disposer, cloner) is
+established while planning, so that these subsystems' members are bound as strategies, as [Lifecycle strategies](binding.md#54-lifecycle-strategies) describes.
 
 A foundational subsystem owns whole files where its members make up their files, and
 narrows to its `items` where they share a file with another subsystem, as
@@ -82,7 +79,7 @@ narrows to its `items` where they share a file with another subsystem, as
 subsystems are planned and scheduled like any other: waves of batches of units. As
 generic facilities, they are `wrap` in every campaign.
 
-## Order
+## 3. Order
 
 `subsystems.json` lists the campaign's link units and subsystems in execution order,
 bottom-up by their dependency relations, each with its `index`. The order is a DAG cut
@@ -96,7 +93,7 @@ those that this campaign, before it was resumed, or a previous campaign complete
 foundational subsystems are listed first in the first link unit, `void` then `string`,
 and run first.
 
-## Waves and batches
+## 4. Waves and batches
 
 Each subsystem's `schedule.json` follows [`artifacts/schedule.md`](artifacts/schedule.md);
 its layout example is [`templates/schedule.json`](../templates/schedule.json). It holds only
@@ -104,8 +101,7 @@ that subsystem's waves. Waves execute
 sequentially, bottom-up, producers before consumers; the batches of a wave execute in
 parallel, up to the campaign's parallelism, and the `workload` caps bound each batch.
 
-A batch entry is a `task.json` without the run fields the orchestrator adds when it
-launches the batch (`base_branch`, `model` and `billing`):
+A batch entry is a `task.json` without the run fields added when the batch launches (`base_branch`, `model` and `billing`):
 [`artifacts/task.md`](artifacts/task.md) gives its format and routing. Each item's `home`
 follows the [conventions](conventions.md).
 
@@ -117,10 +113,10 @@ In a wrap campaign every batch is `wrap`. In a port campaign:
 
 - a selected symbol is `port` from the start;
 - a selected type is `wrap` while C depends on its layout, then `port` once nothing in C
-  does, as [Porting types](#porting-types) describes; and
+  does, as [Porting types](#41-porting-types) describes; and
 - a dependency outside the selected migration set is `wrap`.
 
-### Porting types
+### 4.1 Porting types
 
 A selected type is scheduled twice: a `wrap` batch where the DAG places it, and a `port`
 batch once its layout leaves C, when no C code that remains after a wave depends on it.

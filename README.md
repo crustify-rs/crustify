@@ -161,7 +161,10 @@ The full campaign results and code are available at
 - [`docs/binding.md`](docs/binding.md), [`docs/porting.md`](docs/porting.md): how an
   item is wrapped or ported
 - [`docs/reviewing.md`](docs/reviewing.md): how landed work and plans are reviewed
-- [`docs/audit.md`](docs/audit.md): audit campaigns
+- [`docs/workflows/`](docs/workflows/): how each kind of campaign proceeds: its shared
+  setup, and the binding, porting and audit workflows
+- [`docs/accounting.md`](docs/accounting.md): the dashboard, session and usage records,
+  and how cost is derived
 - [`docs/testing.md`](docs/testing.md), [`docs/landing.md`](docs/landing.md),
   [`docs/layout.md`](docs/layout.md): tests, landing, and a campaign's branches and
   artifact directories

@@ -24,7 +24,7 @@ first link unit.
 | `schema_version` | `2` |
 | `waves` | the subsystem's waves, in execution order |
 
-## waves[*]
+## 1. waves[*]
 
 Entry *n* runs only after entry *n-1* has landed, and the last wave of a subsystem runs
 before the first wave of the next.
@@ -34,26 +34,25 @@ before the first wave of the next.
 | `index` | position within the subsystem, from zero |
 | `batches` | the batches of this wave, which execute in parallel |
 
-## waves[*].batches[*]
+## 2. waves[*].batches[*]
 
 A batch entry is a binder's or translator's `task.json` without its run fields
-(`base_branch`, `model` and `billing`), which the orchestrator decides when it launches the
-batch; see `docs/artifacts/task.md`.
+(`base_branch`, `model` and `billing`), which are decided when the batch launches; see `docs/artifacts/task.md`.
 
 `objective` is per batch, not per wave. A port campaign wraps a type while C still reads
 its fields and ports it afterwards, so one wave holds batches of differing objectives.
 
-The orchestrator writes each entry out as the batch's `task.json`, adding the run fields
-and changing nothing else.
+Each entry is written out as the batch's `task.json` with the run fields added and
+nothing else changed.
 
-## Derived paths
+## 3. Derived paths
 
 Every index also addresses the filesystem and the branch namespace, so nothing records a
 path: `docs/layout.md` spells each branch, worktree and artifact dir from
 the link unit, subsystem, wave index and batch index. A batch's artifact dir holds its
 `task.json` and is what its `--log-dir` names.
 
-## Version 1
+## 4. Version 1
 
 Schema-v1 schedules were one campaign-wide `crustify/artifacts/schedule.json` nesting
 `link_units` → `subsystems` → `waves`, each with an `index`. Their order now lives in

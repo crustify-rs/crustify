@@ -3,39 +3,27 @@
 Before your first command, read wavefront's `README.md`, its `--help`, and the documents
 under its `docs/`.
 
-## Workflow
+## workflows/setup › Provisioning
 
-The following steps augment your base workflow.
+Install CodeQL if it is not installed, and wavefront's query pack dependencies with
+`codeql pack install` on wavefront's `src/`: extraction fails without them. Add
+`wavefront/codeql` and `wavefront/.cache` to `crustify/.gitignore`.
 
-### For Phase 1: Setup
+## workflows/setup › Artifact tree
 
-#### 1. Provision dependencies
+Scaffold `crustify/wavefront/` for wavefront's artifacts.
 
-- Install CodeQL if it's not already installed and add the following artifacts to the
-  tree's gitignore: `wavefront/codeql` and `wavefront/.cache`.
+## workflows/setup › Baseline
 
+Once the builds and the baseline are recorded, emit the CodeQL T1/T2 tables wavefront
+computes dependencies from. Create the CodeQL database under `crustify/wavefront/codeql/`
+from a traced build of the `plain` configuration in a fresh scratch dir, then extract the
+tables into `crustify/wavefront/codeql/{t1,t2}` through a configuration whose `state_dir`
+is `crustify/wavefront`. The planner writes the campaign's own configurations; a
+bootstrap configuration for the extraction belongs in `crustify/tmp/`.
 
-#### 2. Artifact tree scaffolding
+## layout › Lifecycle › Batches
 
-- Scaffold `crustify/wavefront/` for wavefront-owned artifacts.
-
-
-#### 3. Prebuilds and test baselines
-
-##### CodeQL setup
-
-- Wavefront requires the CodeQL T1/T2 tables for computing dependencies; emit them after
-  creating the target's builds and recording the test baseline; place codeql-owned
-  artifacts in `crustify/wavefront/codeql/{t1, t2, ...}`.
-
-
----
-
-### For Phase 2: Translation
-
-#### 2. Launch preparations
-
-##### Waves and batches
-
-Additionally symlink the CodeQL DB files from `crustify/wavefront/codeql/` and wavefront
-`.cache` after forking the worktree for a batch.
+The CodeQL database and tables under `crustify/wavefront/codeql/`, and wavefront's
+`.cache`, are gitignored state every batch needs: symlink them into each batch's worktree
+after forking it.

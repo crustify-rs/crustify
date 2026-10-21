@@ -1,9 +1,9 @@
 # Crustify coding conventions
 
-These are the shared, mechanical contracts between the orchestrator, the binder, the
-translator and the reviewer. Their prompts contain the decisions and procedures.
+These are the shared, mechanical contracts of the code a campaign generates. The roles'
+prompts contain the decisions and procedures.
 
-## Rust baseline
+## 1. Rust baseline
 
 Crustify crates use Rust edition 2024. Wrapper crates inherit workspace lints that deny
 `clippy::undocumented_unsafe_blocks` and allow `clippy::module_inception`; generated
@@ -12,7 +12,7 @@ Crustify crates use Rust edition 2024. Wrapper crates inherit workspace lints th
 Every unsafe block carries a specific, falsifiable `// SAFETY:` comment. Native Rust APIs
 are safe unless their caller obligation cannot be expressed in the type system.
 
-## Naming
+## 2. Naming
 
 The safe surface uses ordinary Rust naming: `snake_case` for functions, methods and
 modules, `UpperCamelCase` for types and traits, `SCREAMING_SNAKE_CASE` for constants and
@@ -22,35 +22,35 @@ transliterated C one. The filled anchor records the C name, so renaming costs no
 traceability. Names that cross the language boundary keep their C-derived spelling, as
 below.
 
-### Functions
+### 2.1 Functions
 
 A C function's raw binding is `ffi::<name>`. Its safe wrapper is a free function homed in
 the owning module, named by the rules above. When one C function has several valid
 ownership contracts, each safe variant has a distinct, descriptive name.
 
-### Types
+### 2.2 Types
 
 A wrapped C type is the layout-compatible newtype `Foo`, named by the rules above; its
 shared and exclusive borrowed handles are `FooRef<'a>` and `FooMut<'a>`.
 
-### Shims
+### 2.3 Shims
 
 A callable macro shim is `crustify_<NAME>`. Constant macros remain generated constants in
 the `-sys` crate.
 
-### Exports
+### 2.4 Exports
 
 Each ported C source file has one `mod ffi_export { use super::*; ... }` raw ABI gateway
 in its Rust module, whose exports use `#[unsafe(no_mangle)] extern "C"`. Externally
 visible and header-inline symbols are exported under their bare names; static functions,
 TU-inline functions and static globals as `crustify_<file>__<name>`.
 
-### Build switches
+### 2.5 Build switches
 
 The per-file C/Rust build switch is `CRUSTIFY_<FILE>`, with `<FILE>` derived by sanitizing
 the translation unit's path.
 
-## Crates, modules, and TUs
+## 3. Crates, modules, and TUs
 
 The Rust tree mirrors the following layout, all relative to `<repo>/crustify/rust/`:
 
@@ -79,7 +79,7 @@ Rust has no headers, they are homed using the following rules:
 In a wrap campaign, an item-granular subsystem's items home in the module of the public
 header that publishes them, which the subsystem that owns the header's other items shares.
 
-## Anchors
+## 4. Anchors
 
 A scheduled item arrives with the authored Rust file it belongs in, named by its batch.
 Nothing is written into that file ahead of the agent: the binder or translator emits exactly
@@ -104,7 +104,7 @@ Duplicate a filled anchor only when several wrappers intentionally represent the
 item. Existing filled anchors are completed work unless the current objective deliberately
 promotes that item.
 
-## Testing
+## 5. Testing
 
 Tests are placed by what they target. Tests of the public interface are Cargo integration
 tests of the safe crate, under `crustify/rust/<target>/tests/`, so crate privacy enforces

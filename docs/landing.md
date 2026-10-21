@@ -21,4 +21,4 @@ On a non-fast-forward rejection, the batch:
 3. retries the fast-forward.
 
 The integration branch is never reset, force-updated or moved backward, and nothing is
-pushed to a remote. The worktree stays after landing; removing it is the orchestrator's job.
+pushed to a remote. The worktree stays after landing, until it is purged as [`layout.md`](layout.md)'s Lifecycle section describes.

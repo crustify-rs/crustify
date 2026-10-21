@@ -4,12 +4,12 @@ How a scheduled C item is reimplemented in safe Rust. A port builds on the bindi
 item analysis, macros and the safe boundary apply unchanged, and a ported item keeps C
 interoperability and observable behaviour for as long as C consumes it.
 
-## Surface
+## 1. Surface
 
 A ported type's surface covers every field the targeted symbols touch and every lifecycle
 primitive, not only those the public API publishes.
 
-## Storage and layout
+## 2. Storage and layout
 
 Ported storage becomes Rust-owned only once no C path accesses, allocates or frees it. While
 C still owns either operation, compatible storage is retained and the blocker reported.
@@ -18,12 +18,12 @@ A layout is ported only once every C-side field toucher is gone and no public C 
 receives the concrete body. A public forward declaration alone does not block
 opacification.
 
-## Lifecycle
+## 3. Lifecycle
 
 Once Rust fully owns allocation and destruction, the type uses native Rust lifecycle
 operations instead of the C primitives.
 
-## Symbols
+## 4. Symbols
 
 A ported symbol's implementation is translated to safe, idiomatic Rust with its observable
 behaviour preserved. A standard-library operation is used directly when it is equivalent

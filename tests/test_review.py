@@ -185,7 +185,7 @@ class ReviewAgentTests(unittest.TestCase):
         pre = self.agent(["ub", "lifecycle"]).system_preamble()
         self.assertIn("objectives: `lifecycle, ub`", pre)
         self.assertIn("skip what the\ninstructions say about the others", pre)
-        self.assertIn("### Equivalence (`equiv`)", pre)
+        self.assertRegex(pre, r"### (\d+(\.\d+)* )?Equivalence \(`equiv`\)")
         self.assertNotIn("OBJECTIVE", pre)
 
     def test_every_objective_has_a_section_headed_by_its_id(self) -> None:

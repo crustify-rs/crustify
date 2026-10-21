@@ -156,8 +156,9 @@ Here are additional instructions on how to land your commits.
 
 ---
 
-Here is how a campaign accounts for its work: what the dashboard records, and which of its
-cells you fill.
+Here is how a campaign accounts for its work: what the dashboard records, and when each
+of its cells is measured. You fill your review batch's landing cells, in your last commit;
+the usage and campaign cells are not yours.
 
 <!-- INCLUDE docs/accounting.md -->
 

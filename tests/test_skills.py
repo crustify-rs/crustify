@@ -11,7 +11,9 @@ from unittest import mock
 
 from crustify import deps
 from crustify.agents.base import _PKG_ROOT
-from crustify.agents.assist import AUDIT_SKILLS, AssistAgent
+from crustify.agents.assist import (
+    AUDIT_SKILLS, CAMPAIGN_MARKER, AssistAgent, campaign_prompt,
+)
 from crustify.agents.plan import PlanAgent
 from crustify.agents.review import ReviewAgent
 from crustify.agents.bind import BindAgent
@@ -133,11 +135,22 @@ class IncludeTests(unittest.TestCase):
         "layout": "docs/layout.md",
         "planning": "docs/planning.md",
         "reviewing": "docs/reviewing.md",
+        "accounting": "docs/accounting.md",
+        "prompting": "docs/prompting.md",
+        "workflows/setup": "docs/workflows/setup.md",
+        "workflows/binding": "docs/workflows/binding.md",
+        "workflows/porting": "docs/workflows/porting.md",
+        "workflows/audit": "docs/workflows/audit.md",
     }
-    _REF = re.compile(r"^## ([a-z]+) › (.+?)(?:, for `[a-z]+`)?$", re.M)
+    _REF = re.compile(r"^## ([a-z/]+) › (.+?)(?:, for `[a-z]+`)?$", re.M)
+    #: A numbered heading's number, which a reference leaves out.
+    _NUMBER = re.compile(r"^\d+(?:\.\d+)*\.?\s+")
 
     def _included(self, prompt: str) -> set[str]:
-        text = (_PKG_ROOT / "prompts" / prompt).read_text()
+        if prompt.endswith("-assistant.md"):
+            text = campaign_prompt(prompt.removesuffix("-assistant.md"))
+        else:
+            text = (_PKG_ROOT / "prompts" / prompt).read_text()
         return {name for name, path in self._DOCS.items()
                 if f"<!-- INCLUDE {path} -->" in text}
 
@@ -146,20 +159,23 @@ class IncludeTests(unittest.TestCase):
         Crustify-generated batch."""
         self.assertEqual(self._included("binder.md"),
                          {"conventions", "binding", "testing", "landing",
-                          "layout"})
+                          "layout", "accounting"})
         self.assertEqual(self._included("translator.md"),
                          {"conventions", "binding", "porting", "testing",
-                          "landing", "layout"})
+                          "landing", "layout", "accounting"})
         self.assertEqual(self._included("reviewer.md"),
                          {"conventions", "binding", "porting", "testing",
-                          "landing", "layout", "reviewing"})
+                          "landing", "layout", "reviewing", "accounting"})
         self.assertEqual(self._included("planner.md"),
-                         {"conventions", "planning", "reviewing"})
+                         {"conventions", "planning", "reviewing", "accounting"})
+        shared = {"prompting", "workflows/setup", "layout", "testing",
+                  "reviewing", "accounting"}
         self.assertEqual(self._included("translate-assistant.md"),
-                         {"conventions", "layout", "planning", "testing",
-                          "reviewing", "binding", "porting", "landing"})
+                         shared | {"workflows/binding", "workflows/porting",
+                                   "planning", "conventions", "binding",
+                                   "porting", "landing"})
         self.assertEqual(self._included("audit-assistant.md"),
-                         {"layout", "testing", "reviewing"})
+                         shared | {"workflows/audit"})
 
     def test_included_documents_are_plain_markdown(self) -> None:
         """Public documents, not skills: no frontmatter for an agent to see."""
@@ -180,7 +196,7 @@ class IncludeTests(unittest.TestCase):
         """A header augments `<how-to> › <section> [› <subsection>]`. Renaming
         a section would otherwise leave the augmentation pointing nowhere."""
         headings = {
-            name: {line.lstrip("#").strip()
+            name: {self._NUMBER.sub("", line.lstrip("#").strip())
                    for line in (deps.CHECKOUT / path).read_text().splitlines()
                    if line.startswith("#")}
             for name, path in self._DOCS.items()
@@ -256,9 +272,20 @@ class PromptRenderTests(unittest.TestCase):
     def test_every_stage_prompt_survives_format(self) -> None:
         """Any placeholder resolves here; what is under test is that no
         unescaped literal brace makes `format` raise."""
-        for path in (_PKG_ROOT / "prompts").glob("*.md"):
+        for path in [*(_PKG_ROOT / "prompts").glob("*.md"),
+                     *(_PKG_ROOT / "prompts" / "assistant").glob("*.md")]:
             with self.subTest(prompt=path.name):
                 path.read_text().format_map(collections.defaultdict(str))
+
+    def test_every_campaign_kind_fills_the_assistant_prompt(self) -> None:
+        """One shared prompt, one part per kind: a kind without its part, or a
+        part the marker never reaches, fails at launch."""
+        from crustify.cli import CAMPAIGNS
+        for kind in sorted(set(CAMPAIGNS.values())):
+            with self.subTest(kind=kind):
+                text = campaign_prompt(kind)
+                self.assertNotIn(CAMPAIGN_MARKER, text)
+                self.assertIn("<!-- SKILLS -->", text)
 
 
 class PromptArgumentTests(unittest.TestCase):

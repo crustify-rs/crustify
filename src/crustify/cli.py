@@ -11,8 +11,9 @@ import argparse
 SUBCOMMANDS = ("spawn-planner", "spawn-binder", "spawn-translator",
                "spawn-reviewer", "usage")
 
-#: The campaign kinds a settings file can name, and the assistant prompt each
-#: one runs: port and wrap are both translation campaigns.
+#: The campaign kinds a settings file can name, and the part of the assistant's
+#: prompt each one loads, `prompts/assistant/<kind>.md`: port and wrap are both
+#: translation campaigns.
 CAMPAIGNS = {"port": "translate", "wrap": "translate", "audit": "audit"}
 
 

@@ -1,6 +1,6 @@
 # subsystems.json schema
 
-Field meaning for `<workdir>/crustify/artifacts/subsystems.json`, the orchestrator's campaign
+Field meaning for `<workdir>/crustify/artifacts/subsystems.json`, the campaign's
 decomposition. Layout example: [`templates/subsystems.json`](../../templates/subsystems.json).
 
 The campaign's planner agents emit this repo-tier artifact: the first run creates it, and
@@ -17,7 +17,7 @@ subsystem's headers and translation units share one module.
 | `version` | the analyzed tree's revision — a commit, not a counter. What this decomposition describes, pinned |
 | `link_units` | the campaign's link units, in execution order |
 
-## Execution order
+## 1. Execution order
 
 `link_units`, and each link unit's `subsystems`, are listed in the order the campaign
 runs them, bottom-up, producers before consumers, and each entry's `index` is its
@@ -35,7 +35,7 @@ The first link unit opens with the two foundational subsystems `void` and `strin
 indices 0 and 1 (see `docs/planning.md`). They are ordinary entries, usually narrowed to
 their `items`.
 
-## link_units[*]
+## 2. link_units[*]
 
 Each entry's `name` is its identifier; clients may build a name index without losing the
 order.
@@ -48,7 +48,7 @@ order.
 | `linkage` | `shared` or `static` for a library; `null` for an executable |
 | `subsystems` | the link unit's covered subsystems, in execution order |
 
-## link_units[*].subsystems[*]
+## 3. link_units[*].subsystems[*]
 
 Each subsystem's `name` identifies it within its containing link unit. The globally
 addressable identity is therefore `(link_unit.name, subsystem.name)`.
@@ -75,7 +75,7 @@ is owned by exactly one of them: the one scheduled first. The owner counts, home
 translates the entity; the other subsystems reach it through an ordinary `imported_deps`
 record.
 
-## link_units[*].subsystems[*].items
+## 4. link_units[*].subsystems[*].items
 
 A subsystem is file-granular by default: it owns every entity its files define or
 publish. One with `items` is item-granular: it owns only the entities listed, and lists
@@ -92,7 +92,7 @@ rest of them, which does not own the listed entities.
 most one item-granular subsystem. An item-granular subsystem's `counters` count its items
 only, and its `imported_deps` record what those items depend on.
 
-## link_units[*].subsystems[*].objective
+## 5. link_units[*].subsystems[*].objective
 
 | field | meaning |
 |---|---|
@@ -107,7 +107,7 @@ one.
 by itself change the objective. A generic facility with a strong candidate is the usual
 reason to leave a subsystem wrapped during a partial migration rather than port it.
 
-## link_units[*].subsystems[*].counters
+## 6. link_units[*].subsystems[*].counters
 
 Two blocks with the same fields: `implementation` counts what the subsystem's
 `implementation_files` define, and `api` counts what its `api_headers` publish. Only
@@ -141,7 +141,7 @@ the decomposition.
 
 The blocks overlap: a function defined in a translation unit and declared in an API
 header counts in both, once as a definition and once as published. Never add them.
-## link_units[*].subsystems[*].imported_deps
+## 7. link_units[*].subsystems[*].imported_deps
 
 Every record is directed from this subsystem, the consumer, to something it depends on.
 Imported producer subsystems are emitted as subsystems too, so every in-tree destination

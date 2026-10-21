@@ -18,7 +18,7 @@ Test objects are constructed through safe constructors. While a type has none, o
 documented unsafe fixture per type adopts the raw constructor's result, and is replaced
 once the safe constructor exists.
 
-## Builds
+## 1. Builds
 
 Tests run against the target's prebuilt, immutable builds, recorded as the `variants` of
 `crustify/artifacts/build.json`: each an out-of-tree `dir` and the `configure` and `build`
@@ -38,7 +38,7 @@ A Rust- or bindgen-only change reuses a matching variant: same C revision, `buil
 version, compiler and instrumentation. A change to the compiled target needs a private
 build, and the shared variants are rebuilt once that change lands.
 
-## UB tests
+## 2. UB tests
 
 UB tests show that a workset's public API is free of UB.
 
@@ -86,7 +86,7 @@ owner, alias a reborrow, reenter a callback, and drop a parent first.
 When the type system should reject a program, the test is a compile-fail doctest or a
 `trybuild` case.
 
-## Equivalence tests
+## 3. Equivalence tests
 
 Equivalence tests run the raw C implementation and the public Rust API on equivalent,
 independently owned inputs, and compare:
@@ -107,7 +107,7 @@ A confirmed C defect is not copied into Rust. The divergence is documented, equi
 tests are retained for the unaffected behaviour, and the corrected-behaviour regression is
 a unit test.
 
-## Unit tests
+## 4. Unit tests
 
 A unit test is the right kind when Rust assertions supply the verdict or the test exercises
 internal facilities, including:
@@ -119,14 +119,21 @@ internal facilities, including:
 - private or `pub(crate)` constructors and internal destructor/drop plumbing; and
 - resource release exercised through any of those raw, unsafe, or internal paths.
 
-## Coverage
+## 5. Coverage
 
 A worklist's tests run against the campaign's coverage-instrumented build, and coverage is
 inspected for the C and Rust execution paths belonging to the worklist. Focused tests are
 added to cover its reachable uncovered paths. Paths that remain uncovered because they are
 unreachable, environment-dependent, or intentionally nondeterministic are reported as such.
 
-## Regressions
+Coverage counts the code under test, never the tests themselves. Rust coverage counts only
+the authored non-test sources: the test crates are dropped and, inside the library sources,
+every line under a `#[cfg(test)]` item such as an inline `mod unit_tests`. Otherwise a
+workload that cannot run those lines reads low, and the unit tests are credited for
+executing themselves. Each workload runs alone against the coverage-instrumented build, and
+the total is the union of their lines, never the sum of the workloads.
+
+## 6. Regressions
 
 Every batch checks, lints and tests the workspace on the tree it lands:
 

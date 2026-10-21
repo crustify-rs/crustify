@@ -10,10 +10,10 @@ agent's entire worklist and how that agent runs, and each command rejects a task
 objective belongs to another.
 
 A planner plans a binder's or translator's task as one batch entry of
-`docs/artifacts/schedule.md`. The orchestrator writes that entry as `task.json`,
-adding the [run fields](#run-fields) it decides when it launches the batch.
+`docs/artifacts/schedule.md`. That entry is written as `task.json`, with the
+[run fields](#1-run-fields) decided when the batch launches.
 
-`task.json` sits in the batch's own directory, which the orchestrator also passes as
+`task.json` sits in the batch's own directory, which is also passed as
 `--log-dir`. The agent writes its log and usage record there, so the directory holds
 everything about the batch: what it was given, how it ran, and what it produced. The file names no wave, log path or dependency.
 
@@ -39,12 +39,12 @@ everything about the batch: what it was given, how it ran, and what it produced.
 |---|---|
 | `objective` | execution objective for every item: `wrap` or `port` |
 | `items` | non-empty worklist; every item routes to the same agent |
-| `base_branch`, `model`, `billing` | the [run fields](#run-fields) |
-| `instructions` | optional [additional instructions](#additional-instructions) |
+| `base_branch`, `model`, `billing` | the [run fields](#1-run-fields) |
+| `instructions` | optional [additional instructions](#2-additional-instructions) |
 
 All five are required, and `instructions` is the only other root field accepted.
 
-## Run fields
+## 1. Run fields
 
 | field | meaning |
 |---|---|
@@ -53,10 +53,10 @@ All five are required, and `instructions` is the only other root field accepted.
 | `billing` | how the provider CLI authenticates: `subscription`, its own logged-in account, or `api`, an API key from the environment |
 
 A binder, translator or reviewer task carries all three. A planner task carries `model`
-and `billing` only: a planner commits on the planning branch it is spawned on, which the
-orchestrator promotes to the campaign branch.
+and `billing` only: a planner commits on the planning branch it is spawned on, which is
+then promoted to the campaign branch.
 
-## Additional instructions
+## 2. Additional instructions
 
 Every task may carry `instructions`, the path of a Markdown file, relative to the task's
 own directory, that customizes the agent's task on top of its role:
@@ -75,7 +75,7 @@ so git records what the agent was told along with the task.
 The settings a campaign ran under are recorded twice: per batch in its `task.json`, and per
 campaign in the history of `crustify/CRUSTIFY.md`.
 
-## Review batches
+## 3. Review batches
 
 A review batch carries, instead of `objective`, an optional `objectives` array, and a Rust
 worklist instead of `items`: in a translate campaign, the commits its translation batches
@@ -118,7 +118,7 @@ applying to a Crustify-generated batch only. Its skills add their own. A batch n
 an objective the installed skills do not offer is rejected.
 Without `fix`, the reviewer reports and reproduces what it finds but patches nothing.
 
-## Planner tasks
+## 4. Planner tasks
 
 A planner task says only how a planner run runs. What it plans is the branch it is spawned
 on, forked from the campaign branch: every run emits what the committed plan lacks, updates what follows an earlier
@@ -130,13 +130,13 @@ schema, corrects what earlier runs decided, and re-emits the schedules its chang
 
 | root field | meaning |
 |---|---|
-| `model`, `billing` | the [run fields](#run-fields) |
-| `instructions` | optional [additional instructions](#additional-instructions) |
+| `model`, `billing` | the [run fields](#1-run-fields) |
+| `instructions` | optional [additional instructions](#2-additional-instructions) |
 
-Both run fields are required, and `instructions` is the only other root field accepted. The orchestrator writes it as
+Both run fields are required, and `instructions` is the only other root field accepted. It is written as
 `task.json` in the run's artifact dir, `crustify/artifacts/planning/run-<k>/`.
 
-## items[*]
+## 5. items[*]
 
 Every field is required on every item, and no other field is accepted.
 
@@ -155,7 +155,7 @@ Every field is required on every item, and no other field is accepted.
 where an item goes, so the tree the batch names must still exist when its agent starts: do
 not restructure `rust/` during a wave.
 
-## Routes
+## 6. Routes
 
 `kind` selects the agent route, and every item in a batch must select the same one. A
 batch mixing routes is rejected.

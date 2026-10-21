@@ -3,10 +3,10 @@
 Review inspects work that has already landed, for a set of objectives, and files a report
 for every defect it finds. In a translation campaign, reviewers inspect what each
 translation wave landed before the next one starts; in an audit, the modules of a crate
-that Crustify did not generate (see [`audit.md`](audit.md)); and planner runs review the
-plan that earlier runs committed (see [Plan corrections](#plan-corrections)).
+that Crustify did not generate (see [`workflows/audit.md`](workflows/audit.md)); and planner runs review the
+plan that earlier runs committed (see [Plan corrections](#9-plan-corrections)).
 
-## Review waves and batches
+## 1. Review waves and batches
 
 When review is enabled, every translated wave is followed by its review wave, whose
 batches land on the review wave's integration branch, never checked out, as
@@ -32,7 +32,7 @@ Without `objectives`, a batch runs every objective its reviewer offers that appl
 `crustify spawn-reviewer --help` describes them, and a dry run lists those a batch
 resolves to and rejects any the reviewer's prompt and skills do not offer.
 
-## Worklists
+## 2. Worklists
 
 A review batch has one route:
 
@@ -52,16 +52,16 @@ type with its fields and its inherent impls, wherever they are; a trait impl, na
 free function with nothing else. What they call and what implements their traits is read,
 but only the workset is reported on.
 
-## Objectives
+## 3. Objectives
 
 Each objective names a kind of defect. A skill may contribute objectives of its own.
 
-### Unsafety (`unsafety`)
+### 3.1 Unsafety (`unsafety`)
 
 Unsafe annotations and raw pointers on the workset's public API that safe, idiomatic
 variants could replace, so that API consumers write less unsafe code.
 
-### Contracts (`contracts`)
+### 3.2 Contracts (`contracts`)
 
 Safety contracts that are incorrect, incomplete or ambiguous:
 
@@ -75,45 +75,45 @@ A contract is tested by trying to break it: an input, a call sequence or an inte
 that honours the obligation, or reaches the block through safe code, and still violates
 what the `unsafe` relies on.
 
-### UB (`ub`)
+### 3.3 UB (`ub`)
 
 UB in the workset's public API that its UB tests missed. The unsafe surface includes only
 the API the workset adds; a workset that made no API item unsafe has none.
 
-### Equivalence (`equiv`)
+### 3.4 Equivalence (`equiv`)
 
 Functional equivalence defects in the workset's public API that its equivalence tests
 missed. A divergence is a defect only when it is unintended: a doc comment, a `CHANGELOG`
 entry, a named test asserting the new behaviour or a commit message explaining it marks it
 deliberate, and one that corrects a C defect on purpose is no finding.
 
-### Internal (`internal`)
+### 3.5 Internal (`internal`)
 
 Defects in the workset's private implementation that its unit tests missed.
 
-### Conventions (`conventions`)
+### 3.6 Conventions (`conventions`)
 
 Deviations from the [conventions](conventions.md), in a Crustify-generated batch only.
 
-### Misc (`misc`)
+### 3.7 Misc (`misc`)
 
 Any other defect in the workset.
 
-### Coverage (`coverage`)
+### 3.8 Coverage (`coverage`)
 
 Gaps the codebase's existing external and inline test suites leave in the workset's C and
 Rust execution paths, found by reading those suites against the C code and measured as
 [`testing.md`](testing.md) describes. A gap is filled with tests, not filed: the coverage
 measurement shows the delta.
 
-### Revisit (`revisit`)
+### 3.9 Revisit (`revisit`)
 
 The reports an earlier review filed, each rerun through its reproducer on the current
 tree. One that still reproduces stays a finding of its objective; one that no longer does
 has its report updated with the commit that changed the verdict; one that was never a
 defect is removed, with the reason in the commit message.
 
-### Disclosure (`disclose`)
+### 3.10 Disclosure (`disclose`)
 
 A `disclosure.md` beside each report that the user can send to the affected project's
 maintainers unchanged: under 450 words, following the project's conventions for
@@ -124,12 +124,12 @@ with: `Found by [Crustify](https://github.com/crustify-rs/crustify), an experime
 UB/soundness auditing agent developed at UC Berkeley and running on <model name>, then
 manually reviewed and independently reproduced.`
 
-### Fix (`fix`)
+### 3.11 Fix (`fix`)
 
 Whether the reviewer patches what it finds. Without it, a review changes nothing outside
 its reviews dir but the tests that fill coverage gaps.
 
-## Reports
+## 4. Reports
 
 A review batch files its findings under its reviews dir, `crustify/reviews/<batch id>/`,
 each in its own `<slug>` directory, holding its report and, when it has one, its
@@ -156,7 +156,7 @@ the exact command and the sanitizer output or failing assertion it produced. Nei
 report nor a reproducer carries an API key, in a core dump or anywhere else: a reviews dir
 may be published.
 
-## Reproducers
+## 5. Reproducers
 
 A `ub` or `equiv` candidate becomes a finding only once a reproducer proves it, and so
 does a `contracts` candidate that claims a contract can be broken. A contract that merely
@@ -175,7 +175,7 @@ Each reproducer is a standalone Cargo package: its `Cargo.toml` declares an empt
 `[workspace]` table and depends on the affected crate through a relative `path`, and its
 `src/main.rs` runs one scenario, so that `cargo run` exits non-zero on the affected commit.
 
-## Fixes
+## 6. Fixes
 
 Under `fix`, every finding of the batch's objectives is patched:
 
@@ -195,22 +195,22 @@ instructions. Every test a review adds is classified as [`testing.md`](testing.m
 describes and placed where the conventions place tests of its kind, or, outside a
 Crustify-generated batch, in the reviewed crate's own suite for that kind.
 
-## Gates
+## 7. Gates
 
-A review wave follows a translated wave, so its reviewers own the gates
-[`testing.md`](testing.md)'s Regressions section gives the wave: Miri in every wave, and
+A review wave follows a translated wave, so the gates
+[`testing.md`](testing.md)'s Regressions section gives the wave run in its review batches: Miri in every wave, and
 BSan over everything the subsystem landed when the wave is the subsystem's last, the
 highest index in its `schedule.json`. Both run on the wave tip before any change, and again
 on the landed tree under `fix`. Without `fix`, each true positive a gate finds is filed as
 a UB report. A BSan report on an earlier wave's items belongs to the last wave's review.
 
-## Landing
+## 8. Landing
 
 A review batch lands two commits, as [`landing.md`](landing.md) describes: first its
 `crustify/reviews/` changes, so the reproducers run on the affected commit, then its
 changes to the Rust tree, if any.
 
-## Plan corrections
+## 9. Plan corrections
 
 A planner run that corrects what an earlier run decided files each correction as a finding
 under `crustify/reviews/planner/`: `subsystems/` for `subsystems.json` and the
