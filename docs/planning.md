@@ -1,10 +1,10 @@
 # Planning
 
 Planning turns a campaign's settings and the target's build into the plan its agents
-execute: the subsystem decomposition, `crustify/artifacts/subsystems.json`, which also
-orders the campaign's link units and subsystems, one
-`crustify/artifacts/<link-unit>/<subsystem>/schedule.json` per subsystem with its waves
-and batches, and the planning artifacts of the enabled skills.
+execute: the subsystem decomposition, `crustify/artifacts/subsystems.json`, whose
+dependencies order the campaign's link units and subsystems, the campaign's waves and
+batches in `crustify/artifacts/schedule.json`, and the planning artifacts of the enabled
+skills.
 
 A plan is bounded by the campaign's settings in `crustify/CRUSTIFY.md`: its `campaign`
 (port or wrap), `scope`, `target-config` and `workload` answers. A feature the target is
@@ -15,11 +15,18 @@ neither the build nor the Rust tree.
 ## 1. Runs
 
 A campaign is planned by one or more planner runs, one after another, each in one commit
-on its own branch, `crustify/planning/run-<index>`, forked from the campaign branch's tip
-and checked out in the repository's base dir. Once the run has committed, the campaign
-branch is fast-forwarded to it, and the next run forks from there. Each run brings the committed plan up to date, so a later
-run checks what the earlier ones decided, and the branch history records every planning
-decision and its revisions. A run that corrects an earlier decision files a report on it, as
+on its own branch, `crustify/planner/run-<n>`, forked from the working branch's tip and
+checked out in the repository's base dir. Once the run has committed, the working branch
+is fast-forwarded to it, and the next run forks from there. Each run brings the committed
+plan up to date, so a later run checks what the earlier ones decided, and the branch
+history records every planning decision and its revisions.
+
+A campaign may be planned in several sessions, each for part of its scope: a whole
+subsystem, a few of its waves, or a few named items. Each session's runs add what its
+scope adds to the same plan: subsystems and link units with the next free indices, and
+waves after the highest wave index. What is frozen, or has started, is kept as
+[`artifacts/subsystems.md`](artifacts/subsystems.md) and
+[`artifacts/schedule.md`](artifacts/schedule.md) describe. A run that corrects an earlier decision files a report on it, as
 [`reviewing.md`](reviewing.md#9-plan-corrections) describes.
 
 ## 2. Subsystem decomposition
@@ -81,32 +88,43 @@ generic facilities, they are `wrap` in every campaign.
 
 ## 3. Order
 
-`subsystems.json` lists the campaign's link units and subsystems in execution order,
-bottom-up by their dependency relations, each with its `index`. The order is a DAG cut
-from the graph of link units and subsystems, as
-[`artifacts/subsystems.md`](artifacts/subsystems.md) describes: within each strongly
-connected component, the member the most other members depend on comes first, and the
-edges between tied members break ties.
+The campaign's order is computed from the dependencies `subsystems.json` records, as
+[`artifacts/subsystems.md`](artifacts/subsystems.md) describes: each subsystem's in-tree
+dependencies are split into those that run before it, `depends_on.scheduled`, and those
+cut to break a cycle, `depends_on.cut`, so that the scheduled dependencies form a DAG.
+Within each strongly connected component, the member the most other members depend on
+comes first, and the edges between tied members break ties: every dependency on a member
+that comes later is cut. Link units are ordered the same way.
+
+A frozen subsystem keeps its place: a subsystem added after it that it depends on is one of
+its cuts, and the waves that replace the raw seams of each cut are scheduled once the
+dependency it cut is planned, depending on that dependency's last wave.
 
 The plan holds only the link units and subsystems the campaign's scope includes, without
-those that this campaign, before it was resumed, or a previous campaign completed. The
-foundational subsystems are listed first in the first link unit, `void` then `string`,
-and run first.
+those that a previous campaign completed. The foundational subsystems are the first link
+unit's first two, `void` then `string`, and depend on no other, so they run first.
 
 ## 4. Waves and batches
 
-Each subsystem's `schedule.json` follows [`artifacts/schedule.md`](artifacts/schedule.md);
-its layout example is [`templates/schedule.json`](../templates/schedule.json). It holds only
-that subsystem's waves. Waves execute
-sequentially, bottom-up, producers before consumers; the batches of a wave execute in
-parallel, up to the campaign's parallelism, and the `workload` caps bound each batch.
+`schedule.json` follows [`artifacts/schedule.md`](artifacts/schedule.md); its layout
+example is [`templates/schedule.json`](../templates/schedule.json). Each wave belongs to
+one subsystem, or to none when the campaign has no decomposition, and records the waves it
+depends on, split as subsystems' are into `scheduled` and `cut`: within a subsystem, the
+dependency order of its units; across subsystems, the subsystems' order, so that a wave
+depends on the last waves of the subsystems its units depend on. Waves execute one at a
+time, in that order; the batches of a wave execute in parallel, up to the campaign's
+parallelism, and the `workload` caps bound each batch.
 
-A batch entry is a `task.json` without the run fields added when the batch launches (`base_branch`, `model` and `billing`):
-[`artifacts/task.md`](artifacts/task.md) gives its format and routing. Each item's `home`
-follows the [conventions](conventions.md).
+When review is enabled, each translation wave is followed by a review wave, whose batches
+group the reviewed wave's batches as [`reviewing.md`](reviewing.md)'s Review waves and
+batches section describes, within the `review-workload` caps.
+
+A `wrap` or `port` batch entry holds its `kind` and `items`, which its task carries as
+`objective` and `items` ([`artifacts/task.md`](artifacts/task.md) gives their format and
+routing). Each item's `home` follows the [conventions](conventions.md).
 
 Type-erased and string lifecycle primitives are units of the foundational subsystems.
-Typed lifecycle primitives stay in the schedules as free symbols, although the type
+Typed lifecycle primitives stay in the schedule as free symbols, although the type
 batches discover them on the fly; their binders skip them.
 
 In a wrap campaign every batch is `wrap`. In a port campaign:

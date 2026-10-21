@@ -32,8 +32,8 @@ being resumed, and continues from them and from its existing branches.
 A new campaign gets:
 
 - `crustify/.gitignore`, from [`templates/gitignore`](../../templates/gitignore);
-- the campaign branch, `crustify/main`, whose first commit holds `crustify/CRUSTIFY.md`;
-  and
+- the working branch, `crustify/devel`, whose first commit holds `crustify/CRUSTIFY.md`,
+  and the shipping branch, `crustify/main`, at the repository's revision; and
 - its dashboard, from its template, as [`accounting.md`](../accounting.md) describes,
   with the settings it records filled.
 

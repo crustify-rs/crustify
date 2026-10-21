@@ -39,15 +39,15 @@ cells, `Σ` rows included, are measured again when its validation reruns.
 
 The cells known only once an agent has ended, from its usage record: its cost, tokens and
 wall, the per-unit costs derived from them, and their `Σ` cells. A batch's are filled on
-the subsystem branch once its wave's review is promoted, a planner run's on the campaign
-branch once the run is promoted. Each usage record is committed with the dashboard update
-that cites it.
+the working branch once its wave is promoted, a planner run's once the run is promoted.
+A batch run more than once costs the sum of its runs. Each usage record is committed with
+the dashboard update that cites it.
 
 ### 2.3 Campaign cells
 
 The cells that span agents: the `Subsystem stats` table, the Overview's branch line and
 test baseline, and the `Settings` lines. A subsystem's row and the branch line are filled
-when the subsystem is promoted, the baseline once it is recorded, and the `Settings` lines,
+when the subsystem's last wave is promoted, the baseline once it is recorded, and the `Settings` lines,
 with a Notes entry, whenever a settings change is applied.
 
 An audit's dashboard follows the same kinds over its own tables.
@@ -67,7 +67,7 @@ under its `CODEX_HOME`, in a file whose name contains the session id. The usage 
 derived from the copy:
 
 ```bash
-crustify usage ~/.crustify/transcripts/<session id>.jsonl -o <batch dir>/<role>.usage.json
+crustify usage ~/.crustify/transcripts/<session id>.jsonl -o <run dir>/<role>.usage.json
 ```
 
 `crustify usage` prices every request the transcript records and reports the session's

@@ -18,6 +18,9 @@ _FIELD_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 BILLINGS = ("subscription", "api")
 #: The fields every task carries beside its worklist: how its agent runs.
 RUN_FIELDS = frozenset({"model", "billing"})
+#: The fields that place a binder's, translator's or reviewer's task in the
+#: campaign's schedule.json.
+BATCH_FIELDS = frozenset({"wave", "batch", "link_unit", "subsystem"})
 
 #: The role that runs each objective's tasks; its name is also the stem of
 #: the log and usage record a batch writes into its own `--log-dir`, so
@@ -49,6 +52,29 @@ class Instructions:
 
 
 @dataclass(frozen=True)
+class Placement:
+    """Where a task's batch sits in the schedule: its wave and index, which
+    form its batch id, and the link unit and subsystem its wave belongs to."""
+
+    wave: int
+    batch: int
+    link_unit: str | None
+    subsystem: str | None
+
+    @property
+    def batch_id(self) -> str:
+        return f"wave-{self.wave}/batch-{self.batch}"
+
+    @property
+    def subsystem_label(self) -> str:
+        """``<link-unit>/<subsystem>``, or ``none`` for a wave of no
+        subsystem."""
+        if self.subsystem is None:
+            return "none"
+        return f"{self.link_unit}/{self.subsystem}"
+
+
+@dataclass(frozen=True)
 class Batch:
     """Validated binder or translator task."""
 
@@ -57,6 +83,7 @@ class Batch:
     items: list[dict]
     base_branch: str
     run: RunSettings
+    placement: Placement
     instructions: Instructions | None = None
 
 
@@ -116,6 +143,22 @@ def parse_branch(raw: dict, fail: Callable[[str], NoReturn]) -> str:
     if not isinstance(branch, str) or not branch.strip():
         fail("base_branch must name a branch")
     return branch.removeprefix("refs/heads/")
+
+
+def parse_placement(raw: dict, fail: Callable[[str], NoReturn]) -> Placement:
+    """A task's ``wave``, ``batch``, ``link_unit`` and ``subsystem``."""
+    for key in ("wave", "batch"):
+        value = raw[key]
+        if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+            fail(f"{key} must be a non-negative index")
+    for key in ("link_unit", "subsystem"):
+        value = raw[key]
+        if value is not None and (not isinstance(value, str) or not value.strip()):
+            fail(f"{key} must be a name or null")
+    if raw["subsystem"] is not None and raw["link_unit"] is None:
+        fail("a subsystem needs its link_unit")
+    return Placement(wave=raw["wave"], batch=raw["batch"],
+                     link_unit=raw["link_unit"], subsystem=raw["subsystem"])
 
 
 def parse_instructions(raw: dict, task_path: Path,
@@ -230,7 +273,7 @@ def load_batch(path: Path) -> Batch:
     """Load and strictly validate a binder or translator task, ``path``
     resolved."""
     raw = read_object(path, _fail)
-    check_fields(raw, {"objective", "items", "base_branch"} | RUN_FIELDS,
+    check_fields(raw, {"objective", "items", "base_branch"} | RUN_FIELDS | BATCH_FIELDS,
                  {"instructions"}, _fail)
     objective = raw["objective"]
     if not isinstance(objective, str) or objective not in _OBJECTIVES:
@@ -241,6 +284,7 @@ def load_batch(path: Path) -> Batch:
     return Batch(objective=objective, route=route, items=items,
                  base_branch=parse_branch(raw, _fail),
                  run=parse_run(raw, _fail),
+                 placement=parse_placement(raw, _fail),
                  instructions=parse_instructions(raw, path, _fail))
 
 
@@ -268,7 +312,8 @@ def execute(
     workdir = workdir.resolve()
     if dry_run:
         print(
-            f"[{role} dry-run] one {batch.route} agent; "
+            f"[{role} dry-run] one {batch.route} agent for "
+            f"{batch.placement.batch_id} ({batch.placement.subsystem_label}); "
             f"{len(batch.items)} item(s); campaign objective "
             f"{batch.objective}; landing on {base_branch}; "
             f"model {batch.run.model} ({batch.run.billing}); "
@@ -276,8 +321,8 @@ def execute(
         )
         return
 
-    # Fixed names: `output` is this batch's own directory, so there is nothing
-    # to disambiguate. The orchestrator decides what a batch is called by
+    # Fixed names: `output` is this run's own directory, so there is nothing
+    # to disambiguate. The orchestrator decides what a run is called by
     # deciding where its artifacts go.
     print(f"[crustify spawn-{role}] workdir: {workdir}")
     print(f"[crustify spawn-{role}] landing on: {base_branch}")
@@ -302,5 +347,6 @@ def execute(
         log_stem=role,
     )
     agent.instructions = batch.instructions
+    agent.placement = batch.placement
     agent.run()
     print(f"[crustify spawn-{role}] batch completed.")

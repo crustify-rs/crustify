@@ -170,8 +170,8 @@ The full campaign results and code are available at
   artifact directories
 - [`docs/conventions.md`](docs/conventions.md): conventions for the generated Rust,
   including the tree layout
-- [`docs/artifacts/`](docs/artifacts/): the fields of `subsystems.json`,
-  `schedule.json` and `task.json`
+- [`docs/artifacts/`](docs/artifacts/): the fields of `subsystems.json`, the campaign's
+  `schedule.json`, and `task.json`
 - [`docs/prompting.md`](docs/prompting.md): how the agents' prompts, documents and skills
   are composed
 - [`templates/`](templates/README.md): an example of each artifact, the settings and

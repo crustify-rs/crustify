@@ -8,10 +8,10 @@ plan that earlier runs committed (see [Plan corrections](#9-plan-corrections)).
 
 ## 1. Review waves and batches
 
-When review is enabled, every translated wave is followed by its review wave, whose
-batches land on the review wave's integration branch, never checked out, as
-[`layout.md`](layout.md) names it. Once they land, the reviewed tip is promoted to the
-subsystem branch.
+When review is enabled, every translated wave is followed by its review wave, a wave of
+its own in `schedule.json` that `reviews` it, before the next translation wave starts. Its
+batches land on its integration branch, never checked out, as [`layout.md`](layout.md)
+names it, and once they land, its tip is promoted to the working branch.
 
 A review batch takes the commits of one or more of the wave's translation batches, within
 the campaign's review caps (`id: review-workload`), counted over the items those batches
@@ -25,6 +25,7 @@ its objectives, its review wave branch and its model and billing:
 
 ```json
 {"objectives": ["lifecycle", "unsafety", "ub", "equiv", "fix"], "commits": ["3f2a9c1", "8be04d7"],
+ "wave": 8, "batch": 0, "link_unit": "<link unit>", "subsystem": "<subsystem>",
  "base_branch": "<review wave branch>", "model": "<model>", "billing": "<billing>"}
 ```
 
@@ -42,9 +43,9 @@ A review batch has one route:
 | `modules` | source files and directories of a crate, or named types, trait impls and functions in one | everything they define, or the named parts |
 | `reports` | none: the batch only revisits reports | the code the reports name |
 
-Each commit's `Batch:` trailer names its translation batch, whose `task.json`, under
-`crustify/artifacts/<batch id>/`, lists the C items it bound or ported with their routes:
-`type` or `symbol`.
+A review batch's entry in `schedule.json` names the batches of the reviewed wave it
+`reviews`, and each of those lists the `commits` it landed and the `items` it bound or
+ported, whose `kind` gives their routes: `type` or `symbol`.
 
 A module named with `types`, `trait_impls` or `functions` limits the workset to those: a
 type with its fields and its inherent impls, wherever they are; a trait impl, named
@@ -199,8 +200,8 @@ Crustify-generated batch, in the reviewed crate's own suite for that kind.
 
 A review wave follows a translated wave, so the gates
 [`testing.md`](testing.md)'s Regressions section gives the wave run in its review batches: Miri in every wave, and
-BSan over everything the subsystem landed when the wave is the subsystem's last, the
-highest index in its `schedule.json`. Both run on the wave tip before any change, and again
+BSan over everything the subsystem landed when the reviewed wave is the subsystem's last:
+no other translation wave in `schedule.json` belongs to its subsystem and runs after it. Both run on the wave tip before any change, and again
 on the landed tree under `fix`. Without `fix`, each true positive a gate finds is filed as
 a UB report. A BSan report on an earlier wave's items belongs to the last wave's review.
 
@@ -213,10 +214,10 @@ changes to the Rust tree, if any.
 ## 9. Plan corrections
 
 A planner run that corrects what an earlier run decided files each correction as a finding
-under `crustify/reviews/planner/`: `subsystems/` for `subsystems.json` and the
-subsystems' `schedule.json`, and one sub-directory per skill artifact. Adding what the
-plan lacks, updating it to the current schema and re-emitting the schedules a change moves
-are no findings.
+under `crustify/reviews/planner/`: `subsystems/` for `subsystems.json` and
+`schedule.json`, and one sub-directory per skill artifact. Adding what the plan lacks,
+updating it to the current schema and re-planning the waves a change moves are no
+findings.
 
 Each finding is its own `<slug>` directory, named for the finding
 (`split-libavutil-hash`), never for the run, and never reused. Its `report.md` states:
@@ -224,6 +225,6 @@ Each finding is its own `<slug>` directory, named for the finding
 - what the earlier plan decided, quoting the entries changed;
 - the evidence against it: linker outputs, sources and tool queries, with the exact
   commands and paths to rerun them;
-- the edit and what it moves downstream: subsystems, waves or batches, and the schedules
+- the edit and what it moves downstream: subsystems, waves or batches, and the waves
   re-emitted; and
 - any question only the user can answer.

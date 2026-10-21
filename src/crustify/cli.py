@@ -37,7 +37,7 @@ def main() -> None:
         help="Suppress live console output from agents.",
     )
     # Model and billing of the commands that start an orchestrator. A spawned
-    # agent reads both from its task.json instead, so its batch dir records
+    # agent reads both from its task.json instead, so its run dir records
     # everything the run depended on.
     model_opts = argparse.ArgumentParser(add_help=False)
     model_opts.add_argument(
@@ -132,20 +132,20 @@ def main() -> None:
              "the harness contributes nothing -- no conventions, no skill "
              "index, no stage prompt.")
 
-    # -- spawn-planner (one planner run on its planning branch) --------------
+    # -- spawn-planner (one planner run on its planner branch) ---------------
     _spawn_planner_blurb = (
         "Run one planner over the campaign checkout. It emits what the plan "
-        "-- subsystems.json, each subsystem's schedule.json and the skills' "
+        "-- subsystems.json, the waves of schedule.json and the skills' "
         "planning artifacts -- lacks, updates what follows an earlier schema, "
         "corrects what earlier runs decided, filing a report per correction, "
-        "and re-emits the schedules its changes move. Runs are sequential; "
-        "each commits on its own planning branch.")
+        "and re-plans the waves its changes move that have not started. Runs "
+        "are sequential; each commits on its own planner branch.")
     plan_p = sub.add_parser(
         "spawn-planner", parents=[agent_opts],
         help=_spawn_planner_blurb, description=_spawn_planner_blurb,
     )
     plan_p.set_defaults(handler=_handle_spawn_planner)
-    add_workdir(plan_p, "the campaign checkout, on the run's planning branch")
+    add_workdir(plan_p, "the campaign checkout, on the run's planner branch")
     plan_p.add_argument(
         "task", type=Path, metavar="TASK_JSON",
         help="Path to the run's task.json: its model and billing, and "
@@ -177,13 +177,14 @@ def main() -> None:
         add_workdir(p, "the batch's worktree, forked by the orchestrator")
         p.add_argument(
             "task", type=Path, metavar="TASK_JSON",
-            help="Path to the batch's task.json: its objective and items, the "
-                 "wave integration branch it lands on, its model and "
-                 "billing, and optional additional instructions.")
+            help="Path to the batch's task.json: its objective and items, its "
+                 "wave and batch indices, link unit and subsystem, the wave "
+                 "integration branch it lands on, its model and billing, and "
+                 "optional additional instructions.")
         p.add_argument(
             "--log-dir", required=True, type=Path, metavar="DIR",
-            help=f"Existing directory for the batch's {role}.session.json; "
-                 "give each batch its own.")
+            help=f"Existing directory for the run's {role}.session.json, "
+                 f"crustify/artifacts/{role}/run-<n>; give each run its own.")
         p.add_argument(
             "--dry-run", action="store_true",
             help="Validate and summarize the batch without spawning an agent.")
@@ -206,13 +207,13 @@ def main() -> None:
     review_p.add_argument(
         "task", type=Path, metavar="TASK_JSON",
         help="Path to the batch's task.json: commits or modules, reports, "
-             "optional objectives, the review wave integration branch it lands "
-             "on, its model and billing, and optional additional "
-             "instructions.")
+             "optional objectives, its wave and batch indices, link unit and "
+             "subsystem, the review wave integration branch it lands on, its "
+             "model and billing, and optional additional instructions.")
     review_p.add_argument(
         "--log-dir", required=True, type=Path, metavar="DIR",
-        help="Existing directory for the batch's reviewer.session.json; give "
-             "each batch its own.")
+        help="Existing directory for the run's reviewer.session.json, "
+             "crustify/artifacts/reviewer/run-<n>; give each run its own.")
     review_p.add_argument(
         "--dry-run", action="store_true",
         help="Validate and summarize the batch without spawning an agent.")

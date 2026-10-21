@@ -1,5 +1,5 @@
 {
-  "_comment": "Example `<workdir>/crustify/artifacts/subsystems.json` (REPO-ROOT tier), emitted by the planner. `link_units` and each link unit's `subsystems` are ordered lists in execution order, bottom-up, and each entry's `index` is its position: libcrypto runs before libssl, which depends on it, and statem before record. Their `name` fields are identifiers. The first link unit opens with the foundational void and string subsystems, here item-granular: their `items` narrow them to the entities they own in files that other subsystems of a full decomposition also list. Each subsystem's waves are in its own `<link-unit>/<subsystem>/schedule.json`. `objective` records translation intent and any well established Rust replacement. The Rust tree mirrors this decomposition; there is no second placement document. All paths are workdir-relative.",
+  "_comment": "Example `<workdir>/crustify/artifacts/subsystems.json` (REPO-ROOT tier), emitted by the planner. Each link unit's and subsystem's `index` is its permanent id, not its position: the order is computed from `depends_on`, whose `scheduled` dependencies run first and whose `cut` dependencies, cut from a cycle, run after; ties go to the lower index. Here libcrypto runs before libssl, which depends on it, and statem before record. `status` is `todo` while the plan may change and `frozen` once final: void, string and bio have started. Their `name` fields are identifiers. The first link unit opens with the foundational void and string subsystems, here item-granular: their `items` narrow them to the entities they own in files that other subsystems of a full decomposition also list. The waves are in `schedule.json`. `objective` records translation intent and any well established Rust replacement. The Rust tree mirrors this decomposition; there is no second placement document. All paths are workdir-relative.",
   "version": "1f053298e30c0a9b5d0f3c1e7a4b8d2f6c9e0a11",
   "link_units": [
     {
@@ -7,10 +7,19 @@
       "name": "libcrypto",
       "kind": "library",
       "linkage": "shared",
+      "depends_on": {
+        "scheduled": [],
+        "cut": []
+      },
       "subsystems": [
         {
           "index": 0,
           "name": "void",
+          "status": "frozen",
+          "depends_on": {
+            "scheduled": [],
+            "cut": []
+          },
           "objective": {
             "objective": "wrap",
             "rust_native_equivalent": []
@@ -73,6 +82,13 @@
         {
           "index": 1,
           "name": "string",
+          "status": "frozen",
+          "depends_on": {
+            "scheduled": [
+              "libcrypto/void"
+            ],
+            "cut": []
+          },
           "objective": {
             "objective": "wrap",
             "rust_native_equivalent": []
@@ -146,6 +162,11 @@
         {
           "index": 2,
           "name": "bio",
+          "status": "frozen",
+          "depends_on": {
+            "scheduled": [],
+            "cut": []
+          },
           "objective": {
             "objective": "wrap",
             "rust_native_equivalent": []
@@ -193,10 +214,23 @@
       "name": "libssl",
       "kind": "library",
       "linkage": "shared",
+      "depends_on": {
+        "scheduled": [
+          "libcrypto"
+        ],
+        "cut": []
+      },
       "subsystems": [
         {
           "index": 0,
           "name": "statem",
+          "status": "todo",
+          "depends_on": {
+            "scheduled": [
+              "libcrypto/bio"
+            ],
+            "cut": []
+          },
           "objective": {
             "objective": "port",
             "rust_native_equivalent": []
@@ -270,6 +304,14 @@
         {
           "index": 1,
           "name": "record",
+          "status": "todo",
+          "depends_on": {
+            "scheduled": [
+              "libssl/statem",
+              "libcrypto/bio"
+            ],
+            "cut": []
+          },
           "objective": {
             "objective": "port",
             "rust_native_equivalent": []
@@ -360,6 +402,10 @@
       "name": "openssl",
       "kind": "executable",
       "linkage": null,
+      "depends_on": {
+        "scheduled": [],
+        "cut": []
+      },
       "subsystems": []
     }
   ]

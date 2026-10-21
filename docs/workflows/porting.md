@@ -6,7 +6,7 @@ this document gives only where it differs. How each item is ported is
 
 ## 1. Batches
 
-A port campaign's schedules mix both objectives, as [`../planning.md`](../planning.md)'s
+A port campaign's schedule mixes both kinds of batch, as [`../planning.md`](../planning.md)'s
 Waves and batches section describes: a selected symbol is `port` from the start, a
 selected type is `wrap` while C depends on its layout and `port` once nothing in C does,
 and a dependency outside the selected migration set stays `wrap`. Each batch runs the agent

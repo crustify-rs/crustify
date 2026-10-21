@@ -86,11 +86,11 @@ class CommandShapeTests(unittest.TestCase):
 
     def test_spawn_planner_runs_one_planner(self) -> None:
         seen = self._run("spawn-planner", str(self.repo),
-                         "crustify/artifacts/planning/run-2/task.json",
-                         "--log-dir", "crustify/artifacts/planning/run-2", "--dry-run")
+                         "crustify/artifacts/planner/run-2/task.json",
+                         "--log-dir", "crustify/artifacts/planner/run-2", "--dry-run")
         self.assertEqual(seen["handler"], "spawn-planner")
         self.assertEqual(seen["args"].task,
-                         Path("crustify/artifacts/planning/run-2/task.json"))
+                         Path("crustify/artifacts/planner/run-2/task.json"))
         self.assertTrue(seen["args"].dry_run)
 
     def test_a_spawned_agent_takes_its_settings_from_its_task(self) -> None:
@@ -377,7 +377,7 @@ class PlannerPromptTests(unittest.TestCase):
         self.assertIn(f"{self.repo.resolve()}/crustify/CRUSTIFY.md", body)
         self.assertIn("### 1. The committed plan", body)
         self.assertIn("Only a correction is a finding", body)
-        self.assertIn("re-emit that order or that subsystem's `schedule.json`", body)
+        self.assertIn("re-plan only waves that are `todo`", body)
         # The details of how to plan come from the included planning doc.
         self.assertIn("# Planning\n\nPlanning turns a campaign's settings", body)
         self.assertIn("under `crustify/reviews/planner/`", body)

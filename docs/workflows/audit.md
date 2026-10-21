@@ -64,23 +64,27 @@ of an impl are never named as functions.
 For `revisit`, the reports are divided into their own batches, grouped so that reports
 needing the same instrument or the same build share a reviewer.
 
-Each round of reviewers, up to the configured concurrency, is one review wave.
+Each round of reviewers, up to the configured concurrency, is one review wave, recorded in
+`schedule.json` as [`../artifacts/schedule.md`](../artifacts/schedule.md) describes: a
+wave of no link unit or subsystem, each of its batches a `review` batch holding its
+`modules` or `reports`.
 
 ## 5. Review waves
 
-An audit's review waves sit directly under the campaign, as
-[`../layout.md`](../layout.md) describes. Before each, the settings are reread and their
-changes applied, and the agent memory every agent reads at startup is curated. Each review
-batch's `task.json` holds its workset, its objectives, its review wave branch and the
-model and billing, as [`../artifacts/task.md`](../artifacts/task.md) describes:
+An audit's review waves are laid out as [`../layout.md`](../layout.md) describes. Before
+each, the settings are reread and their changes applied, and the agent memory every agent
+reads at startup is curated. Each review batch's `task.json` holds its workset, its
+objectives, its batch fields, its review wave branch and the model and billing, as
+[`../artifacts/task.md`](../artifacts/task.md) describes:
 
 ```json
 {"objectives": ["ub", "equiv", "disclose"], "modules": ["src/frame.rs", "src/codec/"],
+ "wave": 0, "batch": 0, "link_unit": null, "subsystem": null,
  "base_branch": "<review wave branch>", "model": "<model>", "billing": "<billing>"}
 ```
 
 A part of a module names its types, trait impls and functions, and a revisit batch its
-report dirs (the run fields are left out of these two examples):
+report dirs (the batch and run fields are left out of these two examples):
 
 ```json
 {"objectives": ["ub", "contracts", "disclose"], "modules": [{"path": "src/codec.rs", "types": ["Decoder"], "trait_impls": ["Drop for Decoder", "Iterator for Packets<'_>"], "functions": ["open_input"]}]}
@@ -92,14 +96,15 @@ resolves to and rejects any the reviewer's prompt and skills do not offer. The w
 reviewers run concurrently, launched a moment apart so that no two share a timestamp:
 
 ```bash
-crustify spawn-reviewer <batch worktree> <batch dir>/task.json --log-dir <batch dir>
+crustify spawn-reviewer <batch worktree> <run dir>/task.json --log-dir <run dir>
 ```
 
 Each reviewer lands its reports and fixes on the review wave branch as
 [`../landing.md`](../landing.md) describes. A reviewer that fails keeps its branch and
 worktree for inspection; it is respawned, or its failure reported, and its workset is not
 reviewed outside an agent unless the user asks for it. Once the wave has landed, its tip is
-promoted to the campaign branch.
+promoted to the working branch, and the shipping branch follows it with the user's
+approval.
 
 ## 6. Spending
 

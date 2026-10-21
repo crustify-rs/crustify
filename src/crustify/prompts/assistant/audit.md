@@ -7,9 +7,10 @@ You spawn reviewer agents, which own defect hunting, reporting, reproducing and 
 the regression gates of their own work, and their own landing cells of the dashboard. Do
 not hunt defects yourself.
 
-You own everything else of the audit workflow below: planning the worksets, every review
-wave and review batch, from its branch and task to its promotion, the spending limit, the
-disclosure checks and the dashboard.
+You own everything else of the audit workflow below: planning the worksets and recording
+them in `schedule.json`, every review wave and review batch, from its branch and task to
+its promotion, and its progress, the spending limit, the disclosure checks and the
+dashboard.
 
 ### Brief
 

@@ -3,8 +3,9 @@
 Field meaning for `<workdir>/crustify/artifacts/subsystems.json`, the campaign's
 decomposition. Layout example: [`templates/subsystems.json`](../../templates/subsystems.json).
 
-The campaign's planner agents emit this repo-tier artifact: the first run creates it, and
-every run adds what it lacks and corrects what earlier runs decided. It describes the subsystem span
+Planning emits this repo-tier artifact: the first run creates it, and every run adds what
+it lacks and corrects what earlier runs decided, apart from what a frozen subsystem
+records. It describes the subsystem span
 selected by the user and every imported subsystem in that span's producer closure.
 
 It is also the shape the Rust tree mirrors. There is no second placement document: a
@@ -15,48 +16,70 @@ subsystem's headers and translation units share one module.
 | root field | meaning |
 |---|---|
 | `version` | the analyzed tree's revision — a commit, not a counter. What this decomposition describes, pinned |
-| `link_units` | the campaign's link units, in execution order |
+| `link_units` | the campaign's link units, in `index` order |
 
 ## 1. Execution order
 
-`link_units`, and each link unit's `subsystems`, are listed in the order the campaign
-runs them, bottom-up, producers before consumers, and each entry's `index` is its
-position, from zero. Each subsystem's waves are in its own
-`<link-unit>/<subsystem>/schedule.json` (see `docs/artifacts/schedule.md`), so
-the order here with each subsystem's waves in place is the campaign's total order.
+`index` identifies a link unit, and a subsystem within its link unit; it is not a
+position. Each run numbers the link units and subsystems it adds after the highest index
+already used, so an index is never reused or renumbered.
 
-Link units run to completion in turn, so a subsystem's dependencies in another link unit
-must belong to an earlier one. Order link units by their dependency graph and this holds.
+The order is computed from the dependencies. A subsystem's `depends_on` splits its
+in-tree dependencies in two:
 
-A cycle cut is implied by the order: any `imported_deps` record whose destination is
-scheduled after its consumer.
+- `scheduled`, the subsystems that run before it; and
+- `cut`, the subsystems it depends on that run after it, its dependency on them cut to
+  break a cycle.
+
+Their union is every in-tree destination of its `imported_deps`, and `scheduled` alone is
+acyclic across the decomposition. Within a cycle, the dependency kept is the one on the
+member the most other members depend on, and the edges between tied members break ties,
+as `docs/planning.md` describes. Subsystems run in the order of `scheduled`, and among the
+subsystems ready at once, the one whose link unit has the lower index runs first, then the
+one with the lower index. Link units are ordered the same way by their own `depends_on`.
+
+A new subsystem lands wherever its dependencies place it, without renumbering any other.
+When a frozen subsystem depends on it, that dependency is one of the frozen subsystem's
+cuts: it runs already, so the new subsystem can only follow it.
 
 The first link unit opens with the two foundational subsystems `void` and `string`, at
-indices 0 and 1 (see `docs/planning.md`). They are ordinary entries, usually narrowed to
-their `items`.
+indices 0 and 1 (see `docs/planning.md`). They depend on no other subsystem through
+`scheduled`, so they run first. They are ordinary entries, usually narrowed to their
+`items`.
 
-## 2. link_units[*]
+## 2. Status
+
+A subsystem's `status` is `todo` while its plan may still change, and `frozen` once its
+record is final: from the launch of its first wave, or earlier when the user freezes it. A
+frozen subsystem's record, and its place in the order, change only when the user asks: a
+re-plan neither edits it nor splits or renames a subsystem it names. A subsystem's
+progress is not recorded here: it is its waves' `status` in `schedule.json`.
+
+## 3. link_units[*]
 
 Each entry's `name` is its identifier; clients may build a name index without losing the
 order.
 
 | field | meaning |
 |---|---|
-| `index` | position in the campaign, from zero |
+| `index` | the link unit's id in the campaign, from zero |
 | `name` | unique link-unit identifier, normally the linked artifact's filename stem |
 | `kind` | `library` or `executable` |
 | `linkage` | `shared` or `static` for a library; `null` for an executable |
-| `subsystems` | the link unit's covered subsystems, in execution order |
+| `depends_on` | `scheduled` and `cut`: the link units it depends on, by `name`, split as for subsystems |
+| `subsystems` | the link unit's covered subsystems, in `index` order |
 
-## 3. link_units[*].subsystems[*]
+## 4. link_units[*].subsystems[*]
 
 Each subsystem's `name` identifies it within its containing link unit. The globally
 addressable identity is therefore `(link_unit.name, subsystem.name)`.
 
 | field | meaning |
 |---|---|
-| `index` | position within the link unit, from zero |
+| `index` | the subsystem's id within its link unit, from zero |
 | `name` | subsystem identifier, unique within the link unit |
+| `status` | `todo` or `frozen`; see [Status](#2-status) |
+| `depends_on` | `scheduled` and `cut`, each an array of `<link-unit>/<subsystem>` names; see [Execution order](#1-execution-order) |
 | `implementation_files` | repo-relative translation units and private headers homed in the subsystem |
 | `api_headers` | repo-relative public headers the subsystem publishes: those the build installs |
 | `objective` | the translation intent recorded for this subsystem |
@@ -71,11 +94,11 @@ list only: `api_headers` when the build installs it, `implementation_files` othe
 A public header belongs to the subsystem that implements what it declares.
 
 A shared header is listed by every subsystem that shares it, but each entity it defines
-is owned by exactly one of them: the one scheduled first. The owner counts, homes and
+is owned by exactly one of them: the one that runs first. The owner counts, homes and
 translates the entity; the other subsystems reach it through an ordinary `imported_deps`
 record.
 
-## 4. link_units[*].subsystems[*].items
+## 5. link_units[*].subsystems[*].items
 
 A subsystem is file-granular by default: it owns every entity its files define or
 publish. One with `items` is item-granular: it owns only the entities listed, and lists
@@ -92,7 +115,7 @@ rest of them, which does not own the listed entities.
 most one item-granular subsystem. An item-granular subsystem's `counters` count its items
 only, and its `imported_deps` record what those items depend on.
 
-## 5. link_units[*].subsystems[*].objective
+## 6. link_units[*].subsystems[*].objective
 
 | field | meaning |
 |---|---|
@@ -107,7 +130,7 @@ one.
 by itself change the objective. A generic facility with a strong candidate is the usual
 reason to leave a subsystem wrapped during a partial migration rather than port it.
 
-## 6. link_units[*].subsystems[*].counters
+## 7. link_units[*].subsystems[*].counters
 
 Two blocks with the same fields: `implementation` counts what the subsystem's
 `implementation_files` define, and `api` counts what its `api_headers` publish. Only
@@ -141,7 +164,7 @@ the decomposition.
 
 The blocks overlap: a function defined in a translation unit and declared in an API
 header counts in both, once as a definition and once as published. Never add them.
-## 7. link_units[*].subsystems[*].imported_deps
+## 8. link_units[*].subsystems[*].imported_deps
 
 Every record is directed from this subsystem, the consumer, to something it depends on.
 Imported producer subsystems are emitted as subsystems too, so every in-tree destination
@@ -170,4 +193,5 @@ A dependency's `counters` carries the same item kinds a subsystem's own does —
 this subsystem consumes, not what the destination contains. It has no `files` or `loc`:
 those describe a subsystem's own files, and a consumer imports entities, not files.
 
-The in-tree graph may contain cycles, and this artifact records them.
+The in-tree graph may contain cycles, and this artifact records them; `depends_on` records
+how the order cuts them.

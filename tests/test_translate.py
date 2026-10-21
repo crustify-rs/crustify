@@ -11,6 +11,8 @@ from crustify import config, translate
 
 #: The run settings every task carries.
 RUN = {"model": "anthropic/claude-opus-5", "billing": "subscription"}
+#: Where every task's batch sits in the schedule.
+PLACE = {"wave": 0, "batch": 0, "link_unit": "demo", "subsystem": "core"}
 
 
 def _reset_run() -> None:
@@ -29,7 +31,7 @@ class BatchValidationTests(unittest.TestCase):
 
     def load(self, doc: dict, *, complete: bool = True) -> translate.Batch:
         if complete:
-            doc = {**RUN, "base_branch": "wave-0", **doc}
+            doc = {**RUN, **PLACE, "base_branch": "wave-0", **doc}
         self.path.write_text(json.dumps(doc))
         return translate.load_batch(self.path)
 
@@ -51,12 +53,34 @@ class BatchValidationTests(unittest.TestCase):
         self.assertEqual(batch.base_branch, "wave-0")
         self.assertEqual(batch.run, translate.RunSettings(**RUN))
 
+    def test_batch_fields_place_the_task_in_the_schedule(self) -> None:
+        doc = {"objective": "wrap", "items": [self.item()]}
+        placement = self.load({**doc, "wave": 7, "batch": 2}).placement
+        self.assertEqual(placement.batch_id, "wave-7/batch-2")
+        self.assertEqual(placement.subsystem_label, "demo/core")
+        self.assertEqual(
+            self.load({**doc, "subsystem": None}).placement.subsystem_label, "none")
+        for field in ("wave", "batch", "link_unit", "subsystem"):
+            with self.subTest(missing=field), \
+                    self.assertRaisesRegex(SystemExit, f"missing task field.*{field}"):
+                full = {**RUN, **PLACE, "base_branch": "wave-0", **doc}
+                del full[field]
+                self.load(full, complete=False)
+        for bad in ({"wave": -1}, {"batch": "0"}, {"wave": True}):
+            with self.subTest(bad=bad), \
+                    self.assertRaisesRegex(SystemExit, "non-negative index"):
+                self.load({**doc, **bad})
+        with self.assertRaisesRegex(SystemExit, "name or null"):
+            self.load({**doc, "subsystem": ""})
+        with self.assertRaisesRegex(SystemExit, "needs its link_unit"):
+            self.load({**doc, "link_unit": None})
+
     def test_run_settings_and_branch_are_required_and_checked(self) -> None:
         doc = {"objective": "wrap", "items": [self.item()]}
         for field in ("model", "billing", "base_branch"):
             with self.subTest(missing=field), \
                     self.assertRaisesRegex(SystemExit, f"missing task field.*{field}"):
-                full = {**RUN, "base_branch": "wave-0", **doc}
+                full = {**RUN, **PLACE, "base_branch": "wave-0", **doc}
                 del full[field]
                 self.load(full, complete=False)
         with self.assertRaisesRegex(SystemExit, "unknown provider"):
@@ -135,6 +159,7 @@ class GitHarnessTests(unittest.TestCase):
         self.batch = self.output / "task.json"
         self.batch.write_text(json.dumps({
             **RUN,
+            **PLACE,
             "base_branch": "wave-0",
             "objective": "wrap",
             "items": [{

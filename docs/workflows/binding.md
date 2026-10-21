@@ -1,6 +1,6 @@
 # Binding workflow
 
-How a `wrap` campaign proceeds from its setup to its promoted subsystems. A `port` campaign
+How a `wrap` campaign proceeds from its setup to its landed subsystems. A `port` campaign
 follows the same workflow, with the differences [`porting.md`](porting.md) gives. How each
 item is bound is [`../binding.md`](../binding.md); the branches, worktrees and artifact
 dirs named below, and when each is created and purged, are [`../layout.md`](../layout.md).
@@ -16,17 +16,20 @@ The plan is produced by planner runs, one after another, as
 run's `task.json`, `{"model": "<model>", "billing": "<billing>"}`, sits in its artifact dir.
 
 The plan is complete when every run has committed and been promoted, and when the
-subsystems' schedules cover the approved scope: every translation unit the build compiles
-in scope belongs to a subsystem or is listed as configured out, and every subsystem has its
-`schedule.json`.
+schedule covers the approved scope: every translation unit the build compiles in scope
+belongs to a subsystem or is listed as configured out, and every unit of a subsystem in
+scope is scheduled in `schedule.json`. Before a run is promoted, its diff is checked
+against the plan's rules: no frozen subsystem, and no wave that is `wip` or `done`, changed
+but for its progress; no index reused or renumbered; and each `depends_on.scheduled` is
+acyclic, with every dependency in `scheduled` or `cut`.
 
-A changed `scope`, `workload` or `review-workload` answer re-plans the subsystems, waves
-and batches that have not started, through further planner runs under the new answers.
-Landed work is never re-planned.
+A changed `scope`, `workload` or `review-workload` answer re-plans the subsystems that are
+not frozen and the waves that are `todo`, through further planner runs under the new
+answers. Landed work is never re-planned.
 
 ## 2. Rust tree
 
-Once the plan is complete, the Rust tree is scaffolded on the campaign branch, as
+Once the plan is complete, the Rust tree is scaffolded on the working branch, as
 [`../conventions.md`](../conventions.md) lays it out, for the link units in scope only:
 
 - the top-level virtual manifest;
@@ -35,32 +38,35 @@ Once the plan is complete, the Rust tree is scaffolded on the campaign branch, a
 - the safe crate, with a module per link unit; and
 - the integration test suites the conventions' Testing section places.
 
-Everything below a link unit is created lazily: a subsystem's root before its first batch,
+Everything below a link unit is created lazily: a subsystem's root before its first wave,
 a translation unit's or header's module before its first units are scheduled, and each
-item's home, as the planner assigned it in its subsystem's `schedule.json`, before the
-batch holding the item launches.
+item's home, as `schedule.json` assigns it, before the batch holding the item launches.
 
-## 3. Subsystems
+## 3. Order
 
-Subsystems run one at a time, in the order `subsystems.json` lists them. Before a subsystem
-starts, the settings are reread and their changes applied, so that the subsystem's base
-commit records the settings it runs under; then its branch and artifact dir are created,
-and its Rust root is scaffolded and committed as its base.
+The waves that are `todo` run one at a time, in the order of their `depends_on.scheduled`,
+the lowest index first among those ready at once, as
+[`../artifacts/schedule.md`](../artifacts/schedule.md) describes. A session may run every
+wave left, or the waves of the part of the scope it was given.
 
-The subsystem's waves run in its `schedule.json` order. Once the last has been promoted to
-the subsystem branch, the subsystem is promoted to the campaign branch.
+Before a subsystem's first wave starts, the settings are reread and their changes applied,
+the subsystem is frozen in `subsystems.json`, and its Rust root is scaffolded, all
+committed on the working branch: that commit is the subsystem's base, and records the
+settings the subsystem runs under. A wave of no subsystem rereads the settings the same
+way before it starts.
 
 ## 4. Waves and batches
 
-A wave starts once the previous one has been promoted. Its integration branch and artifact
-dir are created first, the wave's base recorded, and the agent memory every agent reads at
+A wave starts once the waves it depends on have been promoted. Its integration branch is
+created first, the wave's base recorded, and the agent memory every agent reads at
 startup is curated: duplicate and overlapping notes merged, and the notes the campaign has
-made stale corrected or removed.
+made stale corrected or removed. The wave's `status` becomes `wip`.
 
 Each batch then gets:
 
-- its artifact dir, holding its `schedule.json` entry as `task.json` with the run fields
-  added: the wave branch as `base_branch`, and the translation model and billing;
+- its run dir, holding its `task.json`: its `schedule.json` entry's `kind` as `objective`
+  and its `items`, the batch fields, and the run fields: the wave branch as `base_branch`,
+  and the translation model and billing;
 - its branch and worktree, forked from the wave branch; and
 - symlinks to the gitignored state its tree needs from the base checkout.
 
@@ -68,43 +74,49 @@ The wave's batches run concurrently, up to the campaign's parallelism. A `wrap` 
 a binder, a `port` batch a translator:
 
 ```bash
-crustify spawn-binder <batch worktree> <batch dir>/task.json --log-dir <batch dir>
-crustify spawn-translator <batch worktree> <batch dir>/task.json --log-dir <batch dir>
+crustify spawn-binder <batch worktree> <run dir>/task.json --log-dir <run dir>
+crustify spawn-translator <batch worktree> <run dir>/task.json --log-dir <run dir>
 ```
 
 The spawn command validates the batch, rejects one whose objective belongs to the other
 command, and writes the agent's session record into the `--log-dir`. Each batch lands on
 the wave branch as [`../landing.md`](../landing.md) describes, after running the gates of
 [`../testing.md`](../testing.md)'s Regressions section on the tree it lands; those gates
-are not run again for the wave.
+are not run again for the wave. Its `status` follows its run, and once it lands, its
+`commits` are taken from its run's `landed.json`.
 
-A batch that fails keeps its branch and worktree for inspection. It is respawned, or its
-failure reported; its worklist is not translated outside an agent unless the user asks for
-it. A competing landing is never discarded.
+A batch that fails keeps its branch and worktree for inspection. It is run again in a new
+run dir, or its failure reported; its worklist is not translated outside an agent unless
+the user asks for it. A competing landing is never discarded.
+
+Once every batch has landed, the working branch is fast-forwarded to the wave's tip, and
+the wave's progress and accounting are committed on it.
 
 ## 5. Review waves
 
-When review is enabled, every translated wave is followed by its review wave before the
-next translation wave starts, as [`../reviewing.md`](../reviewing.md) describes. The
-wave's translation batches are distributed into review batches by the wave's complexity,
-within the review caps, or one review batch per translation batch when the settings ask for
-that.
+When review is enabled, every translated wave is followed by its review wave, as
+[`../reviewing.md`](../reviewing.md) describes. It is prepared and promoted as a wave, and
+each of its batches reviews the batches of the reviewed wave its entry `reviews`, or
+reviews each translation batch alone when the settings ask for that.
 
-Each review batch's `task.json` holds the landed commits of its translation batches, as
-they sit on the wave branch, the approved objectives, its review wave branch, and the
-review model and billing. A dry run checks the objectives it resolves to before it is
-spawned:
+Each review batch's `task.json` holds the `commits` of the batches it reviews, as they sit
+on the working branch, the approved objectives, the batch fields, its review wave branch,
+and the review model and billing. A dry run checks the objectives it resolves to before
+it is spawned:
 
 ```bash
-crustify spawn-reviewer <batch worktree> <batch dir>/task.json --log-dir <batch dir>
+crustify spawn-reviewer <batch worktree> <run dir>/task.json --log-dir <run dir>
 ```
 
-Once the review wave has landed, its tip is promoted to the subsystem branch. Without
-review, the wave's own tip is promoted once its batches have landed.
+## 6. Shipping
 
-## 6. Accounting
+The shipping branch, `crustify/main`, advances only when the user approves it: it is
+fast-forwarded to the working branch's tip, typically once a subsystem has landed and
+passed its gates.
 
-Each batch's records are collected once it lands or fails, and its dashboard cells filled,
-as [`../accounting.md`](../accounting.md) describes: a batch's usage cells on the
-subsystem branch once its wave's review is promoted, a planner run's on the campaign branch
-once the run is promoted, and a subsystem's row when the subsystem is promoted.
+## 7. Accounting
+
+Each run's records are collected once it lands or fails, and its dashboard cells filled,
+as [`../accounting.md`](../accounting.md) describes: a batch's usage cells on the working
+branch once its wave is promoted, a planner run's once the run is promoted, and a
+subsystem's row once its last wave is promoted.

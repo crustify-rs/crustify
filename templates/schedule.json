@@ -1,26 +1,39 @@
 {
   "_comment": [
-    "Example `<workdir>/crustify/artifacts/libwidget/core/schedule.json`: the",
-    "waves of one subsystem, emitted by the planner before the first agent starts.",
-    "The subsystem and its position in the campaign are in subsystems.json, whose",
-    "link units and subsystems are listed in execution order; the path names",
-    "which subsystem this is. Waves run in order; the batches within one wave run",
-    "in parallel. A batch entry is a binder's or translator's task.json less its",
-    "run fields (base_branch, model, billing), which the orchestrator adds when",
-    "it writes the entry to wave-<w>/batch-<b>/task.json. Every",
-    "index also addresses the filesystem, so no path is recorded. Homes follow the",
-    "coding conventions: crustify/rust/<repo>/<link-unit>/, here for a repo named",
-    "widgets. The foundational void and string subsystems are scheduled the",
-    "same way. An independent illustration: it is not a schedule for",
-    "templates/subsystems.json."
+    "Example `<workdir>/crustify/artifacts/schedule.json`: the campaign's waves and",
+    "batches. Planning appends waves after the highest index, and their `index` is",
+    "their permanent id, not their position: `todo` waves run in the order of",
+    "`depends_on.scheduled`, the lowest index first among those ready at once. Each",
+    "batch's id is wave-<index>/batch-<index>, which names its branch and worktree.",
+    "`status` and `commits` record progress as the work launches and lands. A",
+    "`wrap` or `port` batch's task.json carries its kind as `objective`, its",
+    "items, its batch fields and the run fields. Wave 2 reviews wave 1; wave 3 is a",
+    "wave of no subsystem, planned from a few named items. Homes follow the coding",
+    "conventions: crustify/rust/<repo>/<link-unit>/, here for a repo named widgets.",
+    "An independent illustration: it is not a schedule for templates/subsystems.json."
   ],
-  "schema_version": 2,
+  "schema_version": 3,
   "waves": [
     {
       "index": 0,
+      "link_unit": "libwidget",
+      "subsystem": "core",
+      "status": "done",
+      "depends_on": {
+        "scheduled": [],
+        "cut": []
+      },
+      "budgets": {
+        "max-types": 2,
+        "min-fields": 20,
+        "max-syms": 25,
+        "max-loc": 500
+      },
       "batches": [
         {
-          "objective": "wrap",
+          "index": 0,
+          "kind": "wrap",
+          "status": "done",
           "items": [
             {
               "name": "widget_handle",
@@ -32,10 +45,15 @@
               ],
               "home": "crustify/rust/widgets/libwidget/core.rs"
             }
+          ],
+          "commits": [
+            "3f2a9c1"
           ]
         },
         {
-          "objective": "port",
+          "index": 1,
+          "kind": "port",
+          "status": "done",
           "items": [
             {
               "name": "widget_opts",
@@ -44,15 +62,38 @@
               "field_anchors": [],
               "home": "crustify/rust/widgets/libwidget/core.rs"
             }
+          ],
+          "commits": [
+            "8be04d7",
+            "c51e0aa"
           ]
         }
       ]
     },
     {
       "index": 1,
+      "link_unit": "libwidget",
+      "subsystem": "core",
+      "status": "wip",
+      "depends_on": {
+        "scheduled": [
+          0
+        ],
+        "cut": [
+          4
+        ]
+      },
+      "budgets": {
+        "max-types": 2,
+        "min-fields": 20,
+        "max-syms": 25,
+        "max-loc": 500
+      },
       "batches": [
         {
-          "objective": "wrap",
+          "index": 0,
+          "kind": "wrap",
+          "status": "failed",
           "items": [
             {
               "name": "widget_open",
@@ -61,7 +102,110 @@
               "field_anchors": [],
               "home": "crustify/rust/widgets/libwidget/core.rs"
             }
-          ]
+          ],
+          "commits": []
+        }
+      ]
+    },
+    {
+      "index": 2,
+      "link_unit": "libwidget",
+      "subsystem": "core",
+      "reviews": 1,
+      "status": "todo",
+      "depends_on": {
+        "scheduled": [
+          1
+        ],
+        "cut": []
+      },
+      "budgets": {
+        "max-types": 2,
+        "min-fields": 20,
+        "max-syms": 25,
+        "max-loc": 500
+      },
+      "batches": [
+        {
+          "index": 0,
+          "kind": "review",
+          "status": "todo",
+          "reviews": [
+            0
+          ],
+          "commits": []
+        }
+      ]
+    },
+    {
+      "index": 3,
+      "link_unit": "libwidget",
+      "subsystem": null,
+      "status": "todo",
+      "depends_on": {
+        "scheduled": [
+          2
+        ],
+        "cut": []
+      },
+      "budgets": {
+        "max-types": 2,
+        "min-fields": 20,
+        "max-syms": 25,
+        "max-loc": 500
+      },
+      "batches": [
+        {
+          "index": 0,
+          "kind": "port",
+          "status": "todo",
+          "items": [
+            {
+              "name": "widget_version",
+              "defined_in": "src/version.c",
+              "kind": "symbol",
+              "field_anchors": [],
+              "home": "crustify/rust/widgets/libwidget/version.rs"
+            }
+          ],
+          "commits": []
+        }
+      ]
+    },
+    {
+      "index": 4,
+      "link_unit": "libwidget",
+      "subsystem": "io",
+      "status": "todo",
+      "depends_on": {
+        "scheduled": [
+          2
+        ],
+        "cut": []
+      },
+      "budgets": {
+        "max-types": 2,
+        "min-fields": 20,
+        "max-syms": 25,
+        "max-loc": 500
+      },
+      "batches": [
+        {
+          "index": 0,
+          "kind": "wrap",
+          "status": "todo",
+          "items": [
+            {
+              "name": "widget_stream",
+              "defined_in": "include/widget/io.h",
+              "kind": "type",
+              "field_anchors": [
+                "fd"
+              ],
+              "home": "crustify/rust/widgets/libwidget/io.rs"
+            }
+          ],
+          "commits": []
         }
       ]
     }

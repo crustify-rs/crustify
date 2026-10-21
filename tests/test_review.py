@@ -13,7 +13,8 @@ from crustify.agents.review import ReviewAgent
 _COMMIT = "3f2a9c1"
 #: What every review task carries beside its worklist.
 _RUN = {"model": "anthropic/claude-opus-5", "billing": "subscription",
-        "base_branch": "review-wave-0"}
+        "base_branch": "review-wave-0",
+        "wave": 1, "batch": 0, "link_unit": "demo", "subsystem": "core"}
 
 
 def _reset_run() -> None:

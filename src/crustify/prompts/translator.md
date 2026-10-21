@@ -15,7 +15,9 @@ branch.
 
 - repository: `{workdir}`
 - worklist: `{worklist}`
+- batch: `{batch_id}`, of subsystem `{subsystem}`
 - unchecked-out wave integration branch: `{git_base}`
+- artifact dir: `{artifact_dir}`
 
 ## Routes
 
@@ -88,7 +90,8 @@ tests under Miri; the wave's and the subsystem's gates belong to the review that
 ### 6. Landing
 
 Commit one changeset, with your batch's dashboard rows, and land it on `{git_base}` as
-the landing instructions below describe.
+the landing instructions below describe, then record what you landed in your artifact
+dir's `landed.json`.
 
 ---
 

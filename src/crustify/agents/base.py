@@ -195,6 +195,10 @@ class CrustifyAgent:
     #: by the harness that read the task; the stage prompt's
     #: ``<!-- INSTRUCTIONS -->`` marker takes their text.
     instructions = None
+    #: Where a batch's task sits in the schedule (a
+    #: :class:`crustify.translate.Placement`), set per instance by the harness
+    #: that read the task; None for an agent of no batch.
+    placement = None
 
     def __init__(
         self,
@@ -332,7 +336,16 @@ class CrustifyAgent:
         # agent: `str.format` ignores a key the template does not reference, and
         # a template referencing a key nobody supplies dies before the request.
         # Subclasses extend (super()._arguments()).
-        return {"workdir": str(self.workdir), "git_base": self.git_base}
+        # `batch_id`, `subsystem` and `artifact_dir` place a batch's agent in
+        # the schedule and name the run dir it records its landing in.
+        placement = self.placement
+        return {
+            "workdir": str(self.workdir),
+            "git_base": self.git_base,
+            "batch_id": placement.batch_id if placement else "",
+            "subsystem": placement.subsystem_label if placement else "",
+            "artifact_dir": str(self.artifact_dir or ""),
+        }
 
     def skill_specs(self) -> tuple[SkillSpec, ...]:
         """The skills rendered for this agent: every one whose files exist.

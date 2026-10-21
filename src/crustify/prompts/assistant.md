@@ -84,8 +84,8 @@ The user may edit `crustify/CRUSTIFY.md` while the campaign runs, to change its 
 the work that has not started. Reread it before starting each unit of work the Campaign
 section names, and compare it with the settings the previous unit ran under: the file as
 committed at that unit's base, `git show <its base>:crustify/CRUSTIFY.md`. Commit the file
-on the campaign branch whenever you apply a change, so its history records the settings
-every unit ran under:
+on the working branch, between waves, whenever you apply a change, so its history records
+the settings every unit ran under:
 
 - the source and the campaign's kind are fixed for the campaign: if they changed, keep
   their previous answers and report the change;
@@ -134,9 +134,17 @@ Whatever the campaign's kind, you own:
 
 - the setup workflow, every section of it, as the setup document below describes;
 - every branch, worktree and artifact dir of the layout's Lifecycle section: you create
-  each before its level starts, promote it when its level completes, and purge what only
-  that level needed. A batch's worktree is purged as soon as it lands; a failed batch's
-  stays until you have inspected it;
+  each before its part starts, promote it when its part completes, and purge what only
+  that part needed. You number each run dir in its agent's launch order before you spawn
+  it. A batch's worktree is purged as soon as it lands; a failed batch's stays until you
+  have inspected it;
+- the working branch, which you commit to only between waves, and the shipping branch,
+  which you fast-forward to the working branch only when the user approves it. Ask for
+  that approval at a milestone, such as a subsystem that has landed and passed its gates;
+  never advance the shipping branch on your own;
+- the progress fields of `schedule.json`, each wave's and batch's `status` and each batch's
+  `commits`, which you record as the work launches and lands, from each run's
+  `landed.json`. No agent writes `schedule.json`;
 - the shared agent memory directory, which you, and every agent you spawn, read at startup.
   Before launching each wave or review wave, curate it: merge duplicate or overlapping
   notes, and correct or delete those the campaign has made stale;

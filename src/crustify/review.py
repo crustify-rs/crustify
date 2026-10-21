@@ -6,8 +6,9 @@ from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import NoReturn
 
-from crustify.translate import (RUN_FIELDS, Instructions, RunSettings, check_fields,
-                                instructions_note, parse_branch, parse_instructions,
+from crustify.translate import (BATCH_FIELDS, RUN_FIELDS, Instructions, Placement,
+                                RunSettings, check_fields, instructions_note,
+                                parse_branch, parse_instructions, parse_placement,
                                 parse_run, read_object, task_and_log_dir)
 
 _OBJECTIVE = re.compile(r"^[a-z]+$")
@@ -35,6 +36,7 @@ class ReviewBatch:
     objectives: list[str] | None
     base_branch: str
     run: RunSettings
+    placement: Placement
     instructions: Instructions | None = None
 
 
@@ -123,7 +125,7 @@ def load_batch(path: Path) -> ReviewBatch:
     the skills the reviewer carries, so they are checked against the agent,
     not here."""
     raw = read_object(path, _fail)
-    check_fields(raw, {"base_branch"} | RUN_FIELDS,
+    check_fields(raw, {"base_branch"} | RUN_FIELDS | BATCH_FIELDS,
                  {"commits", "modules", "reports", "objectives", "instructions"},
                  _fail)
     if "commits" in raw and "modules" in raw:
@@ -156,6 +158,7 @@ def load_batch(path: Path) -> ReviewBatch:
                        reports=reports, objectives=objectives,
                        base_branch=parse_branch(raw, _fail),
                        run=parse_run(raw, _fail),
+                       placement=parse_placement(raw, _fail),
                        instructions=parse_instructions(raw, path, _fail))
 
 
@@ -192,9 +195,11 @@ def execute(
         log_stem=_LOG_STEM,
     )
     agent.instructions = batch.instructions
+    agent.placement = batch.placement
     if dry_run:
         print(
-            f"[review dry-run] one {batch.route} agent; "
+            f"[review dry-run] one {batch.route} agent for "
+            f"{batch.placement.batch_id} ({batch.placement.subsystem_label}); "
             f"{len(batch.commits)} commit(s), {len(batch.modules)} module(s), "
             f"{len(batch.reports)} report(s); objectives "
             f"{', '.join(agent.objectives)}; landing on {base_branch}; "

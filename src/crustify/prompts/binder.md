@@ -15,7 +15,9 @@ wave integration branch.
 
 - repository: `{workdir}`
 - worklist: `{worklist}`
+- batch: `{batch_id}`, of subsystem `{subsystem}`
 - unchecked-out wave integration branch: `{git_base}`
+- artifact dir: `{artifact_dir}`
 
 ## Routes
 
@@ -69,7 +71,7 @@ library.
 
 Emit your worklist's Rust for your route using the binding how-to below.
 
-When your batch id names the foundational `void` or `string` subsystem, bind its items
+When your batch's subsystem is the foundational `void` or `string` subsystem, bind its items
 with a lifecycle role as its Lifecycle strategies section describes.
 
 ### 5. Testing
@@ -87,7 +89,8 @@ tests under Miri; the wave's and the subsystem's gates belong to the review that
 ### 6. Landing
 
 Commit one changeset, with your batch's dashboard rows, and land it on `{git_base}` as
-the landing instructions below describe.
+the landing instructions below describe, then record what you landed in your artifact
+dir's `landed.json`.
 
 ---
 

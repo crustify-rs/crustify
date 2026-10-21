@@ -16,9 +16,9 @@ the T3 tables under `crustify/wavefront/t3/`. Bring them up to date as you do th
 emit what is missing, update what follows an earlier wavefront schema, add what the scope
 adds, and correct what is wrong.
 
-A changed configuration or T3 row changes the DAGs wavefront builds: re-emit the
-`schedule.json` of every subsystem whose waves or batches it moves, and the order in
-`subsystems.json` when the campaign-wide configuration moves it.
+A changed configuration or T3 row changes the DAGs wavefront builds: re-plan the `todo`
+waves whose batches it moves, and the `depends_on` in `subsystems.json` when the
+campaign-wide configuration moves them.
 
 File each correction in the reviews sub-directory of what it amends:
 
@@ -94,6 +94,11 @@ wavefront warns is stale.
   dependencies it leaves out are already satisfied or intentionally excluded.
 - A wrap campaign schedules with `--api-headers-only`.
 - Pass the campaign's `workload` caps as the batch limits.
+- `wavefront schedule` numbers its waves from 0 in every run: append them to
+  `schedule.json` after its highest index, in wavefront's order, each depending on the
+  wave before it and on the last waves of the subsystems its units depend on, and record
+  the run's `budgets` on each. Write each output to `crustify/tmp/`, never over
+  `schedule.json`.
 - For a port campaign's types, `query types --name <T> --field-touchers` lists the
   functions that touch each field, and `--users` every function that mentions the type;
   the users that touch no field are the layout users to check in the source. Find the

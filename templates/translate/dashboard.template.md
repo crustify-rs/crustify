@@ -49,7 +49,7 @@ in Notes.
 
 ## Overview
 
-- **branch** — `crustify/main`, tip `<sha>`; crustify `<sha>`, ffibox `<sha>`, wavefront `<sha>`
+- **branch** — `crustify/devel`, tip `<sha>`; `crustify/main` shipped at `<sha>`; crustify `<sha>`, ffibox `<sha>`, wavefront `<sha>`
 - **C test baseline** — `<passed>/<total>`, `<n>` skipped; disabled: `<tests>`
 - **Rust LoC** — `<n>` non-test, `<n>` tests; **C LoC** — `<n>`
 

@@ -9,7 +9,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
 
-from crustify import deps
+from crustify import deps, translate
 from crustify.agents.base import _PKG_ROOT
 from crustify.agents.assist import (
     AUDIT_SKILLS, CAMPAIGN_MARKER, AssistAgent, campaign_prompt,
@@ -307,7 +307,7 @@ class PromptArgumentTests(unittest.TestCase):
     #: Supplied to every agent by `CrustifyAgent._arguments`; a role that does
     #: not name one is not carrying a dead key, it is just not using shared
     #: infrastructure.
-    _BASE = {"workdir", "git_base"}
+    _BASE = {"workdir", "git_base", "batch_id", "subsystem", "artifact_dir"}
 
     def _declared(self, body: str) -> set[str]:
         return set(re.findall(r"(?<!\{)\{([a-z_]+)\}(?!\})", body))
@@ -341,6 +341,19 @@ class PromptArgumentTests(unittest.TestCase):
             objectives=None, git_base="review-wave-0",
             artifact_dir=self.repo, log_stem="x")
         self._check(agent)
+
+    def test_a_batch_agent_names_its_batch_and_run_dir(self) -> None:
+        agent = BindAgent(
+            self.repo, route="type",
+            items=[{"name": "T", "defined_in": "a.h", "kind": "type",
+                    "field_anchors": [], "home": "crustify/rust/x/src/a.rs"}],
+            git_base="crustify/waves/wave-3", artifact_dir=self.repo / "run-1",
+            log_stem="x")
+        agent.placement = translate.Placement(3, 1, "lib", "core")
+        arguments = agent._arguments()
+        self.assertEqual(arguments["batch_id"], "wave-3/batch-1")
+        self.assertEqual(arguments["subsystem"], "lib/core")
+        self.assertEqual(arguments["artifact_dir"], str(self.repo / "run-1"))
 
     def test_planner_arguments_match_its_placeholders(self) -> None:
         self._check(PlanAgent(self.repo,
