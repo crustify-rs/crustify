@@ -143,8 +143,9 @@ Whatever the campaign's kind, you own:
   that approval at a milestone, such as a subsystem that has landed and passed its gates;
   never advance the shipping branch on your own;
 - the progress fields of `schedule.json`, each wave's and batch's `status` and each batch's
-  `commits`, which you record as the work launches and lands, from each run's
-  `landed.json`. No agent writes `schedule.json`;
+  `commits`, which you record as the work launches and lands, deriving each batch's
+  commits from its branch as the landing document describes. No agent writes
+  `schedule.json`;
 - the shared agent memory directory, which you, and every agent you spawn, read at startup.
   Before launching each wave or review wave, curate it: merge duplicate or overlapping
   notes, and correct or delete those the campaign has made stale;

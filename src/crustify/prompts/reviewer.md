@@ -19,7 +19,6 @@ supplied review integration branch.
 - reports to revisit: `{reports}`
 - batch: `{batch_id}`, of subsystem `{subsystem}`
 - unchecked-out review integration branch: `{git_base}`
-- artifact dir: `{artifact_dir}`
 
 ## Worklists and objectives
 
@@ -105,8 +104,7 @@ If `fix` is not enabled, file each true positive a gate finds as a UB report.
 
 Make two commits, first the `crustify/reviews/` changes, then the Rust tree changes, if you
 made any, with your batch's dashboard rows in the last, and land them on `{git_base}` as the
-landing instructions below describe, then record what you landed in your artifact dir's
-`landed.json`.
+landing instructions below describe.
 
 ---
 

@@ -61,7 +61,6 @@ crustify/artifacts/                             the campaign
 │   ├── task.json                               its input, with the batch and run fields
 │   ├── <role>.session.json                     written by the spawn command
 │   ├── <role>.usage.json                       derived by `crustify usage`
-│   ├── landed.json                             the commits it landed, once it lands
 │   └── ffimap.json                             its ffimap scan, once recorded
 └── waves/wave-<index>/                         a wave's own records, such as its ffimap scan
 ```
@@ -122,8 +121,10 @@ are on the working branch, and their batches' `commits` in `schedule.json`.
 A batch's run dir, with its `task.json`, and its branch and worktree, forked from its wave
 branch's tip, are created before it launches. The gitignored state its tree needs and does
 not build itself, such as shared analysis databases, is symlinked from the base checkout.
-Once the batch has landed, its worktree is purged. A batch that fails keeps its branch and
-worktree for inspection; they are removed before it is run again, which forks them anew.
+Once the batch has landed, its worktree is purged; its branch stays until its commits are
+recorded in `schedule.json`, since they are derived from it, as
+[`landing.md`](landing.md) describes. A batch that fails keeps its branch and worktree for
+inspection; they are removed before it is run again, which forks them anew.
 
 ## 6. Crustify's home
 

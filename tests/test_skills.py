@@ -307,7 +307,7 @@ class PromptArgumentTests(unittest.TestCase):
     #: Supplied to every agent by `CrustifyAgent._arguments`; a role that does
     #: not name one is not carrying a dead key, it is just not using shared
     #: infrastructure.
-    _BASE = {"workdir", "git_base", "batch_id", "subsystem", "artifact_dir"}
+    _BASE = {"workdir", "git_base", "batch_id", "subsystem"}
 
     def _declared(self, body: str) -> set[str]:
         return set(re.findall(r"(?<!\{)\{([a-z_]+)\}(?!\})", body))
@@ -342,7 +342,7 @@ class PromptArgumentTests(unittest.TestCase):
             artifact_dir=self.repo, log_stem="x")
         self._check(agent)
 
-    def test_a_batch_agent_names_its_batch_and_run_dir(self) -> None:
+    def test_a_batch_agent_names_its_batch(self) -> None:
         agent = BindAgent(
             self.repo, route="type",
             items=[{"name": "T", "defined_in": "a.h", "kind": "type",
@@ -353,7 +353,6 @@ class PromptArgumentTests(unittest.TestCase):
         arguments = agent._arguments()
         self.assertEqual(arguments["batch_id"], "wave-3/batch-1")
         self.assertEqual(arguments["subsystem"], "lib/core")
-        self.assertEqual(arguments["artifact_dir"], str(self.repo / "run-1"))
 
     def test_planner_arguments_match_its_placeholders(self) -> None:
         self._check(PlanAgent(self.repo,

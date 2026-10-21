@@ -83,7 +83,7 @@ command, and writes the agent's session record into the `--log-dir`. Each batch 
 the wave branch as [`../landing.md`](../landing.md) describes, after running the gates of
 [`../testing.md`](../testing.md)'s Regressions section on the tree it lands; those gates
 are not run again for the wave. Its `status` follows its run, and once it lands, its
-`commits` are taken from its run's `landed.json`.
+`commits` are derived from its branch, as [`../landing.md`](../landing.md) describes.
 
 A batch that fails keeps its branch and worktree for inspection. It is run again in a new
 run dir, or its failure reported; its worklist is not translated outside an agent unless
