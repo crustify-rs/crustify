@@ -105,10 +105,11 @@ describes: each wave with its `depends_on`, and, when review is enabled, the rev
 that follows it. For each cut whose dependency is planned, schedule the waves that
 replace its raw seams, depending on that dependency's last wave. Schedule the wrap
 batches lazily, each in the wave right before its first consumer, as the scheduling
-spec's Wrap waves section describes. Before you plan an out-of-tree library's wrap
-batches, check `github.com/crustify-rs` for its wrapper, `crustify-<library>`, and plan
-only what it lacks, as the dependencies spec's Reuse section describes; name what you
-found in your commit message.
+spec's Wrap waves section describes. For each out-of-tree library your waves need,
+check `github.com/crustify-rs` for its wrapper, `<library>-bindings`, and record in your
+commit message what it already wraps and what the parent's waves need from it, as the
+dependencies spec's Reuse and Side campaigns sections describe: the side campaign plans
+its own waves in its repository.
 
 In a port campaign, list each selected type's C users as the Porting types section
 describes, reading the source for those no tool lists, and name each type that stays

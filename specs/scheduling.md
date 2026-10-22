@@ -67,11 +67,13 @@ A binding serves the code that consumes it, so wrap batches are scheduled lazily
 before their first consumer, and only for what consumers use.
 
 - In a port campaign, each `port` wave is preceded by a `wrap` wave holding the wrap
-  batches it needs: of in-tree `wrap` modules, the foundational ones included, and of the
-  out-of-tree libraries its items use, as [`dependencies.md`](dependencies.md) describes.
+  batches it needs, of in-tree `wrap` modules, the foundational ones included; the
+  out-of-tree libraries its items use are wrapped first in their side campaigns, as
+  [`dependencies.md`](dependencies.md) describes.
   An in-tree `wrap` module has no waves of its own.
 - In a wrap campaign, the in-tree modules are the deliverable and run in their order;
-  each of their waves is preceded by a wave holding the out-of-tree wrap batches it needs.
+  each of their waves is preceded by the side-campaign waves that wrap the out-of-tree
+  entities it needs.
 
 A preceding wrap wave holds only what the wave after it needs and no earlier wave
 wrapped, so that no item is wrapped twice and an item no consumer needs is never wrapped.

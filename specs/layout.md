@@ -21,10 +21,13 @@ section names it, is laid out as:
 ├── src/                the safe crate's modules, as the conventions lay them out
 ├── tests/              the safe crate's integration test suites
 ├── <link-unit>-sys/    one raw bindings crate per link unit
-├── wrappers/           one wrapper crate per out-of-tree library, as dependencies.md describes
 ├── c/                  the C codebase, the C root
 └── crustify/           the campaign: its settings, artifacts and analysis state
 ```
+
+The wrappers of the libraries it uses from outside its tree are repositories of their
+own, cloned beside it as `../<library>-bindings`, as [`dependencies.md`](dependencies.md)
+describes.
 
 Every path into the C that the plan records, in `modules.json`, `schedule.json`, the
 wavefront configurations and tables and a batch item's `defined_in`, is relative to the C

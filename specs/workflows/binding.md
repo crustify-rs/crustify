@@ -37,10 +37,11 @@ Once the plan is complete, the Rust tree is scaffolded on the working branch, as
   its `src/lib.rs` with a module per link unit;
 - one `-sys` crate per link unit, with its `Cargo.toml`, `src/lib.rs`, `build.rs` and
   bindgen input over the C under `c/`, the allowlists of which the batches fill as they
-  bind items;
-- the integration test suites the conventions' Testing section places; and
-- `wrappers/`, which holds a crate per out-of-tree library once its first wrap batch is
-  scheduled, as [`../dependencies.md`](../dependencies.md) describes.
+  bind items; and
+- the integration test suites the conventions' Testing section places.
+
+The wrappers of out-of-tree libraries are repositories of their own, cloned beside the
+campaign's, as [`../dependencies.md`](../dependencies.md) describes.
 
 Everything below a link unit is created lazily: a module's `.rs` file, and the modules
 of the directories on its path, before its first wave, and each item's home, as

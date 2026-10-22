@@ -21,6 +21,9 @@ submodule and an upstream release taken in by rebasing the fork's `main` onto it
 mirrors the source's own `main` as `upstream/main`. The repositories are created under the
 `crustify-rs` organization; the campaign's tree is [`layout.md`](layout.md)'s.
 
+A library the target uses from outside its tree is wrapped in a wrap campaign of its own,
+in `<library>-bindings`, as [`dependencies.md`](dependencies.md) describes.
+
 An audit reviews an existing Rust crate in its own repository, and creates none.
 
 ## 2. Branches
