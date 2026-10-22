@@ -14,11 +14,13 @@ inside it.
 
 | campaign | repository | the C, under `c/` |
 |---|---|---|
-| wrap | `<repo>-bindings` | a Git submodule of the source, pinned at the campaign's revision, which the campaign never changes |
-| port | `<repo>-rs` | a subtree of the source, squashed at the campaign's revision, which integrations change as their modules leave C |
+| wrap | `<repo>-bindings` | a submodule of the source, pinned at the campaign's revision, which the campaign never changes |
+| port | `<repo>-rs` | a submodule of the campaign's fork of the source, `<repo>-fork`, on its `crustify/devel` branch, which integrations change as their modules leave C |
 
-`<repo>` is the source repository's name: a port of libgit2 is `libgit2-rs`. The
-repository is created under the `crustify-rs` organization, and its tree is:
+`<repo>` is the source repository's name: a port of libgit2 is `libgit2-rs`, with its fork
+`libgit2-fork`. Both keep the C's history where it belongs, so that it can be read in the
+submodule and an upstream release taken in by rebasing the fork's branch onto it. The
+repositories are created under the `crustify-rs` organization, and the campaign's tree is:
 
 ```text
 <repository>/
@@ -152,7 +154,9 @@ are on the working branch, and their batches' `commits` in `schedule.json`.
 
 A batch's run dir, with its `task.json`, and its branch and worktree, forked from its wave
 branch's tip, are created before it launches. The gitignored state its tree needs and does
-not build itself, such as shared analysis databases, is symlinked from the base checkout.
+not build itself, such as shared analysis databases, is symlinked from the base checkout,
+and its `c/` is a worktree of the base checkout's submodule at the commit the superproject
+records, since no batch changes the C.
 Once the batch has landed, its worktree is purged; its branch stays until its commits are
 recorded in `schedule.json`, since they are derived from it, as
 [`landing.md`](landing.md) describes. A batch that fails keeps its branch and worktree for

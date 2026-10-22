@@ -28,9 +28,11 @@ builds.
 A translation campaign works in a repository of its own, laid out as
 [`layout.md`](../layout.md)'s Repository section describes: `<repo>-bindings` for a wrap
 campaign, `<repo>-rs` for a port campaign. It is initialized with the source added under
-`c/` at the revision the settings' `source` answer names: as a submodule for a wrap
-campaign, which never changes it, and as a squashed subtree for a port campaign, whose
-integrations do. The safe crate's name is chosen with it, and its Rust tree is scaffolded
+`c/` as a submodule, at the revision the settings' `source` answer names: of the source
+itself for a wrap campaign, which never changes it, and of the campaign's fork of it,
+`<repo>-fork`, for a port campaign, whose integrations change it. The fork is the source's
+history with a `crustify/devel` branch at that revision; until the first integration, the
+submodule may point at the source itself. The safe crate's name is chosen with it, and its Rust tree is scaffolded
 once the plan is complete. The repository is created under the `crustify-rs`
 organization, which publishes it, once the user approves.
 
