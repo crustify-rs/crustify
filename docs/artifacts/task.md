@@ -25,7 +25,7 @@ produced. A batch that is run again gets a new run dir, so every attempt keeps i
   "wave": 0,
   "batch": 0,
   "link_unit": "libavutil",
-  "module": "libavutil/frame.c",
+  "module": 4,
   "base_branch": "crustify/waves/wave-0",
   "model": "anthropic/claude-opus-5-5",
   "billing": "subscription",
@@ -109,7 +109,7 @@ landed; in an audit, modules of the crate.
   "wave": 1,
   "batch": 0,
   "link_unit": "libavutil",
-  "module": "libavutil/frame.c",
+  "module": 4,
   "base_branch": "crustify/waves/wave-1",
   "model": "anthropic/claude-opus-5-5",
   "billing": "subscription"
@@ -191,7 +191,7 @@ batch mixing routes is rejected.
 | `type` | `type` |
 | `symbol`, `callback` | `symbol` |
 
-A batch of a foundational module routes like any other. Its `module` names the module,
+A batch of a foundational module routes like any other. Its `module` is the module's index,
 which `modules.json` marks `foundational`, and its binder binds the items with a
 lifecycle role as
 strategies (`docs/binding.md`, Lifecycle strategies).

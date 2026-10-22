@@ -67,12 +67,13 @@ that needs one reaches it as [`binding.md`](binding.md)'s Macros section describ
 ### 2.2 Dependencies
 
 Each module's dependency edges are found with a wavefront configuration of its own, which
-names its files and the items it owns. The edges between two modules are one
-`imported_deps` record, with its `outgoing_edges`, its `incoming_edges` and the item kinds
-consumed across them, in-tree destinations apart from out-of-tree libraries. An
+names its files and the items it owns. The edges from a module to another are one record
+of its `depends_on`, with its `outgoing_edges`, its `incoming_edges` and the item kinds
+consumed across them, and each out-of-tree library it uses is one record of its own. An
 out-of-tree library's record also names the crates that port it to Rust and the crates that
-bind it safely, so that a port reaches it through one of them rather than through raw
-bindings when they exist. The record keeps the graph as it is, cycles included.
+bind it safely, with their feature parity, so that a port reaches it through one of them
+rather than through raw bindings when they exist. The records keep the graph as it is,
+cycles included, split as [Order](#3-order) describes.
 
 ### 2.3 Objectives
 
@@ -85,10 +86,10 @@ In a wrap campaign every module is `wrap`. In a port campaign the project-specif
 are `port`, and those with Rust-native alternatives stay `wrap`, so that their Rust
 consumers stay interoperable with the remaining C during an incremental translation, until
 they can be nativized. A TU is not split for its objective: one that mixes both takes the
-objective of most of what it owns. A module's `rust_equivalent` records which of its items
-the Rust standard library already provides, item by item, and the established crates that
-could replace it outright, in descending order of fit, each checked for its semantics,
-platform support, performance and licensing.
+objective of most of what it owns. A module's `rust_equivalent` records what the Rust standard
+library provides in place of the module as a whole, and the established crates that could
+replace it outright, each with its feature parity, in descending order of it, and each
+checked for its semantics, platform support, performance and licensing.
 
 ### 2.4 Foundational modules
 
@@ -108,8 +109,9 @@ string ones that call them.
 
 A TU whose items all meet that test is foundational whole. One that also holds items that
 depend on other modules is split in two: its foundational module lists the TU with the
-lifecycle routines and what they need within it as `included`, and the module that keeps
-its name lists the same items as `excluded`. Both home in the TU's Rust file.
+lifecycle routines and what they need within it as `included`, and the other module
+lists the same items as `excluded`. The two share the TU's path as their name, and are
+told apart by their `index` and `foundational`. Both home in the TU's Rust file.
 
 Each member's lifecycle role (allocator or constructor, releaser, disposer, cloner) is
 established while planning, so that the foundational modules' members are bound as

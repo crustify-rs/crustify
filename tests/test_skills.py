@@ -349,10 +349,10 @@ class PromptArgumentTests(unittest.TestCase):
                     "field_anchors": [], "home": "crustify/rust/x/src/a.rs"}],
             git_base="crustify/waves/wave-3", artifact_dir=self.repo / "run-1",
             log_stem="x")
-        agent.placement = translate.Placement(3, 1, "lib", "core")
+        agent.placement = translate.Placement(3, 1, "lib", 0)
         arguments = agent._arguments()
         self.assertEqual(arguments["batch_id"], "wave-3/batch-1")
-        self.assertEqual(arguments["module"], "lib/core")
+        self.assertEqual(arguments["module"], "lib/0")
 
     def test_planner_arguments_match_its_placeholders(self) -> None:
         self._check(PlanAgent(self.repo,

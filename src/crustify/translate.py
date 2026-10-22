@@ -59,7 +59,7 @@ class Placement:
     wave: int
     batch: int
     link_unit: str | None
-    module: str | None
+    module: int | None
 
     @property
     def batch_id(self) -> str:
@@ -67,7 +67,7 @@ class Placement:
 
     @property
     def module_label(self) -> str:
-        """``<link-unit>/<module>``, or ``none`` for a wave of no
+        """``<link-unit>/<module index>``, or ``none`` for a wave of no
         module."""
         if self.module is None:
             return "none"
@@ -151,10 +151,13 @@ def parse_placement(raw: dict, fail: Callable[[str], NoReturn]) -> Placement:
         value = raw[key]
         if not isinstance(value, int) or isinstance(value, bool) or value < 0:
             fail(f"{key} must be a non-negative index")
-    for key in ("link_unit", "module"):
-        value = raw[key]
-        if value is not None and (not isinstance(value, str) or not value.strip()):
-            fail(f"{key} must be a name or null")
+    link_unit, module = raw["link_unit"], raw["module"]
+    if link_unit is not None and (not isinstance(link_unit, str)
+                                  or not link_unit.strip()):
+        fail("link_unit must be a name or null")
+    if module is not None and (not isinstance(module, int)
+                               or isinstance(module, bool) or module < 0):
+        fail("module must be a non-negative index or null")
     if raw["module"] is not None and raw["link_unit"] is None:
         fail("a module needs its link_unit")
     return Placement(wave=raw["wave"], batch=raw["batch"],

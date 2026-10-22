@@ -15,7 +15,7 @@ branch.
 
 - repository: `{workdir}`
 - worklist: `{worklist}`
-- batch: `{batch_id}`, of module `{module}`
+- batch: `{batch_id}`, of module `{module}`, its link unit and index in `modules.json`
 - unchecked-out wave integration branch: `{git_base}`
 
 ## Routes

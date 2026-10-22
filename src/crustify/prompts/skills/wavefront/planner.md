@@ -42,7 +42,7 @@ The campaign has two kinds of `wavefront-config.json`:
   and only its graph shows the relations between two modules; and
 - one `crustify/wavefront/configs/<link-unit>/<module>/wavefront-config.json` per
   module, which finds the module's dependency edges. Use them for the exact counts and
-  the `imported_deps` in `modules.json`, and for the module's schedule.
+  the dependency records of `depends_on` in `modules.json`, and for the module's schedule.
 
 Every configuration shares `crustify/wavefront/` as its `state_dir` and sets
 `"t3_dir": "t3"`, so one campaign-wide pair of T3 tables serves them all. Verify each

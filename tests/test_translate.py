@@ -12,7 +12,7 @@ from crustify import config, translate
 #: The run settings every task carries.
 RUN = {"model": "anthropic/claude-opus-5", "billing": "subscription"}
 #: Where every task's batch sits in the schedule.
-PLACE = {"wave": 0, "batch": 0, "link_unit": "demo", "module": "core"}
+PLACE = {"wave": 0, "batch": 0, "link_unit": "demo", "module": 3}
 
 
 def _reset_run() -> None:
@@ -57,7 +57,7 @@ class BatchValidationTests(unittest.TestCase):
         doc = {"objective": "wrap", "items": [self.item()]}
         placement = self.load({**doc, "wave": 7, "batch": 2}).placement
         self.assertEqual(placement.batch_id, "wave-7/batch-2")
-        self.assertEqual(placement.module_label, "demo/core")
+        self.assertEqual(placement.module_label, "demo/3")
         self.assertEqual(
             self.load({**doc, "module": None}).placement.module_label, "none")
         for field in ("wave", "batch", "link_unit", "module"):
@@ -70,8 +70,12 @@ class BatchValidationTests(unittest.TestCase):
             with self.subTest(bad=bad), \
                     self.assertRaisesRegex(SystemExit, "non-negative index"):
                 self.load({**doc, **bad})
-        with self.assertRaisesRegex(SystemExit, "name or null"):
-            self.load({**doc, "module": ""})
+        with self.assertRaisesRegex(SystemExit, "link_unit must be a name or null"):
+            self.load({**doc, "link_unit": ""})
+        for bad in ("core", -1, True):
+            with self.subTest(module=bad), \
+                    self.assertRaisesRegex(SystemExit, "index or null"):
+                self.load({**doc, "module": bad})
         with self.assertRaisesRegex(SystemExit, "needs its link_unit"):
             self.load({**doc, "link_unit": None})
 

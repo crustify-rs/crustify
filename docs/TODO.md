@@ -13,8 +13,8 @@ A side campaign would translate one of those dependencies in **its own** reposit
 producing a wrapper crate the main campaign depends on rather than one it vendors. The
 orchestrator prompt has no step for it yet.
 
-The input already exists. `modules.json` records `imported_deps.out_of_tree[*]` as
-`{library, counters}`, so the orchestrator can already see which external libraries a span
+The input already exists. `modules.json` records each out-of-tree library a module uses
+as a `depends_on.scheduled` record, `{library, counters, rust_equivalent}`, so the orchestrator can already see which external libraries a span
 consumes and how many distinct entities it takes from each. That count is what decides
 whether a side campaign is worth spawning: a module calling two functions from libz
 does not need one.
@@ -22,11 +22,11 @@ does not need one.
 Open questions:
 
 - **When to skip.** A dependency with a maintained safe crate should use it rather than be
-  re-wrapped. `imported_deps.out_of_tree[*].rust_equivalent` now records its ported and
+  re-wrapped. Each out-of-tree record's `rust_equivalent` now records its ported and
   safe-binding crates; whether a side campaign runs anyway is a judgement the campaign task
   may want to answer rather than the orchestrator.
 - **Scope.** A side campaign covers what the parent consumes, not the whole dependency, so
-  its scope is a closure over `out_of_tree` counters rather than a module span.
+  its scope is a closure over the out-of-tree records' counters rather than a module span.
 - **Ordering.** A side campaign is a producer of the parent's link units, so it precedes
   them — but it lives in another repository with its own branches, build baseline and
   results, which the current nesting (`link_unit` → `module` in `modules.json`, and the

@@ -25,14 +25,15 @@ mirrors, as `docs/conventions.md` describes: there is no second placement docume
 Each run numbers the link units and modules it adds after the highest index already used,
 so an index is never reused or renumbered.
 
-The order is computed from the dependencies. A module's `depends_on` splits its in-tree
-dependencies in two:
+The order is computed from the dependencies. A module's `depends_on` records every
+dependency it has, split in two, as [Dependencies](#8-link_unitsmodulesdepends_on)
+describes:
 
-- `scheduled`, the modules that run before it; and
+- `scheduled`, the modules that run before it, and the out-of-tree libraries it uses; and
 - `cut`, the modules it depends on that run after it, its dependency on them cut to break
   a cycle.
 
-Their union is every in-tree destination of its `imported_deps`, and `scheduled` alone is
+Their in-tree records together are every module it depends on, and `scheduled` alone is
 acyclic across the decomposition. Within a cycle, the dependency kept is the one on the
 member the most other members depend on, and the edges between tied members break ties,
 as `docs/planning.md` describes. Modules run one at a time, in the order of `scheduled`.
@@ -73,23 +74,22 @@ order.
 
 ## 4. link_units[*].modules[*]
 
-Each module's `name` identifies it within its containing link unit. The globally
-addressable identity is therefore `(link_unit.name, module.name)`, written
-`<link-unit>/<module>`.
+Each module's `index` identifies it within its containing link unit, so its globally
+addressable identity is `(link_unit.name, module.index)`. Its `name` is for reading:
+the two modules of a split foundational TU share theirs.
 
 | field | meaning |
 |---|---|
 | `index` | the module's id within its link unit, from zero |
-| `name` | the repo-relative path of its translation unit, or of its header for a header module; the foundational part of a split TU appends `:foundational` |
+| `name` | the repo-relative path of its translation unit, or of its header for a header module |
 | `status` | `todo` or `frozen`; see [Status](#2-status) |
 | `foundational` | `true` for a foundational module, `false` otherwise; see `docs/planning.md` |
-| `depends_on` | `scheduled` and `cut`, each an array of `<link-unit>/<module>` names; see [Execution order](#1-execution-order) |
+| `depends_on` | `scheduled` and `cut`, each an array of dependency records; see [Dependencies](#8-link_unitsmodulesdepends_on) |
 | `translation_unit` | the module's TU, as a [file entry](#5-file-entries); `null` for a header module |
 | `internal_headers` | the headers the build does not install that the module defines items in, as file entries |
 | `api_headers` | the headers the build installs that the module defines or declares items in, as file entries |
 | `objective` | the translation intent recorded for this module |
 | `counters` | what the module contains |
-| `imported_deps` | what it depends on, in tree and out |
 
 A header module, one with a `null` `translation_unit`, holds a header that implements what
 no TU does, such as `static inline` functions or globals of its own, and lists it in
@@ -117,7 +117,7 @@ header usually owns it whole, or with `excluded` the entities other modules take
 of those lists it with them as `included`.
 
 The owner counts, homes and translates an entity; every other module reaches it through
-an ordinary `imported_deps` record.
+an ordinary dependency record.
 
 ## 6. link_units[*].modules[*].objective
 
@@ -136,33 +136,27 @@ reason to leave a module wrapped during a partial migration rather than port it.
 
 ### 6.1 rust_equivalent.std
 
-Whether the module's items are already in the Rust standard library (`core`, `alloc` and
-`std`), item by item:
+What the Rust standard library (`core`, `alloc` and `std`) provides in place of the
+module, taken as a whole: every item it owns. `null` when the standard library provides
+none of it.
 
 | field | meaning |
 |---|---|
-| `coverage` | `full` when every type and function the module owns has an `exact` equivalent, `none` when none has any, `partial` otherwise |
-| `items` | the owned items that have an equivalent; empty when `coverage` is `none` |
-
-| `items[*]` field | meaning |
-|---|---|
-| `name` | C entity name |
-| `defined_in` | repo-relative path of its definition, as a batch item's `defined_in` |
-| `facility` | the standard-library path that provides it, such as `alloc::vec::Vec::push` or `core::str::from_utf8` |
-| `fit` | `exact` when the facility has the item's observable behaviour, `partial` when it differs in a way a port has to bridge |
-| `notes` | for a `partial` fit, the difference; empty for an `exact` one |
+| `library` | the standard-library paths that provide it, modules or types such as `alloc::vec::Vec` or `core::str` |
+| `feature_parity` | `full` when replacing the module with them gains exactly the module's functionality, `partial` otherwise |
+| `notes` | for `partial`, what is missing or differs; empty for `full` |
 
 ### 6.2 rust_equivalent.crates
 
-Established crates that could replace the module outright, in descending order of fit;
-empty when none applies.
+Established crates that could replace the module outright, in descending order of
+feature parity; empty when none applies.
 
 | `crates[*]` field | meaning |
 |---|---|
 | `crate` | the crate's name on crates.io |
-| `fit` | `exact` or `partial`, as for `std` |
+| `feature_parity` | `full` or `partial`, as for `std` |
 | `license` | its SPDX license expression |
-| `notes` | how it differs: semantics, platform support or performance; empty when it does not |
+| `notes` | what is missing or differs: semantics, platform support or performance; empty when nothing |
 
 Each candidate is checked for its semantics, platform support, performance and licensing
 before it is listed.
@@ -200,16 +194,18 @@ once across the decomposition.
 The blocks overlap: a function defined in a translation unit and declared in an API
 header counts in both, once as a definition and once as published. Never add them.
 
-## 8. link_units[*].modules[*].imported_deps
+## 8. link_units[*].modules[*].depends_on
 
-Every record is directed from this module, the consumer, to something it depends on.
-Imported producer modules are emitted as modules too, so every in-tree destination
-resolves through `link_units`.
+Every record is directed from this module, the consumer, to something it depends on: a
+module of the decomposition, in `scheduled` or `cut` as the order splits them, or an
+out-of-tree library, always in `scheduled`, since a library outside the tree depends on
+none of the modules and so forms no cycle with them. Imported producer modules are
+emitted as modules too, so every in-tree record resolves through `link_units`.
 
-| `in_tree[*]` field | meaning |
+| in-tree record field | meaning |
 |---|---|
 | `link_unit` | destination `link_units[*].name` |
-| `module` | destination module's `name` within that link unit |
+| `module` | destination module's `index` within that link unit |
 | `outgoing_edges` | dependency edges from this module to the destination |
 | `incoming_edges` | dependency edges from the destination back to this module |
 | `counters` | distinct entities consumed from that destination, by kind |
@@ -217,9 +213,10 @@ resolves through `link_units`.
 `outgoing_edges` is what this module needs from the destination; `incoming_edges` is what
 the destination needs from it, and is non-zero exactly when the two form a cycle. The pair
 is mirrored: the destination's own record for this module carries the same two numbers
-swapped.
+swapped, in its `scheduled` when this one is in `cut`, and in its `cut` when this one is
+in `scheduled` and the two form a cycle.
 
-| `out_of_tree[*]` field | meaning |
+| out-of-tree record field | meaning |
 |---|---|
 | `library` | external library depended on, as linked |
 | `counters` | distinct entities consumed from it, by kind |
@@ -227,42 +224,27 @@ swapped.
 
 `rust_equivalent.ported` lists the crates that reimplement the library in Rust, and
 `rust_equivalent.bindings` the crates that put a safe Rust API over the C library itself.
-Each is in descending order of fit, and empty when no such crate exists. They decide how a
-port reaches the library: through a ported crate, which drops the C dependency, through
-safe bindings, which keep it, or through its own wrapper when neither exists.
+Each is in descending order of feature parity, and empty when no such crate exists. They
+decide how a port reaches the library: through a ported crate, which drops the C
+dependency, through safe bindings, which keep it, or through its own wrapper when neither
+exists.
 
 | `ported[*]` and `bindings[*]` field | meaning |
 |---|---|
 | `crate` | the crate's name on crates.io |
 | `sys` | `bindings` only: the raw `-sys` crate it builds on, or `null` when it binds the library itself |
-| `covers` | `all` when it provides every entity this module consumes from the library, `some` otherwise |
-| `fit` | `exact` or `partial`, as for a module's `std` items |
+| `feature_parity` | `full` when it provides every entity this module consumes from the library, with the same behaviour; `partial` otherwise |
 | `license` | its SPDX license expression |
-| `notes` | what it lacks or how it differs; empty when nothing |
+| `notes` | for `partial`, what it lacks or how it differs; empty for `full` |
 
 A crate that wraps the library but exposes raw pointers or `unsafe` to its users is not
 safe bindings; a `-sys` crate alone is listed as no binding. The same library is assessed
 the same way in every record that imports it.
 
-A dependency's `counters` carries the same item kinds a module's own does — `structs`,
+A record's `counters` carries the same item kinds a module's own does — `structs`,
 `functions`, `global_variables`, `enums`, `unions`, `callbacks` — counting what this
 module consumes, not what the destination contains. It has no `files` or `loc`: those
 describe a module's own files, and a consumer imports entities, not files.
 
-The in-tree graph may contain cycles, and this artifact records them; `depends_on` records
-how the order cuts them.
-
-## 9. Earlier versions
-
-Earlier campaigns decomposed the codebase into subsystems, in `subsystems.json`: groups
-of files a planner judged to belong together, opening with the foundational `void` and
-`string` subsystems, each with `implementation_files` and `api_headers` as path strings
-and an optional `items` list narrowing it. A campaign on that layout is converted by its
-next planner run: its frozen subsystems keep the work they landed, and their units are
-re-decomposed into modules as `docs/planning.md` describes, each module of a landed unit
-frozen.
-
-Earlier decompositions also recorded Rust equivalents as one list,
-`objective.rust_native_equivalent`, of crates and `std` paths together, and nothing for
-out-of-tree libraries. Its crates become `crates`, and its `std` paths are re-assessed item
-by item into `std`.
+The in-tree graph may contain cycles, and this artifact records them: `cut` holds the
+edges the order cuts.

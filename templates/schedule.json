@@ -17,7 +17,7 @@
     {
       "index": 0,
       "link_unit": "libwidget",
-      "module": "src/core.c",
+      "module": 1,
       "status": "done",
       "depends_on": {
         "scheduled": [],
@@ -73,7 +73,7 @@
     {
       "index": 1,
       "link_unit": "libwidget",
-      "module": "src/core.c",
+      "module": 1,
       "status": "wip",
       "depends_on": {
         "scheduled": [
@@ -110,7 +110,7 @@
     {
       "index": 2,
       "link_unit": "libwidget",
-      "module": "src/core.c",
+      "module": 1,
       "reviews": 1,
       "status": "todo",
       "depends_on": {
@@ -175,7 +175,7 @@
     {
       "index": 4,
       "link_unit": "libwidget",
-      "module": "src/io.c",
+      "module": 2,
       "status": "todo",
       "depends_on": {
         "scheduled": [

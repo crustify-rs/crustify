@@ -86,10 +86,12 @@ describes, from the declarations, definitions and uses in the source. Select the
 foundational modules' members, and split each TU that mixes them with other items, as its
 Foundational modules section describes, reading each candidate's body, and establish each
 member's lifecycle role. Use the actual linker
-outputs. Fill every `rust_equivalent`: for a module, check its owned types and
-functions against the standard library's documentation item by item, and for an
+outputs. Fill every `rust_equivalent`: for a module, check what its owned items do
+together against the standard library's documentation and crates.io, and for an
 out-of-tree library, search crates.io for ported and safe-binding crates and read the API
-of each candidate against the entities the module consumes. Before you list a crate,
+of each candidate against the entities the module consumes. Judge each candidate's
+feature parity on both counts: whether it covers everything, and whether it behaves the
+same. Before you list a crate,
 verify its semantics, platform support, performance and licensing.
 
 ### 3. Planning
