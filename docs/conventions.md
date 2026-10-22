@@ -40,15 +40,18 @@ the `-sys` crate.
 
 ### 2.4 Exports
 
-Each ported C source file has one `mod ffi_export { use super::*; ... }` raw ABI gateway
-in its Rust module, whose exports use `#[unsafe(no_mangle)] extern "C"`. Externally
-visible and header-inline symbols are exported under their bare names; static functions,
-TU-inline functions and static globals as `crustify_<file>__<name>`.
+Each ported module has one `mod ffi_export { use super::*; ... }` raw ABI gateway in its
+Rust file, whose exports use `#[unsafe(no_mangle)] extern "C"` under the bare C names: the
+module's externally visible functions and globals, and the `static inline` functions its
+headers define. Static functions and static globals are not exported: nothing outside
+their TU reaches them.
 
-### 2.5 Build switches
+### 2.5 Export features
 
-The per-file C/Rust build switch is `CRUSTIFY_<FILE>`, with `<FILE>` derived by sanitizing
-the translation unit's path.
+Each module's `ffi_export` is compiled only under the safe crate's Cargo feature
+`ffi-export-<tu>`, with `<tu>` its translation unit's repo-relative path, every character
+that is not an ASCII letter or digit replaced by `-`. The feature is off until the module is
+integrated, so that its exports never collide with the C they replace.
 
 ## 3. Crates, modules, and TUs
 

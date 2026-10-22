@@ -14,9 +14,10 @@ primitive, not only those the public API publishes.
 Ported storage becomes Rust-owned only once no C path accesses, allocates or frees it. While
 C still owns either operation, compatible storage is retained and the blocker reported.
 
-A layout is ported only once every C-side field toucher is gone and no public C consumer
-receives the concrete body. A public forward declaration alone does not block
-opacification.
+A layout is ported only once no unported C of the target touches it: no field toucher,
+and no other layout user. Tests and the C consumers outside the target do not count, as
+[`workflows/porting.md`](workflows/porting.md)'s Principles section describes, so neither
+a test's field access nor a definition in an installed header keeps the layout in C.
 
 ## 3. Lifecycle
 
@@ -32,10 +33,9 @@ and no C-interoperability requirement remains.
 While C consumers remain, the symbol is re-exported to C as the conventions describe:
 
 - The raw gateway reconstructs safe wrappers and calls the native function.
-- A TU-local export is removed after its last C consumer is removed.
-- Only replaced C bodies are guarded, with the path-derived per-file guard; adjacent
-  guarded bodies may be grouped, but the whole file is never guarded.
-- The C fallback branch declares the Rust exports and redirects TU-local names to
-  collision-safe exports.
-- The file flag and the Rust static library are wired through the actual build system,
-  without assuming link mechanics.
+- The gateway is compiled only under its module's export feature, which stays off until
+  the module is integrated, so that the exports never collide with the C they replace.
+- An export is removed after its last C consumer is removed.
+- At integration, the Rust static library is linked in place of the TU through the actual
+  build system, without assuming link mechanics, and the TU is deleted, as
+  [`workflows/porting.md`](workflows/porting.md)'s Builds section describes.
