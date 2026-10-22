@@ -1,6 +1,6 @@
 <!-- SKILL -->
 
-### 4. Planning
+## workflows/audit › Worksets
 
 Plan the audit's worksets from an ffimap scan of the crate, run once each build
 configuration you audit is in place:

@@ -18,7 +18,7 @@ Test objects are constructed through safe constructors. While a type has none, o
 documented unsafe fixture per type adopts the raw constructor's result, and is replaced
 once the safe constructor exists.
 
-## Builds
+## 1. Builds
 
 Tests run against the target's prebuilt, immutable builds, recorded as the `variants` of
 `crustify/artifacts/build.json`: each an out-of-tree `dir` and the `configure` and `build`
@@ -38,7 +38,7 @@ A Rust- or bindgen-only change reuses a matching variant: same C revision, `buil
 version, compiler and instrumentation. A change to the compiled target needs a private
 build, and the shared variants are rebuilt once that change lands.
 
-## UB tests
+## 2. UB tests
 
 UB tests show that a workset's public API is free of UB.
 
@@ -86,7 +86,7 @@ owner, alias a reborrow, reenter a callback, and drop a parent first.
 When the type system should reject a program, the test is a compile-fail doctest or a
 `trybuild` case.
 
-## Equivalence tests
+## 3. Equivalence tests
 
 Equivalence tests run the raw C implementation and the public Rust API on equivalent,
 independently owned inputs, and compare:
@@ -100,14 +100,16 @@ independently owned inputs, and compare:
 They use multi-call sequences and compare after each step; single calls are only a
 baseline.
 
-For `port`, the reference build has the Rust feature disabled, so the C symbol cannot
-resolve to the Rust export.
+TODO (porting): how a `port` batch's equivalence tests reach the C reference while its
+module's waves run, and how they are retired at integration, as
+[`workflows/porting.md`](workflows/porting.md)'s Principles and Builds sections describe.
+The Rust feature switch this section assumed no longer exists.
 
 A confirmed C defect is not copied into Rust. The divergence is documented, equivalence
 tests are retained for the unaffected behaviour, and the corrected-behaviour regression is
 a unit test.
 
-## Unit tests
+## 4. Unit tests
 
 A unit test is the right kind when Rust assertions supply the verdict or the test exercises
 internal facilities, including:
@@ -119,14 +121,21 @@ internal facilities, including:
 - private or `pub(crate)` constructors and internal destructor/drop plumbing; and
 - resource release exercised through any of those raw, unsafe, or internal paths.
 
-## Coverage
+## 5. Coverage
 
 A worklist's tests run against the campaign's coverage-instrumented build, and coverage is
 inspected for the C and Rust execution paths belonging to the worklist. Focused tests are
 added to cover its reachable uncovered paths. Paths that remain uncovered because they are
 unreachable, environment-dependent, or intentionally nondeterministic are reported as such.
 
-## Regressions
+Coverage counts the code under test, never the tests themselves. Rust coverage counts only
+the authored non-test sources: the test crates are dropped and, inside the library sources,
+every line under a `#[cfg(test)]` item such as an inline `mod unit_tests`. Otherwise a
+workload that cannot run those lines reads low, and the unit tests are credited for
+executing themselves. Each workload runs alone against the coverage-instrumented build, and
+the total is the union of their lines, never the sum of the workloads.
+
+## 6. Regressions
 
 Every batch checks, lints and tests the workspace on the tree it lands:
 
@@ -139,12 +148,12 @@ cargo test --workspace
 Every FFI, UB, and equivalence test runs against the matching reusable sanitized C library
 or a private sanitized replacement, and under every available sanitizer.
 
-BSan, when available, is run for every batch and at subsystem end:
+BSan, when available, is run for every batch and at module end:
 
 - For a batch, it runs only on the individual tests or reproducers the batch expects to
   trigger it, each by exact name and alone; never on a whole test binary, a suite or the
   workspace.
-- At subsystem end, it runs as a gate over everything the subsystem landed: the
+- At module end, it runs as a gate over everything the module landed: the
   whole workspace, one invocation per test binary in parallel, each under a `timeout`.
 
 Miri is run after every wave, as a gate over the whole workspace: one
@@ -158,6 +167,11 @@ polled nor read while it runs. BSan reports false positives at the foreign bound
 only a true positive, a report that reproduces through the Rust side as a single test or
 standalone reproducer, becomes a UB finding.
 
-When C changed, the configured C build and baseline run with the Rust feature off, and for
-`port` again with it on. A wrap-only batch with no C change does not need the full C
-baseline.
+When C changed, the configured C build and baseline run. A wrap-only batch with no C
+change does not need the full C baseline.
+
+TODO (porting): the gates of a `port` batch, which changes no C, and those of a module's
+integration, which links its Rust in place of its TU, removes the C tests gated with it and
+runs the target's test suite over the hybrid, as
+[`workflows/porting.md`](workflows/porting.md)'s Builds section describes; and how a
+module's C tests are ported into the Rust suites.

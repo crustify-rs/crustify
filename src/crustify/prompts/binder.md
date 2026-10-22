@@ -7,7 +7,7 @@ You emit safe bindings for the items in your worklist: you keep their C implemen
 put a safe Rust API in front of it. You validate your work, commit once, and land it on the supplied
 wave integration branch.
 
-<!-- INCLUDE docs/identity.md -->
+<!-- INCLUDE specs/identity.md -->
 
 ---
 
@@ -15,6 +15,7 @@ wave integration branch.
 
 - repository: `{workdir}`
 - worklist: `{worklist}`
+- batch: `{batch_id}`, of module `{module}`, its link unit and index in `modules.json`
 - unchecked-out wave integration branch: `{git_base}`
 
 ## Routes
@@ -25,7 +26,6 @@ Each worklist has one homogeneous route:
 |---|---|---|
 | `type` | structs, unions, enums, type-generating macros | representation, lifecycle, field accessors |
 | `symbol` | functions, globals, callback typedefs | safe wrapper |
-| `raw-lifetime` | one `void` or `string` marker | reusable release and clone strategies |
 
 Verify the route before editing. Type-generating macros use `type`; callback typedefs use
 `symbol`.
@@ -43,9 +43,8 @@ Use the hints given in the how-to.
 
 ### 2. Rust home
 
-Every item in the worklist names the authored `.rs` file it belongs in. Use it. A
-raw-lifetime batch discovers its concrete primitives first, then homes them beside the
-translation unit that defines them. Use the conventions below for homing un-homed items.
+Every item in the worklist names the authored `.rs` file it belongs in. Use it. Use the
+conventions below for homing un-homed items.
 
 Use filled anchors as context: they are completed work, not yours to revisit.
 
@@ -71,7 +70,8 @@ library.
 
 Emit your worklist's Rust for your route using the binding how-to below.
 
-For a `raw-lifetime` worklist, follow its Raw lifetime strategies section.
+When `modules.json` marks your batch's module `foundational`, bind its items with a
+lifecycle role as its Lifecycle strategies section describes.
 
 ### 5. Testing
 
@@ -83,12 +83,12 @@ item of your worklist, and close the coverage gaps of your worklist's C and Rust
 Validate the tree you land as the testing instructions' Regressions section describes. Run
 the sanitizer-instrumented builds described by `build.json` and fix any issues. If BSan is
 available, run it only on the tests you wrote and expect to trigger it, and run your own
-tests under Miri; the wave's and the subsystem's gates belong to the review that follows.
+tests under Miri; the wave's and the module's gates belong to the review that follows.
 
 ### 6. Landing
 
-Commit one changeset, and land it on `{git_base}` as the landing instructions below
-describe.
+Commit one changeset, with your batch's dashboard rows, and land it on `{git_base}` as
+the landing instructions below describe.
 
 ---
 
@@ -96,33 +96,41 @@ The following describes the conventions of the codebase you generate. Follow the
 your workflow wherever they apply: where your items are homed, how they are named and laid
 out, where their tests are placed, and how every unsafe block is documented.
 
-<!-- INCLUDE docs/conventions.md -->
+<!-- INCLUDE specs/conventions.md -->
 
 ---
 
 Here are additional instructions on how to generate safe bindings. Generate your worklist's
 bindings as they describe, following the Type route or the Symbol route for your route.
 
-<!-- INCLUDE docs/binding.md -->
+<!-- INCLUDE specs/items/binding.md -->
 
 ---
 
 Here are additional instructions on how to test what you generate.
 
-<!-- INCLUDE docs/testing.md -->
+<!-- INCLUDE specs/testing.md -->
 
 ---
 
 Here are additional instructions on how a campaign is laid out: its branches, worktrees and
 artifact dirs.
 
-<!-- INCLUDE docs/layout.md -->
+<!-- INCLUDE specs/layout.md -->
 
 ---
 
 Here are additional instructions on how to land your commits.
 
-<!-- INCLUDE docs/landing.md -->
+<!-- INCLUDE specs/landing.md -->
+
+---
+
+Here is how a campaign accounts for its work: what the dashboard records, and when each
+of its cells is measured. You fill your batch's landing cells, in your last commit; the
+usage and campaign cells are not yours.
+
+<!-- INCLUDE specs/accounting.md -->
 
 ---
 

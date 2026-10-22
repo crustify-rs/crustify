@@ -86,11 +86,11 @@ class CommandShapeTests(unittest.TestCase):
 
     def test_spawn_planner_runs_one_planner(self) -> None:
         seen = self._run("spawn-planner", str(self.repo),
-                         "crustify/artifacts/planning/run-2/task.json",
-                         "--log-dir", "crustify/artifacts/planning/run-2", "--dry-run")
+                         "crustify/artifacts/planner/run-2/task.json",
+                         "--log-dir", "crustify/artifacts/planner/run-2", "--dry-run")
         self.assertEqual(seen["handler"], "spawn-planner")
         self.assertEqual(seen["args"].task,
-                         Path("crustify/artifacts/planning/run-2/task.json"))
+                         Path("crustify/artifacts/planner/run-2/task.json"))
         self.assertTrue(seen["args"].dry_run)
 
     def test_a_spawned_agent_takes_its_settings_from_its_task(self) -> None:
@@ -157,8 +157,9 @@ class CommandShapeTests(unittest.TestCase):
 
 
 class AssistantSettingsTests(unittest.TestCase):
-    """`crustify [WORKDIR]` reads its campaign from crustify/CRUSTIFY.md, and
-    creates the file from the campaign's template when it is missing."""
+    """`crustify [WORKDIR]` reads its campaign from crustify/CRUSTIFY.md; a
+    directory without one gets none written: the assistant writes it in the
+    repository it establishes, from the template or --settings."""
 
     def setUp(self) -> None:
         self.tmp = tempfile.TemporaryDirectory()
@@ -166,18 +167,20 @@ class AssistantSettingsTests(unittest.TestCase):
         self.repo = Path(self.tmp.name)
         self.canonical = self.repo / "crustify/CRUSTIFY.md"
 
-    def test_a_missing_file_comes_from_the_campaign_template(self) -> None:
+    def _install(self, campaign: str) -> None:
+        template, _ = cli.detached_settings(None, campaign, lambda: None)
+        self.canonical.parent.mkdir(parents=True, exist_ok=True)
+        self.canonical.write_text(template.read_text())
+
+    def test_a_missing_file_is_the_campaign_template_unwritten(self) -> None:
         for campaign in ("port", "wrap", "audit"):
             with self.subTest(campaign=campaign):
-                if self.canonical.exists():
-                    self.canonical.unlink()
-                task, got = cli.campaign_settings(self.repo, None, campaign,
-                                                  lambda: None)
-                self.assertEqual((task, got), (self.canonical, campaign))
-                self.assertEqual(
-                    cli.settings_answer(task.read_text(), "campaign"), campaign)
+                task, got = cli.detached_settings(None, campaign, lambda: None)
+                self.assertEqual((task.name, got), ("CRUSTIFY.template.md", campaign))
+                self.assertFalse(self.canonical.exists())
 
     def test_the_file_decides_and_a_contradiction_is_refused(self) -> None:
+        self._install("port")
         cli.campaign_settings(self.repo, None, "port", lambda: None)
         self.assertEqual(cli.campaign_settings(self.repo, None, None,
                                                lambda: None)[1], "port")
@@ -202,8 +205,27 @@ class AssistantSettingsTests(unittest.TestCase):
 
     def test_nobody_to_ask_is_an_error(self) -> None:
         with self.assertRaisesRegex(SystemExit, "pass --campaign"):
-            cli.campaign_settings(self.repo, None, None, lambda: None)
+            cli.detached_settings(None, None, lambda: None)
         self.assertFalse(self.canonical.exists())
+
+    def test_detached_settings_write_nothing(self) -> None:
+        task, campaign = cli.detached_settings(None, "port", lambda: None)
+        self.assertEqual((task.name, campaign), ("CRUSTIFY.template.md", "port"))
+        given = self.repo / "mine.md"
+        given.write_text("**Port or wrap?** (`id: campaign`)\n   - Answer: `wrap`\n")
+        self.assertEqual(cli.detached_settings(given, None, lambda: None),
+                         (given.resolve(), "wrap"))
+        with self.assertRaisesRegex(SystemExit, "configures a wrap campaign"):
+            cli.detached_settings(given, "port", lambda: None)
+        self.assertEqual(sorted(p.name for p in self.repo.iterdir()), ["mine.md"])
+
+    def test_a_headless_session_without_settings_needs_them(self) -> None:
+        args = SimpleNamespace(workdir=str(self.repo), start=True, settings=None,
+                               campaign="wrap", task_only=False, resume=None)
+        with mock.patch.object(sys.stdin, "isatty", return_value=False), \
+                self.assertRaisesRegex(SystemExit, "pass --settings"):
+            cli._handle_assist(args)
+        self.assertFalse((self.repo / "crustify").exists())
 
     def test_a_headless_session_needs_start(self) -> None:
         args = SimpleNamespace(workdir=str(self.repo), start=False, settings=None,
@@ -214,7 +236,7 @@ class AssistantSettingsTests(unittest.TestCase):
 
     def test_the_session_opens_idle_unless_started(self) -> None:
         from crustify.agents.assist import START, AssistAgent
-        task, _ = cli.campaign_settings(self.repo, None, "wrap", lambda: None)
+        task, _ = cli.detached_settings(None, "wrap", lambda: None)
         for start, first in ((False, ""), (True, START)):
             with self.subTest(start=start):
                 agent = AssistAgent(self.repo, kind="translate", task=task,
@@ -229,6 +251,7 @@ class ResumeTests(unittest.TestCase):
     def setUp(self) -> None:
         tmp = tempfile.TemporaryDirectory()
         self.addCleanup(tmp.cleanup)
+        self.tmp_root = tmp.name
         self.home = Path(tmp.name) / "home"
         patcher = mock.patch.dict("os.environ", {"CRUSTIFY_HOME": str(self.home)})
         patcher.start()
@@ -258,17 +281,51 @@ class ResumeTests(unittest.TestCase):
 
     def test_the_assistant_indexes_its_sessions(self) -> None:
         import json
-        from crustify.agentlog import open_agent_log
-        with open_agent_log(self.a / "logs", "assistant-x", agent="assistant",
-                            workdir=self.a,
-                            index_dir=self.home / "sessions") as log:
+        from crustify.agents.assist import AssistAgent
+        session = self.home / "sessions" / "c-4"
+        agent = AssistAgent(self.a, kind="translate", task=self.a / "CRUSTIFY.md",
+                            model="anthropic/claude-opus-5", checkout=None,
+                            artifact_dir=session, log_stem="assistant-x")
+        with agent._make_log() as log:
             log.session({"session_id": "s-4", "cli": "claude"})
-        indexed = json.loads((self.home / "sessions" / "s-4.json").read_text())
-        self.assertEqual((indexed["workdir"], indexed["agent"]), (str(self.a), "assistant"))
+        indexed = json.loads((session / "index.json").read_text())
+        self.assertEqual((indexed["cwd"], indexed["workdir"], indexed["agent"]),
+                         (str(self.a.resolve()), None, "assistant"))
         self.assertTrue(indexed["record"].endswith("assistant-x.session.json"))
-        # The workdir is the index's alone: the tracked record carries none.
-        tracked = json.loads((self.a / "logs" / "assistant-x.session.json").read_text())
-        self.assertNotIn("workdir", tracked)
+        # The paths are the index's alone: the record, which the campaign
+        # tracks once copied, carries none.
+        record = json.loads((session / "assistant-x.session.json").read_text())
+        self.assertNotIn("workdir", record)
+        self.assertNotIn("cwd", record)
+
+    def _session_dir(self, sid: str, cli_id: str, cwd: Path, at: str,
+                     workdir: Path | None = None) -> Path:
+        import json
+        d = self.home / "sessions" / sid
+        d.mkdir(parents=True)
+        (d / "index.json").write_text(json.dumps({
+            "session_id": cli_id, "cwd": str(cwd), "workdir": None,
+            "dir": str(d), "started_at": at, "cli": "codex",
+            "provider": "openai", "model": "gpt-5"}))
+        if workdir is not None:
+            (d / "workdir").write_text(f"{workdir}\n")
+        return d
+
+    def test_a_session_dir_is_found_by_either_id(self) -> None:
+        d = self._session_dir("c-5", "codex-5", self.a, "2026-10-20T10:00:00+00:00")
+        for sid in ("c-5", "codex-5"):
+            with self.subTest(sid=sid):
+                record = cli.assistant_session(None, sid)
+                self.assertEqual((record["session_id"], record["dir"]), ("codex-5", str(d)))
+
+    def test_a_created_checkout_is_found_by_its_path(self) -> None:
+        clone = Path(self.tmp_root) / "clone"
+        self._session_dir("c-6", "c-6", self.a, "2026-10-20T11:00:00+00:00", clone)
+        record = cli.assistant_session(clone, None)
+        self.assertEqual((record["session_id"], record["workdir"], record["cwd"]),
+                         ("c-6", str(clone), str(self.a)))
+        # Where it started finds it too: the most recent of that directory.
+        self.assertEqual(cli.assistant_session(self.a, None)["session_id"], "c-6")
 
 
 class CanonicalTaskTests(unittest.TestCase):
@@ -320,9 +377,10 @@ class PlannerPromptTests(unittest.TestCase):
         self.assertIn(f"{self.repo.resolve()}/crustify/CRUSTIFY.md", body)
         self.assertIn("### 1. The committed plan", body)
         self.assertIn("Only a correction is a finding", body)
-        self.assertIn("re-emit that order or that subsystem's `schedule.json`", body)
-        # The details of how to plan come from the included planning doc.
-        self.assertIn("# Planning\n\nPlanning turns a campaign's settings", body)
+        self.assertIn("re-plan only waves that are `todo`", body)
+        # The details of how to plan come from the included specs.
+        self.assertIn("# Decomposition\n\nDecomposition turns", body)
+        self.assertIn("# Scheduling\n\nScheduling turns", body)
         self.assertIn("under `crustify/reviews/planner/`", body)
         self.assertNotIn("objective: `", body)
         self.assertNotIn("scaffold", body.split("### 3. Planning")[1].split("### 4.")[0])

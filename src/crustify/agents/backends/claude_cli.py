@@ -124,6 +124,7 @@ class ClaudeCliBackend:
         provider_home: Path | None = None,
         interactive: bool = False,
         resume: str | None = None,
+        session_id: str | None = None,
     ) -> None:
         exe = shutil.which("claude")
         if exe is None:
@@ -135,7 +136,7 @@ class ClaudeCliBackend:
         # A resumed session keeps its id, and its transcript grows: it is not
         # forked, which would copy the earlier turns into a new transcript and
         # count their cost twice.
-        session_id = resume or str(uuid.uuid4())
+        session_id = resume or session_id or str(uuid.uuid4())
 
         # The prompt goes first: `--tools` and `--add-dir` take variadic
         # values, so a trailing positional would be read as one of them.

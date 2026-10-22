@@ -11,8 +11,9 @@ import argparse
 SUBCOMMANDS = ("spawn-planner", "spawn-binder", "spawn-translator",
                "spawn-reviewer", "usage")
 
-#: The campaign kinds a settings file can name, and the assistant prompt each
-#: one runs: port and wrap are both translation campaigns.
+#: The campaign kinds a settings file can name, and the part of the assistant's
+#: prompt each one loads, `prompts/assistant/<kind>.md`: port and wrap are both
+#: translation campaigns.
 CAMPAIGNS = {"port": "translate", "wrap": "translate", "audit": "audit"}
 
 
@@ -36,7 +37,7 @@ def main() -> None:
         help="Suppress live console output from agents.",
     )
     # Model and billing of the commands that start an orchestrator. A spawned
-    # agent reads both from its task.json instead, so its batch dir records
+    # agent reads both from its task.json instead, so its run dir records
     # everything the run depended on.
     model_opts = argparse.ArgumentParser(add_help=False)
     model_opts.add_argument(
@@ -94,9 +95,13 @@ def main() -> None:
     assistant.set_defaults(handler=_handle_assist, command="assistant")
     assistant.add_argument(
         "workdir", nargs="?", default=None,
-        help="The checkout the campaign works in; its artifacts live under "
-             "<workdir>/crustify/. Default: the current directory, or, with "
-             "--resume, the checkout of the session it resumes.")
+        help="Where the session starts. When it holds crustify/CRUSTIFY.md, it "
+             "is the campaign's repository, whose artifacts live under "
+             "<workdir>/crustify/; otherwise Crustify establishes the repository "
+             "with you and writes its crustify/CRUSTIFY.md when the work starts. "
+             "Default: the current directory, or, with --resume, the directory "
+             "of the session it resumes. The session's own records live in "
+             "crustify's home, under sessions/<id>/.")
     assistant.add_argument(
         "--campaign", choices=sorted(CAMPAIGNS), default=None,
         help="The campaign, when crustify/CRUSTIFY.md does not exist yet or "
@@ -107,7 +112,8 @@ def main() -> None:
         help="A settings file to install as <workdir>/crustify/CRUSTIFY.md, "
              "the copy Crustify reads and you edit mid-campaign. A file that "
              "differs from an existing copy is refused, so resuming never "
-             "overwrites your edits.")
+             "overwrites your edits. Before the repository is established, "
+             "Crustify writes it there; a headless session needs it then.")
     assistant.add_argument(
         "--start", action="store_true",
         help="Start the campaign right away, as CRUSTIFY.md configures it. "
@@ -126,20 +132,20 @@ def main() -> None:
              "the harness contributes nothing -- no conventions, no skill "
              "index, no stage prompt.")
 
-    # -- spawn-planner (one planner run on the campaign branch) --------------
+    # -- spawn-planner (one planner run on its planner branch) ---------------
     _spawn_planner_blurb = (
         "Run one planner over the campaign checkout. It emits what the plan "
-        "-- subsystems.json, each subsystem's schedule.json and the skills' "
+        "-- modules.json, the waves of schedule.json and the skills' "
         "planning artifacts -- lacks, updates what follows an earlier schema, "
         "corrects what earlier runs decided, filing a report per correction, "
-        "and re-emits the schedules its changes move. Runs are sequential; "
-        "each commits on the campaign branch.")
+        "and re-plans the waves its changes move that have not started. Runs "
+        "are sequential; each commits on its own planner branch.")
     plan_p = sub.add_parser(
         "spawn-planner", parents=[agent_opts],
         help=_spawn_planner_blurb, description=_spawn_planner_blurb,
     )
     plan_p.set_defaults(handler=_handle_spawn_planner)
-    add_workdir(plan_p, "the campaign checkout, on its campaign branch")
+    add_workdir(plan_p, "the campaign checkout, on the run's planner branch")
     plan_p.add_argument(
         "task", type=Path, metavar="TASK_JSON",
         help="Path to the run's task.json: its model and billing, and "
@@ -153,8 +159,7 @@ def main() -> None:
         help="Validate and summarize the batch without spawning an agent.")
 
     # -- spawn-binder / spawn-translator (one agent over one projected batch)
-    # A binder runs `wrap` batches, raw-lifetime ones included; a translator
-    # runs `port` batches. Same arguments, so one loop builds both.
+    # A binder runs `wrap` batches; a translator runs `port` batches. Same arguments, so one loop builds both.
     for role, objective, does in (
             ("binder", "wrap", "binds them: keeps the C implementation and "
              "puts a safe Rust API in front of it"),
@@ -172,13 +177,14 @@ def main() -> None:
         add_workdir(p, "the batch's worktree, forked by the orchestrator")
         p.add_argument(
             "task", type=Path, metavar="TASK_JSON",
-            help="Path to the batch's task.json: its objective and items, the "
-                 "wave integration branch it lands on, its model and "
-                 "billing, and optional additional instructions.")
+            help="Path to the batch's task.json: its objective and items, its "
+                 "wave and batch indices, link unit and module, the wave "
+                 "integration branch it lands on, its model and billing, and "
+                 "optional additional instructions.")
         p.add_argument(
             "--log-dir", required=True, type=Path, metavar="DIR",
-            help=f"Existing directory for the batch's {role}.session.json; "
-                 "give each batch its own.")
+            help=f"Existing directory for the run's {role}.session.json, "
+                 f"crustify/artifacts/{role}/run-<n>; give each run its own.")
         p.add_argument(
             "--dry-run", action="store_true",
             help="Validate and summarize the batch without spawning an agent.")
@@ -200,14 +206,14 @@ def main() -> None:
     add_workdir(review_p, "the batch's worktree, forked by the orchestrator")
     review_p.add_argument(
         "task", type=Path, metavar="TASK_JSON",
-        help="Path to the batch's task.json: commits or modules, reports, "
-             "optional objectives, the review wave integration branch it lands "
-             "on, its model and billing, and optional additional "
-             "instructions.")
+        help="Path to the batch's task.json: commits or paths, reports, "
+             "optional objectives, its wave and batch indices, link unit and "
+             "module, the review wave integration branch it lands on, its "
+             "model and billing, and optional additional instructions.")
     review_p.add_argument(
         "--log-dir", required=True, type=Path, metavar="DIR",
-        help="Existing directory for the batch's reviewer.session.json; give "
-             "each batch its own.")
+        help="Existing directory for the run's reviewer.session.json, "
+             "crustify/artifacts/reviewer/run-<n>; give each run its own.")
     review_p.add_argument(
         "--dry-run", action="store_true",
         help="Validate and summarize the batch without spawning an agent.")
@@ -279,7 +285,6 @@ def main() -> None:
 #: Where a campaign's artifact tree lives, under `<workdir>/crustify/`. A
 #: repository holds one campaign, whose work is cumulative, so the tree is not
 #: keyed by any campaign id: a later run resumes it.
-ARTIFACTS = "artifacts"
 
 
 # -- dispatch -------------------------------------------------------------
@@ -304,8 +309,8 @@ def _handle_usage(args: argparse.Namespace) -> None:
 
 #: Where a campaign's settings live in its checkout. Tracked, and read by the
 #: assistant rather than handed to it once, so editing it changes the settings
-#: of the subsystems that have not started yet; its git history records the
-#: settings each subsystem ran under.
+#: of the modules that have not started yet; its git history records the
+#: settings each module ran under.
 TASK = "crustify/CRUSTIFY.md"
 
 def canonical_task(workdir: Path, given: Path | None) -> Path:
@@ -362,49 +367,64 @@ def _set_answer(text: str, question: str, answer: str) -> str:
 
 def campaign_settings(workdir: Path, given: Path | None, campaign: str | None,
                       ask) -> tuple[Path, str]:
-    """``workdir``'s settings file and its campaign, ``port``, ``wrap`` or
-    ``audit``.
+    """The settings file of ``workdir``, a campaign's checkout, and its
+    campaign, ``port``, ``wrap`` or ``audit``.
 
-    ``given`` is installed as the canonical copy, as on every run. A checkout
-    with no settings yet gets them from its campaign's template; an
-    unanswered campaign is filled in. The campaign comes from the file, then
-    ``campaign``, then ``ask()``, which returns None where nobody can answer.
-    A ``campaign`` that contradicts the file is refused: the file is what
-    the campaign runs under."""
-    from crustify import deps
-
-    task = workdir / TASK
-    if given is not None:
-        task = canonical_task(workdir, given)
-    if task.is_file():
-        text = task.read_text()
-        recorded = settings_answer(text, "campaign")
-        if recorded is not None:
-            if recorded not in CAMPAIGNS:
-                raise SystemExit(f"{task}: campaign must be one of "
-                                 f"{', '.join(CAMPAIGNS)}, not {recorded!r}")
-            if campaign is not None and campaign != recorded:
-                raise SystemExit(
-                    f"{task} configures a {recorded} campaign, not {campaign}: "
-                    "edit it to change the campaign")
-            return task, recorded
-    else:
-        text = None
+    ``given`` must match the checkout's copy, so that a resume naming the
+    original file overwrites no edit made since. An unanswered campaign is
+    filled in, from ``campaign``, then ``ask()``, which returns None where
+    nobody can answer. A ``campaign`` that contradicts the file is refused:
+    the file is what the campaign runs under."""
+    task = canonical_task(workdir, given)
+    text = task.read_text()
+    recorded = settings_answer(text, "campaign")
+    if recorded is not None:
+        if recorded not in CAMPAIGNS:
+            raise SystemExit(f"{task}: campaign must be one of "
+                             f"{', '.join(CAMPAIGNS)}, not {recorded!r}")
+        if campaign is not None and campaign != recorded:
+            raise SystemExit(
+                f"{task} configures a {recorded} campaign, not {campaign}: "
+                "edit it to change the campaign")
+        return task, recorded
     campaign = campaign or ask()
     if campaign not in CAMPAIGNS:
         raise SystemExit("which campaign is this? pass --campaign "
                          + " | ".join(CAMPAIGNS))
-    if text is None:
-        template = deps.CHECKOUT / "templates" / CAMPAIGNS[campaign] / "CRUSTIFY.template.md"
-        text = template.read_text()
-        task.parent.mkdir(parents=True, exist_ok=True)
-        print(f"[crustify] created {task} from {template.name}")
-    elif _answer_re("campaign").search(text) is None:
+    if _answer_re("campaign").search(text) is None:
         # A settings file with no campaign question, such as the bare
         # ablation's: the campaign comes from the command line alone.
         return task, campaign
     task.write_text(_set_answer(text, "campaign", campaign))
     return task, campaign
+
+
+def detached_settings(given: Path | None, campaign: str | None,
+                      ask) -> tuple[Path, str]:
+    """The settings of a session whose repository is not established yet,
+    and its campaign.
+
+    Nothing is written: the settings are ``given``, or the campaign's
+    template, which the assistant writes as ``<repo>/crustify/CRUSTIFY.md``
+    once the user and it have established the repository. The campaign
+    comes from the file, then ``campaign``, then ``ask()``."""
+    from crustify import deps
+    recorded = None
+    if given is not None:
+        if not given.is_file():
+            raise SystemExit(f"no campaign settings at {given}")
+        recorded = settings_answer(given.read_text(), "campaign")
+        if recorded is not None and campaign is not None and campaign != recorded:
+            raise SystemExit(f"{given} configures a {recorded} campaign, "
+                             f"not {campaign}: edit it to change the campaign")
+    campaign = recorded or campaign or ask()
+    if campaign not in CAMPAIGNS:
+        raise SystemExit("which campaign is this? pass --campaign "
+                         + " | ".join(CAMPAIGNS))
+    if given is not None:
+        return given.resolve(), campaign
+    return (deps.CHECKOUT / "templates" / CAMPAIGNS[campaign]
+            / "CRUSTIFY.template.md"), campaign
 
 
 def _ask_campaign() -> str | None:
@@ -415,25 +435,45 @@ def _ask_campaign() -> str | None:
     return answer or None
 
 
+#: Where a session's directory in crustify's home records the checkout the
+#: assistant created, when it started without one.
+SESSION_WORKDIR = "workdir"
+
+
 def assistant_session(workdir: Path | None, session_id: str | None) -> dict:
     """The record of an earlier assistant session, from the index in
-    crustify's home: the one with ``session_id``, or the most recent one, of
-    ``workdir`` when given. The record names the session's workdir."""
+    crustify's home: the one with ``session_id``, by its CLI's id or its
+    directory's, or the most recent one, of ``workdir`` when given, the
+    checkout or the directory it ran in.
+
+    Each session's directory, ``sessions/<id>/``, holds its ``index.json``,
+    which names the directory the CLI ran in (``cwd``), the checkout
+    (``workdir``), and the directory itself (``dir``). A checkout the
+    assistant created after starting is in the directory's ``workdir`` file.
+    The flat ``sessions/<id>.json`` of earlier versions are read too."""
     import json
     from crustify.layout import crustify_home
+    sessions = crustify_home() / "sessions"
     records = []
-    for path in sorted((crustify_home() / "sessions").glob("*.json")):
+    for path in sorted([*sessions.glob("*/index.json"), *sessions.glob("*.json")]):
         try:
             record = json.loads(path.read_text())
         except (OSError, ValueError):
             continue
-        if isinstance(record, dict) and record.get("session_id") \
-                and record.get("workdir"):
+        if not (isinstance(record, dict) and record.get("session_id")):
+            continue
+        created = path.parent / SESSION_WORKDIR
+        if path.name == "index.json" and created.is_file():
+            record["workdir"] = created.read_text().strip() or record.get("workdir")
+        record.setdefault("cwd", record.get("workdir"))
+        if record.get("cwd"):
             records.append(record)
     if session_id:
-        records = [r for r in records if r["session_id"] == session_id]
+        records = [r for r in records
+                   if session_id in (r["session_id"], Path(r.get("dir") or "").name)]
     if workdir is not None:
-        records = [r for r in records if Path(r["workdir"]) == workdir]
+        records = [r for r in records
+                   if workdir in {Path(p) for p in (r.get("workdir"), r["cwd"]) if p}]
     if not records:
         where = f" of {workdir}" if workdir is not None else ""
         raise SystemExit(f"no assistant session {session_id}{where}" if session_id
@@ -446,15 +486,27 @@ def _handle_assist(args: argparse.Namespace) -> None:
     from crustify import config as _cfg
     from crustify.agents.assist import AssistAgent
 
+    import uuid
+    from crustify.layout import crustify_home
+
     given = Path(args.workdir).resolve() if args.workdir else None
+    # Where the CLI runs: the directory the session starts in. It is the
+    # campaign's repository when it holds the campaign's settings; otherwise
+    # crustify writes nothing there, and the assistant establishes the
+    # repository with the user.
     workdir = given or Path(".").resolve()
+    checkout = workdir if (workdir / TASK).is_file() else None
     model = _cfg.MODEL_OVERRIDE or "anthropic/claude-opus-5"
     resume = None
+    session_id = str(uuid.uuid4())
+    session_dir = crustify_home() / "sessions" / session_id
     if getattr(args, "resume", None) is not None:
         from crustify.core.models import resolve
         record = assistant_session(given, args.resume or None)
         resume = record["session_id"]
-        workdir = Path(record["workdir"])
+        workdir = Path(record["cwd"])
+        checkout = Path(record["workdir"]) if record.get("workdir") else None
+        session_dir = Path(record.get("dir") or crustify_home() / "sessions" / resume)
         recorded = f"{record.get('provider')}/{record.get('model')}"
         model = _cfg.MODEL_OVERRIDE or recorded
         cli = "claude_cli" if record.get("cli") == "claude" else "codex_cli"
@@ -473,21 +525,32 @@ def _handle_assist(args: argparse.Namespace) -> None:
     if not interactive and not args.start:
         raise SystemExit("a headless session has nobody to instruct it: pass "
                          "--start to run the campaign as CRUSTIFY.md configures it")
-    task, campaign = campaign_settings(workdir, args.settings, args.campaign,
-                                       _ask_campaign)
+    if checkout is not None:
+        task, campaign = campaign_settings(checkout, args.settings, args.campaign,
+                                           _ask_campaign)
+    else:
+        if not interactive and args.settings is None:
+            raise SystemExit(
+                f"{workdir} holds no {TASK}, and a headless session has nobody to "
+                "establish its repository with: pass --settings with its source")
+        task, campaign = detached_settings(args.settings, args.campaign,
+                                           _ask_campaign)
     kind = CAMPAIGNS[campaign]
     run_start = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
     # Created here, not by the agent, so the assistant's log and usage
-    # record land in it from its first turn.
-    artifact_dir = workdir / "crustify" / ARTIFACTS / "assistant"
-    artifact_dir.mkdir(parents=True, exist_ok=True)
-    print(f"[crustify] {campaign} campaign; artifacts: {artifact_dir}")
+    # record land in it from its first turn: the session's own directory in
+    # crustify's home, never the checkout, which it may not have yet.
+    session_dir.mkdir(parents=True, exist_ok=True)
+    print(f"[crustify] {campaign} campaign; session: {session_dir}")
+    print(f"[crustify] checkout: {checkout or 'none yet'}")
     if interactive and not args.start:
         print("[crustify] Crustify is waiting for your instructions.")
-    # One log per run, so resuming never overwrites an earlier session's.
+    # One record per run, so resuming never overwrites an earlier one.
     AssistAgent(workdir, kind=kind, task=task, model=model,
                 task_only=args.task_only, interactive=interactive,
-                start=args.start, resume=resume, artifact_dir=artifact_dir,
+                start=args.start, resume=resume, checkout=checkout,
+                session_id=None if resume else session_id,
+                artifact_dir=session_dir,
                 log_stem=f"assistant-{run_start}").run()
 
 

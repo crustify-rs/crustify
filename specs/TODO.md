@@ -2,9 +2,9 @@
 
 Deferred decisions and follow-up work on the crustify contracts and prompts.
 
-## Side campaigns for out-of-tree dependencies
+## 1. Side campaigns for out-of-tree dependencies
 
-A campaign wraps one repository, but its subsystems import libraries that live elsewhere —
+A campaign wraps one repository, but its modules import libraries that live elsewhere —
 libz and pcre2 for libgit2, and so on. Today those are a boundary the campaign stops at:
 the imported entities are recorded but nothing safe is generated for them, so a wrapper
 built on the campaign's output still reaches foreign code through raw bindings.
@@ -13,48 +13,49 @@ A side campaign would translate one of those dependencies in **its own** reposit
 producing a wrapper crate the main campaign depends on rather than one it vendors. The
 orchestrator prompt has no step for it yet.
 
-The input already exists. `subsystems.json` records `imported_deps.out_of_tree[*]` as
-`{library, counters}`, so the orchestrator can already see which external libraries a span
+The input already exists. `modules.json` records each out-of-tree library a module uses
+as a `depends_on.scheduled` record, `{library, counters, rust_equivalent}`, so the orchestrator can already see which external libraries a span
 consumes and how many distinct entities it takes from each. That count is what decides
-whether a side campaign is worth spawning: a subsystem calling two functions from libz
+whether a side campaign is worth spawning: a module calling two functions from libz
 does not need one.
 
 Open questions:
 
 - **When to skip.** A dependency with a maintained safe crate should use it rather than be
-  re-wrapped. Deciding that is a judgement the campaign task may want to answer rather
-  than the orchestrator.
+  re-wrapped. Each out-of-tree record's `rust_equivalent` now records its ported and
+  safe-binding crates; whether a side campaign runs anyway is a judgement the campaign task
+  may want to answer rather than the orchestrator.
 - **Scope.** A side campaign covers what the parent consumes, not the whole dependency, so
-  its scope is a closure over `out_of_tree` counters rather than a subsystem span.
+  its scope is a closure over the out-of-tree records' counters rather than a module span.
 - **Ordering.** A side campaign is a producer of the parent's link units, so it precedes
   them — but it lives in another repository with its own branches, build baseline and
-  results, which the current nesting (`link_unit` → `subsystem` in `subsystems.json`, → `wave` in each subsystem's `schedule.json`)
-  cannot express.
+  results, which the current nesting (`link_unit` → `module` in `modules.json`, and the
+  campaign's waves in `schedule.json`) cannot express.
 - **Results and accounting.** Whether a side campaign reports into the parent's results
   table or its own.
 
-## Ship `docs/` so a non-editable install keeps its conventions
+## 2. Ship `specs/` so a non-editable install keeps its conventions
 
-The conventions and the how-tos (`docs/conventions.md`,
-`docs/*.md`) resolve under `deps.CHECKOUT`, which is the source checkout.
-A wheel install has no `docs/` there, so every agent runs without its conventions and
+The conventions and the how-tos (`specs/conventions.md`,
+`specs/*.md`) resolve under `deps.CHECKOUT`, which is the source checkout.
+A wheel install has no `specs/` there, so every agent runs without its conventions and
 how-tos. Only the editable install the Dockerfile performs hides this.
 
-Ship `docs/` as data-files to `share/crustify/`, the way Wavefront ships its schemas to
+Ship `specs/` as data-files to `share/crustify/`, the way Wavefront ships its schemas to
 `share/wavefront/artifacts`, and resolve crustify's own skills there before the checkout.
 `deps.share_dir()` already resolves that prefix.
 
-This is also the prerequisite for moving `src/crustify/prompts/` into `docs/`: prompts
+This is also the prerequisite for moving `src/crustify/prompts/` into `specs/`: prompts
 package correctly today only because they sit inside the package, and moving them before
 the fix would lose them the same way.
 
-## Add an idiomaticity and ergonomics guide
+## 3. Add an idiomaticity and ergonomics guide
 
-Create `docs/idiomaticity.md` for Rust API-shaping hints and good practices. Keep
+Create `specs/idiomaticity.md` for Rust API-shaping hints and good practices. Keep
 mandatory mechanical rules in `conventions.md`. Make the guide available through an
 optional prompt skill so experiments can ablate it without changing the prompts.
 
-## Emit type-implementing symbols as inherent methods
+## 4. Emit type-implementing symbols as inherent methods
 
 A symbol whose first parameter is the type it operates on is currently emitted as a free
 function (`conventions.md`, "Naming › Functions"). Emitting it as an inherent
@@ -90,7 +91,7 @@ to defer the shape to the translator prompt.
 Also open: whether existing waves get retrofitted, or the crate carries two generations of
 shape side by side.
 
-## Enforce FFI lending windows with ARM MTE
+## 5. Enforce FFI lending windows with ARM MTE
 
 `FooRef<'a>` and `FooMut<'a>` assert that foreign code will not retain the pointer past
 `'a`. Nothing checks that today: it is an assumption the translator records in the
@@ -103,7 +104,7 @@ LLVM-supported foreign code" — it needs IR for the C. MTE checks in the core, 
 shared objects, hand-written assembly and anything else that issues a load is covered with
 no instrumentation of the foreign side.
 
-### What it cannot do
+### 5.1 What it cannot do
 
 MTE compares a pointer's tag against the granule's tag and faults on mismatch. The check
 is **symmetric across loads and stores**, so it expresses *identity*, not *permission*.
@@ -122,7 +123,7 @@ unwind path included.
 So MTE is a candidate to replace ASan for FFI-crossing memory-safety classes, not BSan for
 aliasing classes.
 
-### The part worth building
+### 5.2 The part worth building
 
 Retention: foreign code using a pointer after its lending window closed. No current
 instrument covers it well — the memory is still live, so ASan sees nothing — and it is
@@ -136,7 +137,7 @@ pointer stashed during window `i` aliases window `i+1` with p = 1/16.
 Object granularity, not field granularity — which suits opaque handle types like
 `git_commit`, where the whole object is lent anyway.
 
-### Why it is worth a paper paragraph
+### 5.3 Why it is worth a paper paragraph
 
 The miss rate is **computable**: a violation occurring `n` times is detected with
 probability at least `1 - 16^-n`. That makes MTE the only dynamic instrument here with a
@@ -146,9 +147,42 @@ false-negative bound at all; this does.
 It remains a falsifier — sound for positives, unsound for absence — so it cannot support a
 verification claim, only a sharper falsification one.
 
-### Blockers
+### 5.4 Blockers
 
 No MTE on the current machine: `/proc/cpuinfo` lists `bti paca pacg` but no `mte`. Needs
 v8.5 silicon or a model. Use synchronous tag-check mode for testing; async batches faults
 and loses the faulting site. HWASan is the software fallback at 1/256 rather than 1/16,
 but it needs the C instrumented, which forfeits the reach advantage.
+
+## 6. Port individual items without their module
+
+A port campaign's scope is whole modules
+([`workflows/porting.md`](workflows/porting.md)'s Scope section). A campaign that ports
+only a few named types or symbols, and leaves the rest of their module in C, has no
+workflow yet.
+
+Open questions:
+
+- how such a scope maps to a plan: whether its items are scheduled inside the module
+  that owns them, or as a module of their own;
+- how the module's remaining C reaches them, and for how long; and
+- whether the module's tests that reach those items are migrated, as a ported
+  module's are, or only added.
+
+## 7. Module parallelization
+
+Modules run one at a time, in the order `modules.json` computes
+([`artifacts/modules.md`](artifacts/modules.md)'s Execution order section), although a
+module is one translation unit and many hold only a few items: most of their waves are
+small, and modules that do not depend on one another could run at once. Module
+parallelization would run independent modules' waves concurrently, with the user's
+approval.
+
+Open questions:
+
+- whether parallel modules share one wave, its batches drawn from several modules, or keep
+  their own waves running side by side, and so whether `module` stays a wave field or moves
+  to the batch;
+- how the user approves it: once per campaign as a setting, or per group of modules; and
+- how each module's base, the settings it ran under and its accounting are recorded when
+  its waves no longer start from a commit of their own.

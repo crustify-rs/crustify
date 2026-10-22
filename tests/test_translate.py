@@ -11,6 +11,8 @@ from crustify import config, translate
 
 #: The run settings every task carries.
 RUN = {"model": "anthropic/claude-opus-5", "billing": "subscription"}
+#: Where every task's batch sits in the schedule.
+PLACE = {"wave": 0, "batch": 0, "link_unit": "demo", "module": 3}
 
 
 def _reset_run() -> None:
@@ -29,7 +31,7 @@ class BatchValidationTests(unittest.TestCase):
 
     def load(self, doc: dict, *, complete: bool = True) -> translate.Batch:
         if complete:
-            doc = {**RUN, "base_branch": "wave-0", **doc}
+            doc = {**RUN, **PLACE, "base_branch": "wave-0", **doc}
         self.path.write_text(json.dumps(doc))
         return translate.load_batch(self.path)
 
@@ -51,12 +53,38 @@ class BatchValidationTests(unittest.TestCase):
         self.assertEqual(batch.base_branch, "wave-0")
         self.assertEqual(batch.run, translate.RunSettings(**RUN))
 
+    def test_batch_fields_place_the_task_in_the_schedule(self) -> None:
+        doc = {"objective": "wrap", "items": [self.item()]}
+        placement = self.load({**doc, "wave": 7, "batch": 2}).placement
+        self.assertEqual(placement.batch_id, "wave-7/batch-2")
+        self.assertEqual(placement.module_label, "demo/3")
+        self.assertEqual(
+            self.load({**doc, "module": None}).placement.module_label, "none")
+        for field in ("wave", "batch", "link_unit", "module"):
+            with self.subTest(missing=field), \
+                    self.assertRaisesRegex(SystemExit, f"missing task field.*{field}"):
+                full = {**RUN, **PLACE, "base_branch": "wave-0", **doc}
+                del full[field]
+                self.load(full, complete=False)
+        for bad in ({"wave": -1}, {"batch": "0"}, {"wave": True}):
+            with self.subTest(bad=bad), \
+                    self.assertRaisesRegex(SystemExit, "non-negative index"):
+                self.load({**doc, **bad})
+        with self.assertRaisesRegex(SystemExit, "link_unit must be a name or null"):
+            self.load({**doc, "link_unit": ""})
+        for bad in ("core", -1, True):
+            with self.subTest(module=bad), \
+                    self.assertRaisesRegex(SystemExit, "index or null"):
+                self.load({**doc, "module": bad})
+        with self.assertRaisesRegex(SystemExit, "needs its link_unit"):
+            self.load({**doc, "link_unit": None})
+
     def test_run_settings_and_branch_are_required_and_checked(self) -> None:
         doc = {"objective": "wrap", "items": [self.item()]}
         for field in ("model", "billing", "base_branch"):
             with self.subTest(missing=field), \
                     self.assertRaisesRegex(SystemExit, f"missing task field.*{field}"):
-                full = {**RUN, "base_branch": "wave-0", **doc}
+                full = {**RUN, **PLACE, "base_branch": "wave-0", **doc}
                 del full[field]
                 self.load(full, complete=False)
         with self.assertRaisesRegex(SystemExit, "unknown provider"):
@@ -101,23 +129,18 @@ class BatchValidationTests(unittest.TestCase):
                 "items": [self.item(fields=["field"])],
             })
 
-    def test_raw_lifetime_is_exactly_one_known_tier(self) -> None:
-        batch = self.load({
-            "objective": "port",
-            "items": [self.item("void", kind="raw-lifetime", defined_in=None)],
-        })
-        self.assertEqual(batch.route, "raw-lifetime")
-        self.assertEqual(translate._task_objective(batch), "wrap")
-
-        with self.assertRaisesRegex(SystemExit, "exactly one void or string"):
+    def test_raw_lifetime_is_no_kind(self) -> None:
+        # The foundational modules schedule ordinary
+        # symbols and types: no marker item stands for them.
+        with self.assertRaisesRegex(SystemExit, "kind must be one of"):
             self.load({
                 "objective": "wrap",
-                "items": [self.item("other", kind="raw-lifetime", defined_in=None)],
+                "items": [self.item("void", kind="raw-lifetime", defined_in=None)],
             })
-        with self.assertRaisesRegex(SystemExit, "must be null"):
+        with self.assertRaisesRegex(SystemExit, "defined_in must be"):
             self.load({
                 "objective": "wrap",
-                "items": [self.item("void", kind="raw-lifetime")],
+                "items": [self.item("av_free", kind="symbol", defined_in=None)],
             })
 
 
@@ -140,6 +163,7 @@ class GitHarnessTests(unittest.TestCase):
         self.batch = self.output / "task.json"
         self.batch.write_text(json.dumps({
             **RUN,
+            **PLACE,
             "base_branch": "wave-0",
             "objective": "wrap",
             "items": [{

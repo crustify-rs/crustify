@@ -13,7 +13,8 @@ from crustify.agents.review import ReviewAgent
 _COMMIT = "3f2a9c1"
 #: What every review task carries beside its worklist.
 _RUN = {"model": "anthropic/claude-opus-5", "billing": "subscription",
-        "base_branch": "review-wave-0"}
+        "base_branch": "review-wave-0",
+        "wave": 1, "batch": 0, "link_unit": "demo", "module": 3}
 
 
 def _reset_run() -> None:
@@ -94,16 +95,16 @@ class ReviewBatchTests(unittest.TestCase):
                                     "From<Oid> for String",
                                     "Iterator for Packets<'_>"],
                     "functions": ["open_input", "util::probe"]}]
-        batch = self.load({"modules": modules})
-        self.assertEqual((batch.route, batch.modules), ("modules", modules))
+        batch = self.load({"paths": modules})
+        self.assertEqual((batch.route, batch.paths), ("paths", modules))
         self.assertEqual(batch.commits, [])
 
     def test_commits_and_modules_are_exclusive(self) -> None:
         with self.assertRaisesRegex(SystemExit, "not both"):
-            self.load({"commits": [_COMMIT], "modules": ["src/a.rs"]})
+            self.load({"commits": [_COMMIT], "paths": ["src/a.rs"]})
 
     def test_a_batch_needs_a_worklist_or_reports(self) -> None:
-        with self.assertRaisesRegex(SystemExit, "commits, modules or reports"):
+        with self.assertRaisesRegex(SystemExit, "commits, paths or reports"):
             self.load({"objectives": ["ub"]})
 
     def test_modules_are_validated(self) -> None:
@@ -117,17 +118,17 @@ class ReviewBatchTests(unittest.TestCase):
                         [{"path": "a.rs", "items": ["T"]}],
                         ["a.rs", {"path": "a.rs", "types": ["T"]}]):
             with self.subTest(modules=modules), self.assertRaises(SystemExit):
-                self.load({"modules": modules})
+                self.load({"paths": modules})
 
     def test_reports_come_exactly_with_revisit(self) -> None:
         report = "crustify/reviews/b/ub_safe/x"
         batch = self.load({"objectives": ["revisit", "fix"], "reports": [report]})
         self.assertEqual((batch.route, batch.reports), ("reports", [report]))
         with self.assertRaisesRegex(SystemExit, "revisit"):
-            self.load({"objectives": ["ub"], "modules": ["a.rs"],
+            self.load({"objectives": ["ub"], "paths": ["a.rs"],
                        "reports": [report]})
         with self.assertRaisesRegex(SystemExit, "revisit"):
-            self.load({"objectives": ["revisit"], "modules": ["a.rs"]})
+            self.load({"objectives": ["revisit"], "paths": ["a.rs"]})
 
     def test_the_translator_no_longer_reviews(self) -> None:
         self.path.write_text(json.dumps({**_RUN, "objective": "review", "items": [_ITEM]}))
@@ -185,7 +186,7 @@ class ReviewAgentTests(unittest.TestCase):
         pre = self.agent(["ub", "lifecycle"]).system_preamble()
         self.assertIn("objectives: `lifecycle, ub`", pre)
         self.assertIn("skip what the\ninstructions say about the others", pre)
-        self.assertIn("### Equivalence (`equiv`)", pre)
+        self.assertRegex(pre, r"### (\d+(\.\d+)* )?Equivalence \(`equiv`\)")
         self.assertNotIn("OBJECTIVE", pre)
 
     def test_every_objective_has_a_section_headed_by_its_id(self) -> None:
@@ -194,7 +195,7 @@ class ReviewAgentTests(unittest.TestCase):
         step."""
         from crustify.agents.base import _PKG_ROOT, deps
         from crustify.agents.review import OBJECTIVES, SKILL_OBJECTIVES
-        text = (deps.CHECKOUT / "docs/reviewing.md").read_text()
+        text = (deps.CHECKOUT / "specs/reviewing.md").read_text()
         for objective in OBJECTIVES:
             if objective == "fix":
                 continue
@@ -221,8 +222,8 @@ class ReviewAgentTests(unittest.TestCase):
 
     def test_testing_says_when_gates_run_the_prompts_who_runs_them(self) -> None:
         from crustify.agents.base import _PKG_ROOT, deps
-        testing = (deps.CHECKOUT / "docs/testing.md").read_text()
-        self.assertIn("BSan, when available, is run for every batch and at subsystem end",
+        testing = (deps.CHECKOUT / "specs/testing.md").read_text()
+        self.assertIn("BSan, when available, is run for every batch and at module end",
                       testing)
         self.assertIn("Miri is run after every wave", testing)
         self.assertNotIn("review batch", testing)

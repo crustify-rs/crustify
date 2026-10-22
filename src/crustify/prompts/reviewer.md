@@ -7,7 +7,7 @@ You review one orchestrator-projected review worklist for the objectives you are
 file a report for every defect you find, validate, commit, and land your work on the
 supplied review integration branch.
 
-<!-- INCLUDE docs/identity.md -->
+<!-- INCLUDE specs/identity.md -->
 
 ---
 
@@ -17,14 +17,16 @@ supplied review integration branch.
 - worklist: `{worklist}`
 - objectives: `{objectives}`
 - reports to revisit: `{reports}`
+- batch: `{batch_id}`, of module `{module}`, its link unit and index in `modules.json`
 - unchecked-out review integration branch: `{git_base}`
 
 ## Worklists and objectives
 
 Your worklist has one route, as the reviewing instructions' Worklists section describes.
 In a Crustify campaign it carries the commits of one or more translation batches of a
-wave; each commit's `Batch:` trailer leads you to the `task.json` of its batch. In an
-audit it names modules. Read what your workset calls and what implements its traits, but
+wave: your batch's entry in `crustify/artifacts/schedule.json` names the wave your wave
+`reviews` and the batches of it you review, and each of those lists the `items` it bound
+or ported and the `commits` it landed. In an audit it names paths of the crate. Read what your workset calls and what implements its traits, but
 report only on your workset.
 
 Your objectives are listed in your inputs, and the reviewing instructions' Objectives
@@ -35,8 +37,7 @@ instructions say about the others. `fix` decides whether you patch what you find
 
 ## Artifact dirs
 
-`<reviews-dir>` is your reviews dir, `crustify/reviews/<batch id>/`, with your batch id
-taken from your working branch's name as the layout instructions describe. File each
+`<reviews-dir>` is your reviews dir, `crustify/reviews/{batch_id}/`. File each
 finding in the sub-directory of its objective, as the reviewing instructions' Reports
 section lists them. A skill may define sub-directories of its own for findings on its
 tool's output.
@@ -90,9 +91,9 @@ In a Crustify campaign, your review wave follows a translated wave, so you own i
 as the reviewing instructions' Gates section describes:
 
 - Miri, in every wave: run its gate on the wave tip before any change.
-- BSan at subsystem end, when your wave is the subsystem's last: your branch's name gives
-  the link unit, subsystem and wave, and its index is the highest in the subsystem's
-  `crustify/artifacts/<link-unit>/<subsystem>/schedule.json`. Run its gate on the wave tip
+- BSan at module end, when the wave you review is your module's last: no other
+  translation wave of your module in `crustify/artifacts/schedule.json` runs after it.
+  Run its gate on the wave tip
   before any change, and triage its reports on earlier waves' items too. In every other
   wave, run BSan only on the individual reproducers you emit.
 
@@ -102,14 +103,15 @@ If `fix` is not enabled, file each true positive a gate finds as a UB report.
 ### 4. Landing
 
 Make two commits, first the `crustify/reviews/` changes, then the Rust tree changes, if you
-made any, and land them on `{git_base}` as the landing instructions below describe.
+made any, with your batch's dashboard rows in the last, and land them on `{git_base}` as the
+landing instructions below describe.
 
 ---
 
 Here are additional instructions on how Crustify reviews landed work: the worklists, the
 objectives, and how findings are filed and fixed.
 
-<!-- INCLUDE docs/reviewing.md -->
+<!-- INCLUDE specs/reviewing.md -->
 
 ---
 
@@ -117,41 +119,49 @@ The following describes the conventions of Crustify-generated codebases. If you 
 reviewing a Crustify-generated batch, judge the Rust against them and follow them in every
 change you make; otherwise, ignore them.
 
-<!-- INCLUDE docs/conventions.md -->
+<!-- INCLUDE specs/conventions.md -->
 
 ---
 
 Here are additional instructions on how Crustify generates safe bindings, which your workset
 is judged against.
 
-<!-- INCLUDE docs/binding.md -->
+<!-- INCLUDE specs/items/binding.md -->
 
 ---
 
 Here are additional instructions on how Crustify ports C to safe Rust, which the ported items
 of your workset are judged against.
 
-<!-- INCLUDE docs/porting.md -->
+<!-- INCLUDE specs/items/porting.md -->
 
 ---
 
 Here are additional instructions on how to test, including the gates and regressions a
 review batch owns.
 
-<!-- INCLUDE docs/testing.md -->
+<!-- INCLUDE specs/testing.md -->
 
 ---
 
 Here are additional instructions on how a campaign is laid out: its branches, worktrees and
 artifact dirs, and your reviews dir.
 
-<!-- INCLUDE docs/layout.md -->
+<!-- INCLUDE specs/layout.md -->
 
 ---
 
 Here are additional instructions on how to land your commits.
 
-<!-- INCLUDE docs/landing.md -->
+<!-- INCLUDE specs/landing.md -->
+
+---
+
+Here is how a campaign accounts for its work: what the dashboard records, and when each
+of its cells is measured. You fill your review batch's landing cells, in your last commit;
+the usage and campaign cells are not yours.
+
+<!-- INCLUDE specs/accounting.md -->
 
 ---
 

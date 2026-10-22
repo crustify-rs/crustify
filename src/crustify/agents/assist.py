@@ -55,9 +55,28 @@ AUDIT_SKILLS = (
 SKILLS_BY_KIND = {"translate": TRANSLATE_SKILLS, "audit": AUDIT_SKILLS}
 
 
+#: Where the assistant's one prompt, `prompts/assistant.md`, takes its campaign
+#: kind's part: replaced by `prompts/assistant/<kind>.md`, what the assistant
+#: owns in that kind of campaign and the documents only that kind includes.
+CAMPAIGN_MARKER = "<!-- CAMPAIGN -->"
+
+
+def campaign_prompt(kind: str) -> str:
+    """The assistant's prompt template for one campaign kind, its documents not
+    yet included: the shared prompt with the kind's part in its marker."""
+    shared = (_PKG_ROOT / "prompts" / "assistant.md").read_text()
+    if shared.count(CAMPAIGN_MARKER) != 1:
+        raise SystemExit(f"assistant.md must hold one {CAMPAIGN_MARKER} marker")
+    part = (_PKG_ROOT / "prompts" / "assistant" / f"{kind}.md").read_text().strip()
+    return shared.replace(CAMPAIGN_MARKER, part)
+
+
 #: The first turn of a session started with `--start`: the user's instruction
 #: to run the campaign as its settings configure it. Without `--start` there
 #: is no first turn, and the user types it.
+#: ``checkout`` left out: the session's workdir is its checkout.
+_WORKDIR = object()
+
 START = ("Start the campaign: run your workflow end to end, as "
          "crustify/CRUSTIFY.md configures it.")
 
@@ -76,7 +95,8 @@ class AssistAgent(CrustifyAgent):
     def __init__(self, workdir: Path, *, kind: str, task: Path,
                  model: str, task_only: bool = False,
                  interactive: bool = False, start: bool = False,
-                 resume: str | None = None, **kwargs) -> None:
+                 resume: str | None = None, checkout=_WORKDIR,
+                 session_id: str | None = None, **kwargs) -> None:
         self.kind = kind
         self.SKILLS = SKILLS_BY_KIND[kind]
         self.task = Path(task)
@@ -93,8 +113,38 @@ class AssistAgent(CrustifyAgent):
         #: rendered again, as the workflow stands now: neither CLI keeps it
         #: with the conversation.
         self.resume = resume
+        #: The campaign's repository, or None while it is not established:
+        #: ``workdir`` is only where the CLI runs, the directory the session
+        #: started in, which a resume returns to.
+        if checkout is _WORKDIR:
+            checkout = workdir
+        self.checkout = Path(checkout).resolve() if checkout is not None else None
+        #: The id a new session takes, which names its directory in
+        #: crustify's home before the CLI starts.
+        self.session_id = session_id
         self.stage_suffix = kind
         super().__init__(workdir, **kwargs)
+
+    def _arguments(self) -> dict:
+        # Before the repository is established, the prompt names it `<repo>`,
+        # which its Repository section describes.
+        return {**super()._arguments(),
+                "workdir": str(self.checkout) if self.checkout else "<repo>",
+                "settings": str(self.task),
+                "cwd": str(self.workdir),
+                "session_dir": str(self.artifact_dir or self.layout.root / "logs")}
+
+    def _index(self) -> dict:
+        # The session's directory in crustify's home holds its index entry,
+        # so `crustify --resume` finds it from any directory, and the
+        # directory to run the CLI in: its transcript is filed by that.
+        if self.artifact_dir is None:
+            return {}
+        return {"index_path": self.artifact_dir / "index.json",
+                "index_facts": {
+                    "cwd": str(self.workdir),
+                    "workdir": str(self.checkout) if self.checkout else None,
+                    "dir": str(self.artifact_dir)}}
 
     def _task_text(self) -> str:
         text = self.task.read_text().strip()
@@ -110,10 +160,9 @@ class AssistAgent(CrustifyAgent):
     def _body(self) -> str:
         """The stage prompt. The campaign settings are not in it: the prompt says
         where the task lives, and the orchestrator reads it from there, so an
-        edit made mid-campaign is what the next subsystem runs under."""
+        edit made mid-campaign is what the next module runs under."""
         self._task_text()
-        return expand_includes(
-            (_PKG_ROOT / "prompts" / f"{self.kind}-assistant.md").read_text())
+        return expand_includes(campaign_prompt(self.kind))
 
     def _prompt(self) -> str:
         if self.task_only:

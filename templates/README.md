@@ -9,12 +9,11 @@ Two kinds of campaign, one image, one directory of templates each.
 
 Copy a task template to start a request.
 
-The files beside them seed a translate campaign's `crustify/artifacts/` dir, which the
-orchestrator creates from them: [`gitignore`](gitignore),
-[`build.json`](build.json), [`subsystems.json`](subsystems.json) and
-[`schedule.json`](schedule.json), the shape of each subsystem's
-`<link-unit>/<subsystem>/schedule.json`. Derived artifacts such as `subsystems.json`
-are emitted against the live wavefront inventory, not committed by hand.
+[`gitignore`](gitignore) seeds a campaign's `crustify/.gitignore`. The files beside it
+are examples of the campaign's artifacts, whose fields are described under
+[`specs/artifacts/`](../specs/artifacts): [`build.json`](build.json),
+[`modules.json`](modules.json) and [`schedule.json`](schedule.json), the
+campaign's waves and batches.
 
 [`Dockerfile`](Dockerfile) builds the environment either campaign runs in. It
 starts nothing: the container idles, and `crustify` is run inside it: the command
@@ -65,10 +64,11 @@ volume. Crustify waits for your instructions; add `--start` to run the campaign 
 away, which a session without a terminal (`docker exec` without `-it`) needs.
 
 The first run copies the settings to the target's `crustify/CRUSTIFY.md`, which is tracked
-on the campaign branch. Edit that copy to change a campaign's settings while it runs, such
-as its models or batch sizes: Crustify rereads it before each subsystem, or each review
-wave of an audit, and commits it whenever it applies a change, so the branch's history
-records the settings each one ran under. To resume, omit `--settings`, or pass the same
+on the working branch, `crustify/devel`. Edit that copy to change a campaign's settings
+while it runs, such as its models or batch sizes: Crustify rereads it before each
+module, or each review wave of an audit, and commits it whenever it applies a change, so
+the branch's history records the settings each one ran under. `crustify/main` is the
+shipping branch, which Crustify advances to `crustify/devel` only with your approval. To resume, omit `--settings`, or pass the same
 file; a file that differs from the copy is refused, so a resume never overwrites your
 edits.
 
@@ -137,8 +137,9 @@ Set with `--build-arg` on `docker build`.
 
 ## Dashboards
 
-Campaign dashboards are written into the target checkout, at the path the task
-names, filled from [`dashboard.template.md`](translate/dashboard.template.md).
+Campaign dashboards are written into the target checkout, at
+`crustify/artifacts/dashboard.md` (`audit-dashboard.md` for an audit) unless the
+settings name another path, filled from [`dashboard.template.md`](translate/dashboard.template.md).
 
 The Dockerfile header documents the rest: what each mount buys and why the base
 image is pinned by digest.

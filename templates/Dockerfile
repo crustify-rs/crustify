@@ -47,7 +47,7 @@
 #                      `--settings` takes any path, and copies it to
 #                      /target/crustify/CRUSTIFY.md on the first run. Edit that
 #                      copy on the host to change settings mid-campaign;
-#                      Crustify rereads it before each subsystem.
+#                      Crustify rereads it before each module.
 #   /opt/crustify      The harness, baked into the image. Mount a checkout here
 #                      to test live harness changes. Both packages live in one
 #                      distribution, so this single tree serves both roles.

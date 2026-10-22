@@ -26,7 +26,7 @@ import sysconfig
 from pathlib import Path
 
 #: The crustify checkout itself: ``src/crustify/`` → two levels up. crustify's
-#: own skills, prompts and docs are read from here rather than from a share
+#: own skills, prompts and specs are read from here rather than from a share
 #: path, because they ship with the code that renders them and cannot be
 #: out of step with it.
 CHECKOUT = Path(__file__).resolve().parent.parent.parent

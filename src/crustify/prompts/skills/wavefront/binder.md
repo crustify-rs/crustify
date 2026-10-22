@@ -5,7 +5,7 @@ under its `docs/`.
 
 Each section below augments the how-to section it names, as `<how-to> › <section>`.
 
-## binding › Item analysis
+## items/binding › Item analysis
 
 Leverage the repo-wide Wavefront configuration prepared by the orchestrator
 at `crustify/wavefront/configs/wavefront-config.json` to emit queries that will
@@ -22,14 +22,17 @@ share one generic plus per-instance aliases.
 
 ---
 
-## binding › Type route › Surface
+## items/binding › Type route › Surface
 
 Read `docs/type-lifecycle.md` beside Wavefront's README for how to identify a type's lifecycle
 primitives, and submit your findings through the CLI's `--update`.
 
 ---
 
-## binding › Symbol route › Raw lifetime strategies
+## items/binding › Symbol route › Lifecycle strategies
 
-Read `docs/type-lifecycle.md` beside Wavefront's README for how to identify raw lifecycle
-primitives for void and string, and submit your findings through the CLI's `--update`.
+The planner submitted each foundational item's lifecycle role to the ownership store:
+query it for every item of your batch. Read `docs/type-lifecycle.md` beside Wavefront's
+README for how lifecycle primitives are identified, and correct a role that the item's
+body contradicts through the CLI's `--update`, naming the correction in your commit
+message.

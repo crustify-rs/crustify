@@ -9,16 +9,18 @@ from typing import Callable, NoReturn
 
 
 _OBJECTIVES = frozenset({"wrap", "port"})
-_KINDS = frozenset({"type", "symbol", "callback", "raw-lifetime"})
+_KINDS = frozenset({"type", "symbol", "callback"})
 _ITEM_FIELDS = frozenset({"name", "defined_in", "kind", "field_anchors", "home"})
 _FIELD_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
-_LIFETIME_TIERS = frozenset({"void", "string"})
 
 #: How a provider CLI authenticates: its own logged-in account, or an API key
 #: from the environment.
 BILLINGS = ("subscription", "api")
 #: The fields every task carries beside its worklist: how its agent runs.
 RUN_FIELDS = frozenset({"model", "billing"})
+#: The fields that place a binder's, translator's or reviewer's task in the
+#: campaign's schedule.json.
+BATCH_FIELDS = frozenset({"wave", "batch", "link_unit", "module"})
 
 #: The role that runs each objective's tasks; its name is also the stem of
 #: the log and usage record a batch writes into its own `--log-dir`, so
@@ -50,6 +52,29 @@ class Instructions:
 
 
 @dataclass(frozen=True)
+class Placement:
+    """Where a task's batch sits in the schedule: its wave and index, which
+    form its batch id, and the link unit and module its wave belongs to."""
+
+    wave: int
+    batch: int
+    link_unit: str | None
+    module: int | None
+
+    @property
+    def batch_id(self) -> str:
+        return f"wave-{self.wave}/batch-{self.batch}"
+
+    @property
+    def module_label(self) -> str:
+        """``<link-unit>/<module index>``, or ``none`` for a wave of no
+        module."""
+        if self.module is None:
+            return "none"
+        return f"{self.link_unit}/{self.module}"
+
+
+@dataclass(frozen=True)
 class Batch:
     """Validated binder or translator task."""
 
@@ -58,6 +83,7 @@ class Batch:
     items: list[dict]
     base_branch: str
     run: RunSettings
+    placement: Placement
     instructions: Instructions | None = None
 
 
@@ -66,11 +92,7 @@ def _fail(message: str) -> NoReturn:
 
 
 def _route(kind: str) -> str:
-    if kind == "type":
-        return "type"
-    if kind in ("symbol", "callback"):
-        return "symbol"
-    return "raw-lifetime"
+    return "type" if kind == "type" else "symbol"
 
 
 def read_object(path: Path, fail: Callable[[str], NoReturn]) -> dict:
@@ -121,6 +143,25 @@ def parse_branch(raw: dict, fail: Callable[[str], NoReturn]) -> str:
     if not isinstance(branch, str) or not branch.strip():
         fail("base_branch must name a branch")
     return branch.removeprefix("refs/heads/")
+
+
+def parse_placement(raw: dict, fail: Callable[[str], NoReturn]) -> Placement:
+    """A task's ``wave``, ``batch``, ``link_unit`` and ``module``."""
+    for key in ("wave", "batch"):
+        value = raw[key]
+        if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+            fail(f"{key} must be a non-negative index")
+    link_unit, module = raw["link_unit"], raw["module"]
+    if link_unit is not None and (not isinstance(link_unit, str)
+                                  or not link_unit.strip()):
+        fail("link_unit must be a name or null")
+    if module is not None and (not isinstance(module, int)
+                               or isinstance(module, bool) or module < 0):
+        fail("module must be a non-negative index or null")
+    if raw["module"] is not None and raw["link_unit"] is None:
+        fail("a module needs its link_unit")
+    return Placement(wave=raw["wave"], batch=raw["batch"],
+                     link_unit=raw["link_unit"], module=raw["module"])
 
 
 def parse_instructions(raw: dict, task_path: Path,
@@ -193,7 +234,7 @@ def parse_items(items: object, fail: Callable[[str], NoReturn]
             fail(f"{label}.name must be a non-empty string")
         if not isinstance(kind, str) or kind not in _KINDS:
             fail(
-                f"{label}.kind must be one of: callback, raw-lifetime, symbol, type")
+                f"{label}.kind must be one of: callback, symbol, type")
         if not isinstance(anchors, list):
             fail(f"{label}.field_anchors must be an array")
         if any(not isinstance(anchor, str) or not _FIELD_NAME.fullmatch(anchor)
@@ -210,10 +251,7 @@ def parse_items(items: object, fail: Callable[[str], NoReturn]
         if not isinstance(home, str) or not home or not home.endswith(".rs"):
             fail(f"{label}.home must be a repo-relative .rs path")
 
-        if kind == "raw-lifetime":
-            if defined_in is not None:
-                fail(f"{label}.defined_in must be null for raw-lifetime")
-        elif not isinstance(defined_in, str) or not defined_in:
+        if not isinstance(defined_in, str) or not defined_in:
             fail(f"{label}.defined_in must be a non-empty string")
 
         identity = (name, defined_in)
@@ -231,18 +269,14 @@ def parse_items(items: object, fail: Callable[[str], NoReturn]
 
     if len(routes) != 1:
         fail("items resolve to mixed agent routes: " + ", ".join(sorted(routes)))
-    route = routes.pop()
-    if route == "raw-lifetime":
-        if len(validated) != 1 or validated[0]["name"] not in _LIFETIME_TIERS:
-            fail("raw-lifetime batches must contain exactly one void or string item")
-    return route, validated
+    return routes.pop(), validated
 
 
 def load_batch(path: Path) -> Batch:
     """Load and strictly validate a binder or translator task, ``path``
     resolved."""
     raw = read_object(path, _fail)
-    check_fields(raw, {"objective", "items", "base_branch"} | RUN_FIELDS,
+    check_fields(raw, {"objective", "items", "base_branch"} | RUN_FIELDS | BATCH_FIELDS,
                  {"instructions"}, _fail)
     objective = raw["objective"]
     if not isinstance(objective, str) or objective not in _OBJECTIVES:
@@ -253,14 +287,8 @@ def load_batch(path: Path) -> Batch:
     return Batch(objective=objective, route=route, items=items,
                  base_branch=parse_branch(raw, _fail),
                  run=parse_run(raw, _fail),
+                 placement=parse_placement(raw, _fail),
                  instructions=parse_instructions(raw, path, _fail))
-
-
-def _task_objective(batch: Batch) -> str:
-    """Raw-lifetime discovery always wraps, in a port campaign too."""
-    if batch.route == "raw-lifetime":
-        return "wrap"
-    return batch.objective
 
 
 def execute(
@@ -273,8 +301,7 @@ def execute(
 ) -> None:
     """Run exactly one binder or translator, as ``role`` says, in ``workdir``.
 
-    A binder runs `wrap` tasks, raw-lifetime ones included; a translator
-    runs `port` tasks. ``workdir`` is the isolated worktree the
+    A binder runs `wrap` tasks; a translator runs `port` tasks. ``workdir`` is the isolated worktree the
     orchestrator forked for this batch, and ``log_dir`` the existing
     directory its log and usage record land in; the harness creates and
     purges neither.
@@ -282,28 +309,23 @@ def execute(
     task_path, output = task_and_log_dir(task_path, log_dir, _fail)
     batch = load_batch(task_path)
     base_branch = batch.base_branch
-    effective = _task_objective(batch)
-    if _ROLE[effective] != role:
-        _fail(f"a {effective} batch runs under `crustify spawn-{_ROLE[effective]}`"
-              + (" (raw-lifetime discovery always wraps)"
-                 if effective != batch.objective else ""))
+    if _ROLE[batch.objective] != role:
+        _fail(f"a {batch.objective} batch runs under "
+              f"`crustify spawn-{_ROLE[batch.objective]}`")
     workdir = workdir.resolve()
     if dry_run:
-        normalized = (
-            f"; task objective normalized to {effective}"
-            if effective != batch.objective else ""
-        )
         print(
-            f"[{role} dry-run] one {batch.route} agent; "
+            f"[{role} dry-run] one {batch.route} agent for "
+            f"{batch.placement.batch_id} ({batch.placement.module_label}); "
             f"{len(batch.items)} item(s); campaign objective "
-            f"{batch.objective}{normalized}; landing on {base_branch}; "
+            f"{batch.objective}; landing on {base_branch}; "
             f"model {batch.run.model} ({batch.run.billing}); "
             f"{instructions_note(batch.instructions)}; no agent spawned."
         )
         return
 
-    # Fixed names: `output` is this batch's own directory, so there is nothing
-    # to disambiguate. The orchestrator decides what a batch is called by
+    # Fixed names: `output` is this run's own directory, so there is nothing
+    # to disambiguate. The orchestrator decides what a run is called by
     # deciding where its artifacts go.
     print(f"[crustify spawn-{role}] workdir: {workdir}")
     print(f"[crustify spawn-{role}] landing on: {base_branch}")
@@ -328,5 +350,6 @@ def execute(
         log_stem=role,
     )
     agent.instructions = batch.instructions
+    agent.placement = batch.placement
     agent.run()
     print(f"[crustify spawn-{role}] batch completed.")

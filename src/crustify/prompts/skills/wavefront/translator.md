@@ -5,7 +5,7 @@ under its `docs/`.
 
 Each section below augments the how-to section it names, as `<how-to> › <section>`.
 
-## binding › Item analysis
+## items/binding › Item analysis
 
 Leverage the repo-wide Wavefront configuration prepared by the orchestrator
 at `crustify/wavefront/configs/wavefront-config.json` to emit queries that will
@@ -16,7 +16,7 @@ you need to consult these findings again.
 
 ---
 
-## porting › Surface
+## items/porting › Surface
 
 Read `docs/type-lifecycle.md` beside Wavefront's README for how to identify a type's lifecycle
 primitives, and submit your findings through the CLI's `--update`.

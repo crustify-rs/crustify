@@ -9,9 +9,11 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
 
-from crustify import deps
+from crustify import deps, translate
 from crustify.agents.base import _PKG_ROOT
-from crustify.agents.assist import AUDIT_SKILLS, AssistAgent
+from crustify.agents.assist import (
+    AUDIT_SKILLS, CAMPAIGN_MARKER, AssistAgent, campaign_prompt,
+)
 from crustify.agents.plan import PlanAgent
 from crustify.agents.review import ReviewAgent
 from crustify.agents.bind import BindAgent
@@ -125,19 +127,31 @@ class IncludeTests(unittest.TestCase):
     role headers name their sections when they augment them."""
 
     _DOCS = {
-        "conventions": "docs/conventions.md",
-        "binding": "docs/binding.md",
-        "porting": "docs/porting.md",
-        "testing": "docs/testing.md",
-        "landing": "docs/landing.md",
-        "layout": "docs/layout.md",
-        "planning": "docs/planning.md",
-        "reviewing": "docs/reviewing.md",
+        "conventions": "specs/conventions.md",
+        "items/binding": "specs/items/binding.md",
+        "items/porting": "specs/items/porting.md",
+        "testing": "specs/testing.md",
+        "landing": "specs/landing.md",
+        "layout": "specs/layout.md",
+        "decomposition": "specs/decomposition.md",
+        "scheduling": "specs/scheduling.md",
+        "reviewing": "specs/reviewing.md",
+        "accounting": "specs/accounting.md",
+        "prompting": "specs/prompting.md",
+        "workflows/setup": "specs/workflows/setup.md",
+        "workflows/binding": "specs/workflows/binding.md",
+        "workflows/porting": "specs/workflows/porting.md",
+        "workflows/audit": "specs/workflows/audit.md",
     }
-    _REF = re.compile(r"^## ([a-z]+) › (.+?)(?:, for `[a-z]+`)?$", re.M)
+    _REF = re.compile(r"^## ([a-z/]+) › (.+?)(?:, for `[a-z]+`)?$", re.M)
+    #: A numbered heading's number, which a reference leaves out.
+    _NUMBER = re.compile(r"^\d+(?:\.\d+)*\.?\s+")
 
     def _included(self, prompt: str) -> set[str]:
-        text = (_PKG_ROOT / "prompts" / prompt).read_text()
+        if prompt.endswith("-assistant.md"):
+            text = campaign_prompt(prompt.removesuffix("-assistant.md"))
+        else:
+            text = (_PKG_ROOT / "prompts" / prompt).read_text()
         return {name for name, path in self._DOCS.items()
                 if f"<!-- INCLUDE {path} -->" in text}
 
@@ -145,21 +159,25 @@ class IncludeTests(unittest.TestCase):
         """The reviewer is told to ignore the conventions outside a
         Crustify-generated batch."""
         self.assertEqual(self._included("binder.md"),
-                         {"conventions", "binding", "testing", "landing",
-                          "layout"})
+                         {"conventions", "items/binding", "testing", "landing",
+                          "layout", "accounting"})
         self.assertEqual(self._included("translator.md"),
-                         {"conventions", "binding", "porting", "testing",
-                          "landing", "layout"})
+                         {"conventions", "items/binding", "items/porting", "testing",
+                          "landing", "layout", "accounting"})
         self.assertEqual(self._included("reviewer.md"),
-                         {"conventions", "binding", "porting", "testing",
-                          "landing", "layout", "reviewing"})
+                         {"conventions", "items/binding", "items/porting", "testing",
+                          "landing", "layout", "reviewing", "accounting"})
         self.assertEqual(self._included("planner.md"),
-                         {"conventions", "planning", "reviewing"})
+                         {"conventions", "decomposition", "scheduling", "reviewing",
+                          "accounting"})
+        shared = {"prompting", "workflows/setup", "layout", "testing",
+                  "reviewing", "accounting"}
         self.assertEqual(self._included("translate-assistant.md"),
-                         {"conventions", "layout", "planning", "testing",
-                          "reviewing", "binding", "porting", "landing"})
+                         shared | {"workflows/binding", "workflows/porting",
+                                   "decomposition", "scheduling", "conventions", "items/binding",
+                                   "items/porting", "landing"})
         self.assertEqual(self._included("audit-assistant.md"),
-                         {"layout", "testing", "reviewing"})
+                         shared | {"workflows/audit"})
 
     def test_included_documents_are_plain_markdown(self) -> None:
         """Public documents, not skills: no frontmatter for an agent to see."""
@@ -173,14 +191,14 @@ class IncludeTests(unittest.TestCase):
         is formatted after the include."""
         from crustify.agents.base import expand_includes
         body = expand_includes(
-            "<!-- INCLUDE docs/conventions.md -->")
+            "<!-- INCLUDE specs/conventions.md -->")
         self.assertIn("{.<field>}", body.format())
 
     def test_every_how_to_section_a_header_names_exists(self) -> None:
         """A header augments `<how-to> › <section> [› <subsection>]`. Renaming
         a section would otherwise leave the augmentation pointing nowhere."""
         headings = {
-            name: {line.lstrip("#").strip()
+            name: {self._NUMBER.sub("", line.lstrip("#").strip())
                    for line in (deps.CHECKOUT / path).read_text().splitlines()
                    if line.startswith("#")}
             for name, path in self._DOCS.items()
@@ -256,9 +274,20 @@ class PromptRenderTests(unittest.TestCase):
     def test_every_stage_prompt_survives_format(self) -> None:
         """Any placeholder resolves here; what is under test is that no
         unescaped literal brace makes `format` raise."""
-        for path in (_PKG_ROOT / "prompts").glob("*.md"):
+        for path in [*(_PKG_ROOT / "prompts").glob("*.md"),
+                     *(_PKG_ROOT / "prompts" / "assistant").glob("*.md")]:
             with self.subTest(prompt=path.name):
                 path.read_text().format_map(collections.defaultdict(str))
+
+    def test_every_campaign_kind_fills_the_assistant_prompt(self) -> None:
+        """One shared prompt, one part per kind: a kind without its part, or a
+        part the marker never reaches, fails at launch."""
+        from crustify.cli import CAMPAIGNS
+        for kind in sorted(set(CAMPAIGNS.values())):
+            with self.subTest(kind=kind):
+                text = campaign_prompt(kind)
+                self.assertNotIn(CAMPAIGN_MARKER, text)
+                self.assertIn("<!-- SKILLS -->", text)
 
 
 class PromptArgumentTests(unittest.TestCase):
@@ -280,7 +309,7 @@ class PromptArgumentTests(unittest.TestCase):
     #: Supplied to every agent by `CrustifyAgent._arguments`; a role that does
     #: not name one is not carrying a dead key, it is just not using shared
     #: infrastructure.
-    _BASE = {"workdir", "git_base"}
+    _BASE = {"workdir", "git_base", "batch_id", "module"}
 
     def _declared(self, body: str) -> set[str]:
         return set(re.findall(r"(?<!\{)\{([a-z_]+)\}(?!\})", body))
@@ -315,6 +344,18 @@ class PromptArgumentTests(unittest.TestCase):
             artifact_dir=self.repo, log_stem="x")
         self._check(agent)
 
+    def test_a_batch_agent_names_its_batch(self) -> None:
+        agent = BindAgent(
+            self.repo, route="type",
+            items=[{"name": "T", "defined_in": "a.h", "kind": "type",
+                    "field_anchors": [], "home": "crustify/rust/x/src/a.rs"}],
+            git_base="crustify/waves/wave-3", artifact_dir=self.repo / "run-1",
+            log_stem="x")
+        agent.placement = translate.Placement(3, 1, "lib", 0)
+        arguments = agent._arguments()
+        self.assertEqual(arguments["batch_id"], "wave-3/batch-1")
+        self.assertEqual(arguments["module"], "lib/0")
+
     def test_planner_arguments_match_its_placeholders(self) -> None:
         self._check(PlanAgent(self.repo,
                               artifact_dir=self.repo, log_stem="x"))
@@ -346,7 +387,7 @@ class OrchestratorPromptTests(unittest.TestCase):
 
     def test_the_task_is_read_not_spliced(self) -> None:
         """The prompt says where the task lives; its answers stay in the file,
-        so an edit made mid-campaign is what the next subsystem runs under."""
+        so an edit made mid-campaign is what the next module runs under."""
         for kind in ("translate", "audit"):
             with self.subTest(kind=kind):
                 pre = AssistAgent(

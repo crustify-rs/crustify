@@ -7,7 +7,7 @@ from pathlib import Path
 
 from crustify import deps
 from crustify.agentlog import AgentLog, open_agent_log
-from crustify.layout import Layout, crustify_home
+from crustify.layout import Layout
 
 # Package root — used to locate prompts/.
 _PKG_ROOT = Path(__file__).parent.parent
@@ -37,7 +37,7 @@ _GENERIC_SKILL_ANCHOR = "<!-- SKILL -->"
 #: the instructions file's text, or by nothing when the task gives none.
 INSTRUCTIONS_MARKER = "<!-- INSTRUCTIONS -->"
 
-#: `<!-- INCLUDE docs/binding.md -->`: a crustify document,
+#: `<!-- INCLUDE specs/items/binding.md -->`: a crustify document,
 #: by its path in the checkout, spliced whole into a stage prompt.
 _INCLUDE_RE = _re.compile(r"<!-- INCLUDE ([^ ]+) -->")
 
@@ -45,7 +45,7 @@ _INCLUDE_RE = _re.compile(r"<!-- INCLUDE ([^ ]+) -->")
 def expand_includes(text: str) -> str:
     """Splice every included document into a stage prompt template.
 
-    The documents are the conventions and the how-tos under ``docs/``:
+    The documents are the conventions and the how-tos under ``specs/``:
     public, human-readable descriptions that an agent follows throughout,
     so the prompt hands them over whole rather than naming a file the agent
     may skip reading. Braces are escaped, because the template is formatted
@@ -195,6 +195,10 @@ class CrustifyAgent:
     #: by the harness that read the task; the stage prompt's
     #: ``<!-- INSTRUCTIONS -->`` marker takes their text.
     instructions = None
+    #: Where a batch's task sits in the schedule (a
+    #: :class:`crustify.translate.Placement`), set per instance by the harness
+    #: that read the task; None for an agent of no batch.
+    placement = None
 
     def __init__(
         self,
@@ -259,6 +263,9 @@ class CrustifyAgent:
                 provider_home=provider_home,
                 interactive=self.interactive,
                 **({"resume": resume} if resume else {}),
+                # A session id chosen before the run, where the CLI takes one.
+                **({"session_id": self.session_id}
+                   if getattr(self, "session_id", None) else {}),
             )
 
     def _log_stem(self) -> str:
@@ -289,12 +296,13 @@ class CrustifyAgent:
             self.artifact_dir or self.layout.root / "logs",
             self.log_stem or self._log_stem(),
             agent=self.role,
-            workdir=self.workdir,
-            # The assistant's sessions are indexed in crustify's home, so
-            # `crustify --resume` finds them from any directory.
-            index_dir=(crustify_home() / "sessions"
-                       if self.role == "assistant" else None),
+            **self._index(),
         )
+
+    def _index(self) -> dict:
+        """Where this agent's session is indexed, and with which facts:
+        nowhere, but for the assistant."""
+        return {}
 
     # ------------------------------------------------------------------
     # Helpers
@@ -328,7 +336,14 @@ class CrustifyAgent:
         # agent: `str.format` ignores a key the template does not reference, and
         # a template referencing a key nobody supplies dies before the request.
         # Subclasses extend (super()._arguments()).
-        return {"workdir": str(self.workdir), "git_base": self.git_base}
+        # `batch_id` and `module` place a batch's agent in the schedule.
+        placement = self.placement
+        return {
+            "workdir": str(self.workdir),
+            "git_base": self.git_base,
+            "batch_id": placement.batch_id if placement else "",
+            "module": placement.module_label if placement else "",
+        }
 
     def skill_specs(self) -> tuple[SkillSpec, ...]:
         """The skills rendered for this agent: every one whose files exist.

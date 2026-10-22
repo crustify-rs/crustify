@@ -1,18 +1,18 @@
 # Crustify coding conventions
 
-These are the shared, mechanical contracts between the orchestrator, the binder, the
-translator and the reviewer. Their prompts contain the decisions and procedures.
+These are the shared, mechanical contracts of the code a campaign generates. The roles'
+prompts contain the decisions and procedures.
 
-## Rust baseline
+## 1. Rust baseline
 
 Crustify crates use Rust edition 2024. Wrapper crates inherit workspace lints that deny
-`clippy::undocumented_unsafe_blocks` and allow `clippy::module_inception`; generated
-`-sys` code is exempt.
+`clippy::undocumented_unsafe_blocks` and allow `clippy::module_inception`, since a C
+directory often holds a TU of its own name; generated `-sys` code is exempt.
 
 Every unsafe block carries a specific, falsifiable `// SAFETY:` comment. Native Rust APIs
 are safe unless their caller obligation cannot be expressed in the type system.
 
-## Naming
+## 2. Naming
 
 The safe surface uses ordinary Rust naming: `snake_case` for functions, methods and
 modules, `UpperCamelCase` for types and traits, `SCREAMING_SNAKE_CASE` for constants and
@@ -22,35 +22,38 @@ transliterated C one. The filled anchor records the C name, so renaming costs no
 traceability. Names that cross the language boundary keep their C-derived spelling, as
 below.
 
-### Functions
+### 2.1 Functions
 
 A C function's raw binding is `ffi::<name>`. Its safe wrapper is a free function homed in
 the owning module, named by the rules above. When one C function has several valid
 ownership contracts, each safe variant has a distinct, descriptive name.
 
-### Types
+### 2.2 Types
 
 A wrapped C type is the layout-compatible newtype `Foo`, named by the rules above; its
 shared and exclusive borrowed handles are `FooRef<'a>` and `FooMut<'a>`.
 
-### Shims
+### 2.3 Shims
 
 A callable macro shim is `crustify_<NAME>`. Constant macros remain generated constants in
 the `-sys` crate.
 
-### Exports
+### 2.4 Exports
 
-Each ported C source file has one `mod ffi_export { use super::*; ... }` raw ABI gateway
-in its Rust module, whose exports use `#[unsafe(no_mangle)] extern "C"`. Externally
-visible and header-inline symbols are exported under their bare names; static functions,
-TU-inline functions and static globals as `crustify_<file>__<name>`.
+Each ported module has one `mod ffi_export { use super::*; ... }` raw ABI gateway in its
+Rust file, whose exports use `#[unsafe(no_mangle)] extern "C"` under the bare C names: the
+module's externally visible functions and globals, and the `static inline` functions its
+headers define. Static functions and static globals are not exported: nothing outside
+their TU reaches them.
 
-### Build switches
+### 2.5 Export features
 
-The per-file C/Rust build switch is `CRUSTIFY_<FILE>`, with `<FILE>` derived by sanitizing
-the translation unit's path.
+Each module's `ffi_export` is compiled only under the safe crate's Cargo feature
+`ffi-export-<tu>`, with `<tu>` its translation unit's repo-relative path, every character
+that is not an ASCII letter or digit replaced by `-`. The feature is off until the module is
+integrated, so that its exports never collide with the C they replace.
 
-## Crates, modules, and TUs
+## 3. Crates, modules, and TUs
 
 The Rust tree mirrors the following layout, all relative to `<repo>/crustify/rust/`:
 
@@ -59,22 +62,27 @@ The Rust tree mirrors the following layout, all relative to `<repo>/crustify/rus
 - `<repo>/` - safe repo package, one for the whole repo.
 - `<repo>/<link-unit>/` - one sub-dir per link unit, `cfg`-gated module in `lib.rs`.
 
-The Rust tree within `<repo>/` mirrors the subsystem decomposition in `subsystems.json`, and each item is homed
-in a `.rs` TU corresponding to its location on the original C/C++ filesystem; a batch names the `.rs` file each of its
-items belongs in, as `crustify/rust/<repo>/<link-unit>/…/<file>.rs`. Entities sharing a definition site co-home. A home
-may be shared across waves.
+Within a link unit's sub-dir, the tree follows the module decomposition in `modules.json`
+exactly, and preserves the C layout as far as the idiomatic organization of a Rust tree
+allows:
 
-Rust has no headers, they are homed using the following rules:
-- for a wrap campaign: each public header gets its own `mod` and `.rs`.
-- for a port campaign:
-  - a subsystem's headers and translation units share one sub-dir and module rooted at
-    `rust/<repo>/<link-unit>/<subsystem>/<subsystem>.rs`;
-  - a TU and its companion header share a sub-module within their subsystem;
-  - headers that export implementation (e.g. `static inline` functions) which logically do
-    not belong to any TU get their own `_h.rs` sub-module; headers shared by multiple
-    subsystems become sub-modules for each subsystem homing the units belonging to that subsystem;
+- each module is one `.rs` file, at its translation unit's repo-relative path with the
+  `.rs` extension: its TU and the headers bundled with it have no files of their own,
+  since Rust has no headers;
+- a header module is one `<stem>_h.rs` file, at its header's path;
+- the two modules of a split foundational TU share the TU's file;
+- C directories become Rust modules: a directory's `.rs` file sits beside the directory,
+  as `<dir>.rs` and `<dir>/`, and declares the modules within it, or is the module of a TU
+  with the directory's name where there is one; `mod.rs` files are not used; and
+- a file or directory name that is not a Rust identifier is sanitized, hyphens to
+  underscores, and a Rust keyword takes a trailing underscore.
 
-## Anchors
+Where a C layout has no idiomatic Rust counterpart, the tree adapts it in the conventional
+Rust way and keeps the C path recognizable. A batch names the `.rs` file each of its items
+belongs in, as `crustify/rust/<repo>/<link-unit>/…/<file>.rs`. Entities sharing a
+definition site co-home. A home may be shared across waves.
+
+## 4. Anchors
 
 A scheduled item arrives with the authored Rust file it belongs in, named by its batch.
 Nothing is written into that file ahead of the agent: the binder or translator emits exactly
@@ -99,7 +107,7 @@ Duplicate a filled anchor only when several wrappers intentionally represent the
 item. Existing filled anchors are completed work unless the current objective deliberately
 promotes that item.
 
-## Testing
+## 5. Testing
 
 Tests are placed by what they target. Tests of the public interface are Cargo integration
 tests of the safe crate, under `crustify/rust/<target>/tests/`, so crate privacy enforces
