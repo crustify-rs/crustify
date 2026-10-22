@@ -1,7 +1,8 @@
 <!-- SKILL -->
 
 Before your first command, read wavefront's `README.md`, its `--help`, and the documents
-under its `docs/`.
+under its `docs/`. Wavefront's repo root is the C root, `c/`: pass `<workdir>/c` as its `repo_root`, so
+that every path it reads and reports is below the C root, as the plan records them.
 
 Each section below augments the how-to section it names, as `<how-to> › <section>`.
 

@@ -1,7 +1,8 @@
 <!-- SKILL -->
 
 Before your first command, read wavefront's `README.md`, its `--help`, and the documents
-under its `docs/`: `scoping.md`, `graph.md` and `batching.md` for how it selects, orders
+under its `docs/`: `scoping. Wavefront's repo root is the C root, `c/`: pass `<workdir>/c` as its `repo_root`, so
+that every path it reads and reports is below the C root, as the plan records them.md`, `graph.md` and `batching.md` for how it selects, orders
 and batches, and `artifacts/t3.md` for the T3 tables. What follows is only how the
 campaign uses it.
 
@@ -44,7 +45,8 @@ The campaign has two kinds of `wavefront-config.json`:
   module, which finds the module's dependency edges. Use them for the exact counts and
   the dependency records of `depends_on` in `modules.json`, and for the module's schedule.
 
-Every configuration shares `crustify/wavefront/` as its `state_dir` and sets
+Every configuration shares `../crustify/wavefront`, relative to the C root, as its
+`state_dir` and sets
 `"t3_dir": "t3"`, so one campaign-wide pair of T3 tables serves them all. Verify each
 configuration you author against the CLI.
 
