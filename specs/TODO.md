@@ -7,14 +7,15 @@ Deferred decisions and follow-up work on the crustify contracts and prompts.
 [`dependencies.md`](dependencies.md) now describes a side campaign: a wrap campaign of an
 out-of-tree library in its own `<library>-bindings` repository, cloned beside the
 parent's, continued by every campaign that uses the library, and advancing at the
-parent's pace. The orchestrator prompt has no step for running one yet.
+parent's pace. The assistant's translate prompt runs them.
 
 Open questions:
 
-- **Settings.** Which of the parent's settings a side campaign inherits (models, billing,
-  sanitizers, review policy), and which it answers for itself.
-- **Results and accounting.** Whether a side campaign's cost reports into the parent's
-  dashboard as well as its own.
+- **Settings.** A side campaign takes the parent's models, billing, sanitizers and review
+  policy by default; whether any of them should differ for a wrapper by design, such as a
+  smaller review budget for a library's thin raw layer.
+- **Results and accounting.** A side campaign accounts in its own dashboard; whether the
+  parent's should also show the cost of the side campaigns it drove.
 - **Concurrent parents.** How two campaigns that extend the same wrapper at once order
   their additions to its plan.
 
