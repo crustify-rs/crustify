@@ -120,15 +120,48 @@ only, and its `imported_deps` record what those items depend on.
 | field | meaning |
 |---|---|
 | `objective` | `wrap` to preserve the C implementation behind a safe Rust API, or `port` to reimplement it in safe Rust |
-| `rust_native_equivalent` | well established Rust crates or `std` facilities that could replace this subsystem outright, in descending order of fit; empty when none applies |
+| `rust_equivalent` | what Rust already provides in its place: `std` and `crates`, below |
 
 A subsystem is objective-homogeneous: files translated under different objectives do not
 share one subsystem, and a mixed grouping is split until each emitted subsystem carries
 one.
 
-`rust_native_equivalent` records a judgement, not a decision: naming a candidate does not
-by itself change the objective. A generic facility with a strong candidate is the usual
+`rust_equivalent` records a judgement, not a decision: naming a candidate does not by
+itself change the objective. A generic facility with a strong candidate is the usual
 reason to leave a subsystem wrapped during a partial migration rather than port it.
+
+### 6.1 rust_equivalent.std
+
+Whether the subsystem's items are already in the Rust standard library (`core`, `alloc`
+and `std`), item by item:
+
+| field | meaning |
+|---|---|
+| `coverage` | `full` when every type and function the subsystem owns has an `exact` equivalent, `none` when none has any, `partial` otherwise |
+| `items` | the owned items that have an equivalent; empty when `coverage` is `none` |
+
+| `items[*]` field | meaning |
+|---|---|
+| `name` | C entity name |
+| `defined_in` | repo-relative path of its definition, as a batch item's `defined_in` |
+| `facility` | the standard-library path that provides it, such as `alloc::vec::Vec::push` or `core::str::from_utf8` |
+| `fit` | `exact` when the facility has the item's observable behaviour, `partial` when it differs in a way a port has to bridge |
+| `notes` | for a `partial` fit, the difference; empty for an `exact` one |
+
+### 6.2 rust_equivalent.crates
+
+Established crates that could replace the subsystem outright, in descending order of fit;
+empty when none applies.
+
+| `crates[*]` field | meaning |
+|---|---|
+| `crate` | the crate's name on crates.io |
+| `fit` | `exact` or `partial`, as for `std` |
+| `license` | its SPDX license expression |
+| `notes` | how it differs: semantics, platform support or performance; empty when it does not |
+
+Each candidate is checked for its semantics, platform support, performance and licensing
+before it is listed.
 
 ## 7. link_units[*].subsystems[*].counters
 
@@ -187,6 +220,26 @@ numbers swapped.
 |---|---|
 | `library` | external library depended on, as linked |
 | `counters` | distinct entities consumed from it, by kind |
+| `rust_equivalent` | what Rust already provides for it: `ported` and `bindings`, below |
+
+`rust_equivalent.ported` lists the crates that reimplement the library in Rust, and
+`rust_equivalent.bindings` the crates that put a safe Rust API over the C library itself.
+Each is in descending order of fit, and empty when no such crate exists. They decide how a
+port reaches the library: through a ported crate, which drops the C dependency, through
+safe bindings, which keep it, or through its own wrapper when neither exists.
+
+| `ported[*]` and `bindings[*]` field | meaning |
+|---|---|
+| `crate` | the crate's name on crates.io |
+| `sys` | `bindings` only: the raw `-sys` crate it builds on, or `null` when it binds the library itself |
+| `covers` | `all` when it provides every entity this subsystem consumes from the library, `some` otherwise |
+| `fit` | `exact` or `partial`, as for a subsystem's `std` items |
+| `license` | its SPDX license expression |
+| `notes` | what it lacks or how it differs; empty when nothing |
+
+A crate that wraps the library but exposes raw pointers or `unsafe` to its users is not
+safe bindings; a `-sys` crate alone is listed as no binding. The same library is assessed
+the same way in every record that imports it.
 
 A dependency's `counters` carries the same item kinds a subsystem's own does — `structs`,
 `functions`, `global_variables`, `enums`, `unions`, `callbacks`, `macros` — counting what
@@ -195,3 +248,11 @@ those describe a subsystem's own files, and a consumer imports entities, not fil
 
 The in-tree graph may contain cycles, and this artifact records them; `depends_on` records
 how the order cuts them.
+
+## 9. Earlier versions
+
+Earlier decompositions recorded a subsystem's Rust equivalents as one list,
+`objective.rust_native_equivalent`, of crates and `std` paths together, and nothing for
+out-of-tree libraries. A decomposition still holding it is converted by its next planner
+run: its crates become `crates`, and its `std` paths are re-assessed item by item into
+`std`.

@@ -82,8 +82,11 @@ Emit `crustify/artifacts/subsystems.json` from `templates/subsystems.json`, as t
 planning instructions' Subsystem decomposition section describes. Select the foundational
 `void` and `string` subsystems' members as its Foundational subsystems section describes,
 reading each candidate's body, and establish each member's lifecycle role. Use the actual linker
-outputs; before you list a `rust_native_equivalent`, verify its semantics, platform
-support, performance and licensing.
+outputs. Fill every `rust_equivalent`: for a subsystem, check its owned types and
+functions against the standard library's documentation item by item, and for an
+out-of-tree library, search crates.io for ported and safe-binding crates and read the API
+of each candidate against the entities the subsystem consumes. Before you list a crate,
+verify its semantics, platform support, performance and licensing.
 
 ### 3. Planning
 

@@ -1,5 +1,5 @@
 {
-  "_comment": "Example `<workdir>/crustify/artifacts/subsystems.json` (REPO-ROOT tier), emitted by the planner. Each link unit's and subsystem's `index` is its permanent id, not its position: the order is computed from `depends_on`, whose `scheduled` dependencies run first and whose `cut` dependencies, cut from a cycle, run after; ties go to the lower index. Here libcrypto runs before libssl, which depends on it, and statem before record. `status` is `todo` while the plan may change and `frozen` once final: void, string and bio have started. Their `name` fields are identifiers. The first link unit opens with the foundational void and string subsystems, here item-granular: their `items` narrow them to the entities they own in files that other subsystems of a full decomposition also list. The waves are in `schedule.json`. `objective` records translation intent and any well established Rust replacement. The Rust tree mirrors this decomposition; there is no second placement document. All paths are workdir-relative.",
+  "_comment": "Example `<workdir>/crustify/artifacts/subsystems.json` (REPO-ROOT tier), emitted by the planner. Each link unit's and subsystem's `index` is its permanent id, not its position: the order is computed from `depends_on`, whose `scheduled` dependencies run first and whose `cut` dependencies, cut from a cycle, run after; ties go to the lower index. Here libcrypto runs before libssl, which depends on it, and statem before record. `status` is `todo` while the plan may change and `frozen` once final: void, string and bio have started. Their `name` fields are identifiers. The first link unit opens with the foundational void and string subsystems, here item-granular: their `items` narrow them to the entities they own in files that other subsystems of a full decomposition also list. The waves are in `schedule.json`. `objective` records translation intent, and its `rust_equivalent` which items the standard library already provides and the crates that could replace the subsystem; each out-of-tree import's `rust_equivalent` names the crates that port the library to Rust and those that bind it safely. The Rust tree mirrors this decomposition; there is no second placement document. All paths are workdir-relative.",
   "version": "1f053298e30c0a9b5d0f3c1e7a4b8d2f6c9e0a11",
   "link_units": [
     {
@@ -22,7 +22,21 @@
           },
           "objective": {
             "objective": "wrap",
-            "rust_native_equivalent": []
+            "rust_equivalent": {
+              "std": {
+                "coverage": "partial",
+                "items": [
+                  {
+                    "name": "CRYPTO_malloc",
+                    "defined_in": "crypto/mem.c",
+                    "facility": "alloc::alloc::alloc",
+                    "fit": "partial",
+                    "notes": "takes a Layout rather than a size; the C allocator's custom hooks have no counterpart"
+                  }
+                ]
+              },
+              "crates": []
+            }
           },
           "implementation_files": [
             "crypto/mem.c",
@@ -91,7 +105,21 @@
           },
           "objective": {
             "objective": "wrap",
-            "rust_native_equivalent": []
+            "rust_equivalent": {
+              "std": {
+                "coverage": "partial",
+                "items": [
+                  {
+                    "name": "CRYPTO_strdup",
+                    "defined_in": "crypto/o_str.c",
+                    "facility": "alloc::ffi::CString::from",
+                    "fit": "partial",
+                    "notes": "aborts on allocation failure where the C returns NULL"
+                  }
+                ]
+              },
+              "crates": []
+            }
           },
           "implementation_files": [
             "crypto/o_str.c"
@@ -169,7 +197,13 @@
           },
           "objective": {
             "objective": "wrap",
-            "rust_native_equivalent": []
+            "rust_equivalent": {
+              "std": {
+                "coverage": "none",
+                "items": []
+              },
+              "crates": []
+            }
           },
           "implementation_files": [
             "crypto/bio/bio_lib.c"
@@ -233,7 +267,13 @@
           },
           "objective": {
             "objective": "port",
-            "rust_native_equivalent": []
+            "rust_equivalent": {
+              "std": {
+                "coverage": "none",
+                "items": []
+              },
+              "crates": []
+            }
           },
           "implementation_files": [
             "ssl/statem/statem.c",
@@ -296,6 +336,10 @@
                   "unions": 3,
                   "callbacks": 11,
                   "macros": 0
+                },
+                "rust_equivalent": {
+                  "ported": [],
+                  "bindings": []
                 }
               }
             ]
@@ -314,7 +358,13 @@
           },
           "objective": {
             "objective": "port",
-            "rust_native_equivalent": []
+            "rust_equivalent": {
+              "std": {
+                "coverage": "none",
+                "items": []
+              },
+              "crates": []
+            }
           },
           "implementation_files": [
             "ssl/record/rec_layer_s3.c",
@@ -390,6 +440,27 @@
                   "unions": 0,
                   "callbacks": 2,
                   "macros": 3
+                },
+                "rust_equivalent": {
+                  "ported": [
+                    {
+                      "crate": "miniz_oxide",
+                      "covers": "some",
+                      "fit": "partial",
+                      "license": "MIT OR Zlib OR Apache-2.0",
+                      "notes": "raw deflate and zlib streams only; no gzip file API"
+                    }
+                  ],
+                  "bindings": [
+                    {
+                      "crate": "flate2",
+                      "sys": "libz-sys",
+                      "covers": "all",
+                      "fit": "exact",
+                      "license": "MIT OR Apache-2.0",
+                      "notes": ""
+                    }
+                  ]
                 }
               }
             ]

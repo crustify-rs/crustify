@@ -51,14 +51,17 @@ carry separate objectives. In a wrap campaign every subsystem is `wrap`. In a po
 campaign the project-specific subsystems are `port`, and those with Rust-native
 alternatives stay `wrap`, so that their Rust consumers stay interoperable with the
 remaining C during an incremental translation, until they can be nativized. A subsystem's
-`rust_native_equivalent` lists the established Rust crates or `std` facilities that could
-replace it outright, in descending order of fit, each checked for its semantics,
-platform support, performance and licensing.
+`rust_equivalent` records which of its items the Rust standard library already provides,
+item by item, and the established crates that could replace it outright, in descending
+order of fit, each checked for its semantics, platform support, performance and
+licensing.
 
 Each consumer-to-producer relation is one `imported_deps` record, with its
 `outgoing_edges`, its `incoming_edges` and the item kinds consumed across them, in-tree
-destinations apart from out-of-tree libraries. The record keeps the graph as it is,
-cycles included.
+destinations apart from out-of-tree libraries. An out-of-tree library's record also names
+the crates that port it to Rust and the crates that bind it safely, so that a port reaches
+it through one of them rather than through raw bindings when they exist. The record keeps
+the graph as it is, cycles included.
 
 ### 2.1 Foundational subsystems
 

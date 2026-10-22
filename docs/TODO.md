@@ -22,8 +22,9 @@ does not need one.
 Open questions:
 
 - **When to skip.** A dependency with a maintained safe crate should use it rather than be
-  re-wrapped. Deciding that is a judgement the campaign task may want to answer rather
-  than the orchestrator.
+  re-wrapped. `imported_deps.out_of_tree[*].rust_equivalent` now records its ported and
+  safe-binding crates; whether a side campaign runs anyway is a judgement the campaign task
+  may want to answer rather than the orchestrator.
 - **Scope.** A side campaign covers what the parent consumes, not the whole dependency, so
   its scope is a closure over `out_of_tree` counters rather than a subsystem span.
 - **Ordering.** A side campaign is a producer of the parent's link units, so it precedes
