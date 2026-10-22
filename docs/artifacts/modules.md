@@ -88,6 +88,7 @@ the two modules of a split foundational TU share theirs.
 | `translation_unit` | the module's TU, as a [file entry](#5-file-entries); `null` for a header module |
 | `internal_headers` | the headers the build does not install that the module defines items in, as file entries |
 | `api_headers` | the headers the build installs that the module defines or declares items in, as file entries |
+| `tests` | the test files gated with the module, those that use its internals, as file entries whose `items` select test functions; see [File entries](#5-file-entries) |
 | `objective` | the translation intent recorded for this module |
 | `counters` | what the module contains |
 
@@ -118,6 +119,10 @@ of those lists it with them as `included`.
 
 The owner counts, homes and translates an entity; every other module reaches it through
 an ordinary dependency record.
+
+Test files are not owned: a test file is listed in the `tests` of every module it is
+gated with, as `docs/workflows/porting.md`'s Principles section describes, and its entry's
+`items` name the test functions gated with that module, empty when the whole file is.
 
 ## 6. link_units[*].modules[*].objective
 

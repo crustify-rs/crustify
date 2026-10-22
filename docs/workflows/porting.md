@@ -21,10 +21,12 @@ definition in an installed header: the C consumers it would serve are outside th
 
 ### 1.2 Tests follow their modules
 
-Each module carries the test files that exercise it, and they are ported and gated with
-it: a module's C tests are built and run while the module is C, and disabled once it is
-Rust, when their Rust ports run in their place. A test's access to a module's internals is
-a use within that module, so it never keeps a type wrapped.
+Each module carries the test files that use its internals, and they are ported and gated
+with it: a module's C tests are built and run while the module is C, and disabled once it
+is Rust, when their Rust ports run in their place. A test's access to a module's internals
+is a use within that module, so it never keeps a type wrapped. A test that only calls a
+module's functions is not gated with it: once the module is integrated, it runs through the
+module's exports, as part of the integration regression gate.
 
 A test that exercises the internals of several modules is gated with each of them: it runs
 while all of them are C, and its port runs once all of them are Rust. In between, each

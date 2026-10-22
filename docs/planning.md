@@ -48,9 +48,8 @@ build compiles in scope is a module's, or is listed as configured out.
 
 Each translation unit is bundled with the headers that carry its name, internal or
 installed: `src/libgit2/repository.c` with `src/libgit2/repository.h`,
-`include/git2/repository.h` and
-`include/git2/sys/repository.h`. An item of such a header that belongs to another TU, in
-the rare case one does, is homed with that TU.
+`include/git2/repository.h` and `include/git2/sys/repository.h`. An item of such a header
+that belongs to another TU, in the rare case one does, is homed with that TU.
 
 A shared header, one that carries no single TU's name, is split item by item:
 
@@ -63,6 +62,13 @@ A header that implements what no TU does, and so has no TU to go to, is a header
 its own. Each split is recorded with the file entries' `items` lists, which stay empty for
 a file a module owns whole. Macros are not homed: they are not translated, and a binding
 that needs one reaches it as [`binding.md`](binding.md)'s Macros section describes.
+
+A module also lists its tests: the test files gated with it, those that use its
+internals, such as the fields or the layout of the types it owns. A test file that uses the
+internals of several modules is listed by each of them. A test that only calls a module's
+functions is not gated with it: it keeps running after the module's integration, through
+its exports. A test file whose tests divide between modules is split with its entries'
+`items` lists, by test function.
 
 ### 2.2 Dependencies
 
@@ -170,15 +176,13 @@ batches discover them on the fly; their binders skip them.
 In a wrap campaign every batch is `wrap`. In a port campaign:
 
 - a selected symbol is `port` from the start;
-- a selected type is `wrap` while C depends on its layout, then `port` once nothing in C
-  does, as [Porting types](#41-porting-types) describes; and
+- a selected type is `port`, preceded by a `wrap` batch only while another module's
+  unported C depends on its layout, as [Porting types](#41-porting-types) describes; and
 - a dependency outside the selected migration set is `wrap`.
 
 ### 4.1 Porting types
 
-A selected type is scheduled twice: a `wrap` batch where the DAG places it, and a `port`
-batch once its layout leaves C, when no C code that remains after a wave depends on it.
-Its C users are:
+A selected type's layout users are the target's C that depends on its layout:
 
 - code that touches a field: reads or writes it, or takes its address;
 - code that depends on the layout without naming a field: `sizeof`, `_Alignof` or
@@ -191,7 +195,16 @@ No tool lists the second and third kinds: they are found in the source, in every
 function that mentions the type, its globals and the struct fields declared with it,
 macro expansions included.
 
-The `port` batch goes in the first wave after the one that ports the type's last C user.
-A type keeps only its `wrap` batch, and its C layout, while a C user stays: one outside
-the selected migration set, an embedding struct that stays C, or a definition in an
-installed header, whose concrete body every public C consumer receives.
+Three kinds of C are not layout users, as [`workflows/porting.md`](workflows/porting.md)'s
+Principles section describes: the type's own module, which switches to Rust in one
+integration; the tests, which are gated with the modules whose internals they use; and C
+outside the target, so that a definition in an installed header is no user either. A type
+is then scheduled by its remaining users:
+
+- with none, as when only pointers to it cross into other modules, it is `port` only, where
+  the DAG places it;
+- with layout users in other modules that are ported later, it is `wrap` where the DAG
+  places it, and `port` in the first wave after the integration of the last of those
+  modules; and
+- with a layout user that stays C, in a `wrap` module or a struct that embeds it and stays
+  C, it is `wrap` only, and keeps its C layout.

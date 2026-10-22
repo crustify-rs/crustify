@@ -81,8 +81,8 @@ corrections section describes.
 
 Emit `crustify/artifacts/modules.json` from `templates/modules.json`, as the
 planning instructions' Module decomposition section describes. Bundle each translation
-unit with its headers and split the shared ones item by item as its Bundling section
-describes, from the declarations, definitions and uses in the source. Select the
+unit with its headers and its tests, and split the shared headers item by item, as its
+Bundling section describes, from the declarations, definitions and uses in the source. Select the
 foundational modules' members, and split each TU that mixes them with other items, as its
 Foundational modules section describes, reading each candidate's body, and establish each
 member's lifecycle role. Use the actual linker

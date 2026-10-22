@@ -1,5 +1,5 @@
 {
-  "_comment": "Example `<workdir>/crustify/artifacts/modules.json` (REPO-ROOT tier), emitted by the planner. A module is one translation unit with the headers it defines its items in, named by the TU's path; a header that implements what no TU does is a header module, named by its own path, with a null `translation_unit`. Every file is an entry whose `items` lists are empty when the module owns the file whole, `included` when it owns only the entities named, and `excluded` when it owns all others: here the shared include/openssl/crypto.h is split item by item among the modules that implement what it declares, and crypto/o_str.c, which mixes string lifecycle routines with other code, is split into a foundational module and another that share its name. Each link unit's and module's `index` is its permanent id, not its position, and dependency records name modules by it. `depends_on` holds every dependency, with its edge counts and what is consumed: `scheduled` the modules that run first and the out-of-tree libraries, `cut` the modules cut from a cycle, which run after. Among ready modules a foundational one runs first, then the lower link-unit index, then the lower index. Here libcrypto runs before libssl, which depends on it, and statem's dependency on record is cut. `status` is `todo` while the plan may change and `frozen` once final. `objective` records translation intent, and its `rust_equivalent` what the standard library provides in the module's place and the crates that could replace it, each with its feature parity; each out-of-tree record's `rust_equivalent` names the crates that port the library to Rust and those that bind it safely. The waves are in `schedule.json`. The Rust tree mirrors this decomposition; there is no second placement document. All paths are workdir-relative.",
+  "_comment": "Example `<workdir>/crustify/artifacts/modules.json` (REPO-ROOT tier), emitted by the planner. A module is one translation unit with the headers it defines its items in, named by the TU's path; a header that implements what no TU does is a header module, named by its own path, with a null `translation_unit`. Every file is an entry whose `items` lists are empty when the module owns the file whole, `included` when it owns only the entities named, and `excluded` when it owns all others: here the shared include/openssl/crypto.h is split item by item among the modules that implement what it declares, and crypto/o_str.c, which mixes string lifecycle routines with other code, is split into a foundational module and another that share its name. `tests` lists the test files gated with a module, those that use its internals; a test file is listed by every module it is gated with, and its `items` select test functions. Each link unit's and module's `index` is its permanent id, not its position, and dependency records name modules by it. `depends_on` holds every dependency, with its edge counts and what is consumed: `scheduled` the modules that run first and the out-of-tree libraries, `cut` the modules cut from a cycle, which run after. Among ready modules a foundational one runs first, then the lower link-unit index, then the lower index. Here libcrypto runs before libssl, which depends on it, and statem's dependency on record is cut. `status` is `todo` while the plan may change and `frozen` once final. `objective` records translation intent, and its `rust_equivalent` what the standard library provides in the module's place and the crates that could replace it, each with its feature parity; each out-of-tree record's `rust_equivalent` names the crates that port the library to Rust and those that bind it safely. The waves are in `schedule.json`. The Rust tree mirrors this decomposition; there is no second placement document. All paths are workdir-relative.",
   "version": "1f053298e30c0a9b5d0f3c1e7a4b8d2f6c9e0a11",
   "link_units": [
     {
@@ -42,6 +42,7 @@
               }
             }
           ],
+          "tests": [],
           "objective": {
             "objective": "wrap",
             "rust_equivalent": {
@@ -128,6 +129,7 @@
               }
             }
           ],
+          "tests": [],
           "objective": {
             "objective": "wrap",
             "rust_equivalent": {
@@ -228,6 +230,7 @@
               }
             }
           ],
+          "tests": [],
           "objective": {
             "objective": "wrap",
             "rust_equivalent": {
@@ -286,6 +289,7 @@
             }
           ],
           "api_headers": [],
+          "tests": [],
           "objective": {
             "objective": "wrap",
             "rust_equivalent": {
@@ -382,6 +386,24 @@
               "path": "include/openssl/bio.h",
               "items": {
                 "included": [],
+                "excluded": []
+              }
+            }
+          ],
+          "tests": [
+            {
+              "path": "test/bio_memleak_test.c",
+              "items": {
+                "included": [],
+                "excluded": []
+              }
+            },
+            {
+              "path": "test/bio_core_test.c",
+              "items": {
+                "included": [
+                  "test_bio_core"
+                ],
                 "excluded": []
               }
             }
@@ -502,6 +524,7 @@
             }
           ],
           "api_headers": [],
+          "tests": [],
           "objective": {
             "objective": "port",
             "rust_equivalent": {
@@ -618,6 +641,7 @@
             }
           ],
           "api_headers": [],
+          "tests": [],
           "objective": {
             "objective": "port",
             "rust_equivalent": {

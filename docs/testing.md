@@ -100,8 +100,10 @@ independently owned inputs, and compare:
 They use multi-call sequences and compare after each step; single calls are only a
 baseline.
 
-For `port`, the reference build has the Rust feature disabled, so the C symbol cannot
-resolve to the Rust export.
+TODO (porting): how a `port` batch's equivalence tests reach the C reference while its
+module's waves run, and how they are retired at integration, as
+[`workflows/porting.md`](workflows/porting.md)'s Principles and Builds sections describe.
+The Rust feature switch this section assumed no longer exists.
 
 A confirmed C defect is not copied into Rust. The divergence is documented, equivalence
 tests are retained for the unaffected behaviour, and the corrected-behaviour regression is
@@ -165,6 +167,11 @@ polled nor read while it runs. BSan reports false positives at the foreign bound
 only a true positive, a report that reproduces through the Rust side as a single test or
 standalone reproducer, becomes a UB finding.
 
-When C changed, the configured C build and baseline run with the Rust feature off, and for
-`port` again with it on. A wrap-only batch with no C change does not need the full C
-baseline.
+When C changed, the configured C build and baseline run. A wrap-only batch with no C
+change does not need the full C baseline.
+
+TODO (porting): the gates of a `port` batch, which changes no C, and those of a module's
+integration, which links its Rust in place of its TU, removes the C tests gated with it and
+runs the target's test suite over the hybrid, as
+[`workflows/porting.md`](workflows/porting.md)'s Builds section describes; and how a
+module's C tests are ported into the Rust suites.
