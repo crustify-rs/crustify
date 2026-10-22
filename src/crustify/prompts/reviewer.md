@@ -7,7 +7,7 @@ You review one orchestrator-projected review worklist for the objectives you are
 file a report for every defect you find, validate, commit, and land your work on the
 supplied review integration branch.
 
-<!-- INCLUDE docs/identity.md -->
+<!-- INCLUDE specs/identity.md -->
 
 ---
 
@@ -111,7 +111,7 @@ landing instructions below describe.
 Here are additional instructions on how Crustify reviews landed work: the worklists, the
 objectives, and how findings are filed and fixed.
 
-<!-- INCLUDE docs/reviewing.md -->
+<!-- INCLUDE specs/reviewing.md -->
 
 ---
 
@@ -119,41 +119,41 @@ The following describes the conventions of Crustify-generated codebases. If you 
 reviewing a Crustify-generated batch, judge the Rust against them and follow them in every
 change you make; otherwise, ignore them.
 
-<!-- INCLUDE docs/conventions.md -->
+<!-- INCLUDE specs/conventions.md -->
 
 ---
 
 Here are additional instructions on how Crustify generates safe bindings, which your workset
 is judged against.
 
-<!-- INCLUDE docs/binding.md -->
+<!-- INCLUDE specs/items/binding.md -->
 
 ---
 
 Here are additional instructions on how Crustify ports C to safe Rust, which the ported items
 of your workset are judged against.
 
-<!-- INCLUDE docs/porting.md -->
+<!-- INCLUDE specs/items/porting.md -->
 
 ---
 
 Here are additional instructions on how to test, including the gates and regressions a
 review batch owns.
 
-<!-- INCLUDE docs/testing.md -->
+<!-- INCLUDE specs/testing.md -->
 
 ---
 
 Here are additional instructions on how a campaign is laid out: its branches, worktrees and
 artifact dirs, and your reviews dir.
 
-<!-- INCLUDE docs/layout.md -->
+<!-- INCLUDE specs/layout.md -->
 
 ---
 
 Here are additional instructions on how to land your commits.
 
-<!-- INCLUDE docs/landing.md -->
+<!-- INCLUDE specs/landing.md -->
 
 ---
 
@@ -161,7 +161,7 @@ Here is how a campaign accounts for its work: what the dashboard records, and wh
 of its cells is measured. You fill your review batch's landing cells, in your last commit;
 the usage and campaign cells are not yours.
 
-<!-- INCLUDE docs/accounting.md -->
+<!-- INCLUDE specs/accounting.md -->
 
 ---
 

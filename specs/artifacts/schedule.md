@@ -56,9 +56,9 @@ wave's review wave in its `depends_on.scheduled`.
 | `index` | the batch's id within its wave, from zero |
 | `kind` | `wrap`, `port` or `review` |
 | `status` | `todo`, `wip`, `done` or `failed` |
-| `items` | a `wrap` or `port` batch's worklist, as `docs/artifacts/task.md` describes its `items` |
+| `items` | a `wrap` or `port` batch's worklist, as `specs/artifacts/task.md` describes its `items` |
 | `reviews` | a translation campaign's review batch: the indices of the batches of the reviewed wave it reviews |
-| `paths`, `reports` | an audit's review batch: its worklist, as `docs/artifacts/task.md` describes them |
+| `paths`, `reports` | an audit's review batch: its worklist, as `specs/artifacts/task.md` describes them |
 | `commits` | the commits the batch landed, in order; empty until it lands |
 
 `kind` is per batch, not per wave. A port campaign wraps a type while C still reads its
@@ -99,7 +99,7 @@ within the `review-workload` caps.
 ## 5. Derived paths
 
 A batch's id, `wave-<index>/batch-<index>`, names its branch and worktree, and its wave
-index the wave branch, as `docs/layout.md` spells them. Its artifact dirs are those of the
+index the wave branch, as `specs/layout.md` spells them. Its artifact dirs are those of the
 agents that ran it, each holding a `task.json` that names the batch's wave and index.
 
 ## 6. Earlier versions
@@ -110,4 +110,4 @@ an `objective` in place of `kind`. Schema-v1 was one campaign-wide schedule nest
 `link_units` → `subsystems` → `waves`. A campaign on either is converted by its next
 planner run: its waves are numbered in the order they ran or were to run, every v2
 `objective` becomes the batch's `kind`, and every wave's `subsystem` becomes the `module`
-its units are re-decomposed into, as `docs/planning.md` describes.
+its units are re-decomposed into, as `specs/decomposition.md` describes.

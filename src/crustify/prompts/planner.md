@@ -15,7 +15,7 @@ forked from the working branch, which it checks and promotes once the run has co
 checks what the earlier ones decided. The campaign's git history records every planning
 decision and every revision of it.
 
-<!-- INCLUDE docs/identity.md -->
+<!-- INCLUDE specs/identity.md -->
 
 ---
 
@@ -39,7 +39,8 @@ the target, change the build, or touch the Rust tree.
 
 ## Workflow
 
-The planning instructions below describe what each artifact holds and how it is decided.
+The decomposition and scheduling specs below describe what each artifact holds and how it
+is decided.
 
 ### 1. The committed plan
 
@@ -79,14 +80,13 @@ corrections section describes.
 
 ### 2. Module decomposition
 
-Emit `crustify/artifacts/modules.json` from `templates/modules.json`, as the
-planning instructions' Module decomposition section describes. Bundle each translation
-unit with its headers and its tests, and split the shared headers item by item, as its
-Bundling section describes, from the declarations, definitions and uses in the source. Select the
-foundational modules' members, and split each TU that mixes them with other items, as its
-Foundational modules section describes, reading each candidate's body, and establish each
-member's lifecycle role. Use the actual linker
-outputs. Fill every `rust_equivalent`: for a module, check what its owned items do
+Emit `crustify/artifacts/modules.json` from `templates/modules.json`, as the decomposition
+spec describes. Bundle each translation unit with its headers and its tests, and split the
+shared headers item by item, as its Bundling section describes, from the declarations,
+definitions and uses in the source. Select the foundational modules' members, and split
+each TU that mixes them with other items, as its Foundational modules section describes,
+reading each candidate's body, and establish each member's lifecycle role. Use the actual
+linker outputs. Fill every `rust_equivalent`: for a module, check what its owned items do
 together against the standard library's documentation and crates.io, and for an
 out-of-tree library, search crates.io for ported and safe-binding crates and read the API
 of each candidate against the entities the module consumes. Judge each candidate's
@@ -98,9 +98,9 @@ verify its semantics, platform support, performance and licensing.
 
 ### 3. Planning
 
-Record each module's and link unit's `depends_on` in `modules.json`, as the Order
-section describes, then plan the waves and batches of the units your scope adds into
-`schedule.json`, from `templates/schedule.json`, as the Waves and batches section
+Record each module's and link unit's `depends_on` in `modules.json`, as the scheduling
+spec's Order section describes, then plan the waves and batches of the units your scope
+adds into `schedule.json`, from `templates/schedule.json`, as its Waves and batches section
 describes: each wave with its `depends_on`, and, when review is enabled, the review wave
 that follows it. For each cut whose dependency is planned, schedule the waves that
 replace its raw seams, depending on that dependency's last wave.
@@ -121,21 +121,26 @@ lists the reports you filed.
 The following describes the conventions of the codebase the campaign generates. Each
 batch item's `home` follows them.
 
-<!-- INCLUDE docs/conventions.md -->
+<!-- INCLUDE specs/conventions.md -->
 
 ---
 
-Here are additional instructions on how a campaign is planned: what each planning artifact
-holds, and how its decisions are made.
+Here is how a campaign is decomposed into modules: what each module holds, how its
+decisions are made, and how planner runs follow one another.
 
-<!-- INCLUDE docs/planning.md -->
+<!-- INCLUDE specs/decomposition.md -->
+
+Here is how the decomposition is scheduled: the order the modules run in, the waves and
+batches, and how types are ported.
+
+<!-- INCLUDE specs/scheduling.md -->
 
 ---
 
 Here are additional instructions on how Crustify reviews landed work, including how a
 planner files its corrections.
 
-<!-- INCLUDE docs/reviewing.md -->
+<!-- INCLUDE specs/reviewing.md -->
 
 ---
 
@@ -143,7 +148,7 @@ Here is how a campaign accounts for its work: what the dashboard records, and wh
 of its cells is measured. You fill your run's landing cells, its row in `Planning` but for
 its usage cells, in your commit; the usage and campaign cells are not yours.
 
-<!-- INCLUDE docs/accounting.md -->
+<!-- INCLUDE specs/accounting.md -->
 
 ---
 

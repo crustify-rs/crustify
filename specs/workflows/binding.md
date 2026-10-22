@@ -2,7 +2,7 @@
 
 How a `wrap` campaign proceeds from its setup to its landed modules. A `port` campaign
 follows the same workflow, with the differences [`porting.md`](porting.md) gives. How each
-item is bound is [`../binding.md`](../binding.md); the branches, worktrees and artifact
+item is bound is [`../items/binding.md`](../items/binding.md); the branches, worktrees and artifact
 dirs named below, and when each is created and purged, are [`../layout.md`](../layout.md).
 
 The workflow runs after the [setup workflow](setup.md)'s Provisioning, Artifact tree,
@@ -11,7 +11,7 @@ Builds and Baseline, and its waves start after Preflight.
 ## 1. Planning
 
 The plan is produced by planner runs, one after another, as
-[`../planning.md`](../planning.md)'s Runs section describes: as many as the settings'
+[`../decomposition.md`](../decomposition.md)'s Runs section describes: as many as the settings'
 `plan-agent` answer asks for, by default two, under the translation model and billing. Each
 run's `task.json`, `{"model": "<model>", "billing": "<billing>"}`, sits in its artifact dir.
 

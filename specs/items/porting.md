@@ -16,7 +16,7 @@ C still owns either operation, compatible storage is retained and the blocker re
 
 A layout is ported only once no unported C of the target touches it: no field toucher,
 and no other layout user. Tests and the C consumers outside the target do not count, as
-[`workflows/porting.md`](workflows/porting.md)'s Principles section describes, so neither
+[`../workflows/porting.md`](../workflows/porting.md)'s Principles section describes, so neither
 a test's field access nor a definition in an installed header keeps the layout in C.
 
 ## 3. Lifecycle
@@ -38,4 +38,4 @@ While C consumers remain, the symbol is re-exported to C as the conventions desc
 - An export is removed after its last C consumer is removed.
 - At integration, the Rust static library is linked in place of the TU through the actual
   build system, without assuming link mechanics, and the TU is deleted, as
-  [`workflows/porting.md`](workflows/porting.md)'s Builds section describes.
+  [`../workflows/porting.md`](../workflows/porting.md)'s Builds section describes.

@@ -8,7 +8,7 @@ Each agent you spawn runs in an isolated worktree forked from its integration br
 only its scheduled worklist and reports only on that work. You alone reconcile the
 campaign-wide results.
 
-<!-- INCLUDE docs/identity.md -->
+<!-- INCLUDE specs/identity.md -->
 
 ---
 
@@ -104,7 +104,7 @@ Every agent you spawn runs from its role's fixed prompt. When the campaign chang
 direction, or the user asks for something an agent's role does not cover, customize that
 agent's task: write the instructions to `instructions.md` in its artifact dir, beside its
 `task.json`, and name the file in the task's `instructions` field (see
-`docs/artifacts/task.md`). The agent's prompt carries them in its
+`specs/artifacts/task.md`). The agent's prompt carries them in its
 `## Additional instructions` section, and the agent follows them over the rest of its
 prompt where the two conflict.
 
@@ -168,21 +168,21 @@ gates of their own work: do not rerun them for a wave.
 Here are additional instructions on how Crustify's prompts, documents and skills are
 composed, and where each kind of text lives.
 
-<!-- INCLUDE docs/prompting.md -->
+<!-- INCLUDE specs/prompting.md -->
 
 ---
 
 Here is the setup every campaign starts from: provisioning, the artifact tree, the builds,
 the test baseline and the preflight before the first wave.
 
-<!-- INCLUDE docs/workflows/setup.md -->
+<!-- INCLUDE specs/workflows/setup.md -->
 
 ---
 
 Here are additional instructions on how a campaign is laid out: its branches, worktrees and
 artifact dirs, and when each is created and purged.
 
-<!-- INCLUDE docs/layout.md -->
+<!-- INCLUDE specs/layout.md -->
 
 ---
 
@@ -190,21 +190,21 @@ Here are additional instructions on how the campaign's work is tested: the build
 run against, the kinds of tests, which bug classes each sanitizer covers, and the gates
 every batch and wave passes.
 
-<!-- INCLUDE docs/testing.md -->
+<!-- INCLUDE specs/testing.md -->
 
 ---
 
 Here are additional instructions on how Crustify reviews: review waves and batches,
 worklists, objectives, reports and fixes.
 
-<!-- INCLUDE docs/reviewing.md -->
+<!-- INCLUDE specs/reviewing.md -->
 
 ---
 
 Here is how a campaign accounts for its work: what the dashboard records, the session and
 usage records its figures come from, and how cost and time are derived.
 
-<!-- INCLUDE docs/accounting.md -->
+<!-- INCLUDE specs/accounting.md -->
 
 ---
 

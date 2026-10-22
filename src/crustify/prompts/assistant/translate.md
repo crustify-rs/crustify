@@ -43,7 +43,7 @@ Planning section describes, under the new answers. Landed work is never re-plann
 2. **Planning.** Run the planner runs the binding workflow's Planning section describes,
    one after another. For each run `<n>`, create `crustify/planner/run-<n>` from the
    working branch's tip and check it out in the repository's base dir, write the run's
-   `task.json` (see `docs/artifacts/task.md`) in its artifact dir, and spawn it:
+   `task.json` (see `specs/artifacts/task.md`) in its artifact dir, and spawn it:
 
    ```bash
    crustify spawn-planner <repo> crustify/artifacts/planner/run-<n>/task.json \
@@ -79,16 +79,21 @@ Planning section describes, under the new answers. Landed work is never re-plann
 Here are additional instructions on how a translation campaign proceeds: the binding
 workflow, and where a port campaign departs from it.
 
-<!-- INCLUDE docs/workflows/binding.md -->
+<!-- INCLUDE specs/workflows/binding.md -->
 
-<!-- INCLUDE docs/workflows/porting.md -->
+<!-- INCLUDE specs/workflows/porting.md -->
 
 ---
 
-Here are additional instructions on how a campaign is planned: what each planning artifact
-holds, how its decisions are made, and how planner runs follow one another.
+Here is how a campaign is decomposed into modules: what each module holds, how its
+decisions are made, and how planner runs follow one another.
 
-<!-- INCLUDE docs/planning.md -->
+<!-- INCLUDE specs/decomposition.md -->
+
+Here is how the decomposition is scheduled: the order the modules run in, the waves and
+batches, and how types are ported.
+
+<!-- INCLUDE specs/scheduling.md -->
 
 ---
 
@@ -96,7 +101,7 @@ The following describes the conventions of the codebase the campaign generates. 
 wherever they apply: when you scaffold crates, modules and test suites,
 and when you home each batch's items.
 
-<!-- INCLUDE docs/conventions.md -->
+<!-- INCLUDE specs/conventions.md -->
 
 ---
 
@@ -105,17 +110,17 @@ brief the user, to write additional instructions, and to judge what the agents r
 
 Here is how binders and translators generate safe bindings.
 
-<!-- INCLUDE docs/binding.md -->
+<!-- INCLUDE specs/items/binding.md -->
 
 ---
 
 Here is how translators port C to safe Rust.
 
-<!-- INCLUDE docs/porting.md -->
+<!-- INCLUDE specs/items/porting.md -->
 
 ---
 
 Here is how binders, translators and reviewers land their commits on an integration
 branch.
 
-<!-- INCLUDE docs/landing.md -->
+<!-- INCLUDE specs/landing.md -->

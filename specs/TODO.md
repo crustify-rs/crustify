@@ -34,24 +34,24 @@ Open questions:
 - **Results and accounting.** Whether a side campaign reports into the parent's results
   table or its own.
 
-## 2. Ship `docs/` so a non-editable install keeps its conventions
+## 2. Ship `specs/` so a non-editable install keeps its conventions
 
-The conventions and the how-tos (`docs/conventions.md`,
-`docs/*.md`) resolve under `deps.CHECKOUT`, which is the source checkout.
-A wheel install has no `docs/` there, so every agent runs without its conventions and
+The conventions and the how-tos (`specs/conventions.md`,
+`specs/*.md`) resolve under `deps.CHECKOUT`, which is the source checkout.
+A wheel install has no `specs/` there, so every agent runs without its conventions and
 how-tos. Only the editable install the Dockerfile performs hides this.
 
-Ship `docs/` as data-files to `share/crustify/`, the way Wavefront ships its schemas to
+Ship `specs/` as data-files to `share/crustify/`, the way Wavefront ships its schemas to
 `share/wavefront/artifacts`, and resolve crustify's own skills there before the checkout.
 `deps.share_dir()` already resolves that prefix.
 
-This is also the prerequisite for moving `src/crustify/prompts/` into `docs/`: prompts
+This is also the prerequisite for moving `src/crustify/prompts/` into `specs/`: prompts
 package correctly today only because they sit inside the package, and moving them before
 the fix would lose them the same way.
 
 ## 3. Add an idiomaticity and ergonomics guide
 
-Create `docs/idiomaticity.md` for Rust API-shaping hints and good practices. Keep
+Create `specs/idiomaticity.md` for Rust API-shaping hints and good practices. Keep
 mandatory mechanical rules in `conventions.md`. Make the guide available through an
 optional prompt skill so experiments can ablate it without changing the prompts.
 

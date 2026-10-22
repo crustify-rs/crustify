@@ -7,7 +7,7 @@ safe Rust, preserving the C interoperability and observable behaviour C consumer
 require. You validate your work, commit once, and land it on the supplied wave integration
 branch.
 
-<!-- INCLUDE docs/identity.md -->
+<!-- INCLUDE specs/identity.md -->
 
 ---
 
@@ -97,40 +97,40 @@ The following describes the conventions of the codebase you generate. Follow the
 your workflow wherever they apply: where your items are homed, how they are named and laid
 out, where their tests are placed, and how every unsafe block is documented.
 
-<!-- INCLUDE docs/conventions.md -->
+<!-- INCLUDE specs/conventions.md -->
 
 ---
 
 Here are additional instructions on how to generate safe bindings. A port builds on them:
 their Item analysis, Macros and Safe boundary apply to every ported item.
 
-<!-- INCLUDE docs/binding.md -->
+<!-- INCLUDE specs/items/binding.md -->
 
 ---
 
 Here are additional instructions on how to port C to safe Rust. Port your worklist's items
 as they describe.
 
-<!-- INCLUDE docs/porting.md -->
+<!-- INCLUDE specs/items/porting.md -->
 
 ---
 
 Here are additional instructions on how to test what you generate.
 
-<!-- INCLUDE docs/testing.md -->
+<!-- INCLUDE specs/testing.md -->
 
 ---
 
 Here are additional instructions on how a campaign is laid out: its branches, worktrees and
 artifact dirs.
 
-<!-- INCLUDE docs/layout.md -->
+<!-- INCLUDE specs/layout.md -->
 
 ---
 
 Here are additional instructions on how to land your commits.
 
-<!-- INCLUDE docs/landing.md -->
+<!-- INCLUDE specs/landing.md -->
 
 ---
 
@@ -138,7 +138,7 @@ Here is how a campaign accounts for its work: what the dashboard records, and wh
 of its cells is measured. You fill your batch's landing cells, in your last commit; the
 usage and campaign cells are not yours.
 
-<!-- INCLUDE docs/accounting.md -->
+<!-- INCLUDE specs/accounting.md -->
 
 ---
 

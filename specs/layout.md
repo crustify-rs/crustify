@@ -37,7 +37,7 @@ has none: it runs in the repository's base dir, on its branch.
 
 A batch's id is the part of its branch name after `crustify/batches/`:
 `wave-<index>/batch-<index>`. It is permanent, since a wave's index is never reused (see
-`docs/artifacts/schedule.md`), and its entry in `schedule.json` gives the batch's link
+`specs/artifacts/schedule.md`), and its entry in `schedule.json` gives the batch's link
 unit, module, kind and worklist. A run's id is `<role>/run-<n>`, which names its
 artifact dir; a planner run's branch is named from it.
 

@@ -155,24 +155,34 @@ independently and audited them for undefined behavior.
 The full campaign results and code are available at
 [crustify-rs/libgit2-wrap](https://github.com/crustify-rs/libgit2-wrap).
 
-## Documentation
+## Specifications
 
-- [`docs/planning.md`](docs/planning.md): how a campaign is decomposed and scheduled
-- [`docs/binding.md`](docs/binding.md), [`docs/porting.md`](docs/porting.md): how an
-  item is wrapped or ported
-- [`docs/reviewing.md`](docs/reviewing.md): how landed work and plans are reviewed
-- [`docs/workflows/`](docs/workflows/): how each kind of campaign proceeds: its shared
+Crustify comes with a set of specifications, under [`specs/`](specs/), for how each step
+of a port, wrap or audit campaign is done: from the campaign's layout and the
+decomposition of the codebase, through its scheduling, to the safety and soundness of the
+bindings and ports it generates. They describe the work rather than who does it, and
+every agent's prompt includes the ones it follows.
+
+- [`specs/decomposition.md`](specs/decomposition.md): how the codebase is decomposed into
+  modules, one per translation unit, with their objectives and dependencies
+- [`specs/scheduling.md`](specs/scheduling.md): how the modules are ordered and scheduled
+  into waves and batches
+- [`specs/items/binding.md`](specs/items/binding.md),
+  [`specs/items/porting.md`](specs/items/porting.md): the per-item principles, how an item
+  is wrapped or ported
+- [`specs/reviewing.md`](specs/reviewing.md): how landed work and plans are reviewed
+- [`specs/workflows/`](specs/workflows/): how each kind of campaign proceeds: its shared
   setup, and the binding, porting and audit workflows
-- [`docs/accounting.md`](docs/accounting.md): the dashboard, session and usage records,
+- [`specs/accounting.md`](specs/accounting.md): the dashboard, session and usage records,
   and how cost is derived
-- [`docs/testing.md`](docs/testing.md), [`docs/landing.md`](docs/landing.md),
-  [`docs/layout.md`](docs/layout.md): tests, landing, and a campaign's branches and
+- [`specs/testing.md`](specs/testing.md), [`specs/landing.md`](specs/landing.md),
+  [`specs/layout.md`](specs/layout.md): tests, landing, and a campaign's branches and
   artifact directories
-- [`docs/conventions.md`](docs/conventions.md): conventions for the generated Rust,
+- [`specs/conventions.md`](specs/conventions.md): conventions for the generated Rust,
   including the tree layout
-- [`docs/artifacts/`](docs/artifacts/): the fields of `modules.json`, the campaign's
+- [`specs/artifacts/`](specs/artifacts/): the fields of `modules.json`, the campaign's
   `schedule.json`, and `task.json`
-- [`docs/prompting.md`](docs/prompting.md): how the agents' prompts, documents and skills
+- [`specs/prompting.md`](specs/prompting.md): how the agents' prompts, specs and skills
   are composed
 - [`templates/`](templates/README.md): an example of each artifact, the settings and
   dashboard templates, and the Dockerfile

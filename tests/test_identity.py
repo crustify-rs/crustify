@@ -1,4 +1,4 @@
-"""Every role prompt carries crustify's identity, read from docs/identity.md."""
+"""Every role prompt carries crustify's identity, read from specs/identity.md."""
 from __future__ import annotations
 
 import re
@@ -7,7 +7,7 @@ import unittest
 from crustify import deps
 from crustify.agents.base import _PKG_ROOT, expand_includes
 
-IDENTITY = deps.CHECKOUT / "docs" / "identity.md"
+IDENTITY = deps.CHECKOUT / "specs" / "identity.md"
 
 
 class IdentityTests(unittest.TestCase):
@@ -23,7 +23,7 @@ class IdentityTests(unittest.TestCase):
         for path in prompts:
             with self.subTest(prompt=path.name):
                 raw = path.read_text()
-                self.assertEqual(raw.count("<!-- INCLUDE docs/identity.md -->"), 1)
+                self.assertEqual(raw.count("<!-- INCLUDE specs/identity.md -->"), 1)
                 self.assertNotRegex(raw, r"(?m)^Your git entity:")
                 # Formatting the expanded prompt restores the document verbatim.
                 rendered = expand_includes(raw).replace("{{", "{").replace("}}", "}")

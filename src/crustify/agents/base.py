@@ -37,7 +37,7 @@ _GENERIC_SKILL_ANCHOR = "<!-- SKILL -->"
 #: the instructions file's text, or by nothing when the task gives none.
 INSTRUCTIONS_MARKER = "<!-- INSTRUCTIONS -->"
 
-#: `<!-- INCLUDE docs/binding.md -->`: a crustify document,
+#: `<!-- INCLUDE specs/items/binding.md -->`: a crustify document,
 #: by its path in the checkout, spliced whole into a stage prompt.
 _INCLUDE_RE = _re.compile(r"<!-- INCLUDE ([^ ]+) -->")
 
@@ -45,7 +45,7 @@ _INCLUDE_RE = _re.compile(r"<!-- INCLUDE ([^ ]+) -->")
 def expand_includes(text: str) -> str:
     """Splice every included document into a stage prompt template.
 
-    The documents are the conventions and the how-tos under ``docs/``:
+    The documents are the conventions and the how-tos under ``specs/``:
     public, human-readable descriptions that an agent follows throughout,
     so the prompt hands them over whole rather than naming a file the agent
     may skip reading. Braces are escaped, because the template is formatted

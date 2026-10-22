@@ -127,20 +127,21 @@ class IncludeTests(unittest.TestCase):
     role headers name their sections when they augment them."""
 
     _DOCS = {
-        "conventions": "docs/conventions.md",
-        "binding": "docs/binding.md",
-        "porting": "docs/porting.md",
-        "testing": "docs/testing.md",
-        "landing": "docs/landing.md",
-        "layout": "docs/layout.md",
-        "planning": "docs/planning.md",
-        "reviewing": "docs/reviewing.md",
-        "accounting": "docs/accounting.md",
-        "prompting": "docs/prompting.md",
-        "workflows/setup": "docs/workflows/setup.md",
-        "workflows/binding": "docs/workflows/binding.md",
-        "workflows/porting": "docs/workflows/porting.md",
-        "workflows/audit": "docs/workflows/audit.md",
+        "conventions": "specs/conventions.md",
+        "items/binding": "specs/items/binding.md",
+        "items/porting": "specs/items/porting.md",
+        "testing": "specs/testing.md",
+        "landing": "specs/landing.md",
+        "layout": "specs/layout.md",
+        "decomposition": "specs/decomposition.md",
+        "scheduling": "specs/scheduling.md",
+        "reviewing": "specs/reviewing.md",
+        "accounting": "specs/accounting.md",
+        "prompting": "specs/prompting.md",
+        "workflows/setup": "specs/workflows/setup.md",
+        "workflows/binding": "specs/workflows/binding.md",
+        "workflows/porting": "specs/workflows/porting.md",
+        "workflows/audit": "specs/workflows/audit.md",
     }
     _REF = re.compile(r"^## ([a-z/]+) › (.+?)(?:, for `[a-z]+`)?$", re.M)
     #: A numbered heading's number, which a reference leaves out.
@@ -158,22 +159,23 @@ class IncludeTests(unittest.TestCase):
         """The reviewer is told to ignore the conventions outside a
         Crustify-generated batch."""
         self.assertEqual(self._included("binder.md"),
-                         {"conventions", "binding", "testing", "landing",
+                         {"conventions", "items/binding", "testing", "landing",
                           "layout", "accounting"})
         self.assertEqual(self._included("translator.md"),
-                         {"conventions", "binding", "porting", "testing",
+                         {"conventions", "items/binding", "items/porting", "testing",
                           "landing", "layout", "accounting"})
         self.assertEqual(self._included("reviewer.md"),
-                         {"conventions", "binding", "porting", "testing",
+                         {"conventions", "items/binding", "items/porting", "testing",
                           "landing", "layout", "reviewing", "accounting"})
         self.assertEqual(self._included("planner.md"),
-                         {"conventions", "planning", "reviewing", "accounting"})
+                         {"conventions", "decomposition", "scheduling", "reviewing",
+                          "accounting"})
         shared = {"prompting", "workflows/setup", "layout", "testing",
                   "reviewing", "accounting"}
         self.assertEqual(self._included("translate-assistant.md"),
                          shared | {"workflows/binding", "workflows/porting",
-                                   "planning", "conventions", "binding",
-                                   "porting", "landing"})
+                                   "decomposition", "scheduling", "conventions", "items/binding",
+                                   "items/porting", "landing"})
         self.assertEqual(self._included("audit-assistant.md"),
                          shared | {"workflows/audit"})
 
@@ -189,7 +191,7 @@ class IncludeTests(unittest.TestCase):
         is formatted after the include."""
         from crustify.agents.base import expand_includes
         body = expand_includes(
-            "<!-- INCLUDE docs/conventions.md -->")
+            "<!-- INCLUDE specs/conventions.md -->")
         self.assertIn("{.<field>}", body.format())
 
     def test_every_how_to_section_a_header_names_exists(self) -> None:

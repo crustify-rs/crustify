@@ -2,7 +2,7 @@
 
 How a `port` campaign proceeds. It follows the [binding workflow](binding.md) throughout;
 this document gives the principles a port follows and where it differs. How each item is
-ported is [`../porting.md`](../porting.md).
+ported is [`../items/porting.md`](../items/porting.md).
 
 ## 1. Principles
 
@@ -59,7 +59,7 @@ leave it.
 
 ## 2. Batches
 
-A port campaign's schedule mixes both kinds of batch, as [`../planning.md`](../planning.md)'s
+A port campaign's schedule mixes both kinds of batch, as [`../scheduling.md`](../scheduling.md)'s
 Waves and batches section describes: a selected symbol is `port` from the start, a
 selected type is `wrap` while another module's unported C depends on its layout and `port`
 once none does, and a dependency outside the selected migration set stays `wrap`. A type

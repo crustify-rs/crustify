@@ -51,4 +51,4 @@ The unit of work is the review wave.
 Here are additional instructions on how an audit proceeds: its objectives, worksets, review
 waves, spending, disclosure and output.
 
-<!-- INCLUDE docs/workflows/audit.md -->
+<!-- INCLUDE specs/workflows/audit.md -->

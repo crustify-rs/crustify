@@ -1,10 +1,10 @@
-# Planning
+# Decomposition
 
-Planning turns a campaign's settings and the target's build into the plan its agents
-execute: the module decomposition, `crustify/artifacts/modules.json`, whose
-dependencies order the campaign's link units and modules, the campaign's waves and
-batches in `crustify/artifacts/schedule.json`, and the planning artifacts of the enabled
-skills.
+Decomposition turns the target's build into the campaign's modules, recorded in
+`crustify/artifacts/modules.json`: what each module holds, its tests, its objective, the
+Rust that could replace it, and what it depends on. The waves and batches that execute
+them are [scheduling](scheduling.md)'s; together they are the campaign's plan, with the
+planning artifacts of the enabled skills.
 
 A plan is bounded by the campaign's settings in `crustify/CRUSTIFY.md`: its `campaign`
 (port or wrap), `scope`, `target-config` and `workload` answers. A feature the target is
@@ -29,7 +29,7 @@ waves after the highest wave index. What is frozen, or has started, is kept as
 [`artifacts/schedule.md`](artifacts/schedule.md) describe. A run that corrects an earlier decision files a report on it, as
 [`reviewing.md`](reviewing.md#9-plan-corrections) describes.
 
-## 2. Module decomposition
+## 2. Modules
 
 `modules.json` follows [`artifacts/modules.md`](artifacts/modules.md); its layout example
 is [`templates/modules.json`](../templates/modules.json).
@@ -44,7 +44,7 @@ Link units are identified from the actual linker outputs. The decomposition cove
 selected target and its complete imported producer closure: every translation unit the
 build compiles in scope is a module's, or is listed as configured out.
 
-### 2.1 Bundling
+## 3. Bundling
 
 Each translation unit is bundled with the headers that carry its name, internal or
 installed: `src/libgit2/repository.c` with `src/libgit2/repository.h`,
@@ -61,7 +61,7 @@ A shared header, one that carries no single TU's name, is split item by item:
 A header that implements what no TU does, and so has no TU to go to, is a header module of
 its own. Each split is recorded with the file entries' `items` lists, which stay empty for
 a file a module owns whole. Macros are not homed: they are not translated, and a binding
-that needs one reaches it as [`binding.md`](binding.md)'s Macros section describes.
+that needs one reaches it as [`items/binding.md`](items/binding.md)'s Macros section describes.
 
 A module also lists its tests: the test files gated with it, those that use its
 internals, such as the fields or the layout of the types it owns. A test file that uses the
@@ -70,7 +70,7 @@ functions is not gated with it: it keeps running after the module's integration,
 its exports. A test file whose tests divide between modules is split with its entries'
 `items` lists, by test function.
 
-### 2.2 Dependencies
+## 4. Dependencies
 
 Each module's dependency edges are found with a wavefront configuration of its own, which
 names its files and the items it owns. The edges from a module to another are one record
@@ -79,9 +79,9 @@ consumed across them, and each out-of-tree library it uses is one record of its 
 out-of-tree library's record also names the crates that port it to Rust and the crates that
 bind it safely, with their feature parity, so that a port reaches it through one of them
 rather than through raw bindings when they exist. The records keep the graph as it is,
-cycles included, split as [Order](#3-order) describes.
+cycles included, split as [scheduling](scheduling.md)'s Order section describes.
 
-### 2.3 Objectives
+## 5. Objectives
 
 A module's `rust_equivalent` records what the Rust standard library provides in place of
 the module as a whole, and the established crates that could replace it outright, each
@@ -99,10 +99,10 @@ from a judgement of what the module is:
   reimplemented in safe Rust, using its partial equivalents where they serve.
 
 The foundational modules are `wrap` whatever their equivalents, as
-[Foundational modules](#24-foundational-modules) describes. In a wrap campaign every module
+[Foundational modules](#6-foundational-modules) describes. In a wrap campaign every module
 is `wrap`. A TU is not split for its objective.
 
-### 2.4 Foundational modules
+## 6. Foundational modules
 
 The foundational modules are those whose items every other module may depend on: the
 TUs that define the allocators, releasers, disposers and cloners of type-erased memory,
@@ -126,85 +126,8 @@ told apart by their `index` and `foundational`. Both home in the TU's Rust file.
 
 Each member's lifecycle role (allocator or constructor, releaser, disposer, cloner) is
 established while planning, so that the foundational modules' members are bound as
-strategies, as [Lifecycle strategies](binding.md#54-lifecycle-strategies) describes. The
+strategies, as [Lifecycle strategies](items/binding.md#54-lifecycle-strategies) describes. The
 foundational modules are planned and scheduled like any other: waves of batches of units.
 They are `wrap` in every campaign: their members become the lifecycle strategies that the
 other modules' bindings release through, and while any C remains it allocates and frees
 through them.
-
-## 3. Order
-
-The campaign's order is computed from the dependencies `modules.json` records, as
-[`artifacts/modules.md`](artifacts/modules.md) describes: each module's in-tree
-dependencies are split into those that run before it, `depends_on.scheduled`, and those
-cut to break a cycle, `depends_on.cut`, so that the scheduled dependencies form a DAG.
-Within each strongly connected component, the member the most other members depend on
-comes first, and the edges between tied members break ties: every dependency on a member
-that comes later is cut. Link units are ordered the same way. Modules run one at a time.
-
-A frozen module keeps its place: a module added after it that it depends on is one of its
-cuts, and the waves that replace the raw seams of each cut are scheduled once the
-dependency it cut is planned, depending on that dependency's last wave.
-
-The plan holds only the link units and modules the campaign's scope includes, without
-those that a previous campaign completed. The foundational modules depend on no other, so
-they run first.
-
-## 4. Waves and batches
-
-`schedule.json` follows [`artifacts/schedule.md`](artifacts/schedule.md); its layout
-example is [`templates/schedule.json`](../templates/schedule.json). Each wave belongs to
-one module, or to none when the campaign has no decomposition, and records the waves it
-depends on, split as modules' are into `scheduled` and `cut`: within a module, the
-dependency order of its units; across modules, the modules' order, so that a wave depends
-on the last waves of the modules its units depend on. Waves execute one at a
-time, in that order; the batches of a wave execute in parallel, up to the campaign's
-parallelism, and the `workload` caps bound each batch.
-
-When review is enabled, each translation wave is followed by a review wave, whose batches
-group the reviewed wave's batches as [`reviewing.md`](reviewing.md)'s Review waves and
-batches section describes, within the `review-workload` caps.
-
-A `wrap` or `port` batch entry holds its `kind` and `items`, which its task carries as
-`objective` and `items` ([`artifacts/task.md`](artifacts/task.md) gives their format and
-routing). Each item's `home` follows the [conventions](conventions.md).
-
-Type-erased and string lifecycle primitives are units of the foundational modules.
-Typed lifecycle primitives stay in the schedule as free symbols, although the type
-batches discover them on the fly; their binders skip them.
-
-In a wrap campaign every batch is `wrap`. In a port campaign:
-
-- a selected symbol is `port` from the start;
-- a selected type is `port`, preceded by a `wrap` batch only while another module's
-  unported C depends on its layout, as [Porting types](#41-porting-types) describes; and
-- a dependency outside the selected migration set is `wrap`.
-
-### 4.1 Porting types
-
-A selected type's layout users are the target's C that depends on its layout:
-
-- code that touches a field: reads or writes it, or takes its address;
-- code that depends on the layout without naming a field: `sizeof`, `_Alignof` or
-  `offsetof` on the type (`sizeof *p`, and macros such as `container_of`, included); a
-  value of the type, as a local, a parameter or return, a global, a copy or a compound
-  literal; pointer arithmetic or indexing on a pointer to it; and
-- another struct, or an array, that embeds it by value and so carries its layout.
-
-No tool lists the second and third kinds: they are found in the source, in every
-function that mentions the type, its globals and the struct fields declared with it,
-macro expansions included.
-
-Three kinds of C are not layout users, as [`workflows/porting.md`](workflows/porting.md)'s
-Principles section describes: the type's own module, which switches to Rust in one
-integration; the tests, which are gated with the modules whose internals they use; and C
-outside the target, so that a definition in an installed header is no user either. A type
-is then scheduled by its remaining users:
-
-- with none, as when only pointers to it cross into other modules, it is `port` only, where
-  the DAG places it;
-- with layout users in other modules that are ported later, it is `wrap` where the DAG
-  places it, and `port` in the first wave after the integration of the last of those
-  modules; and
-- with a layout user that stays C, in a `wrap` module or a struct that embeds it and stays
-  C, it is `wrap` only, and keeps its C layout.

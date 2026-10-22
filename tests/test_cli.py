@@ -378,8 +378,9 @@ class PlannerPromptTests(unittest.TestCase):
         self.assertIn("### 1. The committed plan", body)
         self.assertIn("Only a correction is a finding", body)
         self.assertIn("re-plan only waves that are `todo`", body)
-        # The details of how to plan come from the included planning doc.
-        self.assertIn("# Planning\n\nPlanning turns a campaign's settings", body)
+        # The details of how to plan come from the included specs.
+        self.assertIn("# Decomposition\n\nDecomposition turns", body)
+        self.assertIn("# Scheduling\n\nScheduling turns", body)
         self.assertIn("under `crustify/reviews/planner/`", body)
         self.assertNotIn("objective: `", body)
         self.assertNotIn("scaffold", body.split("### 3. Planning")[1].split("### 4.")[0])

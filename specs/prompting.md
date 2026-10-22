@@ -10,27 +10,28 @@ An agent's system prompt is assembled from three layers and one task-specific se
 
 | layer | where | voice | holds |
 |---|---|---|---|
-| documents | `docs/`, `docs/workflows/`, `docs/artifacts/` | descriptive, third person | what Crustify's artifacts are and how its work is done: workflows, how-tos, conventions, schemas |
+| specs | `specs/`, `specs/items/`, `specs/workflows/`, `specs/artifacts/` | descriptive, third person | what Crustify's artifacts are and how its work is done: workflows, how-tos, conventions, schemas |
 | prompts | `src/crustify/prompts/<role>.md`, and the assistant's `assistant/<campaign>.md` | instructive, second person | a role's identity, inputs, what it owns, its steps and stage-specific guidelines |
 | skills | `src/crustify/prompts/skills/<skill>/` | instructive, second person | how one tool serves the work: its metadata, and per role, how that role uses it |
 | additional instructions | `instructions.md` beside a task's `task.json` | instructive | what one run needs beyond its role |
 
-Each artifact's schema, the meaning of its fields, is described under `docs/artifacts/`,
+Each artifact's schema, the meaning of its fields, is described under `specs/artifacts/`,
 and an example of each is given under `templates/`, which the schema cites. The settings,
 dashboard and `.gitignore` templates there are what a campaign copies to start. Examples
 hold illustrations, not rules.
 
-### 1.1 Documents
+### 1.1 Specs
 
-A document describes. It states what an artifact holds, how a decision is made, what a
+A spec, or document, describes. It states what an artifact holds, how a decision is made, what a
 procedure produces and when each of its steps happens, never what an agent should do, and
 never who does a step: which role owns which step is the prompts'. It does not name the
 tools that serve it either: a document reads the same whether or not a skill is installed,
 so a statement such as "each unit's lifecycle role is established while planning" belongs
 in a document, and the wavefront command that records it belongs in wavefront's skill.
 
-Two kinds of document describe how work is done. A how-to, such as `binding.md` or
-`porting.md`, describes how one item is handled. A workflow, under `docs/workflows/`,
+Two kinds of document describe how work is done. A how-to, such as `items/binding.md` or
+`items/porting.md`, describes how one item is handled; the item how-tos sit under
+`specs/items/`. A workflow, under `specs/workflows/`,
 describes how one kind of campaign proceeds from its settings to its results:
 `setup.md`, which every campaign shares, and one document per kind of campaign
 (`binding.md`, `porting.md`, `audit.md`). A workflow names the how-tos and the layout
@@ -40,14 +41,14 @@ Every document's sections are numbered. A reference to a section names it, with 
 its number ("testing.md's Coverage section", "layout § Lifecycle › Waves"), so that a
 renumbering never silently points a reference at another section.
 
-A prompt that needs a document includes it whole, with an `<!-- INCLUDE docs/<path> -->`
+A prompt that needs a document includes it whole, with an `<!-- INCLUDE specs/<path> -->`
 marker, introduced by one sentence saying what the document covers. An included document
 rides in the system prompt, which a long run cannot compact away, and an agent cannot skip
 reading it the way it can skip a file it is pointed at. Each document is included by every
 role that follows it, and by no role that does not: the reviewer includes the binding and
 porting how-tos it reviews against, the planner the conventions its homes follow.
 
-The schemas under `docs/artifacts/` are documents too. They are included where a role
+The schemas under `specs/artifacts/` are documents too. They are included where a role
 emits or reads the artifact, and are otherwise cited by path, as are their examples.
 
 ### 1.2 Prompts
@@ -55,7 +56,7 @@ emits or reads the artifact, and are otherwise cited by path, as are their examp
 A prompt instructs. It holds what is specific to its role: the role's place among the
 agents, its inputs, its workflow steps, and the guidelines that apply to one step or
 stage. Where a step follows a document, the prompt names the document's section rather
-than restating it ("as the planning instructions' Order section describes"); where a step
+than restating it ("as the scheduling spec's Order section describes"); where a step
 adds to it, the prompt states only the addition.
 
 A prompt states what its role owns by naming the document sections it carries out ("you
@@ -98,11 +99,11 @@ read on demand.
 
 | text | goes in |
 |---|---|
-| what an artifact's fields mean | its schema under `docs/artifacts/` |
+| what an artifact's fields mean | its schema under `specs/artifacts/` |
 | what an artifact looks like | its example under `templates/` |
 | how a kind of work is done, independent of tools | the document for that work |
-| how a kind of campaign proceeds, step by step | its workflow under `docs/workflows/`, with the steps every campaign shares in `setup.md` |
-| a convention every role follows | `docs/conventions.md` |
+| how a kind of campaign proceeds, step by step | its workflow under `specs/workflows/`, with the steps every campaign shares in `setup.md` |
+| a convention every role follows | `specs/conventions.md` |
 | what one role does, in which steps, and which steps it owns | that role's prompt |
 | what the assistant does in one kind of campaign | `src/crustify/prompts/assistant/<kind>.md` |
 | how a tool serves a step or a section | the tool's skill, in the file of each role that uses it |
