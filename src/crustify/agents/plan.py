@@ -2,11 +2,11 @@
 
 The orchestrator spawns planners one after another, each on its own branch,
 after setup and before the Rust tree is scaffolded. Every run does the same:
-it emits what the plan -- `modules.json`, each module's
-`schedule.json` and the skills' planning artifacts -- lacks, updates what
+it emits what the plan -- `modules.json`, the waves of `schedule.json`
+and the skills' planning artifacts -- lacks, updates what
 follows an earlier schema, corrects what earlier runs decided, filing a
-report per correction under `crustify/reviews/planner/`, and re-emits the
-schedules its changes move. The branch history and the reports record each
+report per correction under `crustify/reviews/planner/`, and re-plans the
+`todo` waves its changes move. The branch history and the reports record each
 planning decision and its revisions.
 """
 from __future__ import annotations
