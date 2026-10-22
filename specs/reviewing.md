@@ -10,7 +10,7 @@ plan that earlier runs committed (see [Plan corrections](#9-plan-corrections)).
 
 When review is enabled, every translated wave is followed by its review wave, a wave of
 its own in `schedule.json` that `reviews` it, before the next translation wave starts. Its
-batches land on its integration branch, never checked out, as [`layout.md`](layout.md)
+batches land on its integration branch, never checked out, as [`versioning.md`](versioning.md)
 names it, and once they land, its tip is promoted to the working branch.
 
 A review batch takes the commits of one or more of the wave's translation batches, within
@@ -207,7 +207,7 @@ a UB report. A BSan report on an earlier wave's items belongs to the last wave's
 
 ## 8. Landing
 
-A review batch lands two commits, as [`landing.md`](landing.md) describes: first its
+A review batch lands two commits, as [`versioning.md`](versioning.md)'s Landing section describes: first its
 `crustify/reviews/` changes, so the reproducers run on the affected commit, then its
 changes to the Rust tree, if any.
 

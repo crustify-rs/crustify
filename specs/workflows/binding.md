@@ -3,7 +3,8 @@
 How a `wrap` campaign proceeds from its setup to its landed modules. A `port` campaign
 follows the same workflow, with the differences [`porting.md`](porting.md) gives. How each
 item is bound is [`../items/binding.md`](../items/binding.md); the branches, worktrees and artifact
-dirs named below, and when each is created and purged, are [`../layout.md`](../layout.md).
+dirs named below, and when each is created and purged, are [`../versioning.md`](../versioning.md)'s
+and [`../layout.md`](../layout.md)'s.
 
 The workflow runs after the [setup workflow](setup.md)'s Provisioning, Artifact tree,
 Builds and Baseline, and its waves start after Preflight.
@@ -83,10 +84,11 @@ crustify spawn-translator <batch worktree> <run dir>/task.json --log-dir <run di
 
 The spawn command validates the batch, rejects one whose objective belongs to the other
 command, and writes the agent's session record into the `--log-dir`. Each batch lands on
-the wave branch as [`../landing.md`](../landing.md) describes, after running the gates of
+the wave branch as [`../versioning.md`](../versioning.md)'s Landing section describes, after running the gates of
 [`../testing.md`](../testing.md)'s Regressions section on the tree it lands; those gates
 are not run again for the wave. Its `status` follows its run, and once it lands, its
-`commits` are derived from its branch, as [`../landing.md`](../landing.md) describes.
+`commits` are derived from its branch, as [`../versioning.md`](../versioning.md)'s Landing
+section describes.
 
 A batch that fails keeps its branch and worktree for inspection. It is run again in a new
 run dir, or its failure reported; its worklist is not translated outside an agent unless

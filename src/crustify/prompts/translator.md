@@ -89,7 +89,7 @@ tests under Miri; the wave's and the module's gates belong to the review that fo
 ### 6. Landing
 
 Commit one changeset, with your batch's dashboard rows, and land it on `{git_base}` as
-the landing instructions below describe.
+the versioning spec's Landing section below describes.
 
 ---
 
@@ -128,9 +128,10 @@ artifact dirs.
 
 ---
 
-Here are additional instructions on how to land your commits.
+Here is how the campaign is held in version control: its repositories, branches and
+worktrees, and how you land your commits.
 
-<!-- INCLUDE specs/landing.md -->
+<!-- INCLUDE specs/versioning.md -->
 
 ---
 

@@ -52,7 +52,7 @@ Planning section describes, under the new answers. Landed work is never re-plann
 
    Once it has committed, check its diff against the plan's rules the Planning section
    gives, and report what breaks them rather than promote it. Otherwise promote it as the
-   layout's Lifecycle section describes, collect its records and fill its usage cells;
+   versioning spec's Lifecycle section describes, collect its records and fill its usage cells;
    start the next run only after that. After the last run, check that the plan is
    complete as the Planning section defines it.
 3. **Rust tree.** Scaffold the Rust tree as the binding workflow's Rust tree section
@@ -64,7 +64,7 @@ Planning section describes, under the new answers. Landed work is never re-plann
 2. **Waves and batches.** Run the waves the session covers, and their review waves, as
    the binding workflow's Order, Waves and batches, and Review waves sections describe,
    with the porting workflow's differences in a port campaign: prepare each wave as the
-   layout's Lifecycle section describes, write each task, spawn its agent up to the
+   versioning spec's Lifecycle section describes, write each task, spawn its agent up to the
    approved parallelism, record each batch's progress, and promote each wave once it
    completes. Create each home before its batch launches, as the Rust tree section
    describes.
@@ -125,7 +125,4 @@ Here is how translators port C to safe Rust.
 
 ---
 
-Here is how binders, translators and reviewers land their commits on an integration
-branch.
 
-<!-- INCLUDE specs/landing.md -->

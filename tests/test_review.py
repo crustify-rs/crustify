@@ -240,7 +240,7 @@ class ReviewAgentTests(unittest.TestCase):
         pre = self.agent(None).system_preamble()
         for heading in ("# Crustify coding conventions",
                         "# Generating safe bindings", "# Porting", "# Testing",
-                        "# Landing"):
+                        "# Versioning"):
             with self.subTest(heading=heading):
                 self.assertIn(heading, pre)
         self.assertIn("otherwise, ignore them", pre)

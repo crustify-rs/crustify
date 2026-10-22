@@ -84,8 +84,8 @@ Once the module's last wave has landed, it is integrated in one step: its export
 turned on, its Rust is linked into the target in place of its TU, through the target's
 actual build system, the TU and the C tests gated with it are removed, and the target's
 test suite runs over the hybrid as the integration regression gate. The C side of the step
-is a commit on the fork's `main`, as [`../layout.md`](../layout.md)'s Repository
-section describes, and the campaign's commit records the submodule at it: integrations
+is a commit on the fork's `main`, as [`../versioning.md`](../versioning.md)'s
+Repositories section describes, and the campaign's commit records the submodule at it: integrations
 run one at a time, so the two repositories move together. The shared variants are rebuilt once the integration
 lands.
 

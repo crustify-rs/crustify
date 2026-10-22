@@ -55,8 +55,8 @@ integrated, so that its exports never collide with the C they replace.
 
 ## 3. Crates, modules, and TUs
 
-The Rust tree is the repository's own, as [`layout.md`](layout.md)'s Repository section
-lays it out, all relative to the repository's root:
+The Rust tree is the repository's own, as [`layout.md`](layout.md)'s Tree section lays it
+out, all relative to the repository's root:
 
 - `Cargo.toml` - the safe crate's manifest, which also declares the workspace.
 - `src/lib.rs` - the safe crate's root, with one `cfg`-gated module per link unit.

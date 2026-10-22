@@ -73,7 +73,7 @@ then promoted to the working branch, `crustify/devel`.
 | `module` | its wave's `module`; `null` when the wave belongs to no module |
 
 `wave` and `batch` form the batch id, `wave-<wave>/batch-<batch>`, which names the batch's
-branch, worktree and reviews dir as `specs/layout.md` spells them, and leads from the run
+branch, worktree and reviews dir as `specs/versioning.md` and `specs/layout.md` spell them, and leads from the run
 back to the batch's entry in `schedule.json`. A binder, translator or reviewer task
 carries all four; a planner task carries none.
 

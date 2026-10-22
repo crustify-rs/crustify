@@ -131,7 +131,7 @@ class IncludeTests(unittest.TestCase):
         "items/binding": "specs/items/binding.md",
         "items/porting": "specs/items/porting.md",
         "testing": "specs/testing.md",
-        "landing": "specs/landing.md",
+        "versioning": "specs/versioning.md",
         "layout": "specs/layout.md",
         "decomposition": "specs/decomposition.md",
         "scheduling": "specs/scheduling.md",
@@ -160,23 +160,23 @@ class IncludeTests(unittest.TestCase):
         """The reviewer is told to ignore the conventions outside a
         Crustify-generated batch."""
         self.assertEqual(self._included("binder.md"),
-                         {"conventions", "items/binding", "testing", "landing",
+                         {"conventions", "items/binding", "testing", "versioning",
                           "layout", "accounting"})
         self.assertEqual(self._included("translator.md"),
                          {"conventions", "items/binding", "items/porting", "testing",
-                          "landing", "layout", "accounting"})
+                          "versioning", "layout", "accounting"})
         self.assertEqual(self._included("reviewer.md"),
                          {"conventions", "items/binding", "items/porting", "testing",
-                          "landing", "layout", "reviewing", "accounting"})
+                          "versioning", "layout", "reviewing", "accounting"})
         self.assertEqual(self._included("planner.md"),
                          {"conventions", "decomposition", "scheduling", "dependencies",
                           "reviewing", "accounting"})
-        shared = {"prompting", "workflows/setup", "layout", "testing",
+        shared = {"prompting", "workflows/setup", "versioning", "layout", "testing",
                   "reviewing", "accounting"}
         self.assertEqual(self._included("translate-assistant.md"),
                          shared | {"workflows/binding", "workflows/porting",
                                    "decomposition", "scheduling", "dependencies", "conventions", "items/binding",
-                                   "items/porting", "landing"})
+                                   "items/porting"})
         self.assertEqual(self._included("audit-assistant.md"),
                          shared | {"workflows/audit"})
 

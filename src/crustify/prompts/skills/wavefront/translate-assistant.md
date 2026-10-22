@@ -23,7 +23,7 @@ source root, then extract the tables into `crustify/wavefront/codeql/{t1,t2}` th
 configuration whose `state_dir` is `../crustify/wavefront`. The planner writes the campaign's own configurations; a
 bootstrap configuration for the extraction belongs in `crustify/tmp/`.
 
-## layout › Lifecycle › Batches
+## versioning › Lifecycle › Batches
 
 The CodeQL database and tables under `crustify/wavefront/codeql/`, and wavefront's
 `.cache`, are gitignored state every batch needs: symlink them into each batch's worktree

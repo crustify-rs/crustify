@@ -104,7 +104,7 @@ If `fix` is not enabled, file each true positive a gate finds as a UB report.
 
 Make two commits, first the `crustify/reviews/` changes, then the Rust tree changes, if you
 made any, with your batch's dashboard rows in the last, and land them on `{git_base}` as the
-landing instructions below describe.
+versioning spec's Landing section below describes.
 
 ---
 
@@ -151,9 +151,10 @@ artifact dirs, and your reviews dir.
 
 ---
 
-Here are additional instructions on how to land your commits.
+Here is how the campaign is held in version control: its repositories, branches and
+worktrees, and how you land your commits.
 
-<!-- INCLUDE specs/landing.md -->
+<!-- INCLUDE specs/versioning.md -->
 
 ---
 

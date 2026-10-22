@@ -99,7 +99,7 @@ within the `review-workload` caps.
 ## 5. Derived paths
 
 A batch's id, `wave-<index>/batch-<index>`, names its branch and worktree, and its wave
-index the wave branch, as `specs/layout.md` spells them. Its artifact dirs are those of the
+index the wave branch, as `specs/versioning.md` spells them. Its artifact dirs are those of the
 agents that ran it, each holding a `task.json` that names the batch's wave and index.
 
 ## 6. Earlier versions

@@ -71,7 +71,8 @@ wave of no link unit or module, each of its batches a `review` batch holding its
 
 ## 5. Review waves
 
-An audit's review waves are laid out as [`../layout.md`](../layout.md) describes. Before
+An audit's review waves are laid out as [`../versioning.md`](../versioning.md) and
+[`../layout.md`](../layout.md) describe. Before
 each, the settings are reread and their changes applied, and the agent memory every agent
 reads at startup is curated. Each review batch's `task.json` holds its workset, its
 objectives, its batch fields, its review wave branch and the model and billing, as
@@ -100,7 +101,7 @@ crustify spawn-reviewer <batch worktree> <run dir>/task.json --log-dir <run dir>
 ```
 
 Each reviewer lands its reports and fixes on the review wave branch as
-[`../landing.md`](../landing.md) describes. A reviewer that fails keeps its branch and
+[`../versioning.md`](../versioning.md)'s Landing section describes. A reviewer that fails keeps its branch and
 worktree for inspection; it is respawned, or its failure reported, and its workset is not
 reviewed outside an agent unless the user asks for it. Once the wave has landed, its tip is
 promoted to the working branch, and the shipping branch follows it with the user's

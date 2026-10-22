@@ -26,7 +26,8 @@ builds.
 ## 2. Repository
 
 A translation campaign works in a repository of its own, laid out as
-[`layout.md`](../layout.md)'s Repository section describes: `<repo>-bindings` for a wrap
+[`versioning.md`](../versioning.md)'s Repositories section describes, and its tree as
+[`layout.md`](../layout.md)'s Tree section describes: `<repo>-bindings` for a wrap
 campaign, `<repo>-rs` for a port campaign. It is initialized with the source added under
 `c/` as a submodule, at the revision the settings' `source` answer names: of the source
 itself for a wrap campaign, which never changes it, and of the campaign's fork of it,

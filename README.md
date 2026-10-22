@@ -177,9 +177,10 @@ every agent's prompt includes the ones it follows.
   setup, and the binding, porting and audit workflows
 - [`specs/accounting.md`](specs/accounting.md): the dashboard, session and usage records,
   and how cost is derived
-- [`specs/testing.md`](specs/testing.md), [`specs/landing.md`](specs/landing.md),
-  [`specs/layout.md`](specs/layout.md): tests, landing, and a campaign's repository,
-  branches and artifact directories
+- [`specs/versioning.md`](specs/versioning.md): a campaign's repositories, branches and
+  worktrees, how batches land and how work is promoted and shipped
+- [`specs/layout.md`](specs/layout.md), [`specs/testing.md`](specs/testing.md): the
+  repository's tree and artifact directories, and how the work is tested
 - [`specs/conventions.md`](specs/conventions.md): conventions for the generated Rust,
   including the tree layout
 - [`specs/artifacts/`](specs/artifacts/): the fields of `modules.json`, the campaign's
