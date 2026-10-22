@@ -50,13 +50,22 @@ batches discover them on the fly; their binders skip them.
 In a wrap campaign every batch is `wrap`. In a port campaign:
 
 - a selected symbol is `port` from the start;
+- a selected enum is `port`, where the DAG places it, and never `wrap`;
 - a selected type is `port`, preceded by a `wrap` batch only while another module's
   unported C depends on its layout, as [Porting types](#3-porting-types) describes; and
 - a dependency outside the selected migration set is `wrap`.
 
+An enum is a set of constants, with no fields, layout users or lifecycle for a binding to
+publish, so no batch wraps it: a wrap campaign schedules none for it and uses its
+generated `-sys` definition directly, as
+[`items/binding.md`](items/binding.md)'s Type route section describes, and a port campaign
+ports it once.
+
 ## 3. Porting types
 
-A selected type's layout users are the target's C that depends on its layout:
+A selected type's layout users are the target's C that depends on its layout. An enum
+has none: using its constants or values of its type is no layout use, and it is ported as
+[Waves and batches](#2-waves-and-batches) describes. A struct or a union has:
 
 - code that touches a field: reads or writes it, or takes its address;
 - code that depends on the layout without naming a field: `sizeof`, `_Alignof` or

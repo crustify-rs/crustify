@@ -64,10 +64,13 @@ a file a module owns whole. Macros are not homed: they are not translated, and a
 that needs one reaches it as [`items/binding.md`](items/binding.md)'s Macros section describes.
 
 A module also lists its tests: the test files gated with it, those that use its
-internals, such as the fields or the layout of the types it owns. A test file that uses the
-internals of several modules is listed by each of them. A test that only calls a module's
-functions is not gated with it: it keeps running after the module's integration, through
-its exports. A test file whose tests divide between modules is split with its entries'
+internals: the fields or the layout of the types it owns, and its static functions and
+static globals. A test's uses are what its own code does, macro expansions included.
+Calling a module's other functions, the `static inline` functions its headers define
+included, reading its other globals, or using its enums, their constants and values alike,
+is API use, not internals: a test that only does that is not gated with the module, and
+keeps running after the module's integration, through its exports. A test file that uses
+the internals of several modules is listed by each of them. A test file whose tests divide between modules is split with its entries'
 `items` lists, by test function.
 
 ## 4. Dependencies

@@ -52,6 +52,10 @@ the safety comment the conventions specify.
 
 ## 4. Type route
 
+An enum takes no type route: it has no fields, layout or lifecycle to publish, so its
+generated `-sys` definition is used directly, as a constant macro's is. A port reimplements
+it as a Rust enum.
+
 ### 4.1 Surface
 
 A binding's surface is the fields and lifecycle primitives the public API publishes.
