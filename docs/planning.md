@@ -77,19 +77,24 @@ cycles included, split as [Order](#3-order) describes.
 
 ### 2.3 Objectives
 
-Each module carries one objective:
+A module's `rust_equivalent` records what the Rust standard library provides in place of
+the module as a whole, and the established crates that could replace it outright, each
+with its feature parity, in descending order of it, and each checked for its semantics,
+platform support, performance and licensing.
 
-- `port`: project-specific behaviour or invariants, implemented in Rust;
-- `wrap`: generic facilities, kept behind a safe Rust API over the C.
+Each module carries one objective, which follows from its `rust_equivalent` rather than
+from a judgement of what the module is:
 
-In a wrap campaign every module is `wrap`. In a port campaign the project-specific modules
-are `port`, and those with Rust-native alternatives stay `wrap`, so that their Rust
-consumers stay interoperable with the remaining C during an incremental translation, until
-they can be nativized. A TU is not split for its objective: one that mixes both takes the
-objective of most of what it owns. A module's `rust_equivalent` records what the Rust standard
-library provides in place of the module as a whole, and the established crates that could
-replace it outright, each with its feature parity, in descending order of it, and each
-checked for its semantics, platform support, performance and licensing.
+- `wrap` when the standard library or a crate has `full` feature parity with it: the C is
+  kept behind a safe Rust API, so that its Rust consumers stay interoperable with the
+  remaining C during an incremental translation, until the module is replaced by that
+  equivalent; and
+- `port` otherwise, when the best equivalent is `partial` or there is none: the module is
+  reimplemented in safe Rust, using its partial equivalents where they serve.
+
+The foundational modules are `wrap` whatever their equivalents, as
+[Foundational modules](#24-foundational-modules) describes. In a wrap campaign every module
+is `wrap`. A TU is not split for its objective.
 
 ### 2.4 Foundational modules
 
@@ -117,7 +122,9 @@ Each member's lifecycle role (allocator or constructor, releaser, disposer, clon
 established while planning, so that the foundational modules' members are bound as
 strategies, as [Lifecycle strategies](binding.md#54-lifecycle-strategies) describes. The
 foundational modules are planned and scheduled like any other: waves of batches of units.
-As generic facilities, they are `wrap` in every campaign.
+They are `wrap` in every campaign: their members become the lifecycle strategies that the
+other modules' bindings release through, and while any C remains it allocates and frees
+through them.
 
 ## 3. Order
 

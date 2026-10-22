@@ -126,13 +126,10 @@ an ordinary dependency record.
 | `objective` | `wrap` to preserve the C implementation behind a safe Rust API, or `port` to reimplement it in safe Rust |
 | `rust_equivalent` | what Rust already provides in its place: `std` and `crates`, below |
 
-A module carries one objective. A TU is not split for its objective: one that mixes
-project-specific code with generic facilities takes the objective of most of what it
-owns, as `docs/planning.md` describes.
-
-`rust_equivalent` records a judgement, not a decision: naming a candidate does not by
-itself change the objective. A generic facility with a strong candidate is the usual
-reason to leave a module wrapped during a partial migration rather than port it.
+A module carries one objective, which follows from its `rust_equivalent` as
+`docs/planning.md` describes: `wrap` when `std` or a crate has `full` feature parity with
+it, `port` otherwise, and `wrap` for every foundational module. A TU is not split for its
+objective.
 
 ### 6.1 rust_equivalent.std
 
