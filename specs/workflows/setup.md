@@ -31,8 +31,9 @@ campaign, `<repo>-rs` for a port campaign. It is initialized with the source add
 `c/` as a submodule, at the revision the settings' `source` answer names: of the source
 itself for a wrap campaign, which never changes it, and of the campaign's fork of it,
 `<repo>-fork`, for a port campaign, whose integrations change it. The fork is the source's
-history with a `crustify/devel` branch at that revision; until the first integration, the
-submodule may point at the source itself. The safe crate's name is chosen with it, and its Rust tree is scaffolded
+history with its `main` branch at that revision and the source's own `main` mirrored as
+`upstream/main`; until the first integration, the submodule may point at the source
+itself. The safe crate's name is chosen with it, and its Rust tree is scaffolded
 once the plan is complete. The repository is created under the `crustify-rs`
 organization, which publishes it, once the user approves.
 
@@ -48,7 +49,7 @@ A new campaign gets:
 
 - `crustify/.gitignore`, from [`templates/gitignore`](../../templates/gitignore);
 - the working branch, `crustify/devel`, whose first commit holds `c/` and
-  `crustify/CRUSTIFY.md`, and the shipping branch, `crustify/main`, at the same commit; and
+  `crustify/CRUSTIFY.md`, and the shipping branch, `main`, at the commit that adds `c/`; and
 - its dashboard, from its template, as [`accounting.md`](../accounting.md) describes,
   with the settings it records filled.
 

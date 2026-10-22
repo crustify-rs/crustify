@@ -113,7 +113,7 @@ crustify spawn-reviewer <batch worktree> <run dir>/task.json --log-dir <run dir>
 
 ## 6. Shipping
 
-The shipping branch, `crustify/main`, advances only when the user approves it: it is
+The shipping branch, `main`, advances only when the user approves it: it is
 fast-forwarded to the working branch's tip, typically once a module has landed and
 passed its gates.
 

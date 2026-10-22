@@ -15,11 +15,12 @@ inside it.
 | campaign | repository | the C, under `c/` |
 |---|---|---|
 | wrap | `<repo>-bindings` | a submodule of the source, pinned at the campaign's revision, which the campaign never changes |
-| port | `<repo>-rs` | a submodule of the campaign's fork of the source, `<repo>-fork`, on its `crustify/devel` branch, which integrations change as their modules leave C |
+| port | `<repo>-rs` | a submodule of the campaign's fork of the source, `<repo>-fork`, on its `main` branch, which integrations trim as their modules leave C |
 
 `<repo>` is the source repository's name: a port of libgit2 is `libgit2-rs`, with its fork
 `libgit2-fork`. Both keep the C's history where it belongs, so that it can be read in the
-submodule and an upstream release taken in by rebasing the fork's branch onto it. The
+submodule and an upstream release taken in by rebasing the fork's `main` onto it. The
+fork mirrors the source's own `main` as `upstream/main`. The
 repositories are created under the `crustify-rs` organization, and the campaign's tree is:
 
 ```text
@@ -44,7 +45,7 @@ An audit reviews an existing Rust crate in its own repository, and creates none.
 
 | branch | name | checked out |
 |---|---|---|
-| shipping | `crustify/main` | never while the campaign runs |
+| shipping | `main` in the campaign's own repository; `crustify/main` in an audit, beside the reviewed crate's own branches | never while the campaign runs |
 | working | `crustify/devel` | in the repository's base dir |
 | planner run | `crustify/planner/run-<n>` | in the repository's base dir, while its run is live |
 | wave | `crustify/waves/wave-<index>` | never |
