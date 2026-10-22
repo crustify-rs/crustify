@@ -114,7 +114,8 @@ wrapped, with the C user that keeps it there, in your commit message.
 Commit everything you created or changed on your branch, reports and your run's
 dashboard row included, in one commit whose message summarizes what you added, updated
 to the current schema and corrected, names the waves you appended and re-planned, and
-lists the reports you filed.
+lists the reports you filed. Add no `Batch:` trailer, nor any other trailer of your own: your branch,
+`crustify/planner/run-<n>`, is what ties the commit to your run.
 
 ---
 
