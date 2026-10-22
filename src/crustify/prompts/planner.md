@@ -91,7 +91,8 @@ together against the standard library's documentation and crates.io, and for an
 out-of-tree library, search crates.io for ported and safe-binding crates and read the API
 of each candidate against the entities the module consumes. Judge each candidate's
 feature parity on both counts: whether it covers everything, and whether it behaves the
-same. Before you list a crate,
+same. Leave out the crates that reimplement or bind the target itself, as the schema's
+`rust_equivalent.crates` section describes, and name them in your commit message. Before you list a crate,
 verify its semantics, platform support, performance and licensing.
 
 ### 3. Planning

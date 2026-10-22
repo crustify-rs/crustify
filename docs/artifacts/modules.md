@@ -161,6 +161,12 @@ feature parity; empty when none applies.
 Each candidate is checked for its semantics, platform support, performance and licensing
 before it is listed.
 
+A crate that reimplements or binds the target itself, the repository or one of its link
+units, is not listed, nor is one of its components: replacing the target is what the
+campaign does, so such a crate is no equivalent of a module but an alternative to the
+campaign. A general-purpose crate that also serves such a reimplementation is listed on
+its own merits.
+
 ## 7. link_units[*].modules[*].counters
 
 Two blocks with the same fields: `implementation` counts what the module's
