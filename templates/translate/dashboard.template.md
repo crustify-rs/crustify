@@ -20,7 +20,8 @@ and in Notes.
 
 ## Legend
 
-- `module` / `wave` / `batch` — the batch's place in its module's `schedule.json`
+- `module` / `wave` / `batch` — the batch's place in `schedule.json`: its wave's module and
+  the wave and batch indices
 - `objective` — `wrap` or `port`; `pass` — `first` for a translation batch, `review` for a
   review batch; `Σ first` / `Σ review` total each pass apart
 - `types` / `symbols` / `fields` — the batch's scheduled units (callbacks count as
@@ -87,7 +88,8 @@ Implementation `<provider>/<model>` via `<backend>`; review
 ## Safety audit
 
 Deterministic `ffimap <workdir> --json`; no model. Every counter is in the `ffimap.json`
-tracked in the campaign's artifact dir and in each module's, wave's and batch's.
+tracked in the campaign's artifact dir, in each wave's `waves/wave-<index>/` and in each
+batch run's dir.
 
 ### Metrics
 
