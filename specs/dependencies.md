@@ -40,7 +40,29 @@ those are promoted to its working branch, the parent's pin moves to that commit,
 parent wave starts. The parent ships only once each wrapper it pins has shipped the commit
 it pins, each with the user's approval.
 
-## 3. Reuse
+## 3. Sources
+
+Campaigns run on Linux, with glibc. A library the target links from the system has no
+source of the campaign's own, so its side campaign's `c/` is the library's upstream
+repository at the release the target was built against: the version its build resolved,
+as its build system reports it (CMake's found version, `pkg-config --modversion`) or the
+system package that provides it. The distribution's patches to that release, if any, are
+recorded beside it.
+
+The side campaign builds and installs the library locally, once per build variant of its
+parent, under its own `crustify/builds/<variant>/install`, so that each variant of the
+target links the library built with the same instrumentation; a sanitizer that instruments
+every component, MSan among them, needs it. The parent's variants are then rebuilt against
+those installs, as the setup workflow's Builds section describes.
+
+libc is the exception. Every other library on the system, and the dynamic loader, depend
+on the system's glibc, so the target keeps linking it, and its side campaign's `c/` holds
+glibc's source at the installed version, for reading its behaviour. Its raw bindings, like
+any wrapper's, are generated from the host's headers, which are that glibc's; layouts and
+constants that differ between architectures, such as `struct stat`, are generated for each
+architecture a campaign builds on, and verified there.
+
+## 4. Reuse
 
 Before a campaign creates a library's wrapper, it checks `crustify-rs` for
 `<library>-bindings`. One that exists is cloned and its side campaign continued: what it
@@ -48,7 +70,7 @@ already wraps is not scheduled again, and only what it lacks is planned, as addi
 its own plan. A library without one gets a new repository, created once the user approves,
 which every later campaign that uses the library continues.
 
-## 4. Adopted crates
+## 5. Adopted crates
 
 When the user instructs a campaign to adopt a crate for a library, such as one of its
 `ported` or `bindings` records, the library gets no wrapper and no batches: its consumers

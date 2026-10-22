@@ -24,7 +24,8 @@ come up. You can change course mid-campaign by editing its settings file.
 
 ## Installation
 
-Crustify requires Python 3.13 and a Claude Code or Codex CLI. Clone the components side
+Crustify runs on Linux and translates targets built there, against glibc. It requires
+Python 3.13 and a Claude Code or Codex CLI. Clone the components side
 by side and install the Python packages. `ffibox` is a Rust crate that the generated
 wrappers depend on, so you only clone it.
 

@@ -71,6 +71,13 @@ The variants are recorded in `crustify/artifacts/build.json`, from
 command changes. They are built in parallel, and each is smoke-tested once built. The
 shared variants are rebuilt after a landing changes the compiled target.
 
+Campaigns run on Linux, with glibc, on the host's architecture. Each variant links the
+out-of-tree libraries the target uses from their side campaigns' local installs of the
+same variant, as [`../dependencies.md`](../dependencies.md)'s Sources section describes,
+with each library's install prefix in its `configure` command, and libc from the system.
+Once a library's install first replaces the system's in a variant, the file's `version` is
+raised and the baseline below runs again against it.
+
 ## 5. Baseline
 
 The target's tests run on `plain`. A test that is unstable, or that needs infrastructure

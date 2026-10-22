@@ -13,8 +13,6 @@ Open questions:
 
 - **Settings.** Which of the parent's settings a side campaign inherits (models, billing,
   sanitizers, review policy), and which it answers for itself.
-- **Source.** What a library's `c/` holds when the library has no repository of its own
-  to add as a submodule, such as libc, whose headers come with the system.
 - **Results and accounting.** Whether a side campaign's cost reports into the parent's
   dashboard as well as its own.
 - **Concurrent parents.** How two campaigns that extend the same wrapper at once order
