@@ -9,7 +9,7 @@
     "`wrap` or `port` batch's task.json carries its kind as `objective`, its",
     "items, its batch fields and the run fields. Wave 2 reviews wave 1; wave 3 is a",
     "wave of no module, planned from a few named items. Homes follow the coding",
-    "conventions: crustify/rust/<repo>/<link-unit>/, here for a repo named widgets.",
+    "conventions: src/<link-unit>/ in the campaign's own repository; C paths are below c/.",
     "An independent illustration: it is not a schedule for templates/modules.json."
   ],
   "schema_version": 3,
@@ -43,7 +43,7 @@
                 "refcount",
                 "flags"
               ],
-              "home": "crustify/rust/widgets/libwidget/src/core.rs"
+              "home": "src/libwidget/src/core.rs"
             }
           ],
           "commits": [
@@ -60,7 +60,7 @@
               "defined_in": "include/widget/core.h",
               "kind": "type",
               "field_anchors": [],
-              "home": "crustify/rust/widgets/libwidget/src/core.rs"
+              "home": "src/libwidget/src/core.rs"
             }
           ],
           "commits": [
@@ -100,7 +100,7 @@
               "defined_in": "src/core.c",
               "kind": "symbol",
               "field_anchors": [],
-              "home": "crustify/rust/widgets/libwidget/src/core.rs"
+              "home": "src/libwidget/src/core.rs"
             }
           ],
           "commits": []
@@ -165,7 +165,7 @@
               "defined_in": "src/version.c",
               "kind": "symbol",
               "field_anchors": [],
-              "home": "crustify/rust/widgets/libwidget/src/version.rs"
+              "home": "src/libwidget/src/version.rs"
             }
           ],
           "commits": []
@@ -202,7 +202,7 @@
               "field_anchors": [
                 "fd"
               ],
-              "home": "crustify/rust/widgets/libwidget/src/io.rs"
+              "home": "src/libwidget/src/io.rs"
             }
           ],
           "commits": []

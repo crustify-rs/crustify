@@ -103,7 +103,12 @@ spec's Order section describes, then plan the waves and batches of the units you
 adds into `schedule.json`, from `templates/schedule.json`, as its Waves and batches section
 describes: each wave with its `depends_on`, and, when review is enabled, the review wave
 that follows it. For each cut whose dependency is planned, schedule the waves that
-replace its raw seams, depending on that dependency's last wave.
+replace its raw seams, depending on that dependency's last wave. Schedule the wrap
+batches lazily, each in the wave right before its first consumer, as the scheduling
+spec's Wrap waves section describes. Before you plan an out-of-tree library's wrap
+batches, check `github.com/crustify-rs` for its wrapper, `crustify-<library>`, and plan
+only what it lacks, as the dependencies spec's Reuse section describes; name what you
+found in your commit message.
 
 In a port campaign, list each selected type's C users as the Porting types section
 describes, reading the source for those no tool lists, and name each type that stays
@@ -135,6 +140,11 @@ Here is how the decomposition is scheduled: the order the modules run in, the wa
 batches, and how types are ported.
 
 <!-- INCLUDE specs/scheduling.md -->
+
+Here is how a campaign reaches the libraries its target uses from outside its tree: the
+wrappers it builds for them, and how it reuses those of earlier campaigns.
+
+<!-- INCLUDE specs/dependencies.md -->
 
 ---
 

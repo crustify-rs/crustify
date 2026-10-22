@@ -135,6 +135,7 @@ class IncludeTests(unittest.TestCase):
         "layout": "specs/layout.md",
         "decomposition": "specs/decomposition.md",
         "scheduling": "specs/scheduling.md",
+        "dependencies": "specs/dependencies.md",
         "reviewing": "specs/reviewing.md",
         "accounting": "specs/accounting.md",
         "prompting": "specs/prompting.md",
@@ -168,13 +169,13 @@ class IncludeTests(unittest.TestCase):
                          {"conventions", "items/binding", "items/porting", "testing",
                           "landing", "layout", "reviewing", "accounting"})
         self.assertEqual(self._included("planner.md"),
-                         {"conventions", "decomposition", "scheduling", "reviewing",
-                          "accounting"})
+                         {"conventions", "decomposition", "scheduling", "dependencies",
+                          "reviewing", "accounting"})
         shared = {"prompting", "workflows/setup", "layout", "testing",
                   "reviewing", "accounting"}
         self.assertEqual(self._included("translate-assistant.md"),
                          shared | {"workflows/binding", "workflows/porting",
-                                   "decomposition", "scheduling", "conventions", "items/binding",
+                                   "decomposition", "scheduling", "dependencies", "conventions", "items/binding",
                                    "items/porting", "landing"})
         self.assertEqual(self._included("audit-assistant.md"),
                          shared | {"workflows/audit"})

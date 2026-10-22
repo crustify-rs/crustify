@@ -167,6 +167,8 @@ every agent's prompt includes the ones it follows.
   modules, one per translation unit, with their objectives and dependencies
 - [`specs/scheduling.md`](specs/scheduling.md): how the modules are ordered and scheduled
   into waves and batches
+- [`specs/dependencies.md`](specs/dependencies.md): how the libraries the target uses from
+  outside its tree are wrapped, and how wrappers are reused across campaigns
 - [`specs/items/binding.md`](specs/items/binding.md),
   [`specs/items/porting.md`](specs/items/porting.md): the per-item principles, how an item
   is wrapped or ported
@@ -176,8 +178,8 @@ every agent's prompt includes the ones it follows.
 - [`specs/accounting.md`](specs/accounting.md): the dashboard, session and usage records,
   and how cost is derived
 - [`specs/testing.md`](specs/testing.md), [`specs/landing.md`](specs/landing.md),
-  [`specs/layout.md`](specs/layout.md): tests, landing, and a campaign's branches and
-  artifact directories
+  [`specs/layout.md`](specs/layout.md): tests, landing, and a campaign's repository,
+  branches and artifact directories
 - [`specs/conventions.md`](specs/conventions.md): conventions for the generated Rust,
   including the tree layout
 - [`specs/artifacts/`](specs/artifacts/): the fields of `modules.json`, the campaign's

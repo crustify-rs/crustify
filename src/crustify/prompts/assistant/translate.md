@@ -95,6 +95,11 @@ batches, and how types are ported.
 
 <!-- INCLUDE specs/scheduling.md -->
 
+Here is how a campaign reaches the libraries its target uses from outside its tree: the
+wrappers it builds for them, and how it reuses those of earlier campaigns.
+
+<!-- INCLUDE specs/dependencies.md -->
+
 ---
 
 The following describes the conventions of the codebase the campaign generates. Follow them

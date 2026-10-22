@@ -35,7 +35,7 @@ produced. A batch that is run again gets a new run dir, so every attempt keeps i
       "defined_in": "libavutil/frame.h",
       "kind": "type",
       "field_anchors": ["data", "linesize"],
-      "home": "crustify/rust/ffmpeg/libavutil/libavutil/frame.rs"
+      "home": "src/libavutil/libavutil/frame.rs"
     }
   ]
 }
@@ -169,10 +169,10 @@ Every field is required on every item, and no other field is accepted.
 | field | meaning |
 |---|---|
 | `name` | C entity name, non-empty |
-| `defined_in` | repo-relative path of its definition |
+| `defined_in` | path of its definition below the C root |
 | `kind` | `type`, `symbol` or `callback` |
 | `field_anchors` | C field identifiers assigned to this item; empty unless `kind` is `type` |
-| `home` | repo-relative `.rs` path the item is authored into |
+| `home` | `.rs` path, relative to the repository's root, the item is authored into |
 
 `(name, defined_in)` identifies an item and must be unique within the batch.
 `field_anchors` must not repeat a name.

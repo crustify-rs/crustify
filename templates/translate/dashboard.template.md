@@ -254,8 +254,9 @@ expansion, so it is the C the campaign translated rather than the surface it
 was drawn from. Give the defining files' and the whole target's raw totals
 beside it for scale.
 
-`Rust LoC` is counted from source over the authored `.rs` files under
-`crustify/rust`, excluding anything generated into `target/`, and split by
+`Rust LoC` is counted from source over the authored `.rs` files of the workspace, `src/`,
+`tests/`, the `-sys` crates and `wrappers/`, excluding anything generated into `target/`,
+and split by
 `#[cfg(test)]` module.
 
 Say why that non-test figure differs from the `code_lines` ffimap

@@ -52,7 +52,7 @@ In a wrap campaign every batch is `wrap`. In a port campaign:
 - a selected symbol is `port` from the start;
 - a selected enum is `port`, where the DAG places it, and never `wrap`;
 - a selected type is `port`, preceded by a `wrap` batch only while another module's
-  unported C depends on its layout, as [Porting types](#3-porting-types) describes; and
+  unported C depends on its layout, as [Porting types](#4-porting-types) describes; and
 - a dependency outside the selected migration set is `wrap`.
 
 An enum is a set of constants, with no fields, layout users or lifecycle for a binding to
@@ -61,7 +61,26 @@ generated `-sys` definition directly, as
 [`items/binding.md`](items/binding.md)'s Type route section describes, and a port campaign
 ports it once.
 
-## 3. Porting types
+## 3. Wrap waves
+
+A binding serves the code that consumes it, so wrap batches are scheduled lazily: right
+before their first consumer, and only for what consumers use.
+
+- In a port campaign, each `port` wave is preceded by a `wrap` wave holding the wrap
+  batches it needs: of in-tree `wrap` modules, the foundational ones included, and of the
+  out-of-tree libraries its items use, as [`dependencies.md`](dependencies.md) describes.
+  An in-tree `wrap` module has no waves of its own.
+- In a wrap campaign, the in-tree modules are the deliverable and run in their order;
+  each of their waves is preceded by a wave holding the out-of-tree wrap batches it needs.
+
+A preceding wrap wave holds only what the wave after it needs and no earlier wave
+wrapped, so that no item is wrapped twice and an item no consumer needs is never wrapped.
+It belongs to the module of the wave it precedes, and runs as part of that module, while
+its items keep the homes of the modules or libraries that own them. A type that a `port`
+module owns and wraps first, as [Porting types](#4-porting-types) describes, is that
+module's own work, not a preceding wrap wave's.
+
+## 4. Porting types
 
 A selected type's layout users are the target's C that depends on its layout. An enum
 has none: using its constants or values of its type is no layout use, and it is ported as

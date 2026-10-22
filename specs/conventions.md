@@ -49,24 +49,28 @@ their TU reaches them.
 ### 2.5 Export features
 
 Each module's `ffi_export` is compiled only under the safe crate's Cargo feature
-`ffi-export-<tu>`, with `<tu>` its translation unit's repo-relative path, every character
+`ffi-export-<tu>`, with `<tu>` its translation unit's path below the C root, every character
 that is not an ASCII letter or digit replaced by `-`. The feature is off until the module is
 integrated, so that its exports never collide with the C they replace.
 
 ## 3. Crates, modules, and TUs
 
-The Rust tree mirrors the following layout, all relative to `<repo>/crustify/rust/`:
+The Rust tree is the repository's own, as [`layout.md`](layout.md)'s Repository section
+lays it out, all relative to the repository's root:
 
-- `Cargo.toml` - top-level virtual manifest.
-- `<link-unit>-sys/` - raw bindings package, one per link unit.
-- `<repo>/` - safe repo package, one for the whole repo.
-- `<repo>/<link-unit>/` - one sub-dir per link unit, `cfg`-gated module in `lib.rs`.
+- `Cargo.toml` - the safe crate's manifest, which also declares the workspace.
+- `src/lib.rs` - the safe crate's root, with one `cfg`-gated module per link unit.
+- `src/<link-unit>/` - one sub-dir per link unit.
+- `<link-unit>-sys/` - raw bindings package, one per link unit, a workspace member.
+
+The safe crate's name is chosen when the repository is created, from what crates.io leaves
+free; the source's own bindings, such as `git2` for libgit2, usually hold the obvious one.
 
 Within a link unit's sub-dir, the tree follows the module decomposition in `modules.json`
 exactly, and preserves the C layout as far as the idiomatic organization of a Rust tree
 allows:
 
-- each module is one `.rs` file, at its translation unit's repo-relative path with the
+- each module is one `.rs` file, at its translation unit's path below the C root with the
   `.rs` extension: its TU and the headers bundled with it have no files of their own,
   since Rust has no headers;
 - a header module is one `<stem>_h.rs` file, at its header's path;
@@ -79,7 +83,7 @@ allows:
 
 Where a C layout has no idiomatic Rust counterpart, the tree adapts it in the conventional
 Rust way and keeps the C path recognizable. A batch names the `.rs` file each of its items
-belongs in, as `crustify/rust/<repo>/<link-unit>/…/<file>.rs`. Entities sharing a
+belongs in, as `src/<link-unit>/…/<file>.rs`. Entities sharing a
 definition site co-home. A home may be shared across waves.
 
 ## 4. Anchors
@@ -110,7 +114,7 @@ promotes that item.
 ## 5. Testing
 
 Tests are placed by what they target. Tests of the public interface are Cargo integration
-tests of the safe crate, under `crustify/rust/<target>/tests/`, so crate privacy enforces
+tests of the safe crate, under `tests/`, so crate privacy enforces
 the public-interface boundary. Each suite's `main.rs` declares one module per tested
 translation unit, in `<suite>/<the tested TU>.rs`.
 

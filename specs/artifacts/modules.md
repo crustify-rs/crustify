@@ -81,7 +81,7 @@ the two modules of a split foundational TU share theirs.
 | field | meaning |
 |---|---|
 | `index` | the module's id within its link unit, from zero |
-| `name` | the repo-relative path of its translation unit, or of its header for a header module |
+| `name` | the path below the C root of its translation unit, or of its header for a header module |
 | `status` | `todo` or `frozen`; see [Status](#2-status) |
 | `foundational` | `true` for a foundational module, `false` otherwise; see `specs/decomposition.md`'s Foundational modules section |
 | `depends_on` | `scheduled` and `cut`, each an array of dependency records; see [Dependencies](#8-link_unitsmodulesdepends_on) |
@@ -102,7 +102,7 @@ Every file a module lists is an entry:
 
 | field | meaning |
 |---|---|
-| `path` | the file's repo-relative path |
+| `path` | the file's path below the C root |
 | `items` | `included` and `excluded`, each an array of the C entity names the file defines or declares |
 
 With both lists empty, the module owns every entity the file defines or declares. With
