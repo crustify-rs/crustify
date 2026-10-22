@@ -22,7 +22,7 @@ class ReviewBatch:
     """Validated review-batch input.
 
     A batch reviews one worklist: in a translate campaign, the ``commits``
-    its translation batches landed; in an audit, ``modules`` of the crate,
+    its translation batches landed; in an audit, ``paths`` of the crate,
     each a path or a path with the types, trait impls and functions to
     review in it. It
     may also carry ``reports`` to revisit. ``objectives`` is None when the
@@ -31,7 +31,7 @@ class ReviewBatch:
 
     route: str
     commits: list[str]
-    modules: list[object]
+    paths: list[object]
     reports: list[str]
     objectives: list[str] | None
     base_branch: str
@@ -89,14 +89,14 @@ _PARTS = {
 }
 
 
-def _modules(raw: object) -> list[object]:
+def _worklist_paths(raw: object) -> list[object]:
     """Paths, or ``{"path", "types", "trait_impls", "functions"}`` naming
     the part of a module too large to review whole."""
     if not isinstance(raw, list) or not raw:
-        _fail("modules must be a non-empty array")
-    modules: list[object] = []
+        _fail("paths must be a non-empty array")
+    entries: list[object] = []
     for i, module in enumerate(raw):
-        label = f"modules[{i}]"
+        label = f"paths[{i}]"
         if isinstance(module, dict):
             if "path" not in module or not set(module) - {"path"} \
                     or set(module) - {"path", *_PARTS}:
@@ -107,13 +107,13 @@ def _modules(raw: object) -> list[object]:
                 if key in module:
                     entry[key] = _names(module[key], f"{label}.{key}",
                                         name, what)
-            modules.append(entry)
+            entries.append(entry)
         else:
-            modules.append(_path(module, label))
-    paths = [m["path"] if isinstance(m, dict) else m for m in modules]
-    if len(set(paths)) != len(paths):
-        _fail("modules names a path twice")
-    return modules
+            entries.append(_path(module, label))
+    named = [m["path"] if isinstance(m, dict) else m for m in entries]
+    if len(set(named)) != len(named):
+        _fail("paths names a path twice")
+    return entries
 
 
 def load_batch(path: Path) -> ReviewBatch:
@@ -126,12 +126,12 @@ def load_batch(path: Path) -> ReviewBatch:
     not here."""
     raw = read_object(path, _fail)
     check_fields(raw, {"base_branch"} | RUN_FIELDS | BATCH_FIELDS,
-                 {"commits", "modules", "reports", "objectives", "instructions"},
+                 {"commits", "paths", "reports", "objectives", "instructions"},
                  _fail)
-    if "commits" in raw and "modules" in raw:
-        _fail("a batch carries commits or modules, not both")
-    if not {"commits", "modules", "reports"} & set(raw):
-        _fail("a batch needs commits, modules or reports")
+    if "commits" in raw and "paths" in raw:
+        _fail("a batch carries commits or paths, not both")
+    if not {"commits", "paths", "reports"} & set(raw):
+        _fail("a batch needs commits, paths or reports")
     objectives = raw.get("objectives")
     if objectives is not None:
         if (not isinstance(objectives, list) or not objectives
@@ -143,7 +143,7 @@ def load_batch(path: Path) -> ReviewBatch:
         if ("revisit" in objectives) != ("reports" in raw):
             _fail("reports are given exactly when revisit is an objective")
     reports = _paths(raw["reports"], "reports") if "reports" in raw else []
-    route, commits, modules = "reports", [], []
+    route, commits, paths = "reports", [], []
     if "commits" in raw:
         commits = raw["commits"]
         if (not isinstance(commits, list) or not commits
@@ -152,9 +152,9 @@ def load_batch(path: Path) -> ReviewBatch:
                 or len(set(commits)) != len(commits)):
             _fail("commits must be a non-empty array of distinct commit ids")
         route = "commits"
-    elif "modules" in raw:
-        route, modules = "modules", _modules(raw["modules"])
-    return ReviewBatch(route=route, commits=list(commits), modules=modules,
+    elif "paths" in raw:
+        route, paths = "paths", _worklist_paths(raw["paths"])
+    return ReviewBatch(route=route, commits=list(commits), paths=paths,
                        reports=reports, objectives=objectives,
                        base_branch=parse_branch(raw, _fail),
                        run=parse_run(raw, _fail),
@@ -187,7 +187,7 @@ def execute(
         workdir.resolve(),
         route=batch.route,
         commits=batch.commits,
-        modules=batch.modules,
+        paths=batch.paths,
         reports=batch.reports,
         objectives=batch.objectives,
         git_base=base_branch,
@@ -199,8 +199,8 @@ def execute(
     if dry_run:
         print(
             f"[review dry-run] one {batch.route} agent for "
-            f"{batch.placement.batch_id} ({batch.placement.subsystem_label}); "
-            f"{len(batch.commits)} commit(s), {len(batch.modules)} module(s), "
+            f"{batch.placement.batch_id} ({batch.placement.module_label}); "
+            f"{len(batch.commits)} commit(s), {len(batch.paths)} path(s), "
             f"{len(batch.reports)} report(s); objectives "
             f"{', '.join(agent.objectives)}; landing on {base_branch}; "
             f"model {batch.run.model} ({batch.run.billing}); "

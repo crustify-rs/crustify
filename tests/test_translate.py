@@ -12,7 +12,7 @@ from crustify import config, translate
 #: The run settings every task carries.
 RUN = {"model": "anthropic/claude-opus-5", "billing": "subscription"}
 #: Where every task's batch sits in the schedule.
-PLACE = {"wave": 0, "batch": 0, "link_unit": "demo", "subsystem": "core"}
+PLACE = {"wave": 0, "batch": 0, "link_unit": "demo", "module": "core"}
 
 
 def _reset_run() -> None:
@@ -57,10 +57,10 @@ class BatchValidationTests(unittest.TestCase):
         doc = {"objective": "wrap", "items": [self.item()]}
         placement = self.load({**doc, "wave": 7, "batch": 2}).placement
         self.assertEqual(placement.batch_id, "wave-7/batch-2")
-        self.assertEqual(placement.subsystem_label, "demo/core")
+        self.assertEqual(placement.module_label, "demo/core")
         self.assertEqual(
-            self.load({**doc, "subsystem": None}).placement.subsystem_label, "none")
-        for field in ("wave", "batch", "link_unit", "subsystem"):
+            self.load({**doc, "module": None}).placement.module_label, "none")
+        for field in ("wave", "batch", "link_unit", "module"):
             with self.subTest(missing=field), \
                     self.assertRaisesRegex(SystemExit, f"missing task field.*{field}"):
                 full = {**RUN, **PLACE, "base_branch": "wave-0", **doc}
@@ -71,7 +71,7 @@ class BatchValidationTests(unittest.TestCase):
                     self.assertRaisesRegex(SystemExit, "non-negative index"):
                 self.load({**doc, **bad})
         with self.assertRaisesRegex(SystemExit, "name or null"):
-            self.load({**doc, "subsystem": ""})
+            self.load({**doc, "module": ""})
         with self.assertRaisesRegex(SystemExit, "needs its link_unit"):
             self.load({**doc, "link_unit": None})
 
@@ -126,7 +126,7 @@ class BatchValidationTests(unittest.TestCase):
             })
 
     def test_raw_lifetime_is_no_kind(self) -> None:
-        # The foundational void and string subsystems schedule ordinary
+        # The foundational modules schedule ordinary
         # symbols and types: no marker item stands for them.
         with self.assertRaisesRegex(SystemExit, "kind must be one of"):
             self.load({

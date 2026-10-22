@@ -135,7 +135,7 @@ def main() -> None:
     # -- spawn-planner (one planner run on its planner branch) ---------------
     _spawn_planner_blurb = (
         "Run one planner over the campaign checkout. It emits what the plan "
-        "-- subsystems.json, the waves of schedule.json and the skills' "
+        "-- modules.json, the waves of schedule.json and the skills' "
         "planning artifacts -- lacks, updates what follows an earlier schema, "
         "corrects what earlier runs decided, filing a report per correction, "
         "and re-plans the waves its changes move that have not started. Runs "
@@ -178,7 +178,7 @@ def main() -> None:
         p.add_argument(
             "task", type=Path, metavar="TASK_JSON",
             help="Path to the batch's task.json: its objective and items, its "
-                 "wave and batch indices, link unit and subsystem, the wave "
+                 "wave and batch indices, link unit and module, the wave "
                  "integration branch it lands on, its model and billing, and "
                  "optional additional instructions.")
         p.add_argument(
@@ -206,9 +206,9 @@ def main() -> None:
     add_workdir(review_p, "the batch's worktree, forked by the orchestrator")
     review_p.add_argument(
         "task", type=Path, metavar="TASK_JSON",
-        help="Path to the batch's task.json: commits or modules, reports, "
+        help="Path to the batch's task.json: commits or paths, reports, "
              "optional objectives, its wave and batch indices, link unit and "
-             "subsystem, the review wave integration branch it lands on, its "
+             "module, the review wave integration branch it lands on, its "
              "model and billing, and optional additional instructions.")
     review_p.add_argument(
         "--log-dir", required=True, type=Path, metavar="DIR",
@@ -309,8 +309,8 @@ def _handle_usage(args: argparse.Namespace) -> None:
 
 #: Where a campaign's settings live in its checkout. Tracked, and read by the
 #: assistant rather than handed to it once, so editing it changes the settings
-#: of the subsystems that have not started yet; its git history records the
-#: settings each subsystem ran under.
+#: of the modules that have not started yet; its git history records the
+#: settings each module ran under.
 TASK = "crustify/CRUSTIFY.md"
 
 def canonical_task(workdir: Path, given: Path | None) -> Path:

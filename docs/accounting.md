@@ -6,7 +6,7 @@ its figures come from, and how cost and time are derived from them.
 ## 1. The dashboard
 
 The dashboard, `crustify/artifacts/dashboard.md` unless the settings name another, is the
-campaign's record of what each planner run, batch, wave and subsystem did and cost. It is
+campaign's record of what each planner run, batch, wave and module did and cost. It is
 filled from `templates/translate/dashboard.template.md`, an audit's from
 `templates/audit/dashboard.template.md`, and keeps the template's format exactly.
 
@@ -24,7 +24,7 @@ The cells measured on the tree a landing commits:
 
 - for a batch, under the kind of each of its items: its rows in the kind's `Batches`, tests
   and `Batches: safety audit` tables, and for a review batch in
-  `Batches — review: PoC + reports`, each placed in subsystem, wave and batch order under
+  `Batches — review: PoC + reports`, each placed in module, wave and batch order under
   its `pass`; those tables' `Σ` rows; and the `Coverage stats` table and the Overview's LoC
   line;
 - for a planner run, its row in `Planning`, but for its usage cells.
@@ -45,9 +45,9 @@ the dashboard update that cites it.
 
 ### 2.3 Campaign cells
 
-The cells that span agents: the `Subsystem stats` table, the Overview's branch line and
-test baseline, and the `Settings` lines. A subsystem's row and the branch line are filled
-when the subsystem's last wave is promoted, the baseline once it is recorded, and the `Settings` lines,
+The cells that span agents: the `Module stats` table, the Overview's branch line and
+test baseline, and the `Settings` lines. A module's row and the branch line are filled
+when the module's last wave is promoted, the baseline once it is recorded, and the `Settings` lines,
 with a Notes entry, whenever a settings change is applied.
 
 An audit's dashboard follows the same kinds over its own tables.
@@ -94,4 +94,4 @@ it is the API-equivalent cost.
 
 An agent's wall time is its usage record's interval. A wave's runs from its first batch's
 launch through its final review and regression gates, a review wave's in an audit through
-its landing, and a subsystem's from its first launch through its final gate.
+its landing, and a module's from its first launch through its final gate.

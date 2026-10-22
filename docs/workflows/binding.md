@@ -1,6 +1,6 @@
 # Binding workflow
 
-How a `wrap` campaign proceeds from its setup to its landed subsystems. A `port` campaign
+How a `wrap` campaign proceeds from its setup to its landed modules. A `port` campaign
 follows the same workflow, with the differences [`porting.md`](porting.md) gives. How each
 item is bound is [`../binding.md`](../binding.md); the branches, worktrees and artifact
 dirs named below, and when each is created and purged, are [`../layout.md`](../layout.md).
@@ -17,13 +17,13 @@ run's `task.json`, `{"model": "<model>", "billing": "<billing>"}`, sits in its a
 
 The plan is complete when every run has committed and been promoted, and when the
 schedule covers the approved scope: every translation unit the build compiles in scope
-belongs to a subsystem or is listed as configured out, and every unit of a subsystem in
+belongs to a module or is listed as configured out, and every unit of a module in
 scope is scheduled in `schedule.json`. Before a run is promoted, its diff is checked
-against the plan's rules: no frozen subsystem, and no wave that is `wip` or `done`, changed
+against the plan's rules: no frozen module, and no wave that is `wip` or `done`, changed
 but for its progress; no index reused or renumbered; and each `depends_on.scheduled` is
 acyclic, with every dependency in `scheduled` or `cut`.
 
-A changed `scope`, `workload` or `review-workload` answer re-plans the subsystems that are
+A changed `scope`, `workload` or `review-workload` answer re-plans the modules that are
 not frozen and the waves that are `todo`, through further planner runs under the new
 answers. Landed work is never re-planned.
 
@@ -38,9 +38,9 @@ Once the plan is complete, the Rust tree is scaffolded on the working branch, as
 - the safe crate, with a module per link unit; and
 - the integration test suites the conventions' Testing section places.
 
-Everything below a link unit is created lazily: a subsystem's root before its first wave,
-a translation unit's or header's module before its first units are scheduled, and each
-item's home, as `schedule.json` assigns it, before the batch holding the item launches.
+Everything below a link unit is created lazily: a module's `.rs` file, and the modules
+of the directories on its path, before its first wave, and each item's home, as
+`schedule.json` assigns it, before the batch holding the item launches.
 
 ## 3. Order
 
@@ -49,10 +49,10 @@ the lowest index first among those ready at once, as
 [`../artifacts/schedule.md`](../artifacts/schedule.md) describes. A session may run every
 wave left, or the waves of the part of the scope it was given.
 
-Before a subsystem's first wave starts, the settings are reread and their changes applied,
-the subsystem is frozen in `subsystems.json`, and its Rust root is scaffolded, all
-committed on the working branch: that commit is the subsystem's base, and records the
-settings the subsystem runs under. A wave of no subsystem rereads the settings the same
+Before a module's first wave starts, the settings are reread and their changes applied,
+the module is frozen in `modules.json`, and its `.rs` file is scaffolded, all
+committed on the working branch: that commit is the module's base, and records the
+settings the module runs under. A wave of no module rereads the settings the same
 way before it starts.
 
 ## 4. Waves and batches
@@ -111,7 +111,7 @@ crustify spawn-reviewer <batch worktree> <run dir>/task.json --log-dir <run dir>
 ## 6. Shipping
 
 The shipping branch, `crustify/main`, advances only when the user approves it: it is
-fast-forwarded to the working branch's tip, typically once a subsystem has landed and
+fast-forwarded to the working branch's tip, typically once a module has landed and
 passed its gates.
 
 ## 7. Accounting
@@ -119,4 +119,4 @@ passed its gates.
 Each run's records are collected once it lands or fails, and its dashboard cells filled,
 as [`../accounting.md`](../accounting.md) describes: a batch's usage cells on the working
 branch once its wave is promoted, a planner run's once the run is promoted, and a
-subsystem's row once its last wave is promoted.
+module's row once its last wave is promoted.

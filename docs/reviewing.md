@@ -25,7 +25,7 @@ its objectives, its review wave branch and its model and billing:
 
 ```json
 {"objectives": ["lifecycle", "unsafety", "ub", "equiv", "fix"], "commits": ["3f2a9c1", "8be04d7"],
- "wave": 8, "batch": 0, "link_unit": "<link unit>", "subsystem": "<subsystem>",
+ "wave": 8, "batch": 0, "link_unit": "<link unit>", "module": "<module>",
  "base_branch": "<review wave branch>", "model": "<model>", "billing": "<billing>"}
 ```
 
@@ -40,7 +40,7 @@ A review batch has one route:
 | route | worklist | workset |
 |---|---|---|
 | `commits` | commits that translation batches landed | the code they add or change, and what it reaches |
-| `modules` | source files and directories of a crate, or named types, trait impls and functions in one | everything they define, or the named parts |
+| `paths` | source files and directories of a crate, or named types, trait impls and functions in one | everything they define, or the named parts |
 | `reports` | none: the batch only revisits reports | the code the reports name |
 
 A review batch's entry in `schedule.json` names the batches of the reviewed wave it
@@ -200,8 +200,8 @@ Crustify-generated batch, in the reviewed crate's own suite for that kind.
 
 A review wave follows a translated wave, so the gates
 [`testing.md`](testing.md)'s Regressions section gives the wave run in its review batches: Miri in every wave, and
-BSan over everything the subsystem landed when the reviewed wave is the subsystem's last:
-no other translation wave in `schedule.json` belongs to its subsystem and runs after it. Both run on the wave tip before any change, and again
+BSan over everything the module landed when the reviewed wave is the module's last:
+no other translation wave in `schedule.json` belongs to its module and runs after it. Both run on the wave tip before any change, and again
 on the landed tree under `fix`. Without `fix`, each true positive a gate finds is filed as
 a UB report. A BSan report on an earlier wave's items belongs to the last wave's review.
 
@@ -214,7 +214,7 @@ changes to the Rust tree, if any.
 ## 9. Plan corrections
 
 A planner run that corrects what an earlier run decided files each correction as a finding
-under `crustify/reviews/planner/`: `subsystems/` for `subsystems.json` and
+under `crustify/reviews/planner/`: `modules/` for `modules.json` and
 `schedule.json`, and one sub-directory per skill artifact. Adding what the plan lacks,
 updating it to the current schema and re-planning the waves a change moves are no
 findings.
@@ -225,6 +225,6 @@ Each finding is its own `<slug>` directory, named for the finding
 - what the earlier plan decided, quoting the entries changed;
 - the evidence against it: linker outputs, sources and tool queries, with the exact
   commands and paths to rerun them;
-- the edit and what it moves downstream: subsystems, waves or batches, and the waves
+- the edit and what it moves downstream: modules, waves or batches, and the waves
   re-emitted; and
 - any question only the user can answer.

@@ -8,17 +8,17 @@ the work with you, runs it, and reports back. It handles three kinds of task:
   in front of it.
 - **Audit a crate.** Hunt for undefined behavior and memory-safety bugs in any Rust crate
   that wraps C, and file a report and a reproducer for each finding.
-- **Port a codebase.** Reimplement C code in safe Rust, one subsystem at a time or all
+- **Port a codebase.** Reimplement C code in safe Rust, one module at a time or all
   of it.
 
 Crustify works at the level of a whole repository. It splits the codebase into
-subsystems, orders them by their dependencies, and hands each batch of work to a focused
-sub-agent in its own Git worktree. Sub-agents run in parallel, and each one sees only its
-own worklist. Crustify keeps the campaign's state, lands their work behind build, test
+modules, one per C translation unit, orders them by their dependencies, and hands each
+batch of work to a focused sub-agent in its own Git worktree. Sub-agents run in parallel,
+and each one sees only its own worklist. Crustify keeps the campaign's state, lands their work behind build, test
 and safety gates, and repairs what fails.
 
 You choose how much control to keep. Crustify can run a campaign fully autonomously, or
-you can stay in the loop: ask it about the target, have it plan one subsystem and stop,
+you can stay in the loop: ask it about the target, have it plan one module and stop,
 approve the campaign brief before it touches the repository, and take decisions as they
 come up. You can change course mid-campaign by editing its settings file.
 
@@ -87,7 +87,7 @@ crustify /path/to/repo --settings my-campaign.md
 ```
 
 Crustify copies the settings to `crustify/CRUSTIFY.md` in the repository and rereads
-that copy before each subsystem, so you can edit it while a campaign runs.
+that copy before each module, so you can edit it while a campaign runs.
 
 Common options:
 
@@ -111,7 +111,7 @@ Crustify talks to you and launches four kinds of sub-agent:
 | Agent | Role |
 |---|---|
 | **Crustify**, the assistant | Talks to you, configures the campaign, prepares builds and baselines, launches the other agents, lands and promotes their work, and keeps the dashboard. |
-| planner | Splits the codebase into subsystems and schedules each one's waves and batches. |
+| planner | Decomposes the codebase into modules, one per translation unit, and schedules their waves and batches. |
 | binder | Wraps a batch: keeps its C implementation and puts a safe Rust API in front of it. |
 | translator | Ports a batch to safe Rust. |
 | reviewer | Reviews the work a wave landed for unsafety, undefined behavior and equivalence with the C, files a report and reproducer per finding, and fixes them. |
@@ -126,7 +126,7 @@ Deterministic tools ground the agents' judgement:
 - [ffibox](https://github.com/crustify-rs/ffibox) provides the smart pointers and
   lifetime traits the generated Rust builds on;
 - [ffimap](https://github.com/crustify-rs/ffimap) measures the resulting unsafe and FFI
-  surface per batch, wave, subsystem and campaign; and
+  surface per batch, wave, module and campaign; and
 - the target's own tests run under sanitizers.
 
 Claude Code and OpenAI Codex are supported as agent backends, with API or subscription
@@ -170,7 +170,7 @@ The full campaign results and code are available at
   artifact directories
 - [`docs/conventions.md`](docs/conventions.md): conventions for the generated Rust,
   including the tree layout
-- [`docs/artifacts/`](docs/artifacts/): the fields of `subsystems.json`, the campaign's
+- [`docs/artifacts/`](docs/artifacts/): the fields of `modules.json`, the campaign's
   `schedule.json`, and `task.json`
 - [`docs/prompting.md`](docs/prompting.md): how the agents' prompts, documents and skills
   are composed

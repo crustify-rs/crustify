@@ -4,7 +4,7 @@ Deferred decisions and follow-up work on the crustify contracts and prompts.
 
 ## 1. Side campaigns for out-of-tree dependencies
 
-A campaign wraps one repository, but its subsystems import libraries that live elsewhere —
+A campaign wraps one repository, but its modules import libraries that live elsewhere —
 libz and pcre2 for libgit2, and so on. Today those are a boundary the campaign stops at:
 the imported entities are recorded but nothing safe is generated for them, so a wrapper
 built on the campaign's output still reaches foreign code through raw bindings.
@@ -13,10 +13,10 @@ A side campaign would translate one of those dependencies in **its own** reposit
 producing a wrapper crate the main campaign depends on rather than one it vendors. The
 orchestrator prompt has no step for it yet.
 
-The input already exists. `subsystems.json` records `imported_deps.out_of_tree[*]` as
+The input already exists. `modules.json` records `imported_deps.out_of_tree[*]` as
 `{library, counters}`, so the orchestrator can already see which external libraries a span
 consumes and how many distinct entities it takes from each. That count is what decides
-whether a side campaign is worth spawning: a subsystem calling two functions from libz
+whether a side campaign is worth spawning: a module calling two functions from libz
 does not need one.
 
 Open questions:
@@ -26,11 +26,11 @@ Open questions:
   safe-binding crates; whether a side campaign runs anyway is a judgement the campaign task
   may want to answer rather than the orchestrator.
 - **Scope.** A side campaign covers what the parent consumes, not the whole dependency, so
-  its scope is a closure over `out_of_tree` counters rather than a subsystem span.
+  its scope is a closure over `out_of_tree` counters rather than a module span.
 - **Ordering.** A side campaign is a producer of the parent's link units, so it precedes
   them — but it lives in another repository with its own branches, build baseline and
-  results, which the current nesting (`link_unit` → `subsystem` in `subsystems.json`, → `wave` in each subsystem's `schedule.json`)
-  cannot express.
+  results, which the current nesting (`link_unit` → `module` in `modules.json`, and the
+  campaign's waves in `schedule.json`) cannot express.
 - **Results and accounting.** Whether a side campaign reports into the parent's results
   table or its own.
 
@@ -154,17 +154,35 @@ v8.5 silicon or a model. Use synchronous tag-check mode for testing; async batch
 and loses the faulting site. HWASan is the software fallback at 1/256 rather than 1/16,
 but it needs the C instrumented, which forfeits the reach advantage.
 
-## 6. Port individual items without their subsystem
+## 6. Port individual items without their module
 
-A port campaign's scope is whole subsystems
+A port campaign's scope is whole modules
 ([`workflows/porting.md`](workflows/porting.md)'s Scope section). A campaign that ports
-only a few named types or symbols, and leaves the rest of their subsystem in C, has no
+only a few named types or symbols, and leaves the rest of their module in C, has no
 workflow yet.
 
 Open questions:
 
-- how such a scope maps to a plan: whether its items are scheduled inside the subsystem
-  that owns them, or as a subsystem of their own;
-- how the subsystem's remaining C reaches them, and for how long; and
-- whether the subsystem's tests that reach those items are migrated, as a ported
-  subsystem's are, or only added.
+- how such a scope maps to a plan: whether its items are scheduled inside the module
+  that owns them, or as a module of their own;
+- how the module's remaining C reaches them, and for how long; and
+- whether the module's tests that reach those items are migrated, as a ported
+  module's are, or only added.
+
+## 7. Module parallelization
+
+Modules run one at a time, in the order `modules.json` computes
+([`artifacts/modules.md`](artifacts/modules.md)'s Execution order section), although a
+module is one translation unit and many hold only a few items: most of their waves are
+small, and modules that do not depend on one another could run at once. Module
+parallelization would run independent modules' waves concurrently, with the user's
+approval.
+
+Open questions:
+
+- whether parallel modules share one wave, its batches drawn from several modules, or keep
+  their own waves running side by side, and so whether `module` stays a wave field or moves
+  to the batch;
+- how the user approves it: once per campaign as a setting, or per group of modules; and
+- how each module's base, the settings it ran under and its accounting are recorded when
+  its waves no longer start from a commit of their own.

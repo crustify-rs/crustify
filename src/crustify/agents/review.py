@@ -75,7 +75,7 @@ class ReviewAgent(CrustifyAgent):
         *,
         route: str,
         commits: list[str] = (),
-        modules: list[object] = (),
+        paths: list[object] = (),
         reports: list[str] = (),
         objectives: list[str] | None,
         git_base: str,
@@ -88,7 +88,7 @@ class ReviewAgent(CrustifyAgent):
         )
         self._route = route
         self._commits = list(commits)
-        self._modules = [dict(m) if isinstance(m, dict) else m for m in modules]
+        self._paths = [dict(m) if isinstance(m, dict) else m for m in paths]
         self._reports = list(reports)
         available = set(self.available_objectives())
         if objectives is None:
@@ -123,8 +123,8 @@ class ReviewAgent(CrustifyAgent):
         gives none."""
         if self._commits:
             key = self._commits[0][:12]
-        elif self._modules:
-            first = self._modules[0]
+        elif self._paths:
+            first = self._paths[0]
             key = first["path"] if isinstance(first, dict) else first
         else:
             key = "batch"
@@ -140,8 +140,8 @@ class ReviewAgent(CrustifyAgent):
             **super()._arguments(),
             "objectives": ", ".join(self.objectives),
             "worklist": json.dumps(
-                {"route": self._route, "modules": self._modules}
-                if self._modules else
+                {"route": self._route, "paths": self._paths}
+                if self._paths else
                 {"route": self._route, "commits": self._commits}),
             "reports": ", ".join(self._reports) or "none",
         }

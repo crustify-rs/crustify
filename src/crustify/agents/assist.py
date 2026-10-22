@@ -160,7 +160,7 @@ class AssistAgent(CrustifyAgent):
     def _body(self) -> str:
         """The stage prompt. The campaign settings are not in it: the prompt says
         where the task lives, and the orchestrator reads it from there, so an
-        edit made mid-campaign is what the next subsystem runs under."""
+        edit made mid-campaign is what the next module runs under."""
         self._task_text()
         return expand_includes(campaign_prompt(self.kind))
 

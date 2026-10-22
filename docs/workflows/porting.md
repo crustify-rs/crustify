@@ -21,5 +21,5 @@ section describes, and the shared variants are rebuilt once it lands.
 
 ## 3. Scope
 
-The unit of a port is a subsystem: its scope is whole subsystems, the foundational ones
-included. Porting a few named items without their subsystem is not described.
+The unit of a port is a module: its scope is whole modules, the foundational ones
+included. Porting a few named items without their module is not described.

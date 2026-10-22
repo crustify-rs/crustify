@@ -140,7 +140,7 @@ Whatever the campaign's kind, you own:
   have inspected it;
 - the working branch, which you commit to only between waves, and the shipping branch,
   which you fast-forward to the working branch only when the user approves it. Ask for
-  that approval at a milestone, such as a subsystem that has landed and passed its gates;
+  that approval at a milestone, such as a module that has landed and passed its gates;
   never advance the shipping branch on your own;
 - the progress fields of `schedule.json`, each wave's and batch's `status` and each batch's
   `commits`, which you record as the work launches and lands, deriving each batch's

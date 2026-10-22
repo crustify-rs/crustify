@@ -1,8 +1,8 @@
 # Planning
 
 Planning turns a campaign's settings and the target's build into the plan its agents
-execute: the subsystem decomposition, `crustify/artifacts/subsystems.json`, whose
-dependencies order the campaign's link units and subsystems, the campaign's waves and
+execute: the module decomposition, `crustify/artifacts/modules.json`, whose
+dependencies order the campaign's link units and modules, the campaign's waves and
 batches in `crustify/artifacts/schedule.json`, and the planning artifacts of the enabled
 skills.
 
@@ -21,100 +21,128 @@ is fast-forwarded to it, and the next run forks from there. Each run brings the 
 plan up to date, so a later run checks what the earlier ones decided, and the branch
 history records every planning decision and its revisions.
 
-A campaign may be planned in several sessions, each for part of its scope: a whole
-subsystem, a few of its waves, or a few named items. Each session's runs add what its
-scope adds to the same plan: subsystems and link units with the next free indices, and
+A campaign may be planned in several sessions, each for part of its scope: a few modules,
+a few of their waves, or a few named items. Each session's runs add what its scope adds to
+the same plan: modules and link units with the next free indices, and
 waves after the highest wave index. What is frozen, or has started, is kept as
-[`artifacts/subsystems.md`](artifacts/subsystems.md) and
+[`artifacts/modules.md`](artifacts/modules.md) and
 [`artifacts/schedule.md`](artifacts/schedule.md) describe. A run that corrects an earlier decision files a report on it, as
 [`reviewing.md`](reviewing.md#9-plan-corrections) describes.
 
-## 2. Subsystem decomposition
+## 2. Module decomposition
 
-`subsystems.json` follows [`artifacts/subsystems.md`](artifacts/subsystems.md); its layout
-example is [`templates/subsystems.json`](../templates/subsystems.json).
+`modules.json` follows [`artifacts/modules.md`](artifacts/modules.md); its layout example
+is [`templates/modules.json`](../templates/modules.json).
+
+The C codebase is the decomposition's spec. A module is one translation unit with the
+headers it defines its items in, so that the plan follows how the codebase is organized
+rather than a judgement of how it should be, and the Rust tree mirrors it, as the
+[conventions](conventions.md)' Crates, modules, and TUs section describes. Dependencies
+between modules are what the C has: the decomposition does not group files to hide them.
 
 Link units are identified from the actual linker outputs. The decomposition covers the
-selected target and its complete imported producer closure. Every translation unit
-belongs to exactly one subsystem, unless an item-granular subsystem takes some of its
-items; a header may be shared by several. A subsystem's
-`api_headers` are the headers the build installs, listed with the subsystem that
-implements them.
+selected target and its complete imported producer closure: every translation unit the
+build compiles in scope is a module's, or is listed as configured out.
 
-Each subsystem carries one objective:
+### 2.1 Bundling
+
+Each translation unit is bundled with the headers that carry its name, internal or
+installed: `src/libgit2/repository.c` with `src/libgit2/repository.h`,
+`include/git2/repository.h` and
+`include/git2/sys/repository.h`. An item of such a header that belongs to another TU, in
+the rare case one does, is homed with that TU.
+
+A shared header, one that carries no single TU's name, is split item by item:
+
+- a type goes to the TU that implements its lifecycle and its functionality;
+- a global goes to the TU that implements its logic; and
+- a `static inline` function goes to the module whose logic it implements, as the
+  functions it calls and the types it accesses show.
+
+A header that implements what no TU does, and so has no TU to go to, is a header module of
+its own. Each split is recorded with the file entries' `items` lists, which stay empty for
+a file a module owns whole. Macros are not homed: they are not translated, and a binding
+that needs one reaches it as [`binding.md`](binding.md)'s Macros section describes.
+
+### 2.2 Dependencies
+
+Each module's dependency edges are found with a wavefront configuration of its own, which
+names its files and the items it owns. The edges between two modules are one
+`imported_deps` record, with its `outgoing_edges`, its `incoming_edges` and the item kinds
+consumed across them, in-tree destinations apart from out-of-tree libraries. An
+out-of-tree library's record also names the crates that port it to Rust and the crates that
+bind it safely, so that a port reaches it through one of them rather than through raw
+bindings when they exist. The record keeps the graph as it is, cycles included.
+
+### 2.3 Objectives
+
+Each module carries one objective:
 
 - `port`: project-specific behaviour or invariants, implemented in Rust;
 - `wrap`: generic facilities, kept behind a safe Rust API over the C.
 
-A mixed subsystem is split, so that its project-specific code and its generic facilities
-carry separate objectives. In a wrap campaign every subsystem is `wrap`. In a port
-campaign the project-specific subsystems are `port`, and those with Rust-native
-alternatives stay `wrap`, so that their Rust consumers stay interoperable with the
-remaining C during an incremental translation, until they can be nativized. A subsystem's
-`rust_equivalent` records which of its items the Rust standard library already provides,
-item by item, and the established crates that could replace it outright, in descending
-order of fit, each checked for its semantics, platform support, performance and
-licensing.
+In a wrap campaign every module is `wrap`. In a port campaign the project-specific modules
+are `port`, and those with Rust-native alternatives stay `wrap`, so that their Rust
+consumers stay interoperable with the remaining C during an incremental translation, until
+they can be nativized. A TU is not split for its objective: one that mixes both takes the
+objective of most of what it owns. A module's `rust_equivalent` records which of its items
+the Rust standard library already provides, item by item, and the established crates that
+could replace it outright, in descending order of fit, each checked for its semantics,
+platform support, performance and licensing.
 
-Each consumer-to-producer relation is one `imported_deps` record, with its
-`outgoing_edges`, its `incoming_edges` and the item kinds consumed across them, in-tree
-destinations apart from out-of-tree libraries. An out-of-tree library's record also names
-the crates that port it to Rust and the crates that bind it safely, so that a port reaches
-it through one of them rather than through raw bindings when they exist. The record keeps
-the graph as it is, cycles included.
+### 2.4 Foundational modules
 
-### 2.1 Foundational subsystems
+The foundational modules are those whose items every other module may depend on: the
+TUs that define the allocators, releasers, disposers and cloners of type-erased memory,
+and those whose text pointers, the pointers that refer to NUL-terminated strings, depend
+on nothing but the type-erased ones. A codebase may have several of each, wherever its
+lifecycle routines are defined.
 
-The decomposition opens with two foundational subsystems, `void` and `string`, that every
-other subsystem may depend on:
+Their members are selected from the dependency graph with each type-erased value resolved
+to the types it is read as, so that a `void *` read as a named type is a dependency on that
+type, not an erased value. What stays erased is a candidate, admitted only once its body
+has been read. A foundational module depends only on other foundational modules, apart
+from a few dependencies such as logging or assertions on its failure paths, which the
+order cuts. The order then runs them first, and among them the type-erased ones before the
+string ones that call them.
 
-- `void` holds the allocators, releasers, disposers and cloners of type-erased memory,
-  with the units that share their definitions; and
-- `string` holds the units whose text pointers, the pointers that refer to
-  NUL-terminated strings, depend on nothing but `void`.
-
-Their members are selected from the dependency graph with each type-erased value
-resolved to the types it is read as, so that a `void *` read as a named type is a
-dependency on that type, not an erased value. What
-stays erased is a candidate, admitted only once its body has been read. A foundational subsystem may keep a few dependencies of its own, such as
-logging or assertions on its failure paths, which the order cuts; otherwise nothing it
-holds depends on another subsystem.
+A TU whose items all meet that test is foundational whole. One that also holds items that
+depend on other modules is split in two: its foundational module lists the TU with the
+lifecycle routines and what they need within it as `included`, and the module that keeps
+its name lists the same items as `excluded`. Both home in the TU's Rust file.
 
 Each member's lifecycle role (allocator or constructor, releaser, disposer, cloner) is
-established while planning, so that these subsystems' members are bound as strategies, as [Lifecycle strategies](binding.md#54-lifecycle-strategies) describes.
-
-A foundational subsystem owns whole files where its members make up their files, and
-narrows to its `items` where they share a file with another subsystem, as
-[`artifacts/subsystems.md`](artifacts/subsystems.md) describes. The foundational
-subsystems are planned and scheduled like any other: waves of batches of units. As
-generic facilities, they are `wrap` in every campaign.
+established while planning, so that the foundational modules' members are bound as
+strategies, as [Lifecycle strategies](binding.md#54-lifecycle-strategies) describes. The
+foundational modules are planned and scheduled like any other: waves of batches of units.
+As generic facilities, they are `wrap` in every campaign.
 
 ## 3. Order
 
-The campaign's order is computed from the dependencies `subsystems.json` records, as
-[`artifacts/subsystems.md`](artifacts/subsystems.md) describes: each subsystem's in-tree
+The campaign's order is computed from the dependencies `modules.json` records, as
+[`artifacts/modules.md`](artifacts/modules.md) describes: each module's in-tree
 dependencies are split into those that run before it, `depends_on.scheduled`, and those
 cut to break a cycle, `depends_on.cut`, so that the scheduled dependencies form a DAG.
 Within each strongly connected component, the member the most other members depend on
 comes first, and the edges between tied members break ties: every dependency on a member
-that comes later is cut. Link units are ordered the same way.
+that comes later is cut. Link units are ordered the same way. Modules run one at a time.
 
-A frozen subsystem keeps its place: a subsystem added after it that it depends on is one of
-its cuts, and the waves that replace the raw seams of each cut are scheduled once the
+A frozen module keeps its place: a module added after it that it depends on is one of its
+cuts, and the waves that replace the raw seams of each cut are scheduled once the
 dependency it cut is planned, depending on that dependency's last wave.
 
-The plan holds only the link units and subsystems the campaign's scope includes, without
-those that a previous campaign completed. The foundational subsystems are the first link
-unit's first two, `void` then `string`, and depend on no other, so they run first.
+The plan holds only the link units and modules the campaign's scope includes, without
+those that a previous campaign completed. The foundational modules depend on no other, so
+they run first.
 
 ## 4. Waves and batches
 
 `schedule.json` follows [`artifacts/schedule.md`](artifacts/schedule.md); its layout
 example is [`templates/schedule.json`](../templates/schedule.json). Each wave belongs to
-one subsystem, or to none when the campaign has no decomposition, and records the waves it
-depends on, split as subsystems' are into `scheduled` and `cut`: within a subsystem, the
-dependency order of its units; across subsystems, the subsystems' order, so that a wave
-depends on the last waves of the subsystems its units depend on. Waves execute one at a
+one module, or to none when the campaign has no decomposition, and records the waves it
+depends on, split as modules' are into `scheduled` and `cut`: within a module, the
+dependency order of its units; across modules, the modules' order, so that a wave depends
+on the last waves of the modules its units depend on. Waves execute one at a
 time, in that order; the batches of a wave execute in parallel, up to the campaign's
 parallelism, and the `workload` caps bound each batch.
 
@@ -126,7 +154,7 @@ A `wrap` or `port` batch entry holds its `kind` and `items`, which its task carr
 `objective` and `items` ([`artifacts/task.md`](artifacts/task.md) gives their format and
 routing). Each item's `home` follows the [conventions](conventions.md).
 
-Type-erased and string lifecycle primitives are units of the foundational subsystems.
+Type-erased and string lifecycle primitives are units of the foundational modules.
 Typed lifecycle primitives stay in the schedule as free symbols, although the type
 batches discover them on the fly; their binders skip them.
 

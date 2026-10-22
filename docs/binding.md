@@ -200,13 +200,13 @@ An inline function pointer is wrapped when no ownership-compatible callable wrap
 
 ### 5.4 Lifecycle strategies
 
-The foundational `void` and `string` subsystems hold the allocator or constructor,
-releaser, disposer and cloner routines of type-erased `void` and string handles, each
-with the lifecycle role the planner established. In a batch of either
-subsystem, which the batch id names, an item with a lifecycle role becomes a generic
+The foundational modules hold the allocator or constructor, releaser, disposer and
+cloner routines of type-erased `void` and string handles, each with the lifecycle role the
+planner established. In a batch of a foundational module, which its task's `module` names
+and `modules.json` marks `foundational`, an item with a lifecycle role becomes a generic
 policy or strategy that calls the primitive via FFI, so that owned string and generic
 array or singleton handles bind it to implement RAII. The primitive itself is not also
-exposed as an ordinary safe function. The subsystem's other items follow their route.
+exposed as an ordinary safe function. The module's other items follow their route.
 
 Singleton and array handles have separate policies, each in its primitive's home. A
 family's allocator, releaser and cloner form one policy and share a batch.

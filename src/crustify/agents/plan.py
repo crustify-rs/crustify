@@ -1,8 +1,8 @@
-"""One planner: decomposes a campaign into subsystems and schedules it.
+"""One planner: decomposes a campaign into modules and schedules it.
 
 The orchestrator spawns planners one after another, each on its own branch,
 after setup and before the Rust tree is scaffolded. Every run does the same:
-it emits what the plan -- `subsystems.json`, each subsystem's
+it emits what the plan -- `modules.json`, each module's
 `schedule.json` and the skills' planning artifacts -- lacks, updates what
 follows an earlier schema, corrects what earlier runs decided, filing a
 report per correction under `crustify/reviews/planner/`, and re-emits the

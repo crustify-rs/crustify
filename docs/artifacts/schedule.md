@@ -26,8 +26,8 @@ The schedule holds two kinds of field:
 | field | meaning |
 |---|---|
 | `index` | the wave's id, from zero; see [Indices](#3-indices) |
-| `link_unit` | the `link_units[*].name` of `subsystems.json` its units belong to; `null` when the campaign has no decomposition |
-| `subsystem` | the subsystem's `name` within that link unit; `null` when the wave belongs to no subsystem |
+| `link_unit` | the `link_units[*].name` of `modules.json` its units belong to; `null` when the campaign has no decomposition |
+| `module` | the module's `name` within that link unit; `null` when the wave belongs to no module |
 | `reviews` | a review wave's reviewed wave, by `index`; absent on any other wave |
 | `status` | `todo`, `wip` or `done` |
 | `depends_on` | the waves this one depends on: `scheduled` and `cut`, each an array of wave indices |
@@ -58,7 +58,7 @@ wave's review wave in its `depends_on.scheduled`.
 | `status` | `todo`, `wip`, `done` or `failed` |
 | `items` | a `wrap` or `port` batch's worklist, as `docs/artifacts/task.md` describes its `items` |
 | `reviews` | a translation campaign's review batch: the indices of the batches of the reviewed wave it reviews |
-| `modules`, `reports` | an audit's review batch: its worklist, as `docs/artifacts/task.md` describes them |
+| `paths`, `reports` | an audit's review batch: its worklist, as `docs/artifacts/task.md` describes them |
 | `commits` | the commits the batch landed, in order; empty until it lands |
 
 `kind` is per batch, not per wave. A port campaign wraps a type while C still reads its
@@ -88,8 +88,8 @@ later run may therefore schedule a wave that runs before one an earlier run appe
 
 Only waves that are `todo` are re-planned: a re-plan may change, split or remove them,
 and the waves that replace them take new indices. A wave that is `wip` or `done`, and
-every wave of a frozen subsystem, keeps its record, apart from the progress fields. A
-planner may append waves to a frozen subsystem, such as those that replace its raw seams
+every wave of a frozen module, keeps its record, apart from the progress fields. A
+planner may append waves to a frozen module, such as those that replace its raw seams
 once a cut dependency has landed.
 
 Each wave's batches are those wavefront packs from the units it schedules, under the
@@ -108,5 +108,6 @@ Schema-v2 schedules were one `crustify/artifacts/<link-unit>/<subsystem>/schedul
 per subsystem, whose wave indices counted within the subsystem and whose batches carried
 an `objective` in place of `kind`. Schema-v1 was one campaign-wide schedule nesting
 `link_units` → `subsystems` → `waves`. A campaign on either is converted by its next
-planner run: its waves are numbered in the order they ran or were to run, and every v2
-`objective` becomes the batch's `kind`.
+planner run: its waves are numbered in the order they ran or were to run, every v2
+`objective` becomes the batch's `kind`, and every wave's `subsystem` becomes the `module`
+its units are re-decomposed into, as `docs/artifacts/modules.md` describes.

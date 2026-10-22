@@ -15,7 +15,7 @@ wave integration branch.
 
 - repository: `{workdir}`
 - worklist: `{worklist}`
-- batch: `{batch_id}`, of subsystem `{subsystem}`
+- batch: `{batch_id}`, of module `{module}`
 - unchecked-out wave integration branch: `{git_base}`
 
 ## Routes
@@ -70,8 +70,8 @@ library.
 
 Emit your worklist's Rust for your route using the binding how-to below.
 
-When your batch's subsystem is the foundational `void` or `string` subsystem, bind its items
-with a lifecycle role as its Lifecycle strategies section describes.
+When `modules.json` marks your batch's module `foundational`, bind its items with a
+lifecycle role as its Lifecycle strategies section describes.
 
 ### 5. Testing
 
@@ -83,7 +83,7 @@ item of your worklist, and close the coverage gaps of your worklist's C and Rust
 Validate the tree you land as the testing instructions' Regressions section describes. Run
 the sanitizer-instrumented builds described by `build.json` and fix any issues. If BSan is
 available, run it only on the tests you wrote and expect to trigger it, and run your own
-tests under Miri; the wave's and the subsystem's gates belong to the review that follows.
+tests under Miri; the wave's and the module's gates belong to the review that follows.
 
 ### 6. Landing
 

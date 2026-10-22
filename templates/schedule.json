@@ -8,16 +8,16 @@
     "`status` and `commits` record progress as the work launches and lands. A",
     "`wrap` or `port` batch's task.json carries its kind as `objective`, its",
     "items, its batch fields and the run fields. Wave 2 reviews wave 1; wave 3 is a",
-    "wave of no subsystem, planned from a few named items. Homes follow the coding",
+    "wave of no module, planned from a few named items. Homes follow the coding",
     "conventions: crustify/rust/<repo>/<link-unit>/, here for a repo named widgets.",
-    "An independent illustration: it is not a schedule for templates/subsystems.json."
+    "An independent illustration: it is not a schedule for templates/modules.json."
   ],
   "schema_version": 3,
   "waves": [
     {
       "index": 0,
       "link_unit": "libwidget",
-      "subsystem": "core",
+      "module": "src/core.c",
       "status": "done",
       "depends_on": {
         "scheduled": [],
@@ -43,7 +43,7 @@
                 "refcount",
                 "flags"
               ],
-              "home": "crustify/rust/widgets/libwidget/core.rs"
+              "home": "crustify/rust/widgets/libwidget/src/core.rs"
             }
           ],
           "commits": [
@@ -60,7 +60,7 @@
               "defined_in": "include/widget/core.h",
               "kind": "type",
               "field_anchors": [],
-              "home": "crustify/rust/widgets/libwidget/core.rs"
+              "home": "crustify/rust/widgets/libwidget/src/core.rs"
             }
           ],
           "commits": [
@@ -73,7 +73,7 @@
     {
       "index": 1,
       "link_unit": "libwidget",
-      "subsystem": "core",
+      "module": "src/core.c",
       "status": "wip",
       "depends_on": {
         "scheduled": [
@@ -100,7 +100,7 @@
               "defined_in": "src/core.c",
               "kind": "symbol",
               "field_anchors": [],
-              "home": "crustify/rust/widgets/libwidget/core.rs"
+              "home": "crustify/rust/widgets/libwidget/src/core.rs"
             }
           ],
           "commits": []
@@ -110,7 +110,7 @@
     {
       "index": 2,
       "link_unit": "libwidget",
-      "subsystem": "core",
+      "module": "src/core.c",
       "reviews": 1,
       "status": "todo",
       "depends_on": {
@@ -140,7 +140,7 @@
     {
       "index": 3,
       "link_unit": "libwidget",
-      "subsystem": null,
+      "module": null,
       "status": "todo",
       "depends_on": {
         "scheduled": [
@@ -165,7 +165,7 @@
               "defined_in": "src/version.c",
               "kind": "symbol",
               "field_anchors": [],
-              "home": "crustify/rust/widgets/libwidget/version.rs"
+              "home": "crustify/rust/widgets/libwidget/src/version.rs"
             }
           ],
           "commits": []
@@ -175,7 +175,7 @@
     {
       "index": 4,
       "link_unit": "libwidget",
-      "subsystem": "io",
+      "module": "src/io.c",
       "status": "todo",
       "depends_on": {
         "scheduled": [
@@ -202,7 +202,7 @@
               "field_anchors": [
                 "fd"
               ],
-              "home": "crustify/rust/widgets/libwidget/io.rs"
+              "home": "crustify/rust/widgets/libwidget/src/io.rs"
             }
           ],
           "commits": []

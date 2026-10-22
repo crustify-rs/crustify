@@ -20,7 +20,7 @@ BILLINGS = ("subscription", "api")
 RUN_FIELDS = frozenset({"model", "billing"})
 #: The fields that place a binder's, translator's or reviewer's task in the
 #: campaign's schedule.json.
-BATCH_FIELDS = frozenset({"wave", "batch", "link_unit", "subsystem"})
+BATCH_FIELDS = frozenset({"wave", "batch", "link_unit", "module"})
 
 #: The role that runs each objective's tasks; its name is also the stem of
 #: the log and usage record a batch writes into its own `--log-dir`, so
@@ -54,24 +54,24 @@ class Instructions:
 @dataclass(frozen=True)
 class Placement:
     """Where a task's batch sits in the schedule: its wave and index, which
-    form its batch id, and the link unit and subsystem its wave belongs to."""
+    form its batch id, and the link unit and module its wave belongs to."""
 
     wave: int
     batch: int
     link_unit: str | None
-    subsystem: str | None
+    module: str | None
 
     @property
     def batch_id(self) -> str:
         return f"wave-{self.wave}/batch-{self.batch}"
 
     @property
-    def subsystem_label(self) -> str:
-        """``<link-unit>/<subsystem>``, or ``none`` for a wave of no
-        subsystem."""
-        if self.subsystem is None:
+    def module_label(self) -> str:
+        """``<link-unit>/<module>``, or ``none`` for a wave of no
+        module."""
+        if self.module is None:
             return "none"
-        return f"{self.link_unit}/{self.subsystem}"
+        return f"{self.link_unit}/{self.module}"
 
 
 @dataclass(frozen=True)
@@ -146,19 +146,19 @@ def parse_branch(raw: dict, fail: Callable[[str], NoReturn]) -> str:
 
 
 def parse_placement(raw: dict, fail: Callable[[str], NoReturn]) -> Placement:
-    """A task's ``wave``, ``batch``, ``link_unit`` and ``subsystem``."""
+    """A task's ``wave``, ``batch``, ``link_unit`` and ``module``."""
     for key in ("wave", "batch"):
         value = raw[key]
         if not isinstance(value, int) or isinstance(value, bool) or value < 0:
             fail(f"{key} must be a non-negative index")
-    for key in ("link_unit", "subsystem"):
+    for key in ("link_unit", "module"):
         value = raw[key]
         if value is not None and (not isinstance(value, str) or not value.strip()):
             fail(f"{key} must be a name or null")
-    if raw["subsystem"] is not None and raw["link_unit"] is None:
-        fail("a subsystem needs its link_unit")
+    if raw["module"] is not None and raw["link_unit"] is None:
+        fail("a module needs its link_unit")
     return Placement(wave=raw["wave"], batch=raw["batch"],
-                     link_unit=raw["link_unit"], subsystem=raw["subsystem"])
+                     link_unit=raw["link_unit"], module=raw["module"])
 
 
 def parse_instructions(raw: dict, task_path: Path,
@@ -313,7 +313,7 @@ def execute(
     if dry_run:
         print(
             f"[{role} dry-run] one {batch.route} agent for "
-            f"{batch.placement.batch_id} ({batch.placement.subsystem_label}); "
+            f"{batch.placement.batch_id} ({batch.placement.module_label}); "
             f"{len(batch.items)} item(s); campaign objective "
             f"{batch.objective}; landing on {base_branch}; "
             f"model {batch.run.model} ({batch.run.billing}); "

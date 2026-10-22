@@ -6,8 +6,8 @@ prompts contain the decisions and procedures.
 ## 1. Rust baseline
 
 Crustify crates use Rust edition 2024. Wrapper crates inherit workspace lints that deny
-`clippy::undocumented_unsafe_blocks` and allow `clippy::module_inception`; generated
-`-sys` code is exempt.
+`clippy::undocumented_unsafe_blocks` and allow `clippy::module_inception`, since a C
+directory often holds a TU of its own name; generated `-sys` code is exempt.
 
 Every unsafe block carries a specific, falsifiable `// SAFETY:` comment. Native Rust APIs
 are safe unless their caller obligation cannot be expressed in the type system.
@@ -59,25 +59,25 @@ The Rust tree mirrors the following layout, all relative to `<repo>/crustify/rus
 - `<repo>/` - safe repo package, one for the whole repo.
 - `<repo>/<link-unit>/` - one sub-dir per link unit, `cfg`-gated module in `lib.rs`.
 
-The Rust tree within `<repo>/` mirrors the subsystem decomposition in `subsystems.json`, and each item is homed
-in a `.rs` TU corresponding to its location on the original C/C++ filesystem; a batch names the `.rs` file each of its
-items belongs in, as `crustify/rust/<repo>/<link-unit>/…/<file>.rs`. Entities sharing a definition site co-home. A home
-may be shared across waves.
+Within a link unit's sub-dir, the tree follows the module decomposition in `modules.json`
+exactly, and preserves the C layout as far as the idiomatic organization of a Rust tree
+allows:
 
-Rust has no headers, they are homed using the following rules:
-- for a wrap campaign: each public header gets its own `mod` and `.rs`.
-- for a port campaign:
-  - a subsystem's headers and translation units share one sub-dir and module rooted at
-    `rust/<repo>/<link-unit>/<subsystem>/<subsystem>.rs`;
-  - a TU and its companion header share a sub-module within their subsystem;
-  - headers that export implementation (e.g. `static inline` functions) which logically do
-    not belong to any TU get their own `_h.rs` sub-module; headers shared by multiple
-    subsystems become sub-modules for each subsystem homing the units belonging to that subsystem;
-  - a TU an item-granular subsystem takes items from likewise becomes a sub-module of each
-    subsystem, homing the units it owns.
+- each module is one `.rs` file, at its translation unit's repo-relative path with the
+  `.rs` extension: its TU and the headers bundled with it have no files of their own,
+  since Rust has no headers;
+- a header module is one `<stem>_h.rs` file, at its header's path;
+- the two modules of a split foundational TU share the TU's file;
+- C directories become Rust modules: a directory's `.rs` file sits beside the directory,
+  as `<dir>.rs` and `<dir>/`, and declares the modules within it, or is the module of a TU
+  with the directory's name where there is one; `mod.rs` files are not used; and
+- a file or directory name that is not a Rust identifier is sanitized, hyphens to
+  underscores, and a Rust keyword takes a trailing underscore.
 
-In a wrap campaign, an item-granular subsystem's items home in the module of the public
-header that publishes them, which the subsystem that owns the header's other items shares.
+Where a C layout has no idiomatic Rust counterpart, the tree adapts it in the conventional
+Rust way and keeps the C path recognizable. A batch names the `.rs` file each of its items
+belongs in, as `crustify/rust/<repo>/<link-unit>/…/<file>.rs`. Entities sharing a
+definition site co-home. A home may be shared across waves.
 
 ## 4. Anchors
 

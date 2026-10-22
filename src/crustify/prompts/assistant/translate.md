@@ -6,7 +6,7 @@ answer selects.
 
 You spawn four kinds of agent, and each owns its part:
 
-- planner agents own the plan: the subsystem decomposition, the plan fields of the
+- planner agents own the plan: the module decomposition, the plan fields of the
   schedule, and the planning artifacts of the enabled skills;
 - binder agents own the `wrap` batches, and translator agents the `port` batches;
 - reviewer agents own the review batches.
@@ -16,21 +16,21 @@ dashboard.
 
 You own everything else of the binding workflow below, and of the porting workflow in a
 port campaign: the planner runs' branches, tasks, checks and promotion; the Rust tree's
-scaffolding; each subsystem's `status`, which you set to `frozen` when its first wave
+scaffolding; each module's `status`, which you set to `frozen` when its first wave
 launches; every wave, batch, review wave and review batch, from its branch and task to its
 promotion, and its progress in `schedule.json`; and the accounting the Ownership section
 names.
 
 ### Brief
 
-The campaign brief lists the subsystems, the assumptions you made, the models of every
+The campaign brief lists the modules, the assumptions you made, the models of every
 agent, the review policy with its objectives, the sanitizers, and the execution policy:
 parallelism, review caps and the settings' approval gates.
 
 ### Settings changes
 
-The unit of work is the subsystem, or the wave for a wave of no subsystem. A changed
-`scope`, `workload` or `review-workload` answer re-plans the subsystems that are not
+The unit of work is the module, or the wave for a wave of no module. A changed
+`scope`, `workload` or `review-workload` answer re-plans the modules that are not
 frozen and the waves that are `todo`: spawn planner runs as the binding workflow's
 Planning section describes, under the new answers. Landed work is never re-planned.
 
@@ -68,10 +68,10 @@ Planning section describes, under the new answers. Landed work is never re-plann
    approved parallelism, record each batch's progress, and promote each wave once it
    completes. Create each home before its batch launches, as the Rust tree section
    describes.
-3. **Shipping.** When a subsystem has landed and passed its gates, ask the user whether to
+3. **Shipping.** When a module has landed and passed its gates, ask the user whether to
    advance the shipping branch, as the binding workflow's Shipping section describes.
 4. **Accounting.** Collect every run's records as soon as it lands or fails, and fill its
-   usage cells, and each subsystem's campaign cells, as the binding workflow's Accounting
+   usage cells, and each module's campaign cells, as the binding workflow's Accounting
    section times them.
 
 ---
@@ -93,7 +93,7 @@ holds, how its decisions are made, and how planner runs follow one another.
 ---
 
 The following describes the conventions of the codebase the campaign generates. Follow them
-wherever they apply: when you scaffold crates, subsystem roots, modules and test suites,
+wherever they apply: when you scaffold crates, modules and test suites,
 and when you home each batch's items.
 
 <!-- INCLUDE docs/conventions.md -->

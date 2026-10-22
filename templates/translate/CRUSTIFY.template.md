@@ -13,11 +13,11 @@ for campaign decisions that remain unresolved.
    Rust wrappers?** (`id: campaign`)
    - Answer: `<port | wrap>`
 
-3. **What should this campaign target: a named subset of subsystems, or a named
+3. **What should this campaign target: a named subset of modules, or a named
    subset of functions and types, or the whole target repo? You can define them
    now or we can brainstorm them during the live session. You can also let the
    orchestrator decide.** (`id: scope`)
-   - Answer: `<named subsystems | named functions/types | whole target |
+   - Answer: `<named modules | named functions/types | whole target |
      orchestrator's choice>`
 
 4. **Which model and billing should do the translation work?**
@@ -88,7 +88,7 @@ Answer these approval-gate questions only if question 6 is answered `no`.
 14. **Should I wait for your approval before starting the translation phase?**
     (`id: gates.translation`)
     - Answer: `<yes | no>`
-15. **Should I wait for your approval between subsystems?** (`id: gates.subsystem`)
+15. **Should I wait for your approval between modules?** (`id: gates.module`)
     - Answer: `<yes | no | not applicable>`
 16. **Should I wait for your approval before starting review passes?** (`id: gates.review`)
     - Answer: `<yes | no | not applicable>`

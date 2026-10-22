@@ -66,8 +66,8 @@ needing the same instrument or the same build share a reviewer.
 
 Each round of reviewers, up to the configured concurrency, is one review wave, recorded in
 `schedule.json` as [`../artifacts/schedule.md`](../artifacts/schedule.md) describes: a
-wave of no link unit or subsystem, each of its batches a `review` batch holding its
-`modules` or `reports`.
+wave of no link unit or module, each of its batches a `review` batch holding its
+`paths` or `reports`.
 
 ## 5. Review waves
 
@@ -78,8 +78,8 @@ objectives, its batch fields, its review wave branch and the model and billing, 
 [`../artifacts/task.md`](../artifacts/task.md) describes:
 
 ```json
-{"objectives": ["ub", "equiv", "disclose"], "modules": ["src/frame.rs", "src/codec/"],
- "wave": 0, "batch": 0, "link_unit": null, "subsystem": null,
+{"objectives": ["ub", "equiv", "disclose"], "paths": ["src/frame.rs", "src/codec/"],
+ "wave": 0, "batch": 0, "link_unit": null, "module": null,
  "base_branch": "<review wave branch>", "model": "<model>", "billing": "<billing>"}
 ```
 
@@ -87,7 +87,7 @@ A part of a module names its types, trait impls and functions, and a revisit bat
 report dirs (the batch and run fields are left out of these two examples):
 
 ```json
-{"objectives": ["ub", "contracts", "disclose"], "modules": [{"path": "src/codec.rs", "types": ["Decoder"], "trait_impls": ["Drop for Decoder", "Iterator for Packets<'_>"], "functions": ["open_input"]}]}
+{"objectives": ["ub", "contracts", "disclose"], "paths": [{"path": "src/codec.rs", "types": ["Decoder"], "trait_impls": ["Drop for Decoder", "Iterator for Packets<'_>"], "functions": ["open_input"]}]}
 {"objectives": ["revisit", "disclose", "fix"], "reports": ["crustify/reviews/<batch id>/ub_safe/<slug>"]}
 ```
 

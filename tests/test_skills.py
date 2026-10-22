@@ -307,7 +307,7 @@ class PromptArgumentTests(unittest.TestCase):
     #: Supplied to every agent by `CrustifyAgent._arguments`; a role that does
     #: not name one is not carrying a dead key, it is just not using shared
     #: infrastructure.
-    _BASE = {"workdir", "git_base", "batch_id", "subsystem"}
+    _BASE = {"workdir", "git_base", "batch_id", "module"}
 
     def _declared(self, body: str) -> set[str]:
         return set(re.findall(r"(?<!\{)\{([a-z_]+)\}(?!\})", body))
@@ -352,7 +352,7 @@ class PromptArgumentTests(unittest.TestCase):
         agent.placement = translate.Placement(3, 1, "lib", "core")
         arguments = agent._arguments()
         self.assertEqual(arguments["batch_id"], "wave-3/batch-1")
-        self.assertEqual(arguments["subsystem"], "lib/core")
+        self.assertEqual(arguments["module"], "lib/core")
 
     def test_planner_arguments_match_its_placeholders(self) -> None:
         self._check(PlanAgent(self.repo,
@@ -385,7 +385,7 @@ class OrchestratorPromptTests(unittest.TestCase):
 
     def test_the_task_is_read_not_spliced(self) -> None:
         """The prompt says where the task lives; its answers stay in the file,
-        so an edit made mid-campaign is what the next subsystem runs under."""
+        so an edit made mid-campaign is what the next module runs under."""
         for kind in ("translate", "audit"):
             with self.subTest(kind=kind):
                 pre = AssistAgent(

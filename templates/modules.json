@@ -1,0 +1,731 @@
+{
+  "_comment": "Example `<workdir>/crustify/artifacts/modules.json` (REPO-ROOT tier), emitted by the planner. A module is one translation unit with the headers it defines its items in, named by the TU's path; a header that implements what no TU does is a header module, named by its own path, with a null `translation_unit`. Every file is an entry whose `items` lists are empty when the module owns the file whole, `included` when it owns only the entities named, and `excluded` when it owns all others: here the shared include/openssl/crypto.h is split item by item among the modules that implement what it declares, and crypto/o_str.c, which mixes string lifecycle routines with other code, is split into its foundational part and the module that keeps its name. Each link unit's and module's `index` is its permanent id, not its position: the order is computed from `depends_on`, whose `scheduled` dependencies run first and whose `cut` dependencies, cut from a cycle, run after; among ready modules a foundational one runs first, then the lower link-unit index, then the lower index. Here libcrypto runs before libssl, which depends on it, and statem's dependency on record is cut. `status` is `todo` while the plan may change and `frozen` once final. `objective` records translation intent, and its `rust_equivalent` which items the standard library already provides and the crates that could replace the module; each out-of-tree import's `rust_equivalent` names the crates that port the library to Rust and those that bind it safely. The waves are in `schedule.json`. The Rust tree mirrors this decomposition; there is no second placement document. All paths are workdir-relative.",
+  "version": "1f053298e30c0a9b5d0f3c1e7a4b8d2f6c9e0a11",
+  "link_units": [
+    {
+      "index": 0,
+      "name": "libcrypto",
+      "kind": "library",
+      "linkage": "shared",
+      "depends_on": {
+        "scheduled": [],
+        "cut": []
+      },
+      "modules": [
+        {
+          "index": 0,
+          "name": "crypto/mem.c",
+          "status": "frozen",
+          "foundational": true,
+          "depends_on": {
+            "scheduled": [],
+            "cut": []
+          },
+          "translation_unit": {
+            "path": "crypto/mem.c",
+            "items": {
+              "included": [],
+              "excluded": []
+            }
+          },
+          "internal_headers": [],
+          "api_headers": [
+            {
+              "path": "include/openssl/crypto.h",
+              "items": {
+                "included": [
+                  "CRYPTO_malloc",
+                  "CRYPTO_zalloc",
+                  "CRYPTO_free"
+                ],
+                "excluded": []
+              }
+            }
+          ],
+          "objective": {
+            "objective": "wrap",
+            "rust_equivalent": {
+              "std": {
+                "coverage": "partial",
+                "items": [
+                  {
+                    "name": "CRYPTO_malloc",
+                    "defined_in": "crypto/mem.c",
+                    "facility": "alloc::alloc::alloc",
+                    "fit": "partial",
+                    "notes": "takes a Layout rather than a size; the C allocator's custom hooks have no counterpart"
+                  }
+                ]
+              },
+              "crates": []
+            }
+          },
+          "counters": {
+            "implementation": {
+              "files": 1,
+              "loc": 212,
+              "structs": 0,
+              "functions": 9,
+              "global_variables": 4,
+              "enums": 0,
+              "unions": 0,
+              "callbacks": 0
+            },
+            "api": {
+              "files": 1,
+              "loc": 12,
+              "structs": 0,
+              "opaque_structs": 0,
+              "functions": 3,
+              "global_variables": 0,
+              "enums": 0,
+              "unions": 0,
+              "callbacks": 0
+            }
+          },
+          "imported_deps": {
+            "in_tree": [],
+            "out_of_tree": []
+          }
+        },
+        {
+          "index": 1,
+          "name": "crypto/o_str.c:foundational",
+          "status": "frozen",
+          "foundational": true,
+          "depends_on": {
+            "scheduled": [
+              "libcrypto/crypto/mem.c"
+            ],
+            "cut": []
+          },
+          "translation_unit": {
+            "path": "crypto/o_str.c",
+            "items": {
+              "included": [
+                "CRYPTO_memdup",
+                "CRYPTO_strdup",
+                "CRYPTO_strndup"
+              ],
+              "excluded": []
+            }
+          },
+          "internal_headers": [],
+          "api_headers": [
+            {
+              "path": "include/openssl/crypto.h",
+              "items": {
+                "included": [
+                  "CRYPTO_memdup",
+                  "CRYPTO_strdup",
+                  "CRYPTO_strndup"
+                ],
+                "excluded": []
+              }
+            }
+          ],
+          "objective": {
+            "objective": "wrap",
+            "rust_equivalent": {
+              "std": {
+                "coverage": "partial",
+                "items": [
+                  {
+                    "name": "CRYPTO_strdup",
+                    "defined_in": "crypto/o_str.c",
+                    "facility": "alloc::ffi::CString::from",
+                    "fit": "partial",
+                    "notes": "aborts on allocation failure where the C returns NULL"
+                  }
+                ]
+              },
+              "crates": []
+            }
+          },
+          "counters": {
+            "implementation": {
+              "files": 1,
+              "loc": 58,
+              "structs": 0,
+              "functions": 3,
+              "global_variables": 0,
+              "enums": 0,
+              "unions": 0,
+              "callbacks": 0
+            },
+            "api": {
+              "files": 1,
+              "loc": 6,
+              "structs": 0,
+              "opaque_structs": 0,
+              "functions": 3,
+              "global_variables": 0,
+              "enums": 0,
+              "unions": 0,
+              "callbacks": 0
+            }
+          },
+          "imported_deps": {
+            "in_tree": [
+              {
+                "link_unit": "libcrypto",
+                "module": "crypto/mem.c",
+                "outgoing_edges": 3,
+                "incoming_edges": 0,
+                "counters": {
+                  "structs": 0,
+                  "functions": 2,
+                  "global_variables": 0,
+                  "enums": 0,
+                  "unions": 0,
+                  "callbacks": 0
+                }
+              }
+            ],
+            "out_of_tree": []
+          }
+        },
+        {
+          "index": 2,
+          "name": "crypto/o_str.c",
+          "status": "frozen",
+          "foundational": false,
+          "depends_on": {
+            "scheduled": [
+              "libcrypto/crypto/o_str.c:foundational",
+              "libcrypto/crypto/mem.c"
+            ],
+            "cut": []
+          },
+          "translation_unit": {
+            "path": "crypto/o_str.c",
+            "items": {
+              "included": [],
+              "excluded": [
+                "CRYPTO_memdup",
+                "CRYPTO_strdup",
+                "CRYPTO_strndup"
+              ]
+            }
+          },
+          "internal_headers": [],
+          "api_headers": [
+            {
+              "path": "include/openssl/crypto.h",
+              "items": {
+                "included": [
+                  "OPENSSL_hexstr2buf",
+                  "OPENSSL_buf2hexstr"
+                ],
+                "excluded": []
+              }
+            }
+          ],
+          "objective": {
+            "objective": "wrap",
+            "rust_equivalent": {
+              "std": {
+                "coverage": "none",
+                "items": []
+              },
+              "crates": []
+            }
+          },
+          "counters": {
+            "implementation": {
+              "files": 1,
+              "loc": 301,
+              "structs": 0,
+              "functions": 14,
+              "global_variables": 1,
+              "enums": 0,
+              "unions": 0,
+              "callbacks": 0
+            },
+            "api": {
+              "files": 1,
+              "loc": 4,
+              "structs": 0,
+              "opaque_structs": 0,
+              "functions": 2,
+              "global_variables": 0,
+              "enums": 0,
+              "unions": 0,
+              "callbacks": 0
+            }
+          },
+          "imported_deps": {
+            "in_tree": [
+              {
+                "link_unit": "libcrypto",
+                "module": "crypto/o_str.c:foundational",
+                "outgoing_edges": 5,
+                "incoming_edges": 0,
+                "counters": {
+                  "structs": 0,
+                  "functions": 2,
+                  "global_variables": 0,
+                  "enums": 0,
+                  "unions": 0,
+                  "callbacks": 0
+                }
+              },
+              {
+                "link_unit": "libcrypto",
+                "module": "crypto/mem.c",
+                "outgoing_edges": 9,
+                "incoming_edges": 0,
+                "counters": {
+                  "structs": 0,
+                  "functions": 2,
+                  "global_variables": 0,
+                  "enums": 0,
+                  "unions": 0,
+                  "callbacks": 0
+                }
+              }
+            ],
+            "out_of_tree": []
+          }
+        },
+        {
+          "index": 3,
+          "name": "include/internal/refcount.h",
+          "status": "todo",
+          "foundational": false,
+          "depends_on": {
+            "scheduled": [],
+            "cut": []
+          },
+          "translation_unit": null,
+          "internal_headers": [
+            {
+              "path": "include/internal/refcount.h",
+              "items": {
+                "included": [],
+                "excluded": []
+              }
+            }
+          ],
+          "api_headers": [],
+          "objective": {
+            "objective": "wrap",
+            "rust_equivalent": {
+              "std": {
+                "coverage": "partial",
+                "items": [
+                  {
+                    "name": "CRYPTO_UP_REF",
+                    "defined_in": "include/internal/refcount.h",
+                    "facility": "core::sync::atomic::AtomicI32::fetch_add",
+                    "fit": "exact",
+                    "notes": ""
+                  }
+                ]
+              },
+              "crates": []
+            }
+          },
+          "counters": {
+            "implementation": {
+              "files": 1,
+              "loc": 88,
+              "structs": 0,
+              "functions": 4,
+              "global_variables": 0,
+              "enums": 0,
+              "unions": 0,
+              "callbacks": 0
+            },
+            "api": {
+              "files": 0,
+              "loc": 0,
+              "structs": 0,
+              "opaque_structs": 0,
+              "functions": 0,
+              "global_variables": 0,
+              "enums": 0,
+              "unions": 0,
+              "callbacks": 0
+            }
+          },
+          "imported_deps": {
+            "in_tree": [],
+            "out_of_tree": []
+          }
+        },
+        {
+          "index": 4,
+          "name": "crypto/bio/bio_lib.c",
+          "status": "todo",
+          "foundational": false,
+          "depends_on": {
+            "scheduled": [
+              "libcrypto/crypto/mem.c",
+              "libcrypto/include/internal/refcount.h"
+            ],
+            "cut": []
+          },
+          "translation_unit": {
+            "path": "crypto/bio/bio_lib.c",
+            "items": {
+              "included": [],
+              "excluded": []
+            }
+          },
+          "internal_headers": [
+            {
+              "path": "crypto/bio/bio_local.h",
+              "items": {
+                "included": [],
+                "excluded": []
+              }
+            }
+          ],
+          "api_headers": [
+            {
+              "path": "include/openssl/bio.h",
+              "items": {
+                "included": [],
+                "excluded": []
+              }
+            }
+          ],
+          "objective": {
+            "objective": "wrap",
+            "rust_equivalent": {
+              "std": {
+                "coverage": "none",
+                "items": []
+              },
+              "crates": []
+            }
+          },
+          "counters": {
+            "implementation": {
+              "files": 2,
+              "loc": 1320,
+              "structs": 8,
+              "functions": 61,
+              "global_variables": 0,
+              "enums": 0,
+              "unions": 0,
+              "callbacks": 0
+            },
+            "api": {
+              "files": 1,
+              "loc": 702,
+              "structs": 1,
+              "opaque_structs": 4,
+              "functions": 38,
+              "global_variables": 0,
+              "enums": 0,
+              "unions": 0,
+              "callbacks": 2
+            }
+          },
+          "imported_deps": {
+            "in_tree": [
+              {
+                "link_unit": "libcrypto",
+                "module": "crypto/mem.c",
+                "outgoing_edges": 14,
+                "incoming_edges": 0,
+                "counters": {
+                  "structs": 0,
+                  "functions": 3,
+                  "global_variables": 0,
+                  "enums": 0,
+                  "unions": 0,
+                  "callbacks": 0
+                }
+              },
+              {
+                "link_unit": "libcrypto",
+                "module": "include/internal/refcount.h",
+                "outgoing_edges": 4,
+                "incoming_edges": 0,
+                "counters": {
+                  "structs": 0,
+                  "functions": 2,
+                  "global_variables": 0,
+                  "enums": 0,
+                  "unions": 0,
+                  "callbacks": 0
+                }
+              }
+            ],
+            "out_of_tree": []
+          }
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "name": "libssl",
+      "kind": "library",
+      "linkage": "shared",
+      "depends_on": {
+        "scheduled": [
+          "libcrypto"
+        ],
+        "cut": []
+      },
+      "modules": [
+        {
+          "index": 0,
+          "name": "ssl/statem/statem.c",
+          "status": "todo",
+          "foundational": false,
+          "depends_on": {
+            "scheduled": [
+              "libcrypto/crypto/bio/bio_lib.c"
+            ],
+            "cut": [
+              "libssl/ssl/record/rec_layer_s3.c"
+            ]
+          },
+          "translation_unit": {
+            "path": "ssl/statem/statem.c",
+            "items": {
+              "included": [],
+              "excluded": []
+            }
+          },
+          "internal_headers": [
+            {
+              "path": "ssl/statem/statem.h",
+              "items": {
+                "included": [],
+                "excluded": []
+              }
+            }
+          ],
+          "api_headers": [],
+          "objective": {
+            "objective": "port",
+            "rust_equivalent": {
+              "std": {
+                "coverage": "none",
+                "items": []
+              },
+              "crates": []
+            }
+          },
+          "counters": {
+            "implementation": {
+              "files": 2,
+              "loc": 2390,
+              "structs": 9,
+              "functions": 76,
+              "global_variables": 0,
+              "enums": 0,
+              "unions": 0,
+              "callbacks": 0
+            },
+            "api": {
+              "files": 0,
+              "loc": 0,
+              "structs": 0,
+              "opaque_structs": 0,
+              "functions": 0,
+              "global_variables": 0,
+              "enums": 0,
+              "unions": 0,
+              "callbacks": 0
+            }
+          },
+          "imported_deps": {
+            "in_tree": [
+              {
+                "link_unit": "libcrypto",
+                "module": "crypto/bio/bio_lib.c",
+                "outgoing_edges": 19,
+                "incoming_edges": 0,
+                "counters": {
+                  "structs": 3,
+                  "functions": 11,
+                  "global_variables": 1,
+                  "enums": 0,
+                  "unions": 2,
+                  "callbacks": 7
+                }
+              },
+              {
+                "link_unit": "libssl",
+                "module": "ssl/record/rec_layer_s3.c",
+                "outgoing_edges": 6,
+                "incoming_edges": 28,
+                "counters": {
+                  "structs": 0,
+                  "functions": 4,
+                  "global_variables": 0,
+                  "enums": 0,
+                  "unions": 0,
+                  "callbacks": 0
+                }
+              }
+            ],
+            "out_of_tree": [
+              {
+                "library": "libc",
+                "counters": {
+                  "structs": 9,
+                  "functions": 0,
+                  "global_variables": 1,
+                  "enums": 5,
+                  "unions": 3,
+                  "callbacks": 11
+                },
+                "rust_equivalent": {
+                  "ported": [],
+                  "bindings": []
+                }
+              }
+            ]
+          }
+        },
+        {
+          "index": 1,
+          "name": "ssl/record/rec_layer_s3.c",
+          "status": "todo",
+          "foundational": false,
+          "depends_on": {
+            "scheduled": [
+              "libssl/ssl/statem/statem.c",
+              "libcrypto/crypto/bio/bio_lib.c"
+            ],
+            "cut": []
+          },
+          "translation_unit": {
+            "path": "ssl/record/rec_layer_s3.c",
+            "items": {
+              "included": [],
+              "excluded": []
+            }
+          },
+          "internal_headers": [
+            {
+              "path": "ssl/record/record.h",
+              "items": {
+                "included": [],
+                "excluded": []
+              }
+            }
+          ],
+          "api_headers": [],
+          "objective": {
+            "objective": "port",
+            "rust_equivalent": {
+              "std": {
+                "coverage": "none",
+                "items": []
+              },
+              "crates": []
+            }
+          },
+          "counters": {
+            "implementation": {
+              "files": 2,
+              "loc": 4821,
+              "structs": 17,
+              "functions": 143,
+              "global_variables": 0,
+              "enums": 0,
+              "unions": 0,
+              "callbacks": 0
+            },
+            "api": {
+              "files": 0,
+              "loc": 0,
+              "structs": 0,
+              "opaque_structs": 0,
+              "functions": 0,
+              "global_variables": 0,
+              "enums": 0,
+              "unions": 0,
+              "callbacks": 0
+            }
+          },
+          "imported_deps": {
+            "in_tree": [
+              {
+                "link_unit": "libssl",
+                "module": "ssl/statem/statem.c",
+                "outgoing_edges": 28,
+                "incoming_edges": 6,
+                "counters": {
+                  "structs": 3,
+                  "functions": 11,
+                  "global_variables": 1,
+                  "enums": 0,
+                  "unions": 2,
+                  "callbacks": 7
+                }
+              },
+              {
+                "link_unit": "libcrypto",
+                "module": "crypto/bio/bio_lib.c",
+                "outgoing_edges": 41,
+                "incoming_edges": 0,
+                "counters": {
+                  "structs": 9,
+                  "functions": 0,
+                  "global_variables": 1,
+                  "enums": 5,
+                  "unions": 3,
+                  "callbacks": 11
+                }
+              }
+            ],
+            "out_of_tree": [
+              {
+                "library": "libz",
+                "counters": {
+                  "structs": 1,
+                  "functions": 4,
+                  "global_variables": 0,
+                  "enums": 0,
+                  "unions": 0,
+                  "callbacks": 2
+                },
+                "rust_equivalent": {
+                  "ported": [
+                    {
+                      "crate": "miniz_oxide",
+                      "covers": "some",
+                      "fit": "partial",
+                      "license": "MIT OR Zlib OR Apache-2.0",
+                      "notes": "raw deflate and zlib streams only; no gzip file API"
+                    }
+                  ],
+                  "bindings": [
+                    {
+                      "crate": "flate2",
+                      "sys": "libz-sys",
+                      "covers": "all",
+                      "fit": "exact",
+                      "license": "MIT OR Apache-2.0",
+                      "notes": ""
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "index": 2,
+      "name": "openssl",
+      "kind": "executable",
+      "linkage": null,
+      "depends_on": {
+        "scheduled": [],
+        "cut": []
+      },
+      "modules": []
+    }
+  ]
+}

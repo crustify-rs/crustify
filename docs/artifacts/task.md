@@ -25,7 +25,7 @@ produced. A batch that is run again gets a new run dir, so every attempt keeps i
   "wave": 0,
   "batch": 0,
   "link_unit": "libavutil",
-  "subsystem": "frame",
+  "module": "libavutil/frame.c",
   "base_branch": "crustify/waves/wave-0",
   "model": "anthropic/claude-opus-5-5",
   "billing": "subscription",
@@ -35,7 +35,7 @@ produced. A batch that is run again gets a new run dir, so every attempt keeps i
       "defined_in": "libavutil/frame.h",
       "kind": "type",
       "field_anchors": ["data", "linesize"],
-      "home": "crustify/rust/ffmpeg/libavutil/frame.rs"
+      "home": "crustify/rust/ffmpeg/libavutil/libavutil/frame.rs"
     }
   ]
 }
@@ -45,7 +45,7 @@ produced. A batch that is run again gets a new run dir, so every attempt keeps i
 |---|---|
 | `objective` | execution objective for every item: `wrap` or `port` |
 | `items` | non-empty worklist; every item routes to the same agent |
-| `wave`, `batch`, `link_unit`, `subsystem` | the [batch fields](#2-batch-fields) |
+| `wave`, `batch`, `link_unit`, `module` | the [batch fields](#2-batch-fields) |
 | `base_branch`, `model`, `billing` | the [run fields](#1-run-fields) |
 | `instructions` | optional [additional instructions](#3-additional-instructions) |
 
@@ -70,7 +70,7 @@ then promoted to the working branch, `crustify/devel`.
 | `wave` | the `index` of the batch's wave in `schedule.json` |
 | `batch` | the batch's `index` within that wave |
 | `link_unit` | its wave's `link_unit`; `null` when the campaign has no decomposition |
-| `subsystem` | its wave's `subsystem`; `null` when the wave belongs to no subsystem |
+| `module` | its wave's `module`; `null` when the wave belongs to no module |
 
 `wave` and `batch` form the batch id, `wave-<wave>/batch-<batch>`, which names the batch's
 branch, worktree and reviews dir as `docs/layout.md` spells them, and leads from the run
@@ -109,7 +109,7 @@ landed; in an audit, modules of the crate.
   "wave": 1,
   "batch": 0,
   "link_unit": "libavutil",
-  "subsystem": "frame",
+  "module": "libavutil/frame.c",
   "base_branch": "crustify/waves/wave-1",
   "model": "anthropic/claude-opus-5-5",
   "billing": "subscription"
@@ -119,7 +119,7 @@ landed; in an audit, modules of the crate.
 ```json
 {
   "objectives": ["ub", "contracts", "disclose"],
-  "modules": ["src/frame.rs", {"path": "src/codec.rs", "types": ["Decoder"], "trait_impls": ["Drop for Decoder"], "functions": ["open_input"]}]
+  "paths": ["src/frame.rs", {"path": "src/codec.rs", "types": ["Decoder"], "trait_impls": ["Drop for Decoder"], "functions": ["open_input"]}]
 }
 ```
 
@@ -127,12 +127,12 @@ landed; in an audit, modules of the crate.
 |---|---|
 | `objectives` | the review objectives to run; optional, every one the reviewer offers that applies when absent |
 | `commits` | distinct commit ids, as they sit on the reviewed wave's branch; route `commits`: the `commits` of the batches its schedule entry `reviews`, whose `items` there list the C items they bound or ported |
-| `modules` | repo-relative source files and directories; route `modules`. An entry may instead be `{"path", "types", "trait_impls", "functions"}`, naming the parts of a module too large to review whole: types, each with its fields and inherent impls; trait impls, each `<trait> for <type>` as its impl header spells it; and free functions |
+| `paths` | repo-relative source files and directories; route `paths`. An entry may instead be `{"path", "types", "trait_impls", "functions"}`, naming the parts of a module too large to review whole: types, each with its fields and inherent impls; trait impls, each `<trait> for <type>` as its impl header spells it; and free functions |
 | `reports` | repo-relative report dirs, `crustify/reviews/<batch id>/<kind>/<slug>`, to revisit |
 
 The batch and run fields are required, as on a translation task; the second example
-leaves them out. An audit's batch has a `null` `link_unit` and `subsystem`.
-A batch carries `commits` or `modules`, not both, and needs one of them or `reports`; one
+leaves them out. An audit's batch has a `null` `link_unit` and `module`.
+A batch carries `commits` or `paths`, not both, and needs one of them or `reports`; one
 with only `reports` has route `reports`. A module path appears once, and a module object
 names one or more of `types`, `trait_impls` and `functions`, each a distinct list. `reports` is given exactly when `revisit` is among the
 objectives, and an absent `objectives` includes `revisit` exactly when `reports` is given.
@@ -191,6 +191,7 @@ batch mixing routes is rejected.
 | `type` | `type` |
 | `symbol`, `callback` | `symbol` |
 
-A batch of the foundational `void` or `string` subsystem routes like any other. Its
-`subsystem` names it, and its binder binds the items with a lifecycle role as
+A batch of a foundational module routes like any other. Its `module` names the module,
+which `modules.json` marks `foundational`, and its binder binds the items with a
+lifecycle role as
 strategies (`docs/binding.md`, Lifecycle strategies).

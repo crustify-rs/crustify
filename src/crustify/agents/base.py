@@ -336,13 +336,13 @@ class CrustifyAgent:
         # agent: `str.format` ignores a key the template does not reference, and
         # a template referencing a key nobody supplies dies before the request.
         # Subclasses extend (super()._arguments()).
-        # `batch_id` and `subsystem` place a batch's agent in the schedule.
+        # `batch_id` and `module` place a batch's agent in the schedule.
         placement = self.placement
         return {
             "workdir": str(self.workdir),
             "git_base": self.git_base,
             "batch_id": placement.batch_id if placement else "",
-            "subsystem": placement.subsystem_label if placement else "",
+            "module": placement.module_label if placement else "",
         }
 
     def skill_specs(self) -> tuple[SkillSpec, ...]:

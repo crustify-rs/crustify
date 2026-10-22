@@ -25,7 +25,7 @@ A wave's branch is the integration branch its batches land on, a review wave's a
 a translation wave's. It is never checked out: a landing push to a checked-out branch
 fails, and one to a missing branch silently creates it.
 
-An audit has no link units or subsystems: its waves are review waves, laid out the same
+An audit has no link units or modules: its waves are review waves, laid out the same
 way.
 
 ## 2. Worktrees
@@ -38,7 +38,7 @@ has none: it runs in the repository's base dir, on its branch.
 A batch's id is the part of its branch name after `crustify/batches/`:
 `wave-<index>/batch-<index>`. It is permanent, since a wave's index is never reused (see
 `docs/artifacts/schedule.md`), and its entry in `schedule.json` gives the batch's link
-unit, subsystem, kind and worklist. A run's id is `<role>/run-<n>`, which names its
+unit, module, kind and worklist. A run's id is `<role>/run-<n>`, which names its
 artifact dir; a planner run's branch is named from it.
 
 ## 4. Artifact dirs
@@ -48,7 +48,7 @@ The campaign's artifacts sit under `crustify/artifacts/`, with one dir per agent
 ```text
 crustify/artifacts/                             the campaign
 ├── build.json                                  the prebuilt variants of the target
-├── subsystems.json                             the subsystem decomposition
+├── modules.json                                the module decomposition
 ├── schedule.json                               the waves and batches, and their progress
 ├── dashboard.md                                the campaign dashboard; audit-dashboard.md for an audit
 ├── assistant/                                  Crustify's own records, as the assistant
@@ -71,7 +71,7 @@ its batch, and a batch's runs are those whose `task.json` names it. The run dir 
 spawn command's `--log-dir` names, so it holds everything about the run: its input, the
 model and billing it ran under, and the artifacts its agent produced.
 
-The settings each subsystem or wave ran under are not copied anywhere: they are
+The settings each module or wave ran under are not copied anywhere: they are
 `crustify/CRUSTIFY.md` as committed at its base, in the working branch's history.
 
 ## 5. Lifecycle
@@ -99,10 +99,10 @@ A planner run's artifact dir is created, and its branch forked from the working 
 tip and checked out in the repository's base dir. Once the run has committed, the working
 branch is checked out and fast-forwarded to it, and the next run forks from there.
 
-### 5.3 Subsystems
+### 5.3 Modules
 
-A subsystem has no branch of its own. Its base is the working branch's commit its first
-wave forks from, which holds its scaffolded Rust root and the settings it runs under. Its
+A module has no branch of its own. Its base is the working branch's commit its first
+wave forks from, which holds its scaffolded `.rs` file and the settings it runs under. Its
 end state is the working branch's commit its last wave is promoted to.
 
 ### 5.4 Waves
@@ -161,5 +161,5 @@ A review batch files its findings under its reviews dir, `crustify/reviews/<batc
 and, when it has one, its reproducer, under the sub-directory of the finding's kind.
 
 A planner that amends an earlier plan files its findings the same way under
-`crustify/reviews/planner/`: `subsystems/` for `subsystems.json` and `schedule.json`, and
+`crustify/reviews/planner/`: `modules/` for `modules.json` and `schedule.json`, and
 one sub-directory per skill artifact it amends.

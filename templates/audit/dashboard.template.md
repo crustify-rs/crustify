@@ -56,8 +56,8 @@ API-equivalent comparison value, not a charged amount.
 
 | batch | workset | files | wall | $ | findings |
 |---|---|---:|---|---:|---:|
-| `<batch id>` | `<modules / reports>` | `<n>` | `<n>h<n>m<n>s` | `$<n>` | `<n>` |
-| `<batch id>` | `<modules / reports>` | `<n>` | `<n>h<n>m<n>s` | `$<n>` | `<n>` |
+| `<batch id>` | `<paths / reports>` | `<n>` | `<n>h<n>m<n>s` | `$<n>` | `<n>` |
+| `<batch id>` | `<paths / reports>` | `<n>` | `<n>h<n>m<n>s` | `$<n>` | `<n>` |
 | assistant | — | — | — | `$<n>`+ | — |
 | **Σ `<n>` agents** | | **`<n>`** | **`<n>`h`<n>`m** | **`$<n>`** | **`<n>`** |
 
