@@ -34,7 +34,9 @@ A wrapper's work is a side campaign, continued in its own repository: it keeps i
 settings, plan, schedule, branches, builds and accounting there, and its batches land on
 its own wave branches, as any wrap campaign's do. Its scope is what the parent campaign
 consumes from the library, not the whole library, and it grows as the parent's waves need
-more of it.
+more of it. Its settings are the parent's, but for its `campaign`, which is `wrap`, its
+`source`, the library at the release the target links, and its `scope`; a settings change
+the parent applies is applied to its side campaigns too.
 
 The side campaign advances at the parent's pace. Before a parent wave whose items use
 entities of the library that the wrapper lacks, as [scheduling](scheduling.md)'s Wrap

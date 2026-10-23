@@ -64,10 +64,9 @@ Planning section describes, under the new answers. Landed work is never re-plann
      describe: clone `crustify-rs/<library>-bindings` beside `<repo>` when it exists, or
      initialize a new one there, with its `c/` as the Sources section describes, and
      create it on `crustify-rs` only once the user approves;
-   - write its settings, unless they exist: `campaign: wrap`, its source at the release
-     the target links, its scope the entities the plan's dependency records count, and the
-     parent's models, billing, sanitizers and review policy, unless the user answers
-     otherwise;
+   - write its settings as the parent's, but for `campaign: wrap`, its source at the
+     release the target links, and its scope, the entities the plan's dependency records
+     count, and apply each settings change of the parent's to it as well;
    - carry out its setup workflow there, its builds installing the library once per
      variant of the parent, except for libc, which stays the system's; and
    - add it to the parent's workspace as a Git dependency pinned to its working branch's
