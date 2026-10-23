@@ -123,6 +123,14 @@ change you make; otherwise, ignore them.
 
 ---
 
+Here is how the Rust is built, linted and formatted: its toolchains, its edition, the lints
+every crate inherits, how it is formatted and how its unsafe code is justified. Follow
+them in everything you write.
+
+<!-- INCLUDE specs/rust.md -->
+
+---
+
 Here are additional instructions on how Crustify generates safe bindings, which your workset
 is judged against.
 

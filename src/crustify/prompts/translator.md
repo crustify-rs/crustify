@@ -95,9 +95,17 @@ the versioning spec's Landing section below describes.
 
 The following describes the conventions of the codebase you generate. Follow them throughout
 your workflow wherever they apply: where your items are homed, how they are named and laid
-out, where their tests are placed, and how every unsafe block is documented.
+out, and where their tests are placed.
 
 <!-- INCLUDE specs/conventions.md -->
+
+---
+
+Here is how the Rust is built, linted and formatted: its toolchains, its edition, the lints
+every crate inherits, how it is formatted and how its unsafe code is justified. Follow
+them in everything you write.
+
+<!-- INCLUDE specs/rust.md -->
 
 ---
 

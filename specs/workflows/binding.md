@@ -33,8 +33,10 @@ answers. Landed work is never re-planned.
 Once the plan is complete, the Rust tree is scaffolded on the working branch, as
 [`../conventions.md`](../conventions.md) lays it out, for the link units in scope only:
 
-- the safe crate at the repository's root, its `Cargo.toml` declaring the workspace, and
-  its `src/lib.rs` with a module per link unit;
+- the safe crate at the repository's root, its `Cargo.toml` declaring the workspace, its
+  shared package fields, its lints and its pinned nightly, and its `src/lib.rs` with a
+  module per link unit;
+- `rust-toolchain.toml` and `rustfmt.toml`, as [`../rust.md`](../rust.md) describes;
 - one `-sys` crate per link unit, with its `Cargo.toml`, `src/lib.rs`, `build.rs` and
   bindgen input over the C under `c/`, the allowlists of which the batches fill as they
   bind items; and

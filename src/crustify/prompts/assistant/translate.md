@@ -138,6 +138,14 @@ and when you home each batch's items.
 
 ---
 
+Here is how the Rust is built, linted and formatted: its toolchains, its edition, the lints
+every crate inherits, how it is formatted and how its unsafe code is justified. Follow
+them when you scaffold the workspace.
+
+<!-- INCLUDE specs/rust.md -->
+
+---
+
 For reference: the following describe how the agents you spawn do their work. Use them to
 brief the user, to write additional instructions, and to judge what the agents report.
 

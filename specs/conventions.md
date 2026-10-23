@@ -1,18 +1,14 @@
 # Crustify coding conventions
 
-These are the shared, mechanical contracts of the code a campaign generates. The roles'
-prompts contain the decisions and procedures.
+These are the shared, mechanical contracts of the code a campaign generates: how it is
+named, where it sits, how it records what it translated and where its tests go. The
+toolchain, edition, lints and formatting it is held to are [`rust.md`](rust.md)'s. The
+roles' prompts contain the decisions and procedures.
 
-## 1. Rust baseline
+## 1. Naming
 
-Crustify crates use Rust edition 2024. Wrapper crates inherit workspace lints that deny
-`clippy::undocumented_unsafe_blocks` and allow `clippy::module_inception`, since a C
-directory often holds a TU of its own name; generated `-sys` code is exempt.
-
-Every unsafe block carries a specific, falsifiable `// SAFETY:` comment. Native Rust APIs
-are safe unless their caller obligation cannot be expressed in the type system.
-
-## 2. Naming
+The workspace's lints enforce the standard Rust casing below, as [`rust.md`](rust.md)'s
+Lints section describes.
 
 The safe surface uses ordinary Rust naming: `snake_case` for functions, methods and
 modules, `UpperCamelCase` for types and traits, `SCREAMING_SNAKE_CASE` for constants and
@@ -22,23 +18,23 @@ transliterated C one. The filled anchor records the C name, so renaming costs no
 traceability. Names that cross the language boundary keep their C-derived spelling, as
 below.
 
-### 2.1 Functions
+### 1.1 Functions
 
 A C function's raw binding is `ffi::<name>`. Its safe wrapper is a free function homed in
 the owning module, named by the rules above. When one C function has several valid
 ownership contracts, each safe variant has a distinct, descriptive name.
 
-### 2.2 Types
+### 1.2 Types
 
 A wrapped C type is the layout-compatible newtype `Foo`, named by the rules above; its
 shared and exclusive borrowed handles are `FooRef<'a>` and `FooMut<'a>`.
 
-### 2.3 Shims
+### 1.3 Shims
 
 A callable macro shim is `crustify_<NAME>`. Constant macros remain generated constants in
 the `-sys` crate.
 
-### 2.4 Exports
+### 1.4 Exports
 
 Each ported module has one `mod ffi_export { use super::*; ... }` raw ABI gateway in its
 Rust file, whose exports use `#[unsafe(no_mangle)] extern "C"` under the bare C names: the
@@ -46,14 +42,14 @@ module's externally visible functions and globals, and the `static inline` funct
 headers define. Static functions and static globals are not exported: nothing outside
 their TU reaches them.
 
-### 2.5 Export features
+### 1.5 Export features
 
 Each module's `ffi_export` is compiled only under the safe crate's Cargo feature
 `ffi-export-<tu>`, with `<tu>` its translation unit's path below the C root, every character
 that is not an ASCII letter or digit replaced by `-`. The feature is off until the module is
 integrated, so that its exports never collide with the C they replace.
 
-## 3. Crates, modules, and TUs
+## 2. Crates, modules, and TUs
 
 The Rust tree is the repository's own, as [`layout.md`](layout.md)'s Tree section lays it
 out, all relative to the repository's root:
@@ -86,7 +82,7 @@ Rust way and keeps the C path recognizable. A batch names the `.rs` file each of
 belongs in, as `src/<link-unit>/…/<file>.rs`. Entities sharing a
 definition site co-home. A home may be shared across waves.
 
-## 4. Anchors
+## 3. Anchors
 
 A scheduled item arrives with the authored Rust file it belongs in, named by its batch.
 Nothing is written into that file ahead of the agent: the binder or translator emits exactly
@@ -111,7 +107,7 @@ Duplicate a filled anchor only when several wrappers intentionally represent the
 item. Existing filled anchors are completed work unless the current objective deliberately
 promotes that item.
 
-## 5. Testing
+## 4. Testing
 
 Tests are placed by what they target. Tests of the public interface are Cargo integration
 tests of the safe crate, under `tests/`, so crate privacy enforces

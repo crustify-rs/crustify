@@ -46,7 +46,7 @@ Rust consumers use safe APIs. Raw operations are confined to:
 
 SCC cuts and unavailable higher-layer dependencies remain narrow documented raw seams until
 a safe dependency becomes available, which then replaces them. Every unsafe block carries
-the safety comment the conventions specify.
+the safety comment [`../rust.md`](../rust.md)'s Unsafe code section specifies.
 
 ---
 

@@ -184,6 +184,8 @@ every agent's prompt includes the ones it follows.
   repository's tree and artifact directories, and how the work is tested
 - [`specs/conventions.md`](specs/conventions.md): conventions for the generated Rust,
   including the tree layout
+- [`specs/rust.md`](specs/rust.md): the toolchains, edition, lints and formatting the
+  generated Rust is held to
 - [`specs/artifacts/`](specs/artifacts/): the fields of `modules.json`, `dependencies.json`, the campaign's
   `schedule.json`, and `task.json`
 - [`specs/prompting.md`](specs/prompting.md): how the agents' prompts, specs and skills
