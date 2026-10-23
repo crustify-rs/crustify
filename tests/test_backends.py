@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from crustify.agents.backends.codex_cli import _atomic_write_text
+from crustify.agents.backends import _atomic_write_text
 from crustify.core.agentlog import AgentLog
 from crustify.core.models import resolve
 
@@ -222,7 +222,7 @@ class InteractiveModeTests(unittest.TestCase):
         for flag in ("-p", "--output-format", "--verbose",
                      "--disable-slash-commands"):
             self.assertNotIn(flag, command)
-        self.assertIn("--append-system-prompt", command)
+        self.assertIn("--append-system-prompt-file", command)
         self.assertIn("--session-id", command)
 
     def test_claude_resumes_the_session_without_forking_it(self) -> None:
@@ -236,7 +236,7 @@ class InteractiveModeTests(unittest.TestCase):
         self.assertNotIn("--session-id", command)
         self.assertNotIn("--fork-session", command)
         # The system prompt is not kept with the conversation: it goes again.
-        self.assertIn("--append-system-prompt", command)
+        self.assertIn("--append-system-prompt-file", command)
 
     def test_codex_resumes_the_session(self) -> None:
         from crustify.agents.backends.codex_cli import CodexCliBackend
@@ -259,3 +259,46 @@ class InteractiveModeTests(unittest.TestCase):
             self.assertNotIn(flag, command)
         self.assertEqual(command[command.index("-a") + 1], "never")
         self.assertEqual(command[-1], "kickoff")
+
+
+class SystemPromptFileTests(unittest.TestCase):
+    """The preamble travels as a file: a single argv element is capped at
+    MAX_ARG_STRLEN (32 pages) however large ARG_MAX is, and the translate
+    preamble exceeds it."""
+
+    def test_file_holds_the_text_and_is_removed_after_the_run(self) -> None:
+        from crustify.agents.backends import system_prompt_file
+
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp) / "home"
+            with system_prompt_file("preamble", directory=directory) as path:
+                self.assertEqual(path.read_text(), "preamble")
+                self.assertEqual(path.parent, directory)
+            self.assertFalse(path.exists())
+            self.assertEqual(list(directory.iterdir()), [])
+
+    def test_file_is_removed_even_when_the_run_raises(self) -> None:
+        from crustify.agents.backends import system_prompt_file
+
+        with self.assertRaises(RuntimeError):
+            with system_prompt_file("preamble") as path:
+                held = path
+                raise RuntimeError("the CLI failed")
+        self.assertFalse(held.exists())
+
+    def test_concurrent_runs_of_one_preamble_get_their_own_files(self) -> None:
+        from crustify.agents.backends import system_prompt_file
+
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp)
+            with system_prompt_file("same", directory=directory) as first, \
+                 system_prompt_file("same", directory=directory) as second:
+                self.assertNotEqual(first, second)
+                self.assertEqual(len(list(directory.iterdir())), 2)
+
+    def test_a_preamble_over_the_argv_cap_still_travels(self) -> None:
+        from crustify.agents.backends import system_prompt_file
+
+        oversized = "x" * (32 * 4096 + 1)
+        with system_prompt_file(oversized) as path:
+            self.assertEqual(len(path.read_bytes()), len(oversized))
