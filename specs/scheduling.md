@@ -14,11 +14,8 @@ dependencies are split into those that run before it, `depends_on.scheduled`, an
 cut to break a cycle, `depends_on.cut`, so that the scheduled dependencies form a DAG.
 Within each strongly connected component, the member the most other members depend on
 comes first, and the edges between tied members break ties: every dependency on a member
-that comes later is cut. A dependency that carries a polymorphic edge, a derived type on its
-base as the dependency graph directs the casts between them, is kept rather than cut
-wherever another dependency of the cycle can be cut instead, so that a base is bound
-before the types derived from it. Link units are ordered the same way. Modules run one at
-a time.
+that comes later is cut, a derived type's dependency on its base included. Link units are
+ordered the same way. Modules run one at a time.
 
 A frozen module keeps its place: a module added after it that it depends on is one of its
 cuts. A cut dependency is never reached through raw bindings: what a module uses of one is
