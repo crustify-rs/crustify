@@ -137,24 +137,25 @@ translators.
 
 ## Results
 
-Crustify generated safe bindings for the whole public API of `libgit2`, excluding
-deprecated items. Codex GPT-5.6-Sol wrote the bindings, and Claude Opus 5 reviewed them
-independently and audited them for undefined behavior.
+Crustify is wrapping the public API of FFmpeg, starting with `libavutil`, excluding
+deprecated items. Claude Opus 5.5 wrote most of the bindings and reviewed them
+independently for undefined behavior; Claude Fable 5.1 ran some of the reviews, and
+GPT-6.1-Sol some of the wrapping.
 
 | Measure | Result |
 |---|---:|
-| C target | `171,084` LoC |
-| Rust implementation | `28,432` LoC |
-| Rust tests | `42,903` LoC |
-| Wrapped public API | `259` types (`99.6`%); `1,014` symbols (`95.8`%) |
-| Remaining API | `1` type and `44` symbols, all deprecated |
-| Tests | `965` unit; `191` C/Rust equivalence |
-| Combined line coverage | `69.71`% C; `92.46`% Rust |
-| Recorded cost | `$1,904.64` for translation, review, and orchestration |
-| Aggregate agent wall time | `24h49m20s` |
+| C target | `29,909` LoC (`libavutil`), of `80,180` LoC in scope |
+| Rust implementation | `18,375` LoC |
+| Rust tests | `91,162` LoC |
+| Wrapped public API | `82` types (`51.6`%); `516` symbols (`77.0`%) of `libavutil` |
+| Remaining API | `77` types and `154` symbols in `libavutil`; `765` items over all 7 libraries |
+| Tests | `964` unit; `718` C/Rust equivalence; `997` UB |
+| Combined line coverage | `75.12`% C; `99.68`% Rust |
+| Recorded cost | `$2,066.47` for translation, review, planning, and orchestration |
+| Aggregate agent wall time | `100h27m` |
 
-The full campaign results and code are available at
-[crustify-rs/libgit2-wrap](https://github.com/crustify-rs/libgit2-wrap).
+The campaign results and code are available at
+[crustify-rs/ffmpeg-bindings](https://github.com/crustify-rs/ffmpeg-bindings).
 
 ## Specifications
 
