@@ -57,10 +57,12 @@ the lowest index first among those ready at once, as
 wave left, or the waves of the part of the scope it was given.
 
 Before a module's first wave starts, the settings are reread and their changes applied,
-the module is frozen in `modules.json`, and its `.rs` file is scaffolded, all
-committed on the working branch: that commit is the module's base, and records the
-settings the module runs under. A wave of no module rereads the settings the same
-way before it starts.
+and its `.rs` file is scaffolded, both committed on the working branch: that commit is the
+module's base, and records the settings the module runs under. A wave of no module
+rereads the settings the same way before it starts. A module is frozen in `modules.json`
+when [`../artifacts/modules.md`](../artifacts/modules.md)'s Status section times it: a
+`port` module in the commit its first `port` wave forks from, a `wrap` module in the one
+that promotes its last wave that was `todo`.
 
 ## 4. Waves and batches
 

@@ -17,8 +17,8 @@ dashboard.
 You own everything else of the binding workflow below, and of the porting workflow in a
 port campaign: the planner runs' branches, tasks, checks and promotion; the Rust tree's
 scaffolding; the side campaigns of the out-of-tree libraries the plan needs, each a wrap
-campaign you run in its own repository, as the dependencies spec describes; each module's `status`, which you set to `frozen` when its first wave
-launches; every wave, batch, review wave and review batch, from its branch and task to its
+campaign you run in its own repository, as the dependencies spec describes; each module's `status`, which you set to `frozen` when the modules schema's Status
+section times it; every wave, batch, review wave and review batch, from its branch and task to its
 promotion, and its progress in `schedule.json`; and the accounting the Ownership section
 names.
 

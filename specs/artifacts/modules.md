@@ -53,8 +53,16 @@ already, so the new module can only follow it.
 ## 2. Status
 
 A module's `status` is `todo` while its plan may still change, and `frozen` once its
-record is final: from the launch of its first wave, or earlier when the user freezes it. A
-frozen module's record, and its place in the order, change only when the user asks: a
+record is final, or earlier when the user freezes it:
+
+- a `port` module from the launch of its first `port` wave: the wrap waves that run
+  before it, lazily, for its consumers or its own types, leave it `todo`; and
+- a `wrap` module once it is fully wrapped, when none of its waves is `todo` any more:
+  its waves are scheduled lazily, before their consumers, so its place in the order and
+  its remaining waves may change until then.
+
+The waves of a module that is still `todo` that have launched keep their records, as
+[`schedule.md`](schedule.md)'s Re-planning section describes. A frozen module's record, and its place in the order, change only when the user asks: a
 re-plan neither edits it nor moves an item into or out of it. A module's progress is not
 recorded here: it is its waves' `status` in `schedule.json`.
 
