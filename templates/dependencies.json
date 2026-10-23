@@ -16,7 +16,7 @@
       },
       "linked_from": "side-campaign",
       "wrapper": {
-        "repository": "crustify-rs/libz-bindings",
+        "repository": "crustify-rs/zlib-bindings",
         "pin": null
       },
       "rust_equivalent": {
@@ -53,7 +53,7 @@
       },
       "linked_from": "system",
       "wrapper": {
-        "repository": "crustify-rs/libc-bindings",
+        "repository": "crustify-rs/glibc-bindings",
         "pin": null
       },
       "rust_equivalent": {

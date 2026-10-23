@@ -15,12 +15,15 @@ unless the user instructs the campaign to adopt an existing crate. The `ported` 
 `bindings` records of `dependencies.json` inform that choice and the user's instructions; they
 do not make it.
 
-A library's wrapper is a wrap campaign of that library, in a repository of its own:
-`<library>-bindings` under the `crustify-rs` organization, named and laid out as
+A library's wrapper is a wrap campaign of the source it is built from, in a repository of
+its own: `<source>-bindings` under the `crustify-rs` organization, `<source>` being the
+name of that source's repository, named and laid out as
 [`versioning.md`](versioning.md)'s Repositories section and [`layout.md`](layout.md)'s
 Tree section describe for any wrap campaign, so that a later campaign whose target is the
-library itself continues it. It is cloned beside the campaign's repository, as
-`../<library>-bindings`, never inside it. The campaign's workspace depends on its crate by
+source itself continues it. The libraries one source builds share its wrapper, each a link
+unit of it: OpenSSL's `libcrypto` and `libssl` are both wrapped in `openssl-bindings`.
+It is cloned beside the campaign's repository, as `../<source>-bindings`, never inside
+it. The campaign's workspace depends on its crate by
 Git, pinned to a commit, with a Cargo `[patch]` pointing at the clone while the campaign
 extends it; the safe crate and the `-sys` crates name its safe wrappers, never its raw
 bindings once a safe wrapper exists.
@@ -72,7 +75,7 @@ for each architecture a campaign builds on, and verified there.
 ## 4. Reuse
 
 Before a campaign creates a library's wrapper, it checks `crustify-rs` for
-`<library>-bindings`. One that exists is cloned and its side campaign continued: what it
+`<source>-bindings`. One that exists is cloned and its side campaign continued: what it
 already wraps is not scheduled again, and only what it lacks is planned, as additions to
 its own plan. A library without one gets a new repository, created once the user approves,
 which every later campaign that uses the library continues.

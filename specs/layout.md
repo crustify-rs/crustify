@@ -26,7 +26,7 @@ section names it, is laid out as:
 ```
 
 The wrappers of the libraries it uses from outside its tree are repositories of their
-own, cloned beside it as `../<library>-bindings`, as [`dependencies.md`](dependencies.md)
+own, cloned beside it as `../<source>-bindings`, as [`dependencies.md`](dependencies.md)
 describes.
 
 Every path into the C that the plan records, in `modules.json`, `schedule.json`, the

@@ -5,7 +5,7 @@ Deferred decisions and follow-up work on the crustify contracts and prompts.
 ## 1. Side campaigns for out-of-tree dependencies
 
 [`dependencies.md`](dependencies.md) now describes a side campaign: a wrap campaign of an
-out-of-tree library in its own `<library>-bindings` repository, cloned beside the
+out-of-tree library's source in its own `<source>-bindings` repository, cloned beside the
 parent's, continued by every campaign that uses the library, and advancing at the
 parent's pace. The assistant's translate prompt runs them.
 

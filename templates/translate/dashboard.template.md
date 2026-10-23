@@ -123,14 +123,14 @@ the corrections it made to what earlier runs committed.
 
 One row per out-of-tree library the campaign wraps in a side campaign, as
 `specs/dependencies.md` describes. Each wrapper's own dashboard, in its
-`<library>-bindings` repository, is its record; its row here copies that dashboard's
+`<source>-bindings` repository, is its record; its row here copies that dashboard's
 figures as of the commit the campaign pins, and the `side campaigns` row of `Module stats`
 sums them.
 
 | library | repository | pin | shipped at | linked from | waves | types | symbols | wall | cost | tokens | review cost | review tokens | total | total tokens |
 |---|---|---|---|---|---:|---:|---:|---|---:|---:|---:|---:|---:|---:|
-| `<library>` | `crustify-rs/<library>-bindings` | `<sha>` | `<sha>` | `side-campaign` | `<n>` | `<n>` | `<n>` | `<n>h<n>m<n>s` | `$<n>` | `<n>M` | `$<n>` | `<n>M` | `$<n>` | `<n>M` |
-| `libc` | `crustify-rs/libc-bindings` | `<sha>` | `<sha>` | `system` | `<n>` | `<n>` | `<n>` | `<n>h<n>m<n>s` | `$<n>` | `<n>M` | `$<n>` | `<n>M` | `$<n>` | `<n>M` |
+| `<library>` | `crustify-rs/<source>-bindings` | `<sha>` | `<sha>` | `side-campaign` | `<n>` | `<n>` | `<n>` | `<n>h<n>m<n>s` | `$<n>` | `<n>M` | `$<n>` | `<n>M` | `$<n>` | `<n>M` |
+| `libc` | `crustify-rs/glibc-bindings` | `<sha>` | `<sha>` | `system` | `<n>` | `<n>` | `<n>` | `<n>h<n>m<n>s` | `$<n>` | `<n>M` | `$<n>` | `<n>M` | `$<n>` | `<n>M` |
 | **Σ** | | | | | **`<n>`** | **`<n>`** | **`<n>`** | **`<n>h<n>m`** | **`$<n>`** | **`<n>M`** | **`$<n>`** | **`<n>M`** | **`$<n>`** | **`<n>M`** |
 
 ## Types

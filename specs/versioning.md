@@ -22,7 +22,8 @@ mirrors the source's own `main` as `upstream/main`. The repositories are created
 `crustify-rs` organization; the campaign's tree is [`layout.md`](layout.md)'s.
 
 A library the target uses from outside its tree is wrapped in a wrap campaign of its own,
-in `<library>-bindings`, as [`dependencies.md`](dependencies.md) describes.
+in `<source>-bindings`, named after the source it is built from, as
+[`dependencies.md`](dependencies.md) describes.
 
 An audit reviews an existing Rust crate in its own repository, and creates none.
 

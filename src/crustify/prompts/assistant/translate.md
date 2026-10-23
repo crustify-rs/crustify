@@ -61,7 +61,7 @@ Planning section describes, under the new answers. Landed work is never re-plann
 4. **Side campaigns.** For each out-of-tree library the plan needs, as the planners'
    commits name them:
    - establish its wrapper as the dependencies spec's Wrappers and Reuse sections
-     describe: clone `crustify-rs/<library>-bindings` beside `<repo>` when it exists, or
+     describe: clone `crustify-rs/<source>-bindings` beside `<repo>` when it exists, or
      initialize a new one there, with its `c/` as the Sources section describes, and
      create it on `crustify-rs` only once the user approves;
    - write its settings as the parent's, but for `campaign: wrap`, its source at the

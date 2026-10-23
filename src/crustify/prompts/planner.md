@@ -111,7 +111,8 @@ that follows it. For each cut whose dependency is planned, schedule the waves th
 replace its raw seams, depending on that dependency's last wave. Schedule the wrap
 batches lazily, each in the wave right before its first consumer, as the scheduling
 spec's Wrap waves section describes. For each out-of-tree library your waves need,
-check `github.com/crustify-rs` for its wrapper, `<library>-bindings`, and record in your
+check `github.com/crustify-rs` for its wrapper, `<source>-bindings`, named after the
+source the library is built from, and record in your
 commit message what it already wraps and what the parent's waves need from it, as the
 dependencies spec's Reuse and Side campaigns sections describe: the side campaign plans
 its own waves in its repository.
