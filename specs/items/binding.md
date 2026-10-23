@@ -61,7 +61,10 @@ it as a Rust enum.
 
 ### 4.1 Surface
 
-A binding's surface is the fields and lifecycle primitives the public API publishes.
+A binding's surface is the fields and lifecycle primitives the public API publishes: in a
+wrap batch that precedes its consumers, the fields those consumers access and the
+type's lifecycle primitives, so that a type none of whose fields they access is bound
+opaque.
 Releasers, field disposers, cloners, constructors, casts and pointer-field semantics are
 identified before a representation is chosen.
 

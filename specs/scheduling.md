@@ -70,10 +70,10 @@ ports it once.
 A binding serves the code that consumes it, so wrap batches are scheduled lazily: right
 before their first consumer, and only for what consumers use.
 
-- In a port campaign, each `port` wave is preceded by a `wrap` wave holding the wrap
-  batches it needs, of in-tree `wrap` modules, the foundational ones included. An in-tree
-  `wrap` module has no waves of its own.
-- In either campaign, a wave is preceded by a `wrap` wave holding what its items use of
+- In a port campaign, each `port` wave is preceded by the `wrap` waves of the in-tree
+  `wrap` modules it needs, the foundational ones included: an in-tree `wrap` module's
+  waves are those that precede its consumers.
+- In either campaign, a wave is preceded by `wrap` waves holding what its items use of
   the modules its module's cuts name, which run after it: a cut dependency is bound
   before its consumer, by a binder, rather than reached through raw bindings, and its
   module ports it later.
@@ -81,15 +81,18 @@ before their first consumer, and only for what consumers use.
   their side campaigns, as [`dependencies.md`](dependencies.md) describes.
 
 Wrapping an item brings in its own wrap dependencies, transitively: the types its
-signature names, those of the fields its type publishes, and theirs in turn, closed over
-the public-signature graph, which has no function bodies. The closure stops at what an
-earlier wave has wrapped or ported, and may reach into further modules that run later,
-whose items join the same wrap wave.
+signature names, those of the fields its consumers access, and theirs in turn, closed
+over the public-signature graph, which has no function bodies. A type none of whose
+fields its consumers access is wrapped opaque, with its lifecycle primitives only, so
+that the base it embeds is not brought in: its module extends it with that base when it
+ports it. The closure stops at what an earlier wave has wrapped or ported, and may reach
+into further modules that run later, whose items join wrap waves of their own modules.
 
-A preceding wrap wave holds only what the wave after it needs and no earlier wave
+A preceding wrap wave holds only what the waves after it need and no earlier wave
 wrapped, so that no item is wrapped twice and an item no consumer needs is never wrapped.
-It belongs to the module of the wave it precedes, and runs as part of that module, while
-its items keep the homes of the modules or libraries that own them. A type that a `port`
+It belongs to the module that owns its items, one wrap wave per module: a module's waves
+may be preceded by waves of the modules they depend on, whose items keep their homes in
+those modules. A type that a `port`
 module owns and wraps first, as [Porting types](#4-porting-types) describes, is that
 module's own work, not a preceding wrap wave's.
 
