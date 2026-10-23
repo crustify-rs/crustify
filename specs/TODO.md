@@ -11,8 +11,6 @@ parent's pace. The assistant's translate prompt runs them.
 
 Open questions:
 
-- **Results and accounting.** A side campaign accounts in its own dashboard; whether the
-  parent's should also show the cost of the side campaigns it drove.
 - **Concurrent parents.** How two campaigns that extend the same wrapper at once order
   their additions to its plan.
 

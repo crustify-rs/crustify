@@ -99,7 +99,8 @@ Planning section describes, under the new answers. Landed work is never re-plann
 4. **Accounting.** Collect every run's records as soon as it lands or fails, and fill its
    usage cells, and each module's campaign cells, as the binding workflow's Accounting
    section times them. A side campaign's records and cells are its own, in its repository's
-   dashboard.
+   dashboard; copy its figures into the parent's `Side campaigns` table each time the
+   parent's pin moves, as the accounting spec's Side campaign cells section describes.
 
 ---
 

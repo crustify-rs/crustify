@@ -50,6 +50,16 @@ test baseline, and the `Settings` lines. A module's row and the branch line are 
 when the module's last wave is promoted, the baseline once it is recorded, and the `Settings` lines,
 with a Notes entry, whenever a settings change is applied.
 
+### 2.4 Side campaign cells
+
+A side campaign keeps its own dashboard, in its own repository, and its figures are
+measured there. The parent's `Side campaigns` table copies them, one row per wrapper, as
+they stand at the commit the parent pins, and the `side campaigns` row of `Module stats`
+sums the rows, so that the parent's `Σ campaign` covers what its side campaigns cost. A
+wrapper's row is filled each time the parent's pin moves, and its `shipped at` cell when
+the wrapper ships the commit the parent pins. A side campaign that serves several parents
+appears in each, with the figures as of each one's pin.
+
 An audit's dashboard follows the same kinds over its own tables.
 
 ## 3. Records
