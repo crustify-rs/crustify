@@ -17,11 +17,8 @@ C++ libraries it builds, and the instruments its sanitizers need. BorrowSanitize
 is not installed, is built from source as its repository describes
 (<https://github.com/borrowSanitizer/bsan>). Each instrument is verified by invoking it.
 
-A target whose default configuration detects optional system libraries compiles what the
-host provides: an installed development package can move a component from the target's
-bundled sources to a system library, and so out of the campaign's scope. The packages
-installed for the configuration are therefore part of it, and are recorded with the
-builds.
+Additional system libraries required by the campaign's target for the approved configuration
+are also installed.
 
 ## 2. Repository
 

@@ -28,8 +28,9 @@ _SKILLS = (
         meta="skills/wavefront/SKILL.md",
     ),
     SkillSpec(
-        "ffibox", "SKILL.md", capability="ffibox",
+        "ffibox", "README.md", capability="ffibox",
         role_header="skills/ffibox/translator.md",
+        meta="skills/ffibox/SKILL.md",
     ),
 )
 
