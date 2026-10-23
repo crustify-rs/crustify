@@ -4,8 +4,6 @@ tmp
 .worktrees
 # Prebuilt variants of the target (see build.json).
 builds
-rust/target
-rust.bak
 
 # Campaign plans, the tasks written from them, and each agent's session and usage
 # records are tracked: the usage records are the evidence behind dashboard.md's cost

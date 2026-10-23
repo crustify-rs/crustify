@@ -12,8 +12,9 @@ Copy a task template to start a request.
 [`gitignore`](gitignore) seeds a campaign's `crustify/.gitignore`. The files beside it
 are examples of the campaign's artifacts, whose fields are described under
 [`specs/artifacts/`](../specs/artifacts): [`build.json`](build.json),
-[`modules.json`](modules.json) and [`schedule.json`](schedule.json), the
-campaign's waves and batches.
+[`modules.json`](modules.json), [`dependencies.json`](dependencies.json), the out-of-tree
+libraries the target uses, and [`schedule.json`](schedule.json), the campaign's waves and
+batches.
 
 [`Dockerfile`](Dockerfile) builds the environment either campaign runs in. It
 starts nothing: the container idles, and `crustify` is run inside it: the command
@@ -67,7 +68,7 @@ The first run copies the settings to the target's `crustify/CRUSTIFY.md`, which 
 on the working branch, `crustify/devel`. Edit that copy to change a campaign's settings
 while it runs, such as its models or batch sizes: Crustify rereads it before each
 module, or each review wave of an audit, and commits it whenever it applies a change, so
-the branch's history records the settings each one ran under. `crustify/main` is the
+the branch's history records the settings each one ran under. `main` is the
 shipping branch, which Crustify advances to `crustify/devel` only with your approval. To resume, omit `--settings`, or pass the same
 file; a file that differs from the copy is refused, so a resume never overwrites your
 edits.

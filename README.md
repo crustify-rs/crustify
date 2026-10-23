@@ -24,7 +24,8 @@ come up. You can change course mid-campaign by editing its settings file.
 
 ## Installation
 
-Crustify requires Python 3.13 and a Claude Code or Codex CLI. Clone the components side
+Crustify runs on 64-bit Linux and translates targets built there, against glibc. It requires
+Python 3.13 and a Claude Code or Codex CLI. Clone the components side
 by side and install the Python packages. `ffibox` is a Rust crate that the generated
 wrappers depend on, so you only clone it.
 
@@ -167,6 +168,8 @@ every agent's prompt includes the ones it follows.
   modules, one per translation unit, with their objectives and dependencies
 - [`specs/scheduling.md`](specs/scheduling.md): how the modules are ordered and scheduled
   into waves and batches
+- [`specs/dependencies.md`](specs/dependencies.md): how the libraries the target uses from
+  outside its tree are wrapped, and how wrappers are reused across campaigns
 - [`specs/items/binding.md`](specs/items/binding.md),
   [`specs/items/porting.md`](specs/items/porting.md): the per-item principles, how an item
   is wrapped or ported
@@ -175,12 +178,15 @@ every agent's prompt includes the ones it follows.
   setup, and the binding, porting and audit workflows
 - [`specs/accounting.md`](specs/accounting.md): the dashboard, session and usage records,
   and how cost is derived
-- [`specs/testing.md`](specs/testing.md), [`specs/landing.md`](specs/landing.md),
-  [`specs/layout.md`](specs/layout.md): tests, landing, and a campaign's branches and
-  artifact directories
+- [`specs/versioning.md`](specs/versioning.md): a campaign's repositories, branches and
+  worktrees, how batches land and how work is promoted and shipped
+- [`specs/layout.md`](specs/layout.md), [`specs/testing.md`](specs/testing.md): the
+  repository's tree and artifact directories, and how the work is tested
 - [`specs/conventions.md`](specs/conventions.md): conventions for the generated Rust,
   including the tree layout
-- [`specs/artifacts/`](specs/artifacts/): the fields of `modules.json`, the campaign's
+- [`specs/rust.md`](specs/rust.md): the toolchains, edition, lints and formatting the
+  generated Rust is held to
+- [`specs/artifacts/`](specs/artifacts/): the fields of `modules.json`, `dependencies.json`, the campaign's
   `schedule.json`, and `task.json`
 - [`specs/prompting.md`](specs/prompting.md): how the agents' prompts, specs and skills
   are composed

@@ -128,13 +128,15 @@ class IncludeTests(unittest.TestCase):
 
     _DOCS = {
         "conventions": "specs/conventions.md",
+        "rust": "specs/rust.md",
         "items/binding": "specs/items/binding.md",
         "items/porting": "specs/items/porting.md",
         "testing": "specs/testing.md",
-        "landing": "specs/landing.md",
+        "versioning": "specs/versioning.md",
         "layout": "specs/layout.md",
         "decomposition": "specs/decomposition.md",
         "scheduling": "specs/scheduling.md",
+        "dependencies": "specs/dependencies.md",
         "reviewing": "specs/reviewing.md",
         "accounting": "specs/accounting.md",
         "prompting": "specs/prompting.md",
@@ -159,23 +161,23 @@ class IncludeTests(unittest.TestCase):
         """The reviewer is told to ignore the conventions outside a
         Crustify-generated batch."""
         self.assertEqual(self._included("binder.md"),
-                         {"conventions", "items/binding", "testing", "landing",
+                         {"conventions", "rust", "items/binding", "testing", "versioning",
                           "layout", "accounting"})
         self.assertEqual(self._included("translator.md"),
-                         {"conventions", "items/binding", "items/porting", "testing",
-                          "landing", "layout", "accounting"})
+                         {"conventions", "rust", "items/binding", "items/porting", "testing",
+                          "versioning", "layout", "accounting"})
         self.assertEqual(self._included("reviewer.md"),
-                         {"conventions", "items/binding", "items/porting", "testing",
-                          "landing", "layout", "reviewing", "accounting"})
+                         {"conventions", "rust", "items/binding", "items/porting", "testing",
+                          "versioning", "layout", "reviewing", "accounting"})
         self.assertEqual(self._included("planner.md"),
-                         {"conventions", "decomposition", "scheduling", "reviewing",
-                          "accounting"})
-        shared = {"prompting", "workflows/setup", "layout", "testing",
+                         {"conventions", "decomposition", "scheduling", "dependencies",
+                          "reviewing", "accounting"})
+        shared = {"prompting", "workflows/setup", "versioning", "layout", "testing",
                   "reviewing", "accounting"}
         self.assertEqual(self._included("translate-assistant.md"),
                          shared | {"workflows/binding", "workflows/porting",
-                                   "decomposition", "scheduling", "conventions", "items/binding",
-                                   "items/porting", "landing"})
+                                   "decomposition", "scheduling", "dependencies", "conventions", "rust", "items/binding",
+                                   "items/porting"})
         self.assertEqual(self._included("audit-assistant.md"),
                          shared | {"workflows/audit"})
 
@@ -351,10 +353,10 @@ class PromptArgumentTests(unittest.TestCase):
                     "field_anchors": [], "home": "crustify/rust/x/src/a.rs"}],
             git_base="crustify/waves/wave-3", artifact_dir=self.repo / "run-1",
             log_stem="x")
-        agent.placement = translate.Placement(3, 1, "lib", 0)
+        agent.placement = translate.Placement(3, 1, "lib", "src/core.c")
         arguments = agent._arguments()
         self.assertEqual(arguments["batch_id"], "wave-3/batch-1")
-        self.assertEqual(arguments["module"], "lib/0")
+        self.assertEqual(arguments["module"], "lib/src/core.c")
 
     def test_planner_arguments_match_its_placeholders(self) -> None:
         self._check(PlanAgent(self.repo,

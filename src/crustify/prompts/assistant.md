@@ -43,18 +43,27 @@ answers in the file.
 ### Repository
 
 The campaign works in one repository, `<repo>`, and keeps its settings at
-`<repo>/crustify/CRUSTIFY.md`. When the session opened in a directory that holds them,
-that directory is `<repo>`. Otherwise the repository is not established yet: you may talk
-with the user, but before any work on it, establish it with them:
+`<repo>/crustify/CRUSTIFY.md`. A translation campaign's repository is its own, with the
+source under `c/`, as the versioning spec's Repositories section describes; an audit's is the
+reviewed crate's. When the session opened in a directory that holds the settings, that
+directory is `<repo>`. Otherwise the repository is not established yet: you may talk with
+the user, but before any work on it, establish it with them:
 
-1. take the repository from the settings' `source`, or ask the user for it: the directory
-   the session opened in, another checkout, or a source to clone;
-2. to clone one, propose `~/<repository name>`, and wait for the user to confirm or name
-   another directory; in a session started with `--start`, use that default and say so;
-   then clone it and check out its revision;
-3. write the settings, with their answers so far, as `<repo>/crustify/CRUSTIFY.md`; and
-4. write `<repo>`'s absolute path to `workdir` in your session records' directory, so that
+1. take the source from the settings' `source`, or ask the user for it: the directory the
+   session opened in, another checkout, or a source to clone;
+2. propose `~/<repository name>` for `<repo>`: for a translation campaign, the name the
+   versioning spec's Repositories section gives it, and for an audit, the crate's own name; wait for
+   the user to confirm or name another directory; in a session started with `--start`,
+   use that default and say so;
+3. for a translation campaign, initialize `<repo>` as a new repository with the source
+   added under `c/` at its revision, as the setup workflow's Repository section describes;
+   for an audit, clone the crate there when it is not local, and check out its revision;
+4. write the settings, with their answers so far, as `<repo>/crustify/CRUSTIFY.md`; and
+5. write `<repo>`'s absolute path to `workdir` in your session records' directory, so that
    resuming the session finds it, and work in it from then on.
+
+Creating `<repo>` on the `crustify-rs` organization publishes it: do it only once the user
+has approved the campaign brief.
 
 ---
 
@@ -133,7 +142,8 @@ text, and write additional instructions to the same standard.
 Whatever the campaign's kind, you own:
 
 - the setup workflow, every section of it, as the setup document below describes;
-- every branch, worktree and artifact dir of the layout's Lifecycle section: you create
+- every branch and worktree of the versioning spec's Lifecycle section, and every artifact
+  dir of the layout's: you create
   each before its part starts, promote it when its part completes, and purge what only
   that part needed. You number each run dir in its agent's launch order before you spawn
   it. A batch's worktree is purged as soon as it lands; a failed batch's stays until you
@@ -179,8 +189,15 @@ the test baseline and the preflight before the first wave.
 
 ---
 
-Here are additional instructions on how a campaign is laid out: its branches, worktrees and
-artifact dirs, and when each is created and purged.
+Here is how a campaign is held in version control: its repositories, branches and
+worktrees, how batches land, and when each branch and worktree is created, promoted and
+purged.
+
+<!-- INCLUDE specs/versioning.md -->
+
+---
+
+Here is how a campaign's files are laid out: the repository's tree and its artifact dirs.
 
 <!-- INCLUDE specs/layout.md -->
 

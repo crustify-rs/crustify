@@ -23,7 +23,24 @@ bundled sources to a system library, and so out of the campaign's scope. The pac
 installed for the configuration are therefore part of it, and are recorded with the
 builds.
 
-## 2. Artifact tree
+## 2. Repository
+
+A translation campaign works in a repository of its own, laid out as
+[`versioning.md`](../versioning.md)'s Repositories section describes, and its tree as
+[`layout.md`](../layout.md)'s Tree section describes: `<repo>-bindings` for a wrap
+campaign, `<repo>-rs` for a port campaign. It is initialized with the source added under
+`c/` as a submodule, at the revision the settings' `source` answer names: of the source
+itself for a wrap campaign, which never changes it, and of the campaign's fork of it,
+`<repo>-fork`, for a port campaign, whose integrations change it. The fork is the source's
+history with its `main` branch at that revision and the source's own `main` mirrored as
+`upstream/main`; until the first integration, the submodule may point at the source
+itself. The safe crate's name is chosen with it, and its Rust tree is scaffolded
+once the plan is complete. The repository is created under the `crustify-rs`
+organization, which publishes it, once the user approves.
+
+An audit works in the repository of the crate it reviews, and creates none.
+
+## 3. Artifact tree
 
 The campaign's artifact dir is `crustify/artifacts/`, laid out as
 [`layout.md`](../layout.md) describes. When it already holds artifacts, the campaign is
@@ -32,12 +49,12 @@ being resumed, and continues from them and from its existing branches.
 A new campaign gets:
 
 - `crustify/.gitignore`, from [`templates/gitignore`](../../templates/gitignore);
-- the working branch, `crustify/devel`, whose first commit holds `crustify/CRUSTIFY.md`,
-  and the shipping branch, `crustify/main`, at the repository's revision; and
+- the working branch, `crustify/devel`, whose first commit holds `c/` and
+  `crustify/CRUSTIFY.md`, and the shipping branch, `main`, at the commit that adds `c/`; and
 - its dashboard, from its template, as [`accounting.md`](../accounting.md) describes,
   with the settings it records filled.
 
-## 3. Builds
+## 4. Builds
 
 The target is built in the variants [`testing.md`](../testing.md)'s Builds section lists:
 `plain`, `coverage`, and one per sanitizer the campaign enables, by default every one the
@@ -54,14 +71,21 @@ The variants are recorded in `crustify/artifacts/build.json`, from
 command changes. They are built in parallel, and each is smoke-tested once built. The
 shared variants are rebuilt after a landing changes the compiled target.
 
-## 4. Baseline
+Campaigns run on Linux, with glibc, on a 64-bit architecture: the host's. Each variant links the
+out-of-tree libraries the target uses from their side campaigns' local installs of the
+same variant, as [`../dependencies.md`](../dependencies.md)'s Sources section describes,
+with each library's install prefix in its `configure` command, and libc from the system.
+Once a library's install first replaces the system's in a variant, the file's `version` is
+raised and the baseline below runs again against it.
+
+## 5. Baseline
 
 The target's tests run on `plain`. A test that is unstable, or that needs infrastructure
 the host does not provide, such as a network service or a test server, is disabled with
 its reason. The dashboard records the baseline: passed out of total, the tests the suite
 skipped by itself, and every disabled test. The campaign's final results must match it.
 
-## 5. Preflight
+## 6. Preflight
 
 Once the plan exists and before the first wave launches:
 

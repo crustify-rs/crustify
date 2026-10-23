@@ -50,7 +50,7 @@ in Notes.
 
 ## Overview
 
-- **branch** — `crustify/devel`, tip `<sha>`; `crustify/main` shipped at `<sha>`; crustify `<sha>`, ffibox `<sha>`, wavefront `<sha>`
+- **branch** — `crustify/devel`, tip `<sha>`; `main` shipped at `<sha>`; crustify `<sha>`, ffibox `<sha>`, wavefront `<sha>`
 - **C test baseline** — `<passed>/<total>`, `<n>` skipped; disabled: `<tests>`
 - **Rust LoC** — `<n>` non-test, `<n>` tests; **C LoC** — `<n>`
 
@@ -77,9 +77,9 @@ Implementation `<provider>/<model>` via `<backend>`; review
 
 | module | nr types | nr symbols | module wall | cost | tokens | $/type | $/sym | review cost | review tokens | review $/type | review $/sym | total | total tokens | total $/type | total $/sym |
 |---|---:|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| `<link-unit>/void` | `<n>` | `<n>` | `<n>h<n>m<n>s` | `$<n>` | `<n>M` | `$<n>` | `$<n>` | `$<n>` | `<n>M` | `$<n>` | `$<n>` | `$<n>` | `<n>M` | `$<n>` | `$<n>` |
-| `<link-unit>/string` | `<n>` | `<n>` | `<n>h<n>m<n>s` | `$<n>` | `<n>M` | `$<n>` | `$<n>` | `$<n>` | `<n>M` | `$<n>` | `$<n>` | `$<n>` | `<n>M` | `$<n>` | `$<n>` |
+| `<link-unit>/<module> (foundational)` | `<n>` | `<n>` | `<n>h<n>m<n>s` | `$<n>` | `<n>M` | `$<n>` | `$<n>` | `$<n>` | `<n>M` | `$<n>` | `$<n>` | `$<n>` | `<n>M` | `$<n>` | `$<n>` |
 | `<link-unit>/<module>` | `<n>` | `<n>` | `<n>h<n>m<n>s` | `$<n>` | `<n>M` | `$<n>` | `$<n>` | `$<n>` | `<n>M` | `$<n>` | `$<n>` | `$<n>` | `<n>M` | `$<n>` | `$<n>` |
+| side campaigns | `<n>` | `<n>` | `<n>h<n>m<n>s` | `$<n>` | `<n>M` | — | — | `$<n>` | `<n>M` | — | — | `$<n>` | `<n>M` | — | — |
 | planners | — | — | `<n>h<n>m<n>s` | — | — | — | — | — | — | — | — | `$<n>` | `<n>M` | — | — |
 | assistant | — | — | — | — | — | — | — | — | — | — | — | `$<n>` | `<n>M` | — | — |
 | **Σ recorded agents** | **`<n>`** | **`<n>`** | **`<n>h<n>m`** | **`$<n>`** | **`<n>M`** | **`$<n>`** | **`$<n>`** | **`$<n>`** | **`<n>M`** | **`$<n>`** | **`$<n>`** | **`$<n>`** | **`<n>M`** | **`$<n>`** | **`$<n>`** |
@@ -118,6 +118,20 @@ the corrections it made to what earlier runs committed.
 | 1 | `<n>` | `<n>` | `<files>` | `<n>` | `$<n>` | `<n>M` | `<n>m<n>s` |
 | 2 | `<n>` | `<n>` | `<files>` | `<n>` | `$<n>` | `<n>M` | `<n>m<n>s` |
 | **Σ** | **`<n>`** | **`<n>`** | | **`<n>`** | **`$<n>`** | **`<n>M`** | **`<n>m<n>s`** |
+
+## Side campaigns
+
+One row per out-of-tree library the campaign wraps in a side campaign, as
+`specs/dependencies.md` describes. Each wrapper's own dashboard, in its
+`<source>-bindings` repository, is its record; its row here copies that dashboard's
+figures as of the commit the campaign pins, and the `side campaigns` row of `Module stats`
+sums them.
+
+| library | repository | pin | shipped at | linked from | waves | types | symbols | wall | cost | tokens | review cost | review tokens | total | total tokens |
+|---|---|---|---|---|---:|---:|---:|---|---:|---:|---:|---:|---:|---:|
+| `<library>` | `crustify-rs/<source>-bindings` | `<sha>` | `<sha>` | `side-campaign` | `<n>` | `<n>` | `<n>` | `<n>h<n>m<n>s` | `$<n>` | `<n>M` | `$<n>` | `<n>M` | `$<n>` | `<n>M` |
+| `libc` | `crustify-rs/glibc-bindings` | `<sha>` | `<sha>` | `system` | `<n>` | `<n>` | `<n>` | `<n>h<n>m<n>s` | `$<n>` | `<n>M` | `$<n>` | `<n>M` | `$<n>` | `<n>M` |
+| **Σ** | | | | | **`<n>`** | **`<n>`** | **`<n>`** | **`<n>h<n>m`** | **`$<n>`** | **`<n>M`** | **`$<n>`** | **`<n>M`** | **`$<n>`** | **`<n>M`** |
 
 ## Types
 
@@ -254,8 +268,9 @@ expansion, so it is the C the campaign translated rather than the surface it
 was drawn from. Give the defining files' and the whole target's raw totals
 beside it for scale.
 
-`Rust LoC` is counted from source over the authored `.rs` files under
-`crustify/rust`, excluding anything generated into `target/`, and split by
+`Rust LoC` is counted from source over the authored `.rs` files of the workspace, `src/`,
+`tests/` and the `-sys` crates, excluding anything generated into `target/`,
+and split by
 `#[cfg(test)]` module.
 
 Say why that non-test figure differs from the `code_lines` ffimap

@@ -1,7 +1,8 @@
 <!-- SKILL -->
 
 Before your first command, read wavefront's `README.md`, its `--help`, and the documents
-under its `docs/`: `scoping.md`, `graph.md` and `batching.md` for how it selects, orders
+under its `docs/`: `scoping. Wavefront's repo root is the C root, `c/`: pass `<workdir>/c` as its `repo_root`, so
+that every path it reads and reports is below the C root, as the plan records them.md`, `graph.md` and `batching.md` for how it selects, orders
 and batches, and `artifacts/t3.md` for the T3 tables. What follows is only how the
 campaign uses it.
 
@@ -40,11 +41,12 @@ The campaign has two kinds of `wavefront-config.json`:
   `impl_files` and `api_headers` are the union of every module's. Binders, translators
   and reviewers resolve their queries through it, it orders the link units and modules,
   and only its graph shows the relations between two modules; and
-- one `crustify/wavefront/configs/<link-unit>/<module>/wavefront-config.json` per
+- one `crustify/wavefront/configs/<link-unit>/<module index>/wavefront-config.json` per
   module, which finds the module's dependency edges. Use them for the exact counts and
   the dependency records of `depends_on` in `modules.json`, and for the module's schedule.
 
-Every configuration shares `crustify/wavefront/` as its `state_dir` and sets
+Every configuration shares `../crustify/wavefront`, relative to the C root, as its
+`state_dir` and sets
 `"t3_dir": "t3"`, so one campaign-wide pair of T3 tables serves them all. Verify each
 configuration you author against the CLI.
 
@@ -93,6 +95,9 @@ wavefront warns is stale.
 - Select the module's files with `--transitive`; use an exact selection only when the
   dependencies it leaves out are already satisfied or intentionally excluded.
 - A wrap campaign schedules with `--api-headers-only`.
+- Close a wrap batch's items over their wrap dependencies on the public-signature graph,
+  `query dag --name <items> --api-headers-only`, and drop what an earlier wave wrapped or
+  ported.
 - Pass the campaign's `workload` caps as the batch limits.
 - `wavefront schedule` numbers its waves from 0 in every run: append them to
   `schedule.json` after its highest index, in wavefront's order, each depending on the

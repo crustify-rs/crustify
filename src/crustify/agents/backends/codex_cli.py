@@ -136,7 +136,7 @@ _REASONING_EFFORT = {
 # `-s danger-full-access` now covers implicitly (see the sandbox comment in
 # `run`). Should the mode ever be narrowed again, these are the three roots:
 #
-#   * the worktree              — the C tree it reads, `crustify/rust/` it
+#   * the worktree              — the C under `c/` it reads, the Rust tree it
 #                                 writes, cargo's `target/`
 #   * the MAIN checkout         — a worktree's `.git` is a file pointing at
 #                                 `<main>/.git/worktrees/<slug>`, so commits and

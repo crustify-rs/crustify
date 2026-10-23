@@ -1,0 +1,65 @@
+{
+  "_comment": "Example `<workdir>/crustify/artifacts/dependencies.json`, emitted by the planner beside modules.json: one entry per out-of-tree library a module depends on. `resolved` is what the target's build found, `source` the side campaign's c/ at that release, `linked_from` whether the target links the side campaign's install or the system's copy, as libc does, and `wrapper.pin` the wrapper commit the workspace pins, which the assistant moves as the side campaign advances. `rust_equivalent` judges each crate against everything the campaign consumes from the library.",
+  "version": "1f053298e30c0a9b5d0f3c1e7a4b8d2f6c9e0a11",
+  "libraries": [
+    {
+      "name": "libz",
+      "resolved": {
+        "path": "/usr/lib/x86_64-linux-gnu/libz.so.1",
+        "version": "1.3",
+        "package": "zlib1g-dev 1:1.3.dfsg-3"
+      },
+      "source": {
+        "repository": "https://github.com/madler/zlib",
+        "tag": "v1.3",
+        "patches": "zlib 1:1.3.dfsg-3"
+      },
+      "linked_from": "side-campaign",
+      "wrapper": {
+        "repository": "crustify-rs/zlib-bindings",
+        "pin": null
+      },
+      "rust_equivalent": {
+        "ported": [
+          {
+            "crate": "miniz_oxide",
+            "feature_parity": "partial",
+            "license": "MIT OR Zlib OR Apache-2.0",
+            "notes": "raw deflate and zlib streams only; no gzip file API"
+          }
+        ],
+        "bindings": [
+          {
+            "crate": "flate2",
+            "sys": "libz-sys",
+            "feature_parity": "full",
+            "license": "MIT OR Apache-2.0",
+            "notes": ""
+          }
+        ]
+      }
+    },
+    {
+      "name": "libc",
+      "resolved": {
+        "path": "/lib/x86_64-linux-gnu/libc.so.6",
+        "version": "2.39",
+        "package": "libc6-dev 2.39-0ubuntu8"
+      },
+      "source": {
+        "repository": "https://sourceware.org/git/glibc.git",
+        "tag": "glibc-2.39",
+        "patches": "glibc 2.39-0ubuntu8"
+      },
+      "linked_from": "system",
+      "wrapper": {
+        "repository": "crustify-rs/glibc-bindings",
+        "pin": null
+      },
+      "rust_equivalent": {
+        "ported": [],
+        "bindings": []
+      }
+    }
+  ]
+}

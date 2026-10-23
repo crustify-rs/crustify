@@ -1,7 +1,8 @@
 <!-- SKILL -->
 
 Before your first command, read wavefront's `README.md`, its `--help`, and the documents
-under its `docs/`.
+under its `docs/`. Wavefront's repo root is the C root, `c/`: pass `<workdir>/c` as its `repo_root`, so
+that every path it reads and reports is below the C root, as the plan records them.
 
 ## workflows/setup › Provisioning
 
@@ -17,12 +18,12 @@ Scaffold `crustify/wavefront/` for wavefront's artifacts.
 
 Once the builds and the baseline are recorded, emit the CodeQL T1/T2 tables wavefront
 computes dependencies from. Create the CodeQL database under `crustify/wavefront/codeql/`
-from a traced build of the `plain` configuration in a fresh scratch dir, then extract the
-tables into `crustify/wavefront/codeql/{t1,t2}` through a configuration whose `state_dir`
-is `crustify/wavefront`. The planner writes the campaign's own configurations; a
+from a traced build of the `plain` configuration in a fresh scratch dir, with `c/` as its
+source root, then extract the tables into `crustify/wavefront/codeql/{t1,t2}` through a
+configuration whose `state_dir` is `../crustify/wavefront`. The planner writes the campaign's own configurations; a
 bootstrap configuration for the extraction belongs in `crustify/tmp/`.
 
-## layout › Lifecycle › Batches
+## versioning › Lifecycle › Batches
 
 The CodeQL database and tables under `crustify/wavefront/codeql/`, and wavefront's
 `.cache`, are gitignored state every batch needs: symlink them into each batch's worktree

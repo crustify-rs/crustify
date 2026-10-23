@@ -27,7 +27,8 @@ The schedule holds two kinds of field:
 |---|---|
 | `index` | the wave's id, from zero; see [Indices](#3-indices) |
 | `link_unit` | the `link_units[*].name` of `modules.json` its units belong to; `null` when the campaign has no decomposition |
-| `module` | the module's `index` within that link unit; `null` when the wave belongs to no module |
+| `module` | the module's `name` within that link unit; `null` when the wave belongs to no module |
+| `foundational` | the module's `foundational`; `false` when the wave belongs to no module |
 | `reviews` | a review wave's reviewed wave, by `index`; absent on any other wave |
 | `status` | `todo`, `wip` or `done` |
 | `depends_on` | the waves this one depends on: `scheduled` and `cut`, each an array of wave indices |
@@ -36,7 +37,8 @@ The schedule holds two kinds of field:
 
 `depends_on.scheduled` lists the waves that run before this one, and `depends_on.cut` the
 waves it depends on that run after it, its dependency on them cut to break a cycle; it
-reaches what they hold through narrow raw seams until a later wave replaces them. Their
+reaches what they hold through the safe wrappers a wrap wave before it adds, as
+`specs/scheduling.md`'s Wrap waves section describes. Their
 union is every wave this one depends on, and `scheduled` alone is acyclic across the
 schedule.
 
@@ -89,8 +91,8 @@ later run may therefore schedule a wave that runs before one an earlier run appe
 Only waves that are `todo` are re-planned: a re-plan may change, split or remove them,
 and the waves that replace them take new indices. A wave that is `wip` or `done`, and
 every wave of a frozen module, keeps its record, apart from the progress fields. A
-planner may append waves to a frozen module, such as those that replace its raw seams
-once a cut dependency has landed.
+planner may append waves to a frozen module, such as the wrap waves a module added after
+it calls for.
 
 Each wave's batches are those wavefront packs from the units it schedules, under the
 campaign's `workload` caps; a review wave's batches group the reviewed wave's batches
@@ -99,7 +101,7 @@ within the `review-workload` caps.
 ## 5. Derived paths
 
 A batch's id, `wave-<index>/batch-<index>`, names its branch and worktree, and its wave
-index the wave branch, as `specs/layout.md` spells them. Its artifact dirs are those of the
+index the wave branch, as `specs/versioning.md` spells them. Its artifact dirs are those of the
 agents that ran it, each holding a `task.json` that names the batch's wave and index.
 
 ## 6. Earlier versions

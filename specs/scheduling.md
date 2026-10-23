@@ -14,11 +14,12 @@ dependencies are split into those that run before it, `depends_on.scheduled`, an
 cut to break a cycle, `depends_on.cut`, so that the scheduled dependencies form a DAG.
 Within each strongly connected component, the member the most other members depend on
 comes first, and the edges between tied members break ties: every dependency on a member
-that comes later is cut. Link units are ordered the same way. Modules run one at a time.
+that comes later is cut, a derived type's dependency on its base included. Link units are
+ordered the same way. Modules run one at a time.
 
 A frozen module keeps its place: a module added after it that it depends on is one of its
-cuts, and the waves that replace the raw seams of each cut are scheduled once the
-dependency it cut is planned, depending on that dependency's last wave.
+cuts. A cut dependency is never reached through raw bindings: what a module uses of one is
+wrapped before it, as [Wrap waves](#3-wrap-waves) describes.
 
 The plan holds only the link units and modules the campaign's scope includes, without
 those that a previous campaign completed. The foundational modules depend on no other, so
@@ -50,13 +51,53 @@ batches discover them on the fly; their binders skip them.
 In a wrap campaign every batch is `wrap`. In a port campaign:
 
 - a selected symbol is `port` from the start;
+- a selected enum is `port`, where the DAG places it, and never `wrap`;
 - a selected type is `port`, preceded by a `wrap` batch only while another module's
-  unported C depends on its layout, as [Porting types](#3-porting-types) describes; and
+  unported C depends on its layout, as [Porting types](#4-porting-types) describes; and
 - a dependency outside the selected migration set is `wrap`.
 
-## 3. Porting types
+An enum is a set of constants, with no fields, layout users or lifecycle for a binding to
+publish, so no batch wraps it: a wrap campaign schedules none for it and uses its
+generated `-sys` definition directly, as
+[`items/binding.md`](items/binding.md)'s Type route section describes, and a port campaign
+ports it once.
 
-A selected type's layout users are the target's C that depends on its layout:
+## 3. Wrap waves
+
+A binding serves the code that consumes it, so wrap batches are scheduled lazily: right
+before their first consumer, and only for what consumers use.
+
+- In a port campaign, each `port` wave is preceded by the `wrap` waves of the in-tree
+  `wrap` modules it needs, the foundational ones included: an in-tree `wrap` module's
+  waves are those that precede its consumers.
+- In either campaign, a wave is preceded by `wrap` waves holding what its items use of
+  the modules its module's cuts name, which run after it: a cut dependency is bound
+  before its consumer, by a binder, rather than reached through raw bindings, and its
+  module ports it later.
+- In either campaign, the out-of-tree libraries a wave's items use are wrapped first in
+  their side campaigns, as [`dependencies.md`](dependencies.md) describes.
+
+Wrapping an item brings in its own wrap dependencies, transitively: the types its
+signature names, those of the fields its consumers access, and theirs in turn, closed
+over the public-signature graph, which has no function bodies. A type none of whose
+fields its consumers access is wrapped opaque, with its lifecycle primitives only, so
+that the base it embeds is not brought in: its module extends it with that base when it
+ports it. The closure stops at what an earlier wave has wrapped or ported, and may reach
+into further modules that run later, whose items join wrap waves of their own modules.
+
+A preceding wrap wave holds only what the waves after it need and no earlier wave
+wrapped, so that no item is wrapped twice and an item no consumer needs is never wrapped.
+It belongs to the module that owns its items, one wrap wave per module: a module's waves
+may be preceded by waves of the modules they depend on, whose items keep their homes in
+those modules. A type that a `port`
+module owns and wraps first, as [Porting types](#4-porting-types) describes, is that
+module's own work, not a preceding wrap wave's.
+
+## 4. Porting types
+
+A selected type's layout users are the target's C that depends on its layout. An enum
+has none: using its constants or values of its type is no layout use, and it is ported as
+[Waves and batches](#2-waves-and-batches) describes. A struct or a union has:
 
 - code that touches a field: reads or writes it, or takes its address;
 - code that depends on the layout without naming a field: `sizeof`, `_Alignof` or

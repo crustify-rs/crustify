@@ -17,7 +17,7 @@ supplied review integration branch.
 - worklist: `{worklist}`
 - objectives: `{objectives}`
 - reports to revisit: `{reports}`
-- batch: `{batch_id}`, of module `{module}`, its link unit and index in `modules.json`
+- batch: `{batch_id}`, of module `{module}`, its link unit and name in `modules.json`
 - unchecked-out review integration branch: `{git_base}`
 
 ## Worklists and objectives
@@ -104,7 +104,7 @@ If `fix` is not enabled, file each true positive a gate finds as a UB report.
 
 Make two commits, first the `crustify/reviews/` changes, then the Rust tree changes, if you
 made any, with your batch's dashboard rows in the last, and land them on `{git_base}` as the
-landing instructions below describe.
+versioning spec's Landing section below describes.
 
 ---
 
@@ -120,6 +120,14 @@ reviewing a Crustify-generated batch, judge the Rust against them and follow the
 change you make; otherwise, ignore them.
 
 <!-- INCLUDE specs/conventions.md -->
+
+---
+
+Here is how the Rust is built, linted and formatted: its toolchains, its edition, the lints
+every crate inherits, how it is formatted and how its unsafe code is justified. Follow
+them in everything you write.
+
+<!-- INCLUDE specs/rust.md -->
 
 ---
 
@@ -151,9 +159,10 @@ artifact dirs, and your reviews dir.
 
 ---
 
-Here are additional instructions on how to land your commits.
+Here is how the campaign is held in version control: its repositories, branches and
+worktrees, and how you land your commits.
 
-<!-- INCLUDE specs/landing.md -->
+<!-- INCLUDE specs/versioning.md -->
 
 ---
 

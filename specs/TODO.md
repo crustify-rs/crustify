@@ -4,35 +4,15 @@ Deferred decisions and follow-up work on the crustify contracts and prompts.
 
 ## 1. Side campaigns for out-of-tree dependencies
 
-A campaign wraps one repository, but its modules import libraries that live elsewhere —
-libz and pcre2 for libgit2, and so on. Today those are a boundary the campaign stops at:
-the imported entities are recorded but nothing safe is generated for them, so a wrapper
-built on the campaign's output still reaches foreign code through raw bindings.
-
-A side campaign would translate one of those dependencies in **its own** repository,
-producing a wrapper crate the main campaign depends on rather than one it vendors. The
-orchestrator prompt has no step for it yet.
-
-The input already exists. `modules.json` records each out-of-tree library a module uses
-as a `depends_on.scheduled` record, `{library, counters, rust_equivalent}`, so the orchestrator can already see which external libraries a span
-consumes and how many distinct entities it takes from each. That count is what decides
-whether a side campaign is worth spawning: a module calling two functions from libz
-does not need one.
+[`dependencies.md`](dependencies.md) now describes a side campaign: a wrap campaign of an
+out-of-tree library's source in its own `<source>-bindings` repository, cloned beside the
+parent's, continued by every campaign that uses the library, and advancing at the
+parent's pace. The assistant's translate prompt runs them.
 
 Open questions:
 
-- **When to skip.** A dependency with a maintained safe crate should use it rather than be
-  re-wrapped. Each out-of-tree record's `rust_equivalent` now records its ported and
-  safe-binding crates; whether a side campaign runs anyway is a judgement the campaign task
-  may want to answer rather than the orchestrator.
-- **Scope.** A side campaign covers what the parent consumes, not the whole dependency, so
-  its scope is a closure over the out-of-tree records' counters rather than a module span.
-- **Ordering.** A side campaign is a producer of the parent's link units, so it precedes
-  them — but it lives in another repository with its own branches, build baseline and
-  results, which the current nesting (`link_unit` → `module` in `modules.json`, and the
-  campaign's waves in `schedule.json`) cannot express.
-- **Results and accounting.** Whether a side campaign reports into the parent's results
-  table or its own.
+- **Concurrent parents.** How two campaigns that extend the same wrapper at once order
+  their additions to its plan.
 
 ## 2. Ship `specs/` so a non-editable install keeps its conventions
 

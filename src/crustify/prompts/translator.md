@@ -15,7 +15,7 @@ branch.
 
 - repository: `{workdir}`
 - worklist: `{worklist}`
-- batch: `{batch_id}`, of module `{module}`, its link unit and index in `modules.json`
+- batch: `{batch_id}`, of module `{module}`, its link unit and name in `modules.json`
 - unchecked-out wave integration branch: `{git_base}`
 
 ## Routes
@@ -89,15 +89,23 @@ tests under Miri; the wave's and the module's gates belong to the review that fo
 ### 6. Landing
 
 Commit one changeset, with your batch's dashboard rows, and land it on `{git_base}` as
-the landing instructions below describe.
+the versioning spec's Landing section below describes.
 
 ---
 
 The following describes the conventions of the codebase you generate. Follow them throughout
 your workflow wherever they apply: where your items are homed, how they are named and laid
-out, where their tests are placed, and how every unsafe block is documented.
+out, and where their tests are placed.
 
 <!-- INCLUDE specs/conventions.md -->
+
+---
+
+Here is how the Rust is built, linted and formatted: its toolchains, its edition, the lints
+every crate inherits, how it is formatted and how its unsafe code is justified. Follow
+them in everything you write.
+
+<!-- INCLUDE specs/rust.md -->
 
 ---
 
@@ -128,9 +136,10 @@ artifact dirs.
 
 ---
 
-Here are additional instructions on how to land your commits.
+Here is how the campaign is held in version control: its repositories, branches and
+worktrees, and how you land your commits.
 
-<!-- INCLUDE specs/landing.md -->
+<!-- INCLUDE specs/versioning.md -->
 
 ---
 

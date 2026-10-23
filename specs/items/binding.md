@@ -44,17 +44,27 @@ Rust consumers use safe APIs. Raw operations are confined to:
 - wrapped FFI calls; and
 - operations whose caller obligation cannot be represented in Rust types.
 
-SCC cuts and unavailable higher-layer dependencies remain narrow documented raw seams until
-a safe dependency becomes available, which then replaces them. Every unsafe block carries
-the safety comment the conventions specify.
+A dependency on a module that runs later, cut from a cycle, is reached through the safe
+wrappers a wrap wave adds before its consumer, never through raw bindings. A wrapper over
+the items of a module that will be ported is written as that module's API: the names,
+ownership and error types its port keeps, so that its consumers do not change when it
+ports. Every unsafe block carries
+the safety comment [`../rust.md`](../rust.md)'s Unsafe code section specifies.
 
 ---
 
 ## 4. Type route
 
+An enum takes no type route: it has no fields, layout or lifecycle to publish, so its
+generated `-sys` definition is used directly, as a constant macro's is. A port reimplements
+it as a Rust enum.
+
 ### 4.1 Surface
 
-A binding's surface is the fields and lifecycle primitives the public API publishes.
+A binding's surface is the fields and lifecycle primitives the public API publishes: in a
+wrap batch that precedes its consumers, the fields those consumers access and the
+type's lifecycle primitives, so that a type none of whose fields they access is bound
+opaque.
 Releasers, field disposers, cloners, constructors, casts and pointer-field semantics are
 identified before a representation is chosen.
 
@@ -96,9 +106,8 @@ recoverable from the object; runtime state is carried only when construction, de
 or cloning needs external data.
 
 A type's constructor and init routines are bound with its lifecycle policy, so that where
-possible it is exported as a safe function returning the fully-formed object. An argument
-whose type is not yet wrapped remains a narrow documented raw seam, which the run wrapping
-that type replaces.
+possible it is exported as a safe function returning the fully-formed object. Every type an
+argument names is wrapped before it, since a wrap brings in its signature's types.
 
 C lifecycle primitives are kept while C can allocate or free the storage.
 

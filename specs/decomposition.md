@@ -64,10 +64,13 @@ a file a module owns whole. Macros are not homed: they are not translated, and a
 that needs one reaches it as [`items/binding.md`](items/binding.md)'s Macros section describes.
 
 A module also lists its tests: the test files gated with it, those that use its
-internals, such as the fields or the layout of the types it owns. A test file that uses the
-internals of several modules is listed by each of them. A test that only calls a module's
-functions is not gated with it: it keeps running after the module's integration, through
-its exports. A test file whose tests divide between modules is split with its entries'
+internals: the fields or the layout of the types it owns, and its static functions and
+static globals. A test's uses are what its own code does, macro expansions included.
+Calling a module's other functions, the `static inline` functions its headers define
+included, reading its other globals, or using its enums, their constants and values alike,
+is API use, not internals: a test that only does that is not gated with the module, and
+keeps running after the module's integration, through its exports. A test file that uses
+the internals of several modules is listed by each of them. A test file whose tests divide between modules is split with its entries'
 `items` lists, by test function.
 
 ## 4. Dependencies
@@ -75,10 +78,12 @@ its exports. A test file whose tests divide between modules is split with its en
 Each module's dependency edges are found with a wavefront configuration of its own, which
 names its files and the items it owns. The edges from a module to another are one record
 of its `depends_on`, with its `outgoing_edges`, its `incoming_edges` and the item kinds
-consumed across them, and each out-of-tree library it uses is one record of its own. An
-out-of-tree library's record also names the crates that port it to Rust and the crates that
-bind it safely, with their feature parity, so that a port reaches it through one of them
-rather than through raw bindings when they exist. The records keep the graph as it is,
+consumed across them, and each out-of-tree library it uses is one record of its own, which
+names the library and counts what the module consumes from it. What holds for the library
+as a whole, the release the target links, its source and the crates that port or bind it
+with their feature parity, is recorded once, in `dependencies.json`, as
+[`artifacts/dependencies.md`](artifacts/dependencies.md) describes. The records keep the
+graph as it is,
 cycles included, split as [scheduling](scheduling.md)'s Order section describes.
 
 ## 5. Objectives

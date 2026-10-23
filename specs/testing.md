@@ -137,11 +137,13 @@ the total is the union of their lines, never the sum of the workloads.
 
 ## 6. Regressions
 
-Every batch checks, lints and tests the workspace on the tree it lands:
+Every batch checks, formats, lints and tests the workspace on the tree it lands, with
+warnings denied, as [`rust.md`](rust.md) describes:
 
 ```bash
-cargo check --workspace
-cargo clippy --workspace
+cargo check --workspace --all-targets
+cargo +nightly-<date> fmt --all --check
+cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
 ```
 
