@@ -38,6 +38,7 @@ import threading
 import uuid
 from pathlib import Path
 
+from crustify.agents.backends import system_prompt_file
 from crustify.core.agentlog import AgentLog
 from crustify.core.models import Route
 
@@ -168,10 +169,10 @@ class ClaudeCliBackend:
         if not interactive:
             cmd.append("--disable-slash-commands")
         # Role-owned system text is unconditional. The option decides only
-        # whether Claude's own base prompt survives underneath it.
-        cmd += (["--system-prompt", system_preamble]
-                if override_base_prompt
-                else ["--append-system-prompt", system_preamble])
+        # whether Claude's own base prompt survives underneath it. It travels
+        # as a file, not as an argument: see system_prompt_file.
+        preamble_flag = ("--system-prompt-file" if override_base_prompt
+                         else "--append-system-prompt-file")
         env = dict(os.environ)
         # Claude Code marks the processes it starts as child sessions, and a
         # child session saves no transcript. Crustify run from a Claude Code
@@ -216,13 +217,15 @@ class ClaudeCliBackend:
         # No config home of crustify's: claude keeps its transcripts, and the
         # subscription login, in its own home whatever crustify sets.
 
-        if interactive:
-            # The terminal is the CLI's: nothing is captured, so the session
-            # transcript is the record of what was said.
-            log.line(f"[crustify] {name}: interactive session {session_id}")
-            rc = subprocess.run(cmd, cwd=str(wd), env=env).returncode
-        else:
-            rc = self._stream(cmd, wd, env, log)
+        with system_prompt_file(system_preamble) as preamble:
+            cmd += [preamble_flag, str(preamble)]
+            if interactive:
+                # The terminal is the CLI's: nothing is captured, so the
+                # session transcript is the record of what was said.
+                log.line(f"[crustify] {name}: interactive session {session_id}")
+                rc = subprocess.run(cmd, cwd=str(wd), env=env).returncode
+            else:
+                rc = self._stream(cmd, wd, env, log)
 
         transcript = _transcript_path(session_id, wd)
         if transcript is not None:

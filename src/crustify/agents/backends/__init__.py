@@ -16,12 +16,67 @@ on-disk artifacts, so a backend's return value is discarded.
 """
 from __future__ import annotations
 
+import os
+import tempfile
+from collections.abc import Iterator
+from contextlib import contextmanager
 from typing import Protocol, runtime_checkable
 
 from pathlib import Path
 
 from crustify.core.agentlog import AgentLog
 from crustify.core.models import Route
+
+
+def _atomic_write_text(path: Path, text: str) -> None:
+    """Publish shared prompt text without exposing a truncated intermediate."""
+    fd, temporary = tempfile.mkstemp(
+        dir=path.parent, prefix=f".{path.name}.", suffix=".tmp"
+    )
+    temporary_path = Path(temporary)
+    try:
+        with os.fdopen(fd, "w") as output:
+            output.write(text)
+            output.flush()
+            os.fsync(output.fileno())
+        os.replace(temporary_path, path)
+    finally:
+        temporary_path.unlink(missing_ok=True)
+
+
+@contextmanager
+def system_prompt_file(
+    text: str, *, directory: Path | None = None,
+) -> Iterator[Path]:
+    """Hand a CLI its system text as a file, and take the file back after.
+
+    Neither backend may pass the preamble on the command line: a single argv
+    element is capped at ``MAX_ARG_STRLEN`` -- 32 pages, 128 KiB on Linux --
+    however large ``ARG_MAX`` is, and a translate preamble exceeds it. Both
+    CLIs read the slot from a file instead (``--system-prompt-file`` and
+    ``--append-system-prompt-file`` for claude, ``model_instructions_file``
+    for codex), and each reads it while starting up, so the file is needed
+    only until the CLI exits.
+
+    The name is unique per run. A provider home is shared across a wave's
+    worktrees, so a fixed name would have N concurrent agents writing and
+    unlinking one path; ``mkstemp`` creates the file exclusively, which is
+    what makes publication atomic without a rename.
+    """
+    if directory is not None:
+        directory.mkdir(parents=True, exist_ok=True)
+    fd, name = tempfile.mkstemp(
+        dir=directory, prefix="crustify-base-prompt-", suffix=".md"
+    )
+    path = Path(name)
+    try:
+        with os.fdopen(fd, "w") as output:
+            output.write(text)
+            output.flush()
+            os.fsync(output.fileno())
+        yield path
+    finally:
+        path.unlink(missing_ok=True)
 
 
 @runtime_checkable

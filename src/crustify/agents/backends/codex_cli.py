@@ -18,36 +18,20 @@ name.
 
 from __future__ import annotations
 
-import hashlib
 import os
 import re
 import shutil
 import subprocess
-import tempfile
 import threading
 import time
 from pathlib import Path
 
+from crustify.agents.backends import system_prompt_file
 from crustify.core.agentlog import AgentLog
 from crustify.core.models import Route
 
 _SESSION_RE = re.compile(r"session id:\s*([0-9a-fA-F-]{36})")
 
-
-def _atomic_write_text(path: Path, text: str) -> None:
-    """Publish shared prompt text without exposing a truncated intermediate."""
-    fd, temporary = tempfile.mkstemp(
-        dir=path.parent, prefix=f".{path.name}.", suffix=".tmp"
-    )
-    temporary_path = Path(temporary)
-    try:
-        with os.fdopen(fd, "w") as output:
-            output.write(text)
-            output.flush()
-            os.fsync(output.fileno())
-        os.replace(temporary_path, path)
-    finally:
-        temporary_path.unlink(missing_ok=True)
 
 # Tools codex offers that crustify has no use for. It has no allowlist -
 # unlike claude's `--tools`, these must be named off individually, so a
@@ -269,48 +253,42 @@ class CodexCliBackend:
         # allows: `model_instructions_file` is a REPLACE slot, so the preamble
         # always goes through it and codex's own model instructions give way.
         # Unconditional, because the preamble carries the conventions doc and
-        # skill index that every agent needs beyond compaction's reach.
-        #
-        # The filename is content-addressed. `codex_home` is shared across a
-        # wave's worktrees, so a fixed name would have N concurrent agents
-        # writing one path; hashing means identical preambles collide on
-        # identical bytes and differing ones never collide at all. Publication
-        # must still be atomic: Path.write_text truncates an existing file
-        # before writing, so a concurrent Codex process can otherwise observe
-        # an empty model-instructions file.
-        digest = hashlib.sha256(system_preamble.encode()).hexdigest()[:12]
-        prompt_file = codex_home / f"crustify-base-prompt-{digest}.md"
-        prompt_file.parent.mkdir(parents=True, exist_ok=True)
-        _atomic_write_text(prompt_file, system_preamble)
-        cmd += ["-c", f'model_instructions_file="{prompt_file}"']
-        if override_base_prompt:
-            # Strips codex's OWN injected context on top of the replaced
-            # instructions — the rest of what "override the base prompt" means.
-            cmd += ["-c", "include_environment_context=false",
-                    "-c", "include_apps_instructions=false",
-                    "-c", "include_collaboration_mode_instructions=false",
-                    "-c", "include_permissions_instructions=false"]
+        # skill index that every agent needs beyond compaction's reach. It
+        # travels as a file in `codex_home`, beside the rollouts, which is
+        # taken back once the CLI has exited: see system_prompt_file. The
+        # `-c` pair is in place before the first turn, which codex reads as a
+        # trailing positional.
+        with system_prompt_file(system_preamble,
+                                directory=codex_home) as preamble:
+            cmd += ["-c", f'model_instructions_file="{preamble}"']
+            if override_base_prompt:
+                # Strips codex's OWN injected context on top of the replaced
+                # instructions — the rest of what "override the base prompt" means.
+                cmd += ["-c", "include_environment_context=false",
+                        "-c", "include_apps_instructions=false",
+                        "-c", "include_collaboration_mode_instructions=false",
+                        "-c", "include_permissions_instructions=false"]
 
-        if resume:
-            # A resumed session keeps its id and its rollout.
-            cmd += [resume] if interactive else ["resume", resume]
-        # An interactive session may open with no first turn: the user types it.
-        if prompt:
-            cmd.append(prompt)
+            if resume:
+                # A resumed session keeps its id and its rollout.
+                cmd += [resume] if interactive else ["resume", resume]
+            # An interactive session may open with no first turn: the user types it.
+            if prompt:
+                cmd.append(prompt)
 
-        if interactive:
-            # The terminal is the CLI's, so its session banner is never seen:
-            # the rollout is the newest one started after launch instead.
-            log.line(f"[crustify] {name}: interactive session")
-            started = time.time()
-            rc = subprocess.run(cmd, cwd=str(wd), env=env).returncode
-            rollout = (_rollout_path(codex_home, resume) if resume
-                       else _newest_rollout(codex_home, started))
-            session_id = resume or ""
-        else:
-            rc, session_id = self._stream(cmd, wd, env, log)
-            rollout = (_rollout_path(codex_home, session_id)
-                       if session_id else None)
+            if interactive:
+                # The terminal is the CLI's, so its session banner is never seen:
+                # the rollout is the newest one started after launch instead.
+                log.line(f"[crustify] {name}: interactive session")
+                started = time.time()
+                rc = subprocess.run(cmd, cwd=str(wd), env=env).returncode
+                rollout = (_rollout_path(codex_home, resume) if resume
+                           else _newest_rollout(codex_home, started))
+                session_id = resume or ""
+            else:
+                rc, session_id = self._stream(cmd, wd, env, log)
+                rollout = (_rollout_path(codex_home, session_id)
+                           if session_id else None)
 
         if rollout is not None:
             log.line(f"[crustify] rollout: {rollout}")
