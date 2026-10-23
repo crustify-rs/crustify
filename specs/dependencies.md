@@ -2,14 +2,17 @@
 
 How a campaign reaches the libraries its target uses from outside its tree: libc, zlib,
 OpenSSL and the like. The [decomposition](decomposition.md) records each one a module
-uses as a dependency record, with the entities the module consumes from it and the Rust
-crates that port or bind it; this spec describes what the campaign does with them.
+uses as a dependency record, counting the entities the module consumes from it, and
+`dependencies.json` records each library once: the release the target links, its source,
+its wrapper and the Rust crates that port or bind it, as
+[`artifacts/dependencies.md`](artifacts/dependencies.md) describes. This spec describes
+what the campaign does with them.
 
 ## 1. Wrappers
 
 An out-of-tree library a campaign uses is reached through a Crustify wrapper of its own,
 unless the user instructs the campaign to adopt an existing crate. The `ported` and
-`bindings` records of `modules.json` inform that choice and the user's instructions; they
+`bindings` records of `dependencies.json` inform that choice and the user's instructions; they
 do not make it.
 
 A library's wrapper is a wrap campaign of that library, in a repository of its own:
@@ -36,18 +39,20 @@ more of it.
 The side campaign advances at the parent's pace. Before a parent wave whose items use
 entities of the library that the wrapper lacks, as [scheduling](scheduling.md)'s Wrap
 waves section places it, the side campaign plans and runs the waves that wrap them; once
-those are promoted to its working branch, the parent's pin moves to that commit, and the
-parent wave starts. The parent ships only once each wrapper it pins has shipped the commit
-it pins, each with the user's approval.
+those are promoted to its working branch, the parent's pin, its library's `wrapper.pin`
+in `dependencies.json`, moves to that commit, and the parent wave starts. The parent ships
+only once each wrapper it pins has shipped the commit it pins, each with the user's
+approval.
 
 ## 3. Sources
 
 Campaigns run on Linux, with glibc, on 64-bit architectures. A library the target links from the system has no
 source of the campaign's own, so its side campaign's `c/` is the library's upstream
 repository at the release the target was built against: the version its build resolved,
-as its build system reports it (CMake's found version, `pkg-config --modversion`) or the
-system package that provides it. The distribution's patches to that release, if any, are
-recorded beside it.
+as its build system reports it (CMake's found version, `pkg-config --modversion`), the
+system package that provides it, or, for a library built from source, its own version
+header. The distribution's patches to that release, if any, are recorded beside it, in the
+library's `resolved` and `source` in `dependencies.json`.
 
 The side campaign builds and installs the library locally, once per build variant of its
 parent, under its own `crustify/builds/<variant>/install`, so that each variant of the

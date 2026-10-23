@@ -27,7 +27,8 @@ The schedule holds two kinds of field:
 |---|---|
 | `index` | the wave's id, from zero; see [Indices](#3-indices) |
 | `link_unit` | the `link_units[*].name` of `modules.json` its units belong to; `null` when the campaign has no decomposition |
-| `module` | the module's `index` within that link unit; `null` when the wave belongs to no module |
+| `module` | the module's `name` within that link unit; `null` when the wave belongs to no module |
+| `foundational` | the module's `foundational`; `false` when the wave belongs to no module |
 | `reviews` | a review wave's reviewed wave, by `index`; absent on any other wave |
 | `status` | `todo`, `wip` or `done` |
 | `depends_on` | the waves this one depends on: `scheduled` and `cut`, each an array of wave indices |

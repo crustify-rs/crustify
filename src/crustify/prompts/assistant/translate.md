@@ -71,7 +71,7 @@ Planning section describes, under the new answers. Landed work is never re-plann
    - carry out its setup workflow there, its builds installing the library once per
      variant of the parent, except for libc, which stays the system's; and
    - add it to the parent's workspace as a Git dependency pinned to its working branch's
-     tip, with a Cargo `[patch]` to the clone, rebuild the parent's variants against its
+     tip, recorded as its library's `wrapper.pin` in `dependencies.json`, with a Cargo `[patch]` to the clone, rebuild the parent's variants against its
      installs and run the parent's baseline again, as the setup workflow's Builds section
      describes.
 
@@ -90,8 +90,9 @@ Planning section describes, under the new answers. Landed work is never re-plann
    lacks, advance that library's side campaign, as the dependencies spec's Side campaigns
    section describes: spawn a planner run in its repository with additional instructions
    naming the entities the wave needs, run the waves and review waves that run plans, and
-   promote them there; then move the parent's pin to the wrapper's working-branch tip, in
-   a commit on the parent's working branch, and start the wave.
+   promote them there; then move the parent's pin to the wrapper's working-branch tip, and
+   its library's `wrapper.pin` in `dependencies.json` with it, in a commit on the parent's
+   working branch, and start the wave.
 3. **Shipping.** When a module has landed and passed its gates, ask the user whether to
    advance the shipping branch, as the binding workflow's Shipping section describes. A
    parent ships only once each wrapper it pins has shipped the commit it pins: ask for

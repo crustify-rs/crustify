@@ -74,9 +74,13 @@ order.
 
 ## 4. link_units[*].modules[*]
 
-Each module's `index` identifies it within its containing link unit, so its globally
-addressable identity is `(link_unit.name, module.index)`. Its `name` is for reading:
-the two modules of a split foundational TU share theirs.
+A module is named by its `name` and `foundational` within its containing link unit: its
+globally addressable identity is `(link_unit.name, module.name, module.foundational)`,
+written `<link-unit>/<name>`, with ` (foundational)` after it for a foundational module.
+The name alone suffices but for a split foundational TU, whose two modules share the TU's
+path as their name and differ in `foundational`. Every reference to a module, in a
+dependency record, a wave or a batch's task, carries both. Its `index` is its permanent
+number within the link unit, which orders and numbers the modules a run adds.
 
 | field | meaning |
 |---|---|
@@ -213,7 +217,8 @@ emitted as modules too, so every in-tree record resolves through `link_units`.
 | in-tree record field | meaning |
 |---|---|
 | `link_unit` | destination `link_units[*].name` |
-| `module` | destination module's `index` within that link unit |
+| `module` | destination module's `name` within that link unit |
+| `foundational` | the destination module's `foundational`, which tells the two modules of a split TU apart |
 | `outgoing_edges` | dependency edges from this module to the destination |
 | `incoming_edges` | dependency edges from the destination back to this module |
 | `counters` | distinct entities consumed from that destination, by kind |
@@ -226,28 +231,12 @@ in `scheduled` and the two form a cycle.
 
 | out-of-tree record field | meaning |
 |---|---|
-| `library` | external library depended on, as linked |
+| `library` | external library depended on, as linked: a `libraries[*].name` of `dependencies.json` |
 | `counters` | distinct entities consumed from it, by kind |
-| `rust_equivalent` | what Rust already provides for it: `ported` and `bindings`, below |
 
-`rust_equivalent.ported` lists the crates that reimplement the library in Rust, and
-`rust_equivalent.bindings` the crates that put a safe Rust API over the C library itself.
-Each is in descending order of feature parity, and empty when no such crate exists. They
-decide how a port reaches the library: through a ported crate, which drops the C
-dependency, through safe bindings, which keep it, or through its own wrapper when neither
-exists.
-
-| `ported[*]` and `bindings[*]` field | meaning |
-|---|---|
-| `crate` | the crate's name on crates.io |
-| `sys` | `bindings` only: the raw `-sys` crate it builds on, or `null` when it binds the library itself |
-| `feature_parity` | `full` when it provides every entity this module consumes from the library, with the same behaviour; `partial` otherwise |
-| `license` | its SPDX license expression |
-| `notes` | for `partial`, what it lacks or how it differs; empty for `full` |
-
-A crate that wraps the library but exposes raw pointers or `unsafe` to its users is not
-safe bindings; a `-sys` crate alone is listed as no binding. The same library is assessed
-the same way in every record that imports it.
+What the campaign knows of the library itself, the release the target links, its source,
+its wrapper and the crates that port or bind it, is recorded once, in `dependencies.json`,
+as `specs/artifacts/dependencies.md` describes, not in each record that imports it.
 
 A record's `counters` carries the same item kinds a module's own does — `structs`,
 `functions`, `global_variables`, `enums`, `unions`, `callbacks` — counting what this

@@ -17,7 +17,7 @@ supplied review integration branch.
 - worklist: `{worklist}`
 - objectives: `{objectives}`
 - reports to revisit: `{reports}`
-- batch: `{batch_id}`, of module `{module}`, its link unit and index in `modules.json`
+- batch: `{batch_id}`, of module `{module}`, its link unit and name in `modules.json`
 - unchecked-out review integration branch: `{git_base}`
 
 ## Worklists and objectives

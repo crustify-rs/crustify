@@ -1,5 +1,5 @@
 {
-  "_comment": "Example `<workdir>/crustify/artifacts/modules.json` (REPO-ROOT tier), emitted by the planner. A module is one translation unit with the headers it defines its items in, named by the TU's path; a header that implements what no TU does is a header module, named by its own path, with a null `translation_unit`. Every file is an entry whose `items` lists are empty when the module owns the file whole, `included` when it owns only the entities named, and `excluded` when it owns all others: here the shared include/openssl/crypto.h is split item by item among the modules that implement what it declares, and crypto/o_str.c, which mixes string lifecycle routines with other code, is split into a foundational module and another that share its name. `tests` lists the test files gated with a module, those that use its internals; a test file is listed by every module it is gated with, and its `items` select test functions. Each link unit's and module's `index` is its permanent id, not its position, and dependency records name modules by it. `depends_on` holds every dependency, with its edge counts and what is consumed: `scheduled` the modules that run first and the out-of-tree libraries, `cut` the modules cut from a cycle, which run after. Among ready modules a foundational one runs first, then the lower link-unit index, then the lower index. Here libcrypto runs before libssl, which depends on it, and statem's dependency on record is cut. `status` is `todo` while the plan may change and `frozen` once final. `objective` records translation intent, and its `rust_equivalent` what the standard library provides in the module's place and the crates that could replace it, each with its feature parity; each out-of-tree record's `rust_equivalent` names the crates that port the library to Rust and those that bind it safely. The waves are in `schedule.json`. The Rust tree mirrors this decomposition; there is no second placement document. Every path is below the C root, the repository's c/.",
+  "_comment": "Example `<workdir>/crustify/artifacts/modules.json` (REPO-ROOT tier), emitted by the planner. A module is one translation unit with the headers it defines its items in, named by the TU's path; a header that implements what no TU does is a header module, named by its own path, with a null `translation_unit`. Every file is an entry whose `items` lists are empty when the module owns the file whole, `included` when it owns only the entities named, and `excluded` when it owns all others: here the shared include/openssl/crypto.h is split item by item among the modules that implement what it declares, and crypto/o_str.c, which mixes string lifecycle routines with other code, is split into a foundational module and another that share its name. `tests` lists the test files gated with a module, those that use its internals; a test file is listed by every module it is gated with, and its `items` select test functions. Each link unit's and module's `index` is its permanent number, not its position; dependency records name a module by its `name` and `foundational`, which tell apart the two modules of the split crypto/o_str.c. `depends_on` holds every dependency, with its edge counts and what is consumed: `scheduled` the modules that run first and the out-of-tree libraries, `cut` the modules cut from a cycle, which run after. Among ready modules a foundational one runs first, then the lower link-unit index, then the lower index. Here libcrypto runs before libssl, which depends on it, and statem's dependency on record is cut. `status` is `todo` while the plan may change and `frozen` once final. `objective` records translation intent, and its `rust_equivalent` what the standard library provides in the module's place and the crates that could replace it, each with its feature parity; an out-of-tree record names the library and counts what the module consumes, and dependencies.json records the library itself. The waves are in `schedule.json`. The Rust tree mirrors this decomposition; there is no second placement document. Every path is below the C root, the repository's c/.",
   "version": "1f053298e30c0a9b5d0f3c1e7a4b8d2f6c9e0a11",
   "link_units": [
     {
@@ -89,7 +89,8 @@
             "scheduled": [
               {
                 "link_unit": "libcrypto",
-                "module": 0,
+                "module": "crypto/mem.c",
+                "foundational": true,
                 "outgoing_edges": 3,
                 "incoming_edges": 0,
                 "counters": {
@@ -177,7 +178,8 @@
             "scheduled": [
               {
                 "link_unit": "libcrypto",
-                "module": 1,
+                "module": "crypto/o_str.c",
+                "foundational": true,
                 "outgoing_edges": 5,
                 "incoming_edges": 0,
                 "counters": {
@@ -191,7 +193,8 @@
               },
               {
                 "link_unit": "libcrypto",
-                "module": 0,
+                "module": "crypto/mem.c",
+                "foundational": true,
                 "outgoing_edges": 9,
                 "incoming_edges": 0,
                 "counters": {
@@ -336,7 +339,8 @@
             "scheduled": [
               {
                 "link_unit": "libcrypto",
-                "module": 0,
+                "module": "crypto/mem.c",
+                "foundational": true,
                 "outgoing_edges": 14,
                 "incoming_edges": 0,
                 "counters": {
@@ -350,7 +354,8 @@
               },
               {
                 "link_unit": "libcrypto",
-                "module": 3,
+                "module": "include/internal/refcount.h",
+                "foundational": false,
                 "outgoing_edges": 4,
                 "incoming_edges": 0,
                 "counters": {
@@ -462,7 +467,8 @@
             "scheduled": [
               {
                 "link_unit": "libcrypto",
-                "module": 4,
+                "module": "crypto/bio/bio_lib.c",
+                "foundational": false,
                 "outgoing_edges": 19,
                 "incoming_edges": 0,
                 "counters": {
@@ -483,17 +489,14 @@
                   "enums": 5,
                   "unions": 3,
                   "callbacks": 11
-                },
-                "rust_equivalent": {
-                  "ported": [],
-                  "bindings": []
                 }
               }
             ],
             "cut": [
               {
                 "link_unit": "libssl",
-                "module": 1,
+                "module": "ssl/record/rec_layer_s3.c",
+                "foundational": false,
                 "outgoing_edges": 6,
                 "incoming_edges": 28,
                 "counters": {
@@ -565,7 +568,8 @@
             "scheduled": [
               {
                 "link_unit": "libssl",
-                "module": 0,
+                "module": "ssl/statem/statem.c",
+                "foundational": false,
                 "outgoing_edges": 28,
                 "incoming_edges": 6,
                 "counters": {
@@ -579,7 +583,8 @@
               },
               {
                 "link_unit": "libcrypto",
-                "module": 4,
+                "module": "crypto/bio/bio_lib.c",
+                "foundational": false,
                 "outgoing_edges": 41,
                 "incoming_edges": 0,
                 "counters": {
@@ -600,25 +605,6 @@
                   "enums": 0,
                   "unions": 0,
                   "callbacks": 2
-                },
-                "rust_equivalent": {
-                  "ported": [
-                    {
-                      "crate": "miniz_oxide",
-                      "feature_parity": "partial",
-                      "license": "MIT OR Zlib OR Apache-2.0",
-                      "notes": "raw deflate and zlib streams only; no gzip file API"
-                    }
-                  ],
-                  "bindings": [
-                    {
-                      "crate": "flate2",
-                      "sys": "libz-sys",
-                      "feature_parity": "full",
-                      "license": "MIT OR Apache-2.0",
-                      "notes": ""
-                    }
-                  ]
                 }
               }
             ],

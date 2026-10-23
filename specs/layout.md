@@ -50,6 +50,7 @@ The campaign's artifacts sit under `crustify/artifacts/`, with one dir per agent
 crustify/artifacts/                             the campaign
 ├── build.json                                  the prebuilt variants of the target
 ├── modules.json                                the module decomposition
+├── dependencies.json                           the out-of-tree libraries the target uses
 ├── schedule.json                               the waves and batches, and their progress
 ├── dashboard.md                                the campaign dashboard; audit-dashboard.md for an audit
 ├── assistant/                                  Crustify's own records, as the assistant

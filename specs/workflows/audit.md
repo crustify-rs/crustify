@@ -80,7 +80,7 @@ objectives, its batch fields, its review wave branch and the model and billing, 
 
 ```json
 {"objectives": ["ub", "equiv", "disclose"], "paths": ["src/frame.rs", "src/codec/"],
- "wave": 0, "batch": 0, "link_unit": null, "module": null,
+ "wave": 0, "batch": 0, "link_unit": null, "module": null, "foundational": false,
  "base_branch": "<review wave branch>", "model": "<model>", "billing": "<billing>"}
 ```
 

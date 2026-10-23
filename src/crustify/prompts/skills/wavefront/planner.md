@@ -41,7 +41,7 @@ The campaign has two kinds of `wavefront-config.json`:
   `impl_files` and `api_headers` are the union of every module's. Binders, translators
   and reviewers resolve their queries through it, it orders the link units and modules,
   and only its graph shows the relations between two modules; and
-- one `crustify/wavefront/configs/<link-unit>/<module>/wavefront-config.json` per
+- one `crustify/wavefront/configs/<link-unit>/<module index>/wavefront-config.json` per
   module, which finds the module's dependency edges. Use them for the exact counts and
   the dependency records of `depends_on` in `modules.json`, and for the module's schedule.
 

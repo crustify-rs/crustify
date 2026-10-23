@@ -12,8 +12,9 @@ Copy a task template to start a request.
 [`gitignore`](gitignore) seeds a campaign's `crustify/.gitignore`. The files beside it
 are examples of the campaign's artifacts, whose fields are described under
 [`specs/artifacts/`](../specs/artifacts): [`build.json`](build.json),
-[`modules.json`](modules.json) and [`schedule.json`](schedule.json), the
-campaign's waves and batches.
+[`modules.json`](modules.json), [`dependencies.json`](dependencies.json), the out-of-tree
+libraries the target uses, and [`schedule.json`](schedule.json), the campaign's waves and
+batches.
 
 [`Dockerfile`](Dockerfile) builds the environment either campaign runs in. It
 starts nothing: the container idles, and `crustify` is run inside it: the command

@@ -20,7 +20,7 @@ BILLINGS = ("subscription", "api")
 RUN_FIELDS = frozenset({"model", "billing"})
 #: The fields that place a binder's, translator's or reviewer's task in the
 #: campaign's schedule.json.
-BATCH_FIELDS = frozenset({"wave", "batch", "link_unit", "module"})
+BATCH_FIELDS = frozenset({"wave", "batch", "link_unit", "module", "foundational"})
 
 #: The role that runs each objective's tasks; its name is also the stem of
 #: the log and usage record a batch writes into its own `--log-dir`, so
@@ -54,12 +54,15 @@ class Instructions:
 @dataclass(frozen=True)
 class Placement:
     """Where a task's batch sits in the schedule: its wave and index, which
-    form its batch id, and the link unit and module its wave belongs to."""
+    form its batch id, and the link unit and module its wave belongs to: the
+    module's name, and whether it is foundational, which tells apart the two
+    modules of a split TU."""
 
     wave: int
     batch: int
     link_unit: str | None
-    module: int | None
+    module: str | None
+    foundational: bool = False
 
     @property
     def batch_id(self) -> str:
@@ -67,11 +70,12 @@ class Placement:
 
     @property
     def module_label(self) -> str:
-        """``<link-unit>/<module index>``, or ``none`` for a wave of no
-        module."""
+        """``<link-unit>/<module>``, with `` (foundational)`` for a
+        foundational module, or ``none`` for a wave of no module."""
         if self.module is None:
             return "none"
-        return f"{self.link_unit}/{self.module}"
+        label = f"{self.link_unit}/{self.module}"
+        return label + " (foundational)" if self.foundational else label
 
 
 @dataclass(frozen=True)
@@ -146,22 +150,27 @@ def parse_branch(raw: dict, fail: Callable[[str], NoReturn]) -> str:
 
 
 def parse_placement(raw: dict, fail: Callable[[str], NoReturn]) -> Placement:
-    """A task's ``wave``, ``batch``, ``link_unit`` and ``module``."""
+    """A task's ``wave``, ``batch``, ``link_unit``, ``module`` and
+    ``foundational``."""
     for key in ("wave", "batch"):
         value = raw[key]
         if not isinstance(value, int) or isinstance(value, bool) or value < 0:
             fail(f"{key} must be a non-negative index")
     link_unit, module = raw["link_unit"], raw["module"]
-    if link_unit is not None and (not isinstance(link_unit, str)
-                                  or not link_unit.strip()):
-        fail("link_unit must be a name or null")
-    if module is not None and (not isinstance(module, int)
-                               or isinstance(module, bool) or module < 0):
-        fail("module must be a non-negative index or null")
-    if raw["module"] is not None and raw["link_unit"] is None:
+    foundational = raw["foundational"]
+    for key, value in (("link_unit", link_unit), ("module", module)):
+        if value is not None and (not isinstance(value, str)
+                                  or not value.strip()):
+            fail(f"{key} must be a name or null")
+    if not isinstance(foundational, bool):
+        fail("foundational must be true or false")
+    if module is not None and link_unit is None:
         fail("a module needs its link_unit")
+    if module is None and foundational:
+        fail("a wave of no module is not foundational")
     return Placement(wave=raw["wave"], batch=raw["batch"],
-                     link_unit=raw["link_unit"], module=raw["module"])
+                     link_unit=link_unit, module=module,
+                     foundational=foundational)
 
 
 def parse_instructions(raw: dict, task_path: Path,

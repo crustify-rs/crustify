@@ -25,7 +25,8 @@ produced. A batch that is run again gets a new run dir, so every attempt keeps i
   "wave": 0,
   "batch": 0,
   "link_unit": "libavutil",
-  "module": 4,
+  "module": "libavutil/frame.c",
+  "foundational": false,
   "base_branch": "crustify/waves/wave-0",
   "model": "anthropic/claude-opus-5-5",
   "billing": "subscription",
@@ -45,7 +46,7 @@ produced. A batch that is run again gets a new run dir, so every attempt keeps i
 |---|---|
 | `objective` | execution objective for every item: `wrap` or `port` |
 | `items` | non-empty worklist; every item routes to the same agent |
-| `wave`, `batch`, `link_unit`, `module` | the [batch fields](#2-batch-fields) |
+| `wave`, `batch`, `link_unit`, `module`, `foundational` | the [batch fields](#2-batch-fields) |
 | `base_branch`, `model`, `billing` | the [run fields](#1-run-fields) |
 | `instructions` | optional [additional instructions](#3-additional-instructions) |
 
@@ -70,7 +71,8 @@ then promoted to the working branch, `crustify/devel`.
 | `wave` | the `index` of the batch's wave in `schedule.json` |
 | `batch` | the batch's `index` within that wave |
 | `link_unit` | its wave's `link_unit`; `null` when the campaign has no decomposition |
-| `module` | its wave's `module`; `null` when the wave belongs to no module |
+| `module` | its wave's `module`, the module's `name`; `null` when the wave belongs to no module |
+| `foundational` | its wave's `foundational` |
 
 `wave` and `batch` form the batch id, `wave-<wave>/batch-<batch>`, which names the batch's
 branch, worktree and reviews dir as `specs/versioning.md` and `specs/layout.md` spell them, and leads from the run
@@ -109,7 +111,8 @@ landed; in an audit, modules of the crate.
   "wave": 1,
   "batch": 0,
   "link_unit": "libavutil",
-  "module": 4,
+  "module": "libavutil/frame.c",
+  "foundational": false,
   "base_branch": "crustify/waves/wave-1",
   "model": "anthropic/claude-opus-5-5",
   "billing": "subscription"
@@ -131,7 +134,8 @@ landed; in an audit, modules of the crate.
 | `reports` | repo-relative report dirs, `crustify/reviews/<batch id>/<kind>/<slug>`, to revisit |
 
 The batch and run fields are required, as on a translation task; the second example
-leaves them out. An audit's batch has a `null` `link_unit` and `module`.
+leaves them out. An audit's batch has a `null` `link_unit` and `module`, and a `false`
+`foundational`.
 A batch carries `commits` or `paths`, not both, and needs one of them or `reports`; one
 with only `reports` has route `reports`. A module path appears once, and a module object
 names one or more of `types`, `trait_impls` and `functions`, each a distinct list. `reports` is given exactly when `revisit` is among the
@@ -191,7 +195,7 @@ batch mixing routes is rejected.
 | `type` | `type` |
 | `symbol`, `callback` | `symbol` |
 
-A batch of a foundational module routes like any other. Its `module` is the module's index,
+A batch of a foundational module routes like any other. Its `module` and `foundational` name the module,
 which `modules.json` marks `foundational`, and its binder binds the items with a
 lifecycle role as
 strategies (`specs/items/binding.md`, Lifecycle strategies).
