@@ -15,7 +15,8 @@ cut to break a cycle, `depends_on.cut`, so that the scheduled dependencies form 
 Within each strongly connected component, the member the most other members depend on
 comes first, and the edges between tied members break ties: every dependency on a member
 that comes later is cut, a derived type's dependency on its base included. Link units are
-ordered the same way. Modules run one at a time.
+ordered the same way. Modules are ordered one after another, and their waves run whenever
+they are scheduled, in the order [Waves and batches](#2-waves-and-batches) gives them.
 
 A frozen module keeps its place: a module added after it that it depends on is one of its
 cuts. A cut dependency is never reached through raw bindings: what a module uses of one is

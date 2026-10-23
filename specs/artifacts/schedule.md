@@ -89,10 +89,10 @@ later run may therefore schedule a wave that runs before one an earlier run appe
 ## 4. Re-planning
 
 Only waves that are `todo` are re-planned: a re-plan may change, split or remove them,
-and the waves that replace them take new indices. A wave that is `wip` or `done`, and
-every wave of a frozen module, keeps its record, apart from the progress fields. A
-planner may append waves to a frozen module, such as the wrap waves a module added after
-it calls for.
+and the waves that replace them take new indices. A wave that is `wip` or `done` keeps
+its record, apart from the progress fields, and is never revisited. A frozen module's
+waves that are `todo` are re-planned like any other, within its frozen decomposition, and
+waves may be appended to it, such as those a module added after it calls for.
 
 Each wave's batches are those wavefront packs from the units it schedules, under the
 campaign's `workload` caps; a review wave's batches group the reviewed wave's batches

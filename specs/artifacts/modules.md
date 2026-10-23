@@ -36,8 +36,9 @@ describes:
 Their in-tree records together are every module it depends on, and `scheduled` alone is
 acyclic across the decomposition. Within a cycle, the dependency kept is the one on the
 member the most other members depend on, and the edges between tied members break ties,
-as `specs/scheduling.md`'s Order section describes. Modules run one at a time, in the order of `scheduled`.
-Among the modules ready at once, a foundational one runs first, then the one whose link
+as `specs/scheduling.md`'s Order section describes. Modules are ordered one after another,
+in the order of `scheduled`; their waves run whenever they are scheduled, as
+[`schedule.md`](schedule.md) orders them. Among the modules ready at once, a foundational one runs first, then the one whose link
 unit has the lower index, then the one with the lower index. Link units are ordered the
 same way by their own `depends_on`.
 
@@ -52,18 +53,15 @@ already, so the new module can only follow it.
 
 ## 2. Status
 
-A module's `status` is `todo` while its plan may still change, and `frozen` once its
-record is final, or earlier when the user freezes it:
+A module's `status` is its decomposition's: `todo` while it may still change, and
+`frozen` from the launch of its first wave, of any kind, or earlier when the user freezes
+it, since that wave homes items in the module's file. A frozen module's record, and its
+place in the order, change only when the user asks: a re-plan neither re-decomposes nor
+re-homes it, and moves no item into or out of it.
 
-- a `port` module from the launch of its first `port` wave: the wrap waves that run
-  before it, lazily, for its consumers or its own types, leave it `todo`; and
-- a `wrap` module once it is fully wrapped, when none of its waves is `todo` any more:
-  its waves are scheduled lazily, before their consumers, so its place in the order and
-  its remaining waves may change until then.
-
-The waves of a module that is still `todo` that have launched keep their records, as
-[`schedule.md`](schedule.md)'s Re-planning section describes. A frozen module's record, and its place in the order, change only when the user asks: a
-re-plan neither edits it nor moves an item into or out of it. A module's progress is not
+Freezing a module does not freeze its schedule: its waves that are `todo` may still be
+re-planned, and waves appended to it whenever a consumer needs more of it, as
+[`schedule.md`](schedule.md)'s Re-planning section describes. A module's progress is not
 recorded here: it is its waves' `status` in `schedule.json`.
 
 ## 3. link_units[*]
