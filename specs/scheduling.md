@@ -54,7 +54,8 @@ In a wrap campaign every batch is `wrap`. In a port campaign:
 - a selected enum is `port`, where the DAG places it, and never `wrap`;
 - a selected type is `port`, preceded by a `wrap` batch only while another module's
   unported C depends on its layout, as [Porting types](#4-porting-types) describes; and
-- a dependency outside the selected migration set is `wrap`.
+- a dependency outside the selected migration set, or that has not been ported yet,
+  is `wrap`.
 
 An enum is a set of constants, with no fields, layout users or lifecycle for a binding to
 publish, so no batch wraps it: a wrap campaign schedules none for it and uses its
