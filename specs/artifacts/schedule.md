@@ -37,7 +37,8 @@ The schedule holds two kinds of field:
 
 `depends_on.scheduled` lists the waves that run before this one, and `depends_on.cut` the
 waves it depends on that run after it, its dependency on them cut to break a cycle; it
-reaches what they hold through narrow raw seams until a later wave replaces them. Their
+reaches what they hold through the safe wrappers a wrap wave before it adds, as
+`specs/scheduling.md`'s Wrap waves section describes. Their
 union is every wave this one depends on, and `scheduled` alone is acyclic across the
 schedule.
 
@@ -90,8 +91,8 @@ later run may therefore schedule a wave that runs before one an earlier run appe
 Only waves that are `todo` are re-planned: a re-plan may change, split or remove them,
 and the waves that replace them take new indices. A wave that is `wip` or `done`, and
 every wave of a frozen module, keeps its record, apart from the progress fields. A
-planner may append waves to a frozen module, such as those that replace its raw seams
-once a cut dependency has landed.
+planner may append waves to a frozen module, such as the wrap waves a module added after
+it calls for.
 
 Each wave's batches are those wavefront packs from the units it schedules, under the
 campaign's `workload` caps; a review wave's batches group the reviewed wave's batches

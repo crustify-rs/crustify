@@ -107,10 +107,10 @@ Record each module's and link unit's `depends_on` in `modules.json`, as the sche
 spec's Order section describes, then plan the waves and batches of the units your scope
 adds into `schedule.json`, from `templates/schedule.json`, as its Waves and batches section
 describes: each wave with its `depends_on`, and, when review is enabled, the review wave
-that follows it. For each cut whose dependency is planned, schedule the waves that
-replace its raw seams, depending on that dependency's last wave. Schedule the wrap
-batches lazily, each in the wave right before its first consumer, as the scheduling
-spec's Wrap waves section describes. For each out-of-tree library your waves need,
+that follows it. Schedule the wrap batches lazily, each in the wave right before its
+first consumer, as the scheduling spec's Wrap waves section describes, the items of cut
+dependencies included, with each item's wrap dependencies closed over the
+public-signature graph: plan no waves that replace raw seams. For each out-of-tree library your waves need,
 check `github.com/crustify-rs` for its wrapper, `<source>-bindings`, named after the
 source the library is built from, and record in your
 commit message what it already wraps and what the parent's waves need from it, as the

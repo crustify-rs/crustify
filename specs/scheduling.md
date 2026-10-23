@@ -14,11 +14,15 @@ dependencies are split into those that run before it, `depends_on.scheduled`, an
 cut to break a cycle, `depends_on.cut`, so that the scheduled dependencies form a DAG.
 Within each strongly connected component, the member the most other members depend on
 comes first, and the edges between tied members break ties: every dependency on a member
-that comes later is cut. Link units are ordered the same way. Modules run one at a time.
+that comes later is cut. A dependency that carries a polymorphic edge, a derived type on its
+base as the dependency graph directs the casts between them, is kept rather than cut
+wherever another dependency of the cycle can be cut instead, so that a base is bound
+before the types derived from it. Link units are ordered the same way. Modules run one at
+a time.
 
 A frozen module keeps its place: a module added after it that it depends on is one of its
-cuts, and the waves that replace the raw seams of each cut are scheduled once the
-dependency it cut is planned, depending on that dependency's last wave.
+cuts. A cut dependency is never reached through raw bindings: what a module uses of one is
+wrapped before it, as [Wrap waves](#3-wrap-waves) describes.
 
 The plan holds only the link units and modules the campaign's scope includes, without
 those that a previous campaign completed. The foundational modules depend on no other, so
@@ -67,13 +71,20 @@ A binding serves the code that consumes it, so wrap batches are scheduled lazily
 before their first consumer, and only for what consumers use.
 
 - In a port campaign, each `port` wave is preceded by a `wrap` wave holding the wrap
-  batches it needs, of in-tree `wrap` modules, the foundational ones included; the
-  out-of-tree libraries its items use are wrapped first in their side campaigns, as
-  [`dependencies.md`](dependencies.md) describes.
-  An in-tree `wrap` module has no waves of its own.
-- In a wrap campaign, the in-tree modules are the deliverable and run in their order;
-  each of their waves is preceded by the side-campaign waves that wrap the out-of-tree
-  entities it needs.
+  batches it needs, of in-tree `wrap` modules, the foundational ones included. An in-tree
+  `wrap` module has no waves of its own.
+- In either campaign, a wave is preceded by a `wrap` wave holding what its items use of
+  the modules its module's cuts name, which run after it: a cut dependency is bound
+  before its consumer, by a binder, rather than reached through raw bindings, and its
+  module ports it later.
+- In either campaign, the out-of-tree libraries a wave's items use are wrapped first in
+  their side campaigns, as [`dependencies.md`](dependencies.md) describes.
+
+Wrapping an item brings in its own wrap dependencies, transitively: the types its
+signature names, those of the fields its type publishes, and theirs in turn, closed over
+the public-signature graph, which has no function bodies. The closure stops at what an
+earlier wave has wrapped or ported, and may reach into further modules that run later,
+whose items join the same wrap wave.
 
 A preceding wrap wave holds only what the wave after it needs and no earlier wave
 wrapped, so that no item is wrapped twice and an item no consumer needs is never wrapped.

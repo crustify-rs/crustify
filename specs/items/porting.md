@@ -27,7 +27,9 @@ operations instead of the C primitives.
 ## 4. Symbols
 
 A ported symbol's implementation is translated to safe, idiomatic Rust with its observable
-behaviour preserved. A standard-library operation is used directly when it is equivalent
+behaviour preserved. When a wrapper of it already exists, because a module that ran
+before needed it, the port keeps that wrapper's safe API and replaces only what is behind
+it, so that its consumers do not change. A standard-library operation is used directly when it is equivalent
 and no C-interoperability requirement remains.
 
 While C consumers remain, the symbol is re-exported to C as the conventions describe:

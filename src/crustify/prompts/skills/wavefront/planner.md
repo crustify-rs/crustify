@@ -95,6 +95,9 @@ wavefront warns is stale.
 - Select the module's files with `--transitive`; use an exact selection only when the
   dependencies it leaves out are already satisfied or intentionally excluded.
 - A wrap campaign schedules with `--api-headers-only`.
+- Close a wrap batch's items over their wrap dependencies on the public-signature graph,
+  `query dag --name <items> --api-headers-only`, and drop what an earlier wave wrapped or
+  ported.
 - Pass the campaign's `workload` caps as the batch limits.
 - `wavefront schedule` numbers its waves from 0 in every run: append them to
   `schedule.json` after its highest index, in wavefront's order, each depending on the
