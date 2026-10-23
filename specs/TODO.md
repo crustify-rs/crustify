@@ -151,10 +151,9 @@ Open questions:
 
 ## 7. Module parallelization
 
-Modules run one at a time, in the order `modules.json` computes
-([`artifacts/modules.md`](artifacts/modules.md)'s Execution order section), although a
-module is one translation unit and many hold only a few items: most of their waves are
-small, and modules that do not depend on one another could run at once. Module
+Waves run one at a time, in the order `schedule.json` gives them, although a module is
+one translation unit and many hold only a few items: most of their waves are small, and
+the waves of modules that do not depend on one another could run at once. Module
 parallelization would run independent modules' waves concurrently, with the user's
 approval.
 

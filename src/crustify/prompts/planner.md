@@ -67,8 +67,9 @@ Keep what has started, as the schemas describe:
 - never edit a module whose `status` is `frozen`, nor split or rename a module a
   frozen one names, unless your additional instructions say the user asked for it; and
   never change a module's `status`;
-- re-plan only waves that are `todo`; keep every other wave's record, and every wave of a
-  frozen module, but you may append waves to a frozen module;
+- re-plan only waves that are `todo`, a frozen module's included, within its frozen
+  decomposition, and append waves to a frozen module when a consumer needs more of it;
+  keep every other wave's record, and do not revisit what has landed;
 - number what you add after the highest index in use, and never reuse, renumber or move
   an index; and
 - leave every progress field as you found it, and write new waves and batches as `todo`
