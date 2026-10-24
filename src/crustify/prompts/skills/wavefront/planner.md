@@ -52,9 +52,11 @@ configuration you author against the CLI.
 
 Author each module's configuration with its `modules.json` record as the reference: its
 files, and the entities its file entries' `items` lists select, expressed through the
-configuration's `items` and `out_of_scope.items`, so that every entity is targeted by
-exactly one module's configuration and no two schedules hold one entity. Macros are
-imported in every configuration and selected by none.
+configuration's `items.included` and `items.excluded`, each entry naming its `kind`, so
+that every entity is targeted by exactly one module's configuration and no two schedules
+hold one entity. A struct tag and a function or global may share a name in one file:
+name the kind you mean, and skip one in a schedule as `--skip type:<name>` or
+`--skip symbol:<name>`. Macros are imported in every configuration and selected by none.
 
 Select the foundational modules' candidates from the campaign-wide configuration's
 graph, after the T3 tables are written, so that their cast edges resolve type-erased
