@@ -41,6 +41,9 @@ settings below and the bindgen version, pinned exactly in each `Cargo.toml`, so 
 generating twice from the same input gives the same bytes. The settings are the same for
 every campaign:
 
+- the output is formatted by bindgen's own formatter (`prettyplease`), never by the
+  toolchain's `rustfmt`, whose output differs between toolchains, so that a nightly build
+  regenerates the bytes a stable one committed;
 - enums are generated as constants (`Consts`), without the enum name as a prefix, and
   used directly, as `items/binding.md`'s Type route section describes;
 - `Default` is derived, and layout tests are generated;
@@ -67,7 +70,11 @@ The build script runs in one of three modes:
 |---|---|---|---|
 | shipped | by default | `src/bindings.rs` | an install, found through `<LIB>_DIR`, then `pkg-config` |
 | regenerate | the `bindgen` feature | generated into `OUT_DIR` from the headers found | as shipped |
-| campaign | `CRUSTIFY_BUILD_VARIANT` names a variant | generated into `OUT_DIR` from `c/` and the variant | the variant's build, recorded in `crustify/artifacts/build.json` |
+| campaign | `CRUSTIFY_BUILD_VARIANT` names a variant, or `CRUSTIFY_BUILD_DIR` a private build | generated into `OUT_DIR` from `c/` and the variant | the variant's build, recorded in `crustify/artifacts/build.json` |
+
+The campaign's repository sets `CRUSTIFY_BUILD_VARIANT` to `plain` in its
+`.cargo/config.toml`, so that every build there runs in campaign mode unless the variable
+names another variant, or is set empty to build as a dependent would.
 
 In every mode, `shims.c` and `static_fns.c` are compiled against the headers the bindings
 match, with the instrumentation of the library they link.
@@ -79,11 +86,17 @@ regenerates the bindings for it. `lib.rs` exports the version the bindings match
 `C_VERSION`. Shipped and regenerate modes link the library as `pkg-config` resolves it,
 and set no rpath.
 
+`<LIB>_DIR` names an install prefix: the build reads the headers under its `include/`,
+links the library under its `lib/`, and takes the version from `lib/pkgconfig/<lib>.pc`.
+Without it, `pkg-config` finds the library.
+
 Campaign mode serves the campaign while it extends the bindings: batches add allowlist
 entries and shims, and the bindings follow from them. It needs bindgen, which the safe
 crate's dev-dependencies enable through each `-sys` crate's `bindgen` feature, so that the
 campaign's tests and gates regenerate while the crate's dependents build from the shipped
-bindings. The bindings it generates are compared with the committed ones: a difference
+bindings. A build that does not enable the feature, such as the documentation of the safe
+crate alone, uses the committed bindings unchecked; the tests and gates always enable it.
+The bindings it generates are compared with the committed ones: a difference
 fails the build, naming the regenerated file, unless `CRUSTIFY_BINDINGS_UPDATE` is set, in
 which case they are written over `src/bindings.rs` and `src/static_fns.c`. It links the
 variant's build with an rpath to it, so that every test runs against the instrumented
