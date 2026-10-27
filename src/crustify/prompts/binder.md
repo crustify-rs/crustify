@@ -108,6 +108,13 @@ them in everything you write.
 
 ---
 
+Here is how the `-sys` crates are laid out, generated and built. Follow it whenever
+your worklist adds to a crate's allowlists, shims or external types.
+
+<!-- INCLUDE specs/bindgen.md -->
+
+---
+
 Here are additional instructions on how to generate safe bindings. Generate your worklist's
 bindings as they describe, following the Type route or the Symbol route for your route.
 

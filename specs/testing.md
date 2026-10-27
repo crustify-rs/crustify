@@ -36,7 +36,8 @@ commands run from it, its `version` raised whenever a command changes. They are:
 
 A Rust- or bindgen-only change reuses a matching variant: same C revision, `build.json`
 version, compiler and instrumentation. A change to the compiled target needs a private
-build, and the shared variants are rebuilt once that change lands.
+build, which the `-sys` crates link when `CRUSTIFY_BUILD_DIR` names it in place of a
+variant, and the shared variants are rebuilt once that change lands.
 
 ## 2. UB tests
 
@@ -146,6 +147,21 @@ cargo +nightly-<date> fmt --all --check
 cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
 ```
+
+Every build of those gates runs in the `-sys` crates' campaign mode, as
+[`bindgen.md`](bindgen.md)'s Build modes section describes, so that each fails when the
+committed bindings do not match their input. A batch that changed a `-sys` crate also
+packages every `-sys` crate together, each built alone in shipped mode against an install of
+the `plain` variant, staged under `crustify/tmp/`, since a build tree has no `pkg-config`
+files a dependent could use:
+
+```bash
+CRUSTIFY_BUILD_VARIANT= <LIB>_DIR=<staged prefix> ... \
+    cargo package -p <link-unit>-sys ... --config 'patch.crates-io.<crate>.path="<path>"' ...
+```
+
+Until the out-of-tree wrappers and the `-sys` crates are published, each crate a package
+depends on is patched to its local source, so that the package builds alone.
 
 Every FFI, UB, and equivalence test runs against the matching reusable sanitized C library
 or a private sanitized replacement, and under every available sanitizer.

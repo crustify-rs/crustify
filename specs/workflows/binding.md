@@ -37,9 +37,9 @@ Once the plan is complete, the Rust tree is scaffolded on the working branch, as
   shared package fields, its lints and its pinned nightly, and its `src/lib.rs` with a
   module per link unit;
 - `rust-toolchain.toml` and `rustfmt.toml`, as [`../rust.md`](../rust.md) describes;
-- one `-sys` crate per link unit, with its `Cargo.toml`, `src/lib.rs`, `build.rs` and
-  bindgen input over the C under `c/`, the allowlists of which the batches fill as they
-  bind items; and
+- one `-sys` crate per link unit, laid out as [`../bindgen.md`](../bindgen.md) describes,
+  with its bindgen input over the C under `c/`, the allowlists of which the batches fill as
+  they bind items, and its bindings generated from them; and
 - the integration test suites the conventions' Testing section places.
 
 The wrappers of out-of-tree libraries are repositories of their own, cloned beside the
