@@ -146,6 +146,13 @@ them when you scaffold the workspace.
 
 ---
 
+Here is how the `-sys` crates are laid out, generated, built and shipped. Follow it when
+you scaffold them and when you publish the crates.
+
+<!-- INCLUDE specs/bindgen.md -->
+
+---
+
 For reference: the following describe how the agents you spawn do their work. Use them to
 brief the user, to write additional instructions, and to judge what the agents report.
 

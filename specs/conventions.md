@@ -57,7 +57,8 @@ out, all relative to the repository's root:
 - `Cargo.toml` - the safe crate's manifest, which also declares the workspace.
 - `src/lib.rs` - the safe crate's root, with one `cfg`-gated module per link unit.
 - `src/<link-unit>/` - one sub-dir per link unit.
-- `<link-unit>-sys/` - raw bindings package, one per link unit, a workspace member.
+- `<link-unit>-sys/` - raw bindings package, one per link unit, a workspace member, laid out as
+  [`bindgen.md`](bindgen.md) describes.
 
 The safe crate's name is chosen when the repository is created, from what crates.io leaves
 free; the source's own bindings, such as `git2` for libgit2, usually hold the obvious one.

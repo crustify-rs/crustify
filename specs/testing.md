@@ -147,6 +147,17 @@ cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
 ```
 
+Every build of those gates runs in the `-sys` crates' campaign mode, as
+[`bindgen.md`](bindgen.md)'s Build modes section describes, so that each fails when the
+committed bindings do not match their input. A batch that changed a `-sys` crate also
+packages every `-sys` crate together, so that each is built alone, without the repository
+around it, in shipped mode, against the `plain` variant's `pkg-config` files:
+
+```bash
+env -u CRUSTIFY_BUILD_VARIANT PKG_CONFIG_PATH=<plain variant's pkg-config dir> \
+    cargo package -p <link-unit>-sys ...
+```
+
 Every FFI, UB, and equivalence test runs against the matching reusable sanitized C library
 or a private sanitized replacement, and under every available sanitizer.
 

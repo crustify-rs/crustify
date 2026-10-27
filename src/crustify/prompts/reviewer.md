@@ -131,6 +131,13 @@ them in everything you write.
 
 ---
 
+Here is how the `-sys` crates are laid out, generated and built. Review the batches' changes to
+them against it.
+
+<!-- INCLUDE specs/bindgen.md -->
+
+---
+
 Here are additional instructions on how Crustify generates safe bindings, which your workset
 is judged against.
 
