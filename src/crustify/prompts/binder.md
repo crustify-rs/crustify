@@ -202,9 +202,9 @@ if any, follow; where they conflict with the rest of this prompt, follow them.
 
 ## Tools
 
-These are the tools you reach for, each with its binary and its own documentation, which
-you read in full before the tool's first command. How each serves your work is given
-beside the spec it serves, above.
+These are the tools you reach for, installed on your `PATH` or in your build. Read each
+one's own documentation, which its header names, in full before its first use. How each
+serves your work is given beside the spec it serves, above.
 
 <!-- INCLUDE specs/tools/wavefront/wavefront.md -->
 

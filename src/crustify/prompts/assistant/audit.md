@@ -58,9 +58,9 @@ waves, spending, disclosure and output.
 
 ## Tools
 
-These are the tools you reach for, each with its binary and its own documentation, which
-you read in full before the tool's first command, followed by how each serves the specs
-above.
+These are the tools you reach for, installed on your `PATH` or in your build, followed by
+how each serves the specs above. Read each one's own documentation, which its header
+names, in full before its first use.
 
 <!-- INCLUDE specs/tools/ffimap/ffimap.md -->
 
