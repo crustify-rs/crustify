@@ -1,3 +1,61 @@
+<!-- INCLUDE specs/rust/conventions.md -->
+
+---
+
+<!-- INCLUDE specs/rust/toolchain.md -->
+
+---
+
+<!-- INCLUDE specs/rust/bindgen.md -->
+
+---
+
+<!-- INCLUDE specs/rust/items/binding.md -->
+
+The tools serve it as follows:
+
+<!-- INCLUDE specs/tools/wavefront/rust/items/binding.md -->
+<!-- INCLUDE specs/tools/ffimap/rust/items/binding.md -->
+<!-- INCLUDE specs/tools/ffibox/rust/items/binding.md -->
+
+---
+
+<!-- INCLUDE specs/rust/items/porting.md -->
+
+The tools serve it as follows:
+
+<!-- INCLUDE specs/tools/wavefront/rust/items/porting.md -->
+
+---
+
+<!-- INCLUDE specs/planning/decomposition.md -->
+
+The tools serve it as follows:
+
+<!-- INCLUDE specs/tools/wavefront/planning/decomposition.md -->
+
+---
+
+<!-- INCLUDE specs/planning/scheduling.md -->
+
+The tools serve it as follows:
+
+<!-- INCLUDE specs/tools/wavefront/planning/scheduling.md -->
+
+---
+
+<!-- INCLUDE specs/planning/dependencies.md -->
+
+---
+
+<!-- INCLUDE specs/workflows/binding.md -->
+
+---
+
+<!-- INCLUDE specs/workflows/porting.md -->
+
+<!-- CAMPAIGN SPECS END -->
+
 This is a port or wrap campaign: it translates a C codebase to Rust, binding each item
 behind a safe Rust API or porting it to Rust, as `crustify/CRUSTIFY.md`'s `campaign`
 answer selects.
@@ -14,7 +72,7 @@ You spawn four kinds of agent, and each owns its part:
 Each owns the regression gates of its own work, and fills its own landing cells of the
 dashboard.
 
-You own everything else of the binding workflow below, and of the porting workflow in a
+You own everything else of the binding workflow above, and of the porting workflow in a
 port campaign: the planner runs' branches, tasks, checks and promotion; the Rust tree's
 scaffolding; the side campaigns of the out-of-tree libraries the plan needs, each a wrap
 campaign you run in its own repository, as the dependencies spec describes; each module's `status`, which you set to `frozen` when the modules schema's Status
@@ -102,86 +160,16 @@ Planning section describes, under the new answers. Landed work is never re-plann
    dashboard; copy its figures into the parent's `Side campaigns` table each time the
    parent's pin moves, as the accounting spec's Side campaign cells section describes.
 
----
+<!-- CAMPAIGN GUIDE START -->
 
-Here are additional instructions on how a translation campaign proceeds: the binding
-workflow, and where a port campaign departs from it.
-
-<!-- INCLUDE specs/workflows/binding.md -->
-
-<!-- INCLUDE specs/workflows/porting.md -->
-
----
-
-Here is how a campaign is decomposed into modules: what each module holds, how its
-decisions are made, and how planner runs follow one another.
-
-<!-- INCLUDE specs/planning/decomposition.md -->
-
-Here is how the decomposition is scheduled: the order the modules run in, the waves and
-batches, and how types are ported.
-
-<!-- INCLUDE specs/planning/scheduling.md -->
-
-Here is how a campaign reaches the libraries its target uses from outside its tree: the
-wrappers it builds for them, and how it reuses those of earlier campaigns.
-
-<!-- INCLUDE specs/planning/dependencies.md -->
-
----
-
-The following describes the conventions of the codebase the campaign generates. Follow them
-wherever they apply: when you scaffold crates, modules and test suites,
-and when you home each batch's items.
-
-<!-- INCLUDE specs/rust/conventions.md -->
-
----
-
-Here is how the Rust is built, linted and formatted: its toolchains, its edition, the lints
-every crate inherits, how it is formatted and how its unsafe code is justified. Follow
-them when you scaffold the workspace.
-
-<!-- INCLUDE specs/rust/toolchain.md -->
-
----
-
-Here is how the `-sys` crates are laid out, generated, built and shipped. Follow it when
-you scaffold them and when you publish the crates.
-
-<!-- INCLUDE specs/rust/bindgen.md -->
-
----
-
-For reference: the following describe how the agents you spawn do their work. Use them to
-brief the user, to write additional instructions, and to judge what the agents report.
-
-Here is how binders and translators generate safe bindings.
-
-<!-- INCLUDE specs/rust/items/binding.md -->
-
----
-
-Here is how translators port C to safe Rust.
-
-<!-- INCLUDE specs/rust/items/porting.md -->
-
----
-
----
-
-## Tools
-
-These are the tools you reach for, installed on your `PATH` or in your build, followed by
-how each serves the specs above. Read each one's own documentation, which its header
-names, in full before its first use.
-
-<!-- INCLUDE specs/tools/wavefront/wavefront.md -->
-
-<!-- INCLUDE specs/tools/wavefront/workflows/setup.md -->
-
-<!-- INCLUDE specs/tools/wavefront/operations/versioning.md -->
-
-<!-- INCLUDE specs/tools/ffimap/ffimap.md -->
-
-<!-- INCLUDE specs/tools/ffimap/operations/accounting.md -->
+- `workflows/binding.md` and `workflows/porting.md`: how a translation campaign proceeds,
+  which your workflow above carries out.
+- `planning/decomposition.md`, `planning/scheduling.md` and `planning/dependencies.md`: the
+  plan the planner runs produce, which you check and promote.
+- `rust/conventions.md`: follow it wherever it applies: when you scaffold crates, modules and
+  test suites, and when you home each batch's items.
+- `rust/toolchain.md`: follow it when you scaffold the workspace.
+- `rust/bindgen.md`: follow it when you scaffold the `-sys` crates and when you publish them.
+- `rust/items/binding.md` and `rust/items/porting.md`: how binders and translators do their
+  work, for reference: use them to brief the user, to write additional instructions, and to
+  judge what the agents report.

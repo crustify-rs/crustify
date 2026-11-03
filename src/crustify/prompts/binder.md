@@ -1,10 +1,18 @@
 ## Specs
 
 These are the specs Crustify's work follows, each in full: what its artifacts are and how
-each part of the work is done, with how the tools serve each. Which apply to you, and how,
-is your role's to say, in the sections after them.
+each part of the work is done, the tools that serve it and how they serve each part. Which
+apply to you, and how, is your role's to say, in the sections after them.
 
 <!-- INCLUDE specs/identity.md -->
+
+---
+
+<!-- INCLUDE specs/tools/wavefront/wavefront.md -->
+
+<!-- INCLUDE specs/tools/ffimap/ffimap.md -->
+
+<!-- INCLUDE specs/tools/ffibox/ffibox.md -->
 
 ---
 
@@ -14,6 +22,10 @@ is your role's to say, in the sections after them.
 
 <!-- INCLUDE specs/operations/versioning.md -->
 
+The tools serve it as follows:
+
+<!-- INCLUDE specs/tools/wavefront/operations/versioning.md -->
+
 ---
 
 <!-- INCLUDE specs/operations/layout.md -->
@@ -22,7 +34,7 @@ is your role's to say, in the sections after them.
 
 <!-- INCLUDE specs/operations/accounting.md -->
 
-The tools you carry serve it as follows:
+The tools serve it as follows:
 
 <!-- INCLUDE specs/tools/ffimap/operations/accounting.md -->
 
@@ -30,7 +42,7 @@ The tools you carry serve it as follows:
 
 <!-- INCLUDE specs/verification/testing.md -->
 
-The tools you carry serve it as follows:
+The tools serve it as follows:
 
 <!-- INCLUDE specs/tools/ffibox/verification/testing.md -->
 
@@ -50,11 +62,11 @@ The tools you carry serve it as follows:
 
 <!-- INCLUDE specs/rust/items/binding.md -->
 
-The tools you carry serve it as follows:
+The tools serve it as follows:
 
 <!-- INCLUDE specs/tools/wavefront/rust/items/binding.md -->
-<!-- INCLUDE specs/tools/ffibox/rust/items/binding.md -->
 <!-- INCLUDE specs/tools/ffimap/rust/items/binding.md -->
+<!-- INCLUDE specs/tools/ffibox/rust/items/binding.md -->
 
 ---
 
@@ -164,20 +176,6 @@ reran and why the others could not have changed.
 
 ---
 
-## Tools
-
-These are the tools you reach for, installed on your `PATH` or in your build. Read each
-one's own documentation, which its header names, in full before its first use. How each
-serves your work is given beside the spec it serves, above.
-
-<!-- INCLUDE specs/tools/wavefront/wavefront.md -->
-
-<!-- INCLUDE specs/tools/ffibox/ffibox.md -->
-
-<!-- INCLUDE specs/tools/ffimap/ffimap.md -->
-
----
-
 ## How the specs apply
 
 - `rust/conventions.md`: follow it throughout your workflow wherever it applies: where your
@@ -189,6 +187,9 @@ serves your work is given beside the spec it serves, above.
   Type route or the Symbol route for your route.
 - `operations/accounting.md`: you fill your batch's landing cells, in your last commit; the
   usage and campaign cells are not yours.
+- the tools: each is installed on your `PATH` or in your build; read each one's own
+  documentation, which its spec names, in full before its first use.
+
 ---
 
 ## Inputs

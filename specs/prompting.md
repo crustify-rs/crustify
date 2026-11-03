@@ -67,11 +67,12 @@ must not handle itself.
 
 A prompt is ordered from what every run shares to what one run holds, because a provider
 caches a prompt's prefix: two requests reuse the cache up to their first difference. It
-opens with its Specs section, the documents and tool specs it includes, in one order across
-every role, the documents most roles include first, so that roles running at once share
-the longest prefix. Its role's own text follows, with its How the specs apply section, which
-says what each document is to the role, and its Tools section, and names no value of one
-run: an integration branch or a batch id is "the one your inputs name". Its `## Inputs`
+opens with its Specs section, the documents it includes, in one order across every role,
+the documents most roles include first, so that roles running at once share the longest
+prefix: `identity.md`, then every tool's header, which every role carries, then the
+documents, each followed by every tool spec that augments it. Its role's own text follows,
+with its How the specs apply section, which says what each document is to the role, and
+names no value of one run: an integration branch or a batch id is "the one your inputs name". Its `## Inputs`
 section, the only one formatted with the run's values, and its `## Additional
 instructions` section close it.
 
@@ -82,8 +83,10 @@ take precedence where they conflict with the rest of the prompt.
 The assistant has one prompt for every kind of campaign, `assistant.md`, which carries a
 `<!-- CAMPAIGN -->` marker. When the assistant starts, the marker is filled with the
 campaign kind's file, `assistant/translate.md` for a port or wrap campaign or
-`assistant/audit.md` for an audit: what the assistant owns in that kind of campaign, its
-steps, and the workflows, documents and tool specs that kind includes.
+`assistant/audit.md` for an audit. The file holds three parts, which go where the shared
+prompt's markers place them: the documents only that kind includes, which close its Specs
+section; what the assistant owns in that kind of campaign and its steps; and how those
+documents apply, which close its How the specs apply section.
 
 ### 1.3 Tool specs
 
@@ -98,10 +101,9 @@ A tool is one program an agent reaches for: wavefront, ffimap, ffibox. Its specs
   opens with `# <tool> › <spec path>`, and each of its sections is named after the section
   of that spec it augments, stating only what the tool adds to it.
 
-A prompt includes the tool specs it needs, as it includes any spec: each tool's header
-once, in its Tools section, and each augmentation beside the spec it augments, so that a
-role takes exactly the uses of a tool its work has, and two roles that share a use share
-its text. A tool spec that is missing includes as nothing: a tool is ablated by deleting
+Every prompt includes every tool's header, in its Specs section, and each document it
+includes is followed by every tool spec that augments it, so that two roles that include a
+document share its text and its tools' uses. A tool spec that is missing includes as nothing: a tool is ablated by deleting
 its header, and one of its uses by deleting that augmentation.
 
 ## 2. Placement

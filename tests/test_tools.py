@@ -150,7 +150,7 @@ class AblationTests(unittest.TestCase):
 
     def test_a_present_tool_is_carried(self) -> None:
         agent = self._agent()
-        self.assertEqual(agent.prompt_capabilities(), ("wavefront", "ffimap"))
+        self.assertEqual(agent.prompt_capabilities(), ("wavefront", "ffimap", "ffibox"))
         self.assertIn("# wavefront › workflows/setup", agent.system_preamble())
 
     def test_deleting_a_tool_header_ablates_the_tool(self) -> None:

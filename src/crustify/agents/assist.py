@@ -21,16 +21,33 @@ from crustify.agents.base import (
 #: kind's part: replaced by `prompts/assistant/<kind>.md`, what the assistant
 #: owns in that kind of campaign and the documents only that kind includes.
 CAMPAIGN_MARKER = "<!-- CAMPAIGN -->"
+CAMPAIGN_SPECS_MARKER = "<!-- CAMPAIGN SPECS -->"
+CAMPAIGN_GUIDE_MARKER = "<!-- CAMPAIGN GUIDE -->"
+SPECS_END = "<!-- CAMPAIGN SPECS END -->"
+GUIDE_START = "<!-- CAMPAIGN GUIDE START -->"
 
 
 def campaign_prompt(kind: str) -> str:
     """The assistant's prompt template for one campaign kind, its documents not
-    yet included: the shared prompt with the kind's part in its marker."""
+    yet included: the shared prompt with the kind's part in its markers.
+
+    A kind's file holds three parts, in order: the specs only that kind
+    includes, up to `<!-- CAMPAIGN SPECS END -->`, which join the shared Specs
+    section; what the assistant owns and does in that kind, up to
+    `<!-- CAMPAIGN GUIDE START -->`, which fills the Campaign section; and how
+    those specs apply, which closes the shared How the specs apply section."""
     shared = (_PKG_ROOT / "prompts" / "assistant.md").read_text()
-    if shared.count(CAMPAIGN_MARKER) != 1:
-        raise SystemExit(f"assistant.md must hold one {CAMPAIGN_MARKER} marker")
-    part = (_PKG_ROOT / "prompts" / "assistant" / f"{kind}.md").read_text().strip()
-    return shared.replace(CAMPAIGN_MARKER, part)
+    for marker in (CAMPAIGN_SPECS_MARKER, CAMPAIGN_MARKER, CAMPAIGN_GUIDE_MARKER):
+        if shared.count(marker) != 1:
+            raise SystemExit(f"assistant.md must hold one {marker} marker")
+    part = (_PKG_ROOT / "prompts" / "assistant" / f"{kind}.md").read_text()
+    specs, sep1, rest = part.partition(SPECS_END)
+    campaign, sep2, guide = rest.partition(GUIDE_START)
+    if not (sep1 and sep2):
+        raise SystemExit(f"assistant/{kind}.md must hold {SPECS_END} and {GUIDE_START}")
+    return (shared.replace(CAMPAIGN_SPECS_MARKER, specs.strip())
+            .replace(CAMPAIGN_MARKER, campaign.strip())
+            .replace(CAMPAIGN_GUIDE_MARKER, guide.strip()))
 
 
 #: The first turn of a session started with `--start`: the user's instruction

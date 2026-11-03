@@ -1,3 +1,11 @@
+<!-- INCLUDE specs/workflows/audit.md -->
+
+The tools serve it as follows:
+
+<!-- INCLUDE specs/tools/ffimap/workflows/audit.md -->
+
+<!-- CAMPAIGN SPECS END -->
+
 This is an audit campaign on a Rust crate: it hunts undefined behaviour reachable from safe
 code, and, with the `equivalence` instrument, drift between the crate and the C it wraps.
 
@@ -7,7 +15,7 @@ You spawn reviewer agents, which own defect hunting, reporting, reproducing and 
 the regression gates of their own work, and their own landing cells of the dashboard. Do
 not hunt defects yourself.
 
-You own everything else of the audit workflow below: planning the worksets and recording
+You own everything else of the audit workflow above: planning the worksets and recording
 them in `schedule.json`, every review wave and review batch, from its branch and task to
 its promotion, and its progress, the spending limit, the disclosure checks and the
 dashboard.
@@ -47,23 +55,6 @@ The unit of work is the review wave.
    fill its usage cells, and fill the dashboard as the audit workflow's Output section
    describes.
 
----
+<!-- CAMPAIGN GUIDE START -->
 
-Here are additional instructions on how an audit proceeds: its objectives, worksets, review
-waves, spending, disclosure and output.
-
-<!-- INCLUDE specs/workflows/audit.md -->
-
----
-
-## Tools
-
-These are the tools you reach for, installed on your `PATH` or in your build, followed by
-how each serves the specs above. Read each one's own documentation, which its header
-names, in full before its first use.
-
-<!-- INCLUDE specs/tools/ffimap/ffimap.md -->
-
-<!-- INCLUDE specs/tools/ffimap/workflows/audit.md -->
-
-<!-- INCLUDE specs/tools/ffimap/verification/reviewing.md -->
+- `workflows/audit.md`: how an audit proceeds, which your workflow above carries out.

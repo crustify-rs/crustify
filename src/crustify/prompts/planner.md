@@ -1,14 +1,30 @@
 ## Specs
 
 These are the specs Crustify's work follows, each in full: what its artifacts are and how
-each part of the work is done, with how the tools serve each. Which apply to you, and how,
-is your role's to say, in the sections after them.
+each part of the work is done, the tools that serve it and how they serve each part. Which
+apply to you, and how, is your role's to say, in the sections after them.
 
 <!-- INCLUDE specs/identity.md -->
 
 ---
 
+<!-- INCLUDE specs/tools/wavefront/wavefront.md -->
+
+<!-- INCLUDE specs/tools/ffimap/ffimap.md -->
+
+<!-- INCLUDE specs/tools/ffibox/ffibox.md -->
+
+---
+
+<!-- INCLUDE specs/operations/concurrency.md -->
+
+---
+
 <!-- INCLUDE specs/operations/accounting.md -->
+
+The tools serve it as follows:
+
+<!-- INCLUDE specs/tools/ffimap/operations/accounting.md -->
 
 ---
 
@@ -18,15 +34,17 @@ is your role's to say, in the sections after them.
 
 <!-- INCLUDE specs/verification/reviewing.md -->
 
-The tools you carry serve it as follows:
+The tools serve it as follows:
 
 <!-- INCLUDE specs/tools/wavefront/verification/reviewing.md -->
+<!-- INCLUDE specs/tools/ffimap/verification/reviewing.md -->
+<!-- INCLUDE specs/tools/ffibox/verification/reviewing.md -->
 
 ---
 
 <!-- INCLUDE specs/planning/decomposition.md -->
 
-The tools you carry serve it as follows:
+The tools serve it as follows:
 
 <!-- INCLUDE specs/tools/wavefront/planning/decomposition.md -->
 
@@ -34,7 +52,7 @@ The tools you carry serve it as follows:
 
 <!-- INCLUDE specs/planning/scheduling.md -->
 
-The tools you carry serve it as follows:
+The tools serve it as follows:
 
 <!-- INCLUDE specs/tools/wavefront/planning/scheduling.md -->
 
@@ -178,21 +196,6 @@ lists the reports you filed. Add no `Batch:` trailer, nor any other trailer of y
 
 ---
 
-Here is how your work shares the host with the other agents and builds running on it: how
-to choose the parallelism of each build, test run and gate you start.
-
-<!-- INCLUDE specs/operations/concurrency.md -->
-
-## Tools
-
-These are the tools you reach for, installed on your `PATH` or in your build. Read each
-one's own documentation, which its header names, in full before its first use. How each
-serves your work is given beside the spec it serves, above.
-
-<!-- INCLUDE specs/tools/wavefront/wavefront.md -->
-
----
-
 ## How the specs apply
 
 - `rust/conventions.md`: each batch item's `home` follows it.
@@ -201,6 +204,9 @@ serves your work is given beside the spec it serves, above.
 - `verification/reviewing.md`: including how a planner files its corrections.
 - `operations/accounting.md`: you fill your run's landing cells, its row in `Planning` but
   for its usage cells, in your commit; the usage and campaign cells are not yours.
+- the tools: each is installed on your `PATH` or in your build; read each one's own
+  documentation, which its spec names, in full before its first use.
+
 ---
 
 ## Inputs
