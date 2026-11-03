@@ -4,25 +4,21 @@ Crustify's identity is the GitHub account `crustify-ai`. Its git identity is:
 crustify <crustify@berkeley.edu>
 ```
 
-A campaign's commits carry the identity its settings name, the `identity` answer of
-`crustify/CRUSTIFY.md`: an author, and any co-authors, each as `Name <email>`. The default,
-when the question is left unanswered, is Crustify's identity as the author, with no
-co-author.
-
-Every commit of the campaign is authored and committed as that author, whatever the
-repository's git configuration says, and its message ends with one `Co-Authored-By:`
-trailer per co-author and no other. The identity is passed to each commit explicitly. For
-example, under the default:
+Every commit of a campaign is authored and committed as Crustify, whatever the repository's
+git configuration says, unless the campaign's settings name another identity: the
+`identity` answer of `crustify/CRUSTIFY.md`, an author and any co-authors, each as
+`Name <email>`. The author named there then authors and commits every commit, and its
+message ends with one `Co-Authored-By:` trailer per co-author and no other. The identity is
+passed to each commit explicitly. By default:
 
 ```bash
 git -c user.name=crustify -c user.email=crustify@berkeley.edu commit ...
 ```
 
-and with `author: Marius Momeu <marius.momeu@berkeley.edu>, co-authors: crustify
-<crustify@berkeley.edu>`:
+and with `author: Name <email>, co-authors: crustify <crustify@berkeley.edu>`:
 
 ```bash
-git -c "user.name=Marius Momeu" -c user.email=marius.momeu@berkeley.edu commit -F - <<'MSG'
+git -c "user.name=Name" -c user.email=email commit -F - <<'MSG'
 <subject>
 
 <body>
