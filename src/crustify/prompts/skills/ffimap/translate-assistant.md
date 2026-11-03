@@ -6,7 +6,7 @@ landed it, a wave's in `crustify/artifacts/waves/wave-<index>/`, and the campaig
 `crustify/artifacts/`. A module's end is the scan of its last wave.
 
 ```bash
-ffimap <workdir> --json > <artifact dir>/ffimap.json
+ffimap <workdir> > <artifact dir>/ffimap.json
 ```
 
 It counts what the safe crate itself defines. The public unsafe surface is

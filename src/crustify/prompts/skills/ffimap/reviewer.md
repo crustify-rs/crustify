@@ -8,7 +8,7 @@ name. They are starting points, not your whole review: ffimap is neither complet
 sound, so review beyond them.
 
 ```bash
-ffimap <workdir> --json --sites <counter> ...
+ffimap <workdir> --sites <counter> ...
 ```
 
 `--sites` lists where each named counter's increments are.

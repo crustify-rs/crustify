@@ -6,7 +6,7 @@ Plan the audit's worksets from an ffimap scan of the crate, run once each build
 configuration you audit is in place:
 
 ```bash
-ffimap <workdir> --json --sites <counter> ...
+ffimap <workdir> --sites <counter> ...
 ```
 
 `--sites` lists where each named counter's increments are. ffimap counts what the build
