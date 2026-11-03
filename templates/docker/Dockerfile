@@ -183,9 +183,11 @@ ARG INSTALL_CODEX=1
 
 # /opt/bsan-shim precedes /root/.cargo/bin so `cargo bsan` resolves to the
 # toolchain-pinning shim, and /opt/codeql is last because it only exists on
-# x86-64 builds.
+# x86-64 builds. /work/.local/bin precedes /root/.local/bin: Claude Code's
+# updater installs under HOME, the /work volume, and its copy there must win
+# over the one this image installed, or every update lands unused.
 ENV DEBIAN_FRONTEND=noninteractive \
-    PATH=/opt/bsan-shim:/opt/venv/bin:/root/.cargo/bin:/root/.local/bin:/opt/codeql:$PATH \
+    PATH=/opt/bsan-shim:/opt/venv/bin:/root/.cargo/bin:/work/.local/bin:/root/.local/bin:/opt/codeql:$PATH \
     CARGO_TERM_COLOR=never \
     # Claude Code refuses --dangerously-skip-permissions as root without this.
     IS_SANDBOX=1
@@ -294,12 +296,15 @@ RUN arch="$(dpkg --print-architecture)"; \
         echo "CodeQL is unavailable natively on $arch; a campaign here needs T1/T2 tables extracted elsewhere"; \
     fi
 
-# Both installers fetch whatever the vendor currently ships, so this layer IS
-# the version pin. Docker caches it by instruction text, which never changes,
-# so a rebuild silently keeps the CLIs the first build happened to get. Bump
-# CLI_REFRESH to refetch: `--build-arg CLI_REFRESH=$(date +%s)`. The versions
-# are echoed into the build log because otherwise the only record of which CLI
-# ran a campaign is the banner in each agent's transcript.
+# Both installers fetch whatever the vendor currently ships. Claude Code then
+# updates itself into the /work volume, whose copy PATH prefers, so the one
+# installed here only runs until a volume's first update. Codex does not update
+# itself, so this layer is its version pin. Docker caches it by instruction
+# text, which never changes, so a rebuild silently keeps the CLIs the first
+# build happened to get. Bump CLI_REFRESH to refetch:
+# `--build-arg CLI_REFRESH=$(date +%s)`. The versions are echoed into the build
+# log, but which CLI ran a campaign is recorded only in the banner of each
+# agent's transcript.
 ARG CLI_REFRESH=0
 RUN if [ "${INSTALL_CLAUDE}" = "1" ]; then \
         curl -fsSL https://claude.ai/install.sh | bash; \

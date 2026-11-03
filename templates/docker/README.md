@@ -167,7 +167,7 @@ Set with `--build-arg` on `docker build`.
 | `PYTHON_VERSION` | `3.13` | interpreter for `/opt/venv` |
 | `INSTALL_CLAUDE` | `1` | install the claude backend |
 | `INSTALL_CODEX` | `1` | install the codex backend |
-| `CLI_REFRESH` | `0` | bump to refetch the claude and codex CLIs |
+| `CLI_REFRESH` | `0` | bump to refetch the claude and codex CLIs; claude also updates itself into `/work`, which `PATH` prefers |
 | `DEPS_REFRESH` | `0` | bump to re-clone wavefront, ffibox and ffimap |
 
 ## Mounts
