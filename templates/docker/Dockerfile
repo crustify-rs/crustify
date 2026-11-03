@@ -15,10 +15,8 @@
 #   docker run -d --init --name crustify-libgit2 \
 #       --security-opt seccomp=unconfined \
 #       -e OPENROUTER_API_KEY \
-#       -v "$(dirname "$PWD")/wavefront:/opt/venv/share/wavefront" \
-#       -v "$(dirname "$PWD")/ffibox:/opt/venv/share/ffibox" \
-#       -v "$(dirname "$PWD")/ffimap:/opt/venv/share/ffimap" \
-#       -v /absolute/path/to/your/target-fork:/target \
+#       -v /absolute/path/to/your/campaign-dir:/target \
+#       -v "$(dirname "$PWD"):/crustify-rs" \
 #       -v /absolute/path/to/your/CRUSTIFY.md:/campaign/CRUSTIFY.md:ro \
 #       -v crustify-libgit2-work:/work \
 #       crustify
@@ -38,36 +36,50 @@
 #
 # Mounts:
 #
-#   /target            Required read-write bind mount of an existing Git
-#                      checkout. Its revision, branches, `crustify/` directory,
-#                      CodeQL data, partial translation and logs are used in
-#                      place and remain on the host. The orchestrator must not
-#                      clone, reset or replace it.
+#   /target            Required read-write bind mount: the directory the
+#                      campaign works in. It holds the campaign repository --
+#                      the Rust at its root, the C under `c/`, the campaign's
+#                      own state under `crustify/` -- and the wrapper
+#                      repositories of out-of-tree libraries beside it, which
+#                      is why it is a directory and not the repository itself.
+#                      It may be EMPTY: Crustify creates the repository in it
+#                      and takes the C from the `source` its settings name, so
+#                      the C does not have to exist on the host. When it
+#                      already holds a campaign, that campaign is resumed in
+#                      place: its revision, branches, artifacts, CodeQL data
+#                      and logs are used where they are and stay on the host,
+#                      and nothing there is reset or replaced. An audit creates
+#                      no repository, so /target is the reviewed crate's own
+#                      checkout.
 #   /campaign/CRUSTIFY.md  The campaign settings, read-only, by convention:
 #                      `--settings` takes any path, and copies it to
 #                      /target/crustify/CRUSTIFY.md on the first run. Edit that
 #                      copy on the host to change settings mid-campaign;
 #                      Crustify rereads it before each module.
-#   /opt/crustify      The harness, baked into the image. Mount a checkout here
-#                      to test live harness changes. Both packages live in one
-#                      distribution, so this single tree serves both roles.
-#   /opt/venv/share/{wavefront,ffibox,ffimap}
-#                      Optional read-write host checkouts. This is where
-#                      crustify LOOKS for wavefront and ffibox --
-#                      `<prefix>/share/<name>` for the environment it is
-#                      installed in -- so nothing configures a path. ffimap
-#                      sits beside them and is installed editable, so its
-#                      `ffimap` command on PATH runs whatever tree is there.
-#                      The image carries a clone of each from build time; a
-#                      mount replaces it, so a campaign runs against the trees
-#                      under development. An audit uses only ffimap.
+#   /crustify-rs       Optional read-write bind mount of the whole crustify-rs
+#                      workspace: the toolchains the campaign uses -- wavefront,
+#                      ffibox, ffimap -- beside the target forks and the
+#                      reference crates, as they sit on the host. This is where
+#                      the tool checkouts LIVE in the image, so one mount
+#                      replaces all three at once and the agents browse one
+#                      tree instead of three unrelated paths. The image carries
+#                      a clone of each from build time, so the mount is
+#                      optional; a workspace mounted here must carry a
+#                      directory per tool AND a crustify checkout, since each
+#                      is reached through a path inside it that otherwise
+#                      dangles -- the harness included. An audit uses only
+#                      ffimap.
+#   /opt/crustify      A read alias for /crustify-rs/crustify, the harness, so
+#                      that path still resolves. Not a mount point: mounting
+#                      over it changes nothing, because the install and
+#                      PYTHONPATH point into the workspace.
 #   /work              Named volume, and `HOME`: the agents' session
 #                      transcripts, the C libraries they build, the cargo
 #                      registry. It outlives `docker rm`, so a container
 #                      re-created to change its mounts keeps them. Not the
-#                      artifacts -- those land in the target checkout.
+#                      artifacts -- those land in the campaign repository.
 #
-# The dashboard template rides the /opt/crustify mount: the orchestrator reads
+# The dashboard template rides the harness tree: the orchestrator reads
 # templates/translate/dashboard.template.md from the checkout and writes the filled
 # dashboard where the campaign settings say. Nothing is seeded into /target.
 #
@@ -80,17 +92,37 @@
 # Run tmux inside to detach from a long campaign.
 
 
-# The tool checkouts, one stage each. By default each is cloned from GitHub's
-# `main`; `--build-context <tool>=<path>` replaces the stage of that name with
-# a local checkout, and its clone is then never run. That is how a private or
-# unpushed tool gets into the image:
+# The four tool checkouts, one stage each, named after the tool. One rule
+# covers all of them: a stage named `<tool>` produces that tool's tree, and
+# `--build-context <tool>=<path>` replaces the stage of that name with a local
+# checkout, so its default is never run:
 #
 #   docker build -t crustify -f templates/Dockerfile \
-#       --build-context ffimap=../ffimap .
+#       --build-context ffimap=../ffimap \
+#       --build-context wavefront=../wavefront .
 #
-# Docker caches the clones by instruction text, so bump DEPS_REFRESH to
-# re-clone `main`: `--build-arg DEPS_REFRESH=$(date +%s)`. Every stage uses the
-# base image pinned below, which has git.
+# That is how a private or unpushed tool gets into the image, and it is the
+# same flag for every one of the four. What differs is only the default:
+#
+#   wavefront, ffibox, ffimap   a shallow clone of the default branch, from the
+#                               crustify-rs organization
+#   crustify                    the build context -- the checkout this
+#                               Dockerfile ships in, which is the tree you are
+#                               building from
+#
+# crustify defaults to the context because `docker build -f templates/Dockerfile .`
+# is run from a crustify checkout, so the local tree is what one means by
+# default.
+#
+# There is no flag for a branch, and none is needed: a build takes either a
+# local checkout or the default branch, and a checkout is already on whatever
+# branch you put it on. To build against one, check it out locally and pass the
+# tree.
+#
+# Docker caches a `RUN git clone` by instruction text, which never changes, so
+# bump DEPS_REFRESH to re-clone the default branch:
+# `--build-arg DEPS_REFRESH=$(date +%s)`. Every clone stage uses the base image
+# pinned below, which has git.
 ARG DEPS_REFRESH=0
 FROM ghcr.io/borrowsanitizer/bsan@sha256:56bbbfd19dec23ba518e9dc2221045b2869cc1f6aabdd8ea40174a41d860a5b2 AS wavefront-clone
 ARG DEPS_REFRESH
@@ -110,6 +142,27 @@ RUN echo "DEPS_REFRESH=${DEPS_REFRESH}" \
     && git clone --depth 1 https://github.com/crustify-rs/ffimap.git /src
 FROM scratch AS ffimap
 COPY --from=ffimap-clone /src /
+# crustify's default source is the build context, so it needs no clone stage --
+# only the same `<tool>` name, so that one flag overrides any of the four. It
+# lands in /crustify-rs beside them and is installed from there like the rest.
+FROM scratch AS crustify
+COPY . /
+
+# The four trees are collected and cleaned in one stage before they ship.
+# `--build-context <tool>=<path>` does NOT honour this repository's
+# .dockerignore -- that file applies to the default context only -- so a local
+# checkout arrives with whatever is in it, and a Rust checkout carries its
+# Cargo `target/`: ffibox alone brought 484 MB of build artifacts, 75% of
+# everything the four trees weighed. A clone has no `target/`, so the strip is
+# a no-op there and costs one cheap layer. `.git` is kept: it is small, and it
+# is how one tells which revision a campaign actually ran.
+FROM ghcr.io/borrowsanitizer/bsan@sha256:56bbbfd19dec23ba518e9dc2221045b2869cc1f6aabdd8ea40174a41d860a5b2 AS tools
+COPY --from=crustify / /tools/crustify
+COPY --from=wavefront / /tools/wavefront
+COPY --from=ffibox / /tools/ffibox
+COPY --from=ffimap / /tools/ffimap
+RUN find /tools -type d -name target -prune -exec rm -rf {} + \
+    && du -sh /tools/*
 
 # Pinned by DIGEST, not `:latest`. This image's whole premise is that rustc,
 # bsan and clang agree on one LLVM version; a moving base silently shifts
@@ -118,7 +171,9 @@ COPY --from=ffimap-clone /src /
 # once already mid-campaign. Bump this deliberately.
 # The previous pin (sha256:69440e3b...) was garbage-collected from ghcr.io; this is
 # `sha-de6ede0`, verified as Ubuntu noble, clang 18, and nightly/bsan on LLVM 23.1.3.
-FROM ghcr.io/borrowsanitizer/bsan@sha256:56bbbfd19dec23ba518e9dc2221045b2869cc1f6aabdd8ea40174a41d860a5b2 AS crustify
+# Named `image`, not `crustify`: `crustify` is the tool stage above, and a
+# `--build-context crustify=...` would otherwise shadow this one.
+FROM ghcr.io/borrowsanitizer/bsan@sha256:56bbbfd19dec23ba518e9dc2221045b2869cc1f6aabdd8ea40174a41d860a5b2 AS image
 
 ARG CODEQL_VERSION=v2.26.3
 ARG PYTHON_VERSION=3.13
@@ -256,21 +311,36 @@ RUN if [ "${INSTALL_CLAUDE}" = "1" ]; then \
     && { [ "${INSTALL_CLAUDE}" = "1" ] && claude --version || true; } \
     && { [ "${INSTALL_CODEX}" = "1" ] && codex --version || true; }
 
-# The three tool checkouts, from their stages above, under
-# `<prefix>/share/<name>`, which is where crustify looks for wavefront and
-# ffibox. wavefront and ffimap are Python distributions installed editable, so
-# their commands (`wavefront`, `ffimap`) land in /opt/venv/bin, on PATH, and
-# run whatever checkout is mounted over the copy; ffibox is a path dependency
-# the emitted crates point at, so a checkout is all it needs. ffimap's rustc
+# The three tool checkouts, from their stages above, into /crustify-rs -- the
+# workspace layout they have on a developer's machine, where they are siblings
+# of the crustify checkout rather than three unrelated paths. One bind mount
+# there replaces all three, and the agents read the same tree the user edits.
+#
+# `<prefix>/share/<name>` is where crustify LOOKS for wavefront and ffibox --
+# the data prefix of the environment it is installed in, derived rather than
+# configured -- so each lookup path is a symlink into the workspace. Both
+# routes therefore land in the mount when there is one: the symlink for the
+# documents crustify renders into a prompt, and the editable installs below,
+# which record /crustify-rs paths, for the commands.
+#
+# wavefront and ffimap are Python distributions installed editable, so their
+# commands (`wavefront`, `ffimap`) land in /opt/venv/bin, on PATH, and run
+# whatever checkout is mounted over the copy; ffibox is a path dependency the
+# emitted crates point at, so a checkout is all it needs. ffimap's rustc
 # driver is pinned to a dated nightly of its own, installed here; the driver
 # itself is built on first scan. A mounted ffimap that pins a different
 # nightly needs `rustup toolchain install` run in its driver directory.
-COPY --from=wavefront / /opt/venv/share/wavefront
-COPY --from=ffibox / /opt/venv/share/ffibox
-COPY --from=ffimap / /opt/venv/share/ffimap
-RUN uv pip install --python /opt/venv/bin/python \
-         -e /opt/venv/share/wavefront -e /opt/venv/share/ffimap \
-    && (cd /opt/venv/share/ffimap/src/ffimap/driver && rustup toolchain install) \
+# `ln -sT` rather than plain `ln -s`: if a lookup path ever exists as a real
+# directory, plain `ln -s` puts the link INSIDE it and the build still
+# succeeds, leaving a tree that resolves to nothing. -T makes that an error.
+COPY --from=tools /tools /crustify-rs
+RUN mkdir -p /opt/venv/share \
+    && for tool in wavefront ffibox ffimap; do \
+         ln -sT "/crustify-rs/$tool" "/opt/venv/share/$tool"; \
+       done \
+    && uv pip install --python /opt/venv/bin/python \
+         -e /crustify-rs/wavefront -e /crustify-rs/ffimap \
+    && (cd /crustify-rs/ffimap/src/ffimap/driver && rustup toolchain install) \
     && ffimap --help > /dev/null
 
 # Bake in a runnable harness -- the WHOLE repository, not just `src`. One
@@ -281,9 +351,23 @@ RUN uv pip install --python /opt/venv/bin/python \
 #
 # A bind mount at this path replaces these sources. The install is editable and
 # PYTHONPATH points at the same tree, so a mounted checkout wins twice over.
-COPY . /opt/crustify
-RUN uv pip install --python /opt/venv/bin/python -e /opt/crustify
-ENV PYTHONPATH=/opt/crustify/src
+#
+# The harness goes in the workspace with the other three, installed from the
+# same path shape and overridden the same way, so the four are consistent: a
+# workspace mounted over /crustify-rs supplies all four, and the harness that
+# renders the prompts is then the same tree the agents read. An editable
+# install is a path entry, not a copy, so the mount redirects it with no
+# re-install.
+#
+# /opt/crustify stays as a read alias, so a path written down anywhere still
+# resolves -- but it is NOT an override any more. Bind-mounting over it would
+# replace the alias while PYTHONPATH and the install still pointed into
+# /crustify-rs, which is the split the move removes. Override the harness with
+# the workspace mount, or at build time with `--build-context crustify=`.
+COPY --from=crustify / /crustify-rs/crustify
+RUN uv pip install --python /opt/venv/bin/python -e /crustify-rs/crustify \
+    && ln -sT /crustify-rs/crustify /opt/crustify
+ENV PYTHONPATH=/crustify-rs/crustify/src
 
 # HOME is the volume, so what the agent fetches or builds survives `--rm`.
 # RUSTUP_HOME is pinned back out of it: rustup resolves from HOME, and against
@@ -304,8 +388,9 @@ RUN git config --system --add safe.directory '*'
 
 
 # The required target bind mount shadows this empty image directory. Starting
-# in it makes the existing checkout -- and any partial campaign -- the
-# orchestrator's unambiguous working repository.
+# in it makes that directory the campaign's unambiguous home: a campaign
+# already there is resumed in place, and an empty one is where the campaign
+# repository gets created.
 WORKDIR /target
 # Run it with `--init`, so the processes a campaign leaves behind are reaped
 # rather than collecting as zombies under this idle process.

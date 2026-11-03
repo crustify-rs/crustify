@@ -40,29 +40,30 @@ python -m pip install -e crustify -e wavefront -e ffimap
 
 ### Docker
 
-Crustify can also run in a Docker container. [`templates/Dockerfile`](templates/Dockerfile)
+Crustify can also run in a Docker container. [`templates/docker/Dockerfile`](templates/docker/Dockerfile)
 builds an image with everything a campaign needs: both agent CLIs, CodeQL, bindgen, Miri,
 and the sanitizer toolchains, including BorrowSanitizer and MemorySanitizer.
 
 ```bash
-docker build -t crustify -f templates/Dockerfile .
+docker build -t crustify -f templates/docker/Dockerfile .
 ```
 
-Start one container per campaign, with the target checkout mounted at `/target`, then
-open Crustify inside it:
+Start one container per campaign, with the directory the campaign is to work in mounted
+at `/target` — empty for a new campaign, or holding one to resume — then open Crustify
+inside it:
 
 ```bash
 docker run -d --init --name crustify-libgit2 \
     --security-opt seccomp=unconfined \
     -e ANTHROPIC_API_KEY \
-    -v /absolute/path/to/target:/target \
+    -v /absolute/path/to/campaign-dir:/target \
     -v crustify-libgit2-work:/work \
     crustify
 
 docker exec -it crustify-libgit2 crustify /target --model anthropic/claude-opus-5 --billing api
 ```
 
-[`templates/README.md`](templates/README.md) documents the mounts, build arguments and
+[`templates/docker/README.md`](templates/docker/README.md) documents the mounts, build arguments and
 environment variables.
 
 ## Usage
