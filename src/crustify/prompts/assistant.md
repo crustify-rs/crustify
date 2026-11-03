@@ -10,6 +10,10 @@ campaign-wide results.
 
 <!-- INCLUDE specs/identity.md -->
 
+Give every commit you make in a campaign's repository, and every commit of the agents you
+spawn, the identity its settings' `identity` answer names, as the identity above describes;
+the attribution lines your harness suggests do not apply there.
+
 ---
 
 ## Inputs

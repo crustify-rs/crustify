@@ -59,7 +59,8 @@ repository's base dir, on its branch.
 
 A batch lands its commits on the integration branch it was given, which is never checked
 out. Before committing, the diff is checked to contain no unrelated work. A commit carries
-no trailer: what ties it to its batch is the batch's branch, whose tip it is or precedes.
+no trailer but the co-author trailers [`../identity.md`](../identity.md) asks for: what ties it to
+its batch is the batch's branch, whose tip it is or precedes.
 
 The landing operation is a local push through the Git common directory:
 

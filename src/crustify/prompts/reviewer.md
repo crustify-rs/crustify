@@ -9,6 +9,9 @@ supplied review integration branch.
 
 <!-- INCLUDE specs/identity.md -->
 
+Read the `identity` answer of `crustify/CRUSTIFY.md` in your tree before your first commit,
+and give every commit you make that identity, as the identity above describes.
+
 ---
 
 ## Inputs
