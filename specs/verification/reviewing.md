@@ -13,12 +13,13 @@ its own in `schedule.json` that `reviews` it, before the next translation wave s
 batches land on its integration branch, never checked out, as [`../operations/versioning.md`](../operations/versioning.md)
 names it, and once they land, its tip is promoted to the working branch.
 
-A review batch takes the commits of one or more of the wave's translation batches, within
-the campaign's review caps (`id: review-workload`), counted over the items those batches
-scheduled. A review batch is larger than a translation batch, about 5-10x for types and 3-4x
-for symbols, without overwhelming its reviewer. The batches that bound a type and those
-that added methods on it share a review batch where the caps allow. A campaign may also
-review every translation batch on its own, with that batch's commits.
+A review batch takes the commits of one or more of the wave's translation batches of one
+kind, `type` or `symbol`, within the campaign's review caps (`id: review-workload`), counted
+over the items those batches scheduled: a wave's type batches and its symbol batches are
+reviewed apart, in at most one review batch of each kind where the caps allow. A review
+batch is larger than a translation batch, about 5-10x for types and 3-4x for symbols,
+without overwhelming its reviewer. A campaign may also review every translation batch on
+its own, with that batch's commits.
 
 A review batch's `task.json` ([`../artifacts/task.md`](../artifacts/task.md)) holds its worklist,
 its objectives, its review wave branch and its model and billing:
