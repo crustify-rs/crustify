@@ -149,7 +149,7 @@ class ReviewAgentTests(unittest.TestCase):
                            objectives=objectives, git_base="review-wave-0",
                            artifact_dir=self.repo, log_stem="reviewer")
 
-    def test_skills_contribute_their_objectives(self) -> None:
+    def test_tools_contribute_their_objectives(self) -> None:
         _Checkouts(self)
         self.assertEqual(
             self.agent(None).available_objectives(),
@@ -166,14 +166,18 @@ class ReviewAgentTests(unittest.TestCase):
         self.assertIn("revisit", agent.objectives)
         self.assertIn("crustify/reviews/b/ub_safe/x", agent.system_preamble())
 
-    def test_an_absent_skill_takes_its_objective_with_it(self) -> None:
+    def test_an_absent_tool_takes_its_objective_with_it(self) -> None:
         """A reviewer pointed at a crate wavefront does not describe is never
         asked about lifecycle primitives."""
-        _Checkouts(self, absent=("wavefront",))
-        agent = self.agent(None)
-        self.assertNotIn("lifecycle", agent.available_objectives())
-        with self.assertRaisesRegex(SystemExit, "lifecycle"):
-            self.agent(["lifecycle"])
+        _Checkouts(self)
+        real = Path.is_file
+        header = deps.CHECKOUT / "specs/tools/wavefront/wavefront.md"
+        with mock.patch.object(Path, "is_file",
+                               lambda p: False if p == header else real(p)):
+            agent = self.agent(None)
+            self.assertNotIn("lifecycle", agent.available_objectives())
+            with self.assertRaisesRegex(SystemExit, "lifecycle"):
+                self.agent(["lifecycle"])
 
     def test_unknown_objectives_are_rejected(self) -> None:
         _Checkouts(self)
@@ -195,18 +199,18 @@ class ReviewAgentTests(unittest.TestCase):
         reviewing doc the reviewer's prompt includes; this keeps the two in
         step."""
         from crustify.agents.base import _PKG_ROOT, deps
-        from crustify.agents.review import OBJECTIVES, SKILL_OBJECTIVES
-        text = (deps.CHECKOUT / "specs/reviewing.md").read_text()
+        from crustify.agents.review import OBJECTIVES, TOOL_OBJECTIVES
+        text = (deps.CHECKOUT / "specs/verification/reviewing.md").read_text()
         for objective in OBJECTIVES:
             if objective == "fix":
                 continue
             with self.subTest(objective=objective):
                 self.assertRegex(text, rf"\n#{{3,4}} .+ \(`{objective}`\)\n")
-        for skill, objectives in SKILL_OBJECTIVES.items():
-            header = (_PKG_ROOT / "prompts" / "skills" / skill
-                      / "reviewer.md").read_text()
+        for tool, objectives in TOOL_OBJECTIVES.items():
+            header = (deps.CHECKOUT / "specs/tools" / tool
+                      / "verification/reviewing.md").read_text()
             for objective in objectives:
-                with self.subTest(skill=skill, objective=objective):
+                with self.subTest(tool=tool, objective=objective):
                     self.assertRegex(header, rf"\n#{{3,4}} .+ \(`{objective}`\)\n")
 
     def test_fix_is_decided_in_prose(self) -> None:
@@ -223,7 +227,7 @@ class ReviewAgentTests(unittest.TestCase):
 
     def test_testing_says_when_gates_run_the_prompts_who_runs_them(self) -> None:
         from crustify.agents.base import _PKG_ROOT, deps
-        testing = (deps.CHECKOUT / "specs/testing.md").read_text()
+        testing = (deps.CHECKOUT / "specs/verification/testing.md").read_text()
         self.assertIn("BSan, when available, is run for every batch and at module end",
                       testing)
         self.assertIn("Miri is run after every wave", testing)
@@ -244,7 +248,7 @@ class ReviewAgentTests(unittest.TestCase):
                         "# Versioning"):
             with self.subTest(heading=heading):
                 self.assertIn(heading, pre)
-        self.assertIn("otherwise, ignore them", pre)
+        self.assertIn("otherwise, ignore it", pre)
 
     def test_the_session_names_the_reviewer(self) -> None:
         _Checkouts(self)
@@ -273,7 +277,7 @@ class ExecuteTests(unittest.TestCase):
             review.execute(self.repo, self.batch, log_dir=self.output, dry_run=True)
         self.assertIn("objectives ub, fix", printed.call_args.args[0])
 
-    def test_dry_run_rejects_an_objective_no_skill_offers(self) -> None:
+    def test_dry_run_rejects_an_objective_no_tool_offers(self) -> None:
         self.write({"objectives": ["nonesuch"], "commits": [_COMMIT]})
         with self.assertRaisesRegex(SystemExit, "nonesuch"):
             review.execute(self.repo, self.batch, log_dir=self.output, dry_run=True)

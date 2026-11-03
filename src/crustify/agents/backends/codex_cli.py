@@ -252,8 +252,8 @@ class CodexCliBackend:
         # Same system text as the claude backend, placed the only way codex
         # allows: `model_instructions_file` is a REPLACE slot, so the preamble
         # always goes through it and codex's own model instructions give way.
-        # Unconditional, because the preamble carries the conventions doc and
-        # skill index that every agent needs beyond compaction's reach. It
+        # Unconditional, because the preamble carries the specs and
+        # tool specs that every agent needs beyond compaction's reach. It
         # travels as a file in `codex_home`, beside the rollouts, which is
         # taken back once the CLI has exited: see system_prompt_file. The
         # `-c` pair is in place before the first turn, which codex reads as a

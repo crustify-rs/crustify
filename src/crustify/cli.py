@@ -129,13 +129,13 @@ def main() -> None:
     assistant.add_argument(
         "--task-only", action="store_true",
         help="Ablation control: the settings file is the entire prompt and "
-             "the harness contributes nothing -- no conventions, no skill "
-             "index, no stage prompt.")
+             "the harness contributes nothing -- no specs, no tool specs, "
+             "no stage prompt.")
 
     # -- spawn-planner (one planner run on its planner branch) ---------------
     _spawn_planner_blurb = (
         "Run one planner over the campaign checkout. It emits what the plan "
-        "-- modules.json, the waves of schedule.json and the skills' "
+        "-- modules.json, the waves of schedule.json and the tools' "
         "planning artifacts -- lacks, updates what follows an earlier schema, "
         "corrects what earlier runs decided, filing a report per correction, "
         "and re-plans the waves its changes move that have not started. Runs "
@@ -196,7 +196,7 @@ def main() -> None:
         "nor purges that tree. The batch carries the commits a wave's "
         "translation batches landed, or the modules of a crate to audit, the "
         "reports to revisit, and, optionally, the objectives to review for; "
-        "without them, every objective the reviewer's prompt and skills offer "
+        "without them, every objective the reviewer's prompt and tools offer "
         "that applies to the batch runs.")
     review_p = sub.add_parser(
         "spawn-reviewer", parents=[agent_opts],

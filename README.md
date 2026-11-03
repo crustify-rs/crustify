@@ -40,29 +40,30 @@ python -m pip install -e crustify -e wavefront -e ffimap
 
 ### Docker
 
-Crustify can also run in a Docker container. [`templates/Dockerfile`](templates/Dockerfile)
+Crustify can also run in a Docker container. [`templates/docker/Dockerfile`](templates/docker/Dockerfile)
 builds an image with everything a campaign needs: both agent CLIs, CodeQL, bindgen, Miri,
 and the sanitizer toolchains, including BorrowSanitizer and MemorySanitizer.
 
 ```bash
-docker build -t crustify -f templates/Dockerfile .
+docker build -t crustify -f templates/docker/Dockerfile .
 ```
 
-Start one container per campaign, with the target checkout mounted at `/target`, then
-open Crustify inside it:
+Start one container per campaign, with the directory the campaign is to work in mounted
+at `/target` — empty for a new campaign, or holding one to resume — then open Crustify
+inside it:
 
 ```bash
 docker run -d --init --name crustify-libgit2 \
     --security-opt seccomp=unconfined \
     -e ANTHROPIC_API_KEY \
-    -v /absolute/path/to/target:/target \
+    -v /absolute/path/to/campaign-dir:/target \
     -v crustify-libgit2-work:/work \
     crustify
 
 docker exec -it crustify-libgit2 crustify /target --model anthropic/claude-opus-5 --billing api
 ```
 
-[`templates/README.md`](templates/README.md) documents the mounts, build arguments and
+[`templates/docker/README.md`](templates/docker/README.md) documents the mounts, build arguments and
 environment variables.
 
 ## Usage
@@ -165,31 +166,24 @@ decomposition of the codebase, through its scheduling, to the safety and soundne
 bindings and ports it generates. They describe the work rather than who does it, and
 every agent's prompt includes the ones it follows.
 
-- [`specs/decomposition.md`](specs/decomposition.md): how the codebase is decomposed into
-  modules, one per translation unit, with their objectives and dependencies
-- [`specs/scheduling.md`](specs/scheduling.md): how the modules are ordered and scheduled
-  into waves and batches
-- [`specs/dependencies.md`](specs/dependencies.md): how the libraries the target uses from
-  outside its tree are wrapped, and how wrappers are reused across campaigns
-- [`specs/items/binding.md`](specs/items/binding.md),
-  [`specs/items/porting.md`](specs/items/porting.md): the per-item principles, how an item
-  is wrapped or ported
-- [`specs/reviewing.md`](specs/reviewing.md): how landed work and plans are reviewed
 - [`specs/workflows/`](specs/workflows/): how each kind of campaign proceeds: its shared
   setup, and the binding, porting and audit workflows
-- [`specs/accounting.md`](specs/accounting.md): the dashboard, session and usage records,
-  and how cost is derived
-- [`specs/versioning.md`](specs/versioning.md): a campaign's repositories, branches and
-  worktrees, how batches land and how work is promoted and shipped
-- [`specs/layout.md`](specs/layout.md), [`specs/testing.md`](specs/testing.md): the
-  repository's tree and artifact directories, and how the work is tested
-- [`specs/conventions.md`](specs/conventions.md): conventions for the generated Rust,
-  including the tree layout
-- [`specs/rust.md`](specs/rust.md): the toolchains, edition, lints and formatting the
-  generated Rust is held to
+- [`specs/planning/`](specs/planning/): how the codebase is decomposed into modules, one
+  per translation unit, with their objectives and dependencies; how the modules are
+  ordered and scheduled into waves and batches; and how the libraries the target uses
+  from outside its tree are wrapped, and their wrappers reused across campaigns
+- [`specs/rust/`](specs/rust/): the generated Rust: its conventions and tree layout, the
+  toolchains, edition, lints and formatting it is held to, the `-sys` crates, and under
+  [`items/`](specs/rust/items/) how an item is wrapped or ported
+- [`specs/verification/`](specs/verification/): how the work is tested, and how landed
+  work and plans are reviewed
+- [`specs/operations/`](specs/operations/): a campaign's repositories, branches and
+  worktrees, and how batches land and work is promoted and shipped; the repository's tree
+  and artifact directories; how its work shares the host; and the dashboard, session and
+  usage records, and how cost is derived
 - [`specs/artifacts/`](specs/artifacts/): the fields of `modules.json`, `dependencies.json`, the campaign's
   `schedule.json`, and `task.json`
-- [`specs/prompting.md`](specs/prompting.md): how the agents' prompts, specs and skills
+- [`specs/prompting.md`](specs/prompting.md): how the agents' prompts, specs and tool specs
   are composed
 - [`templates/`](templates/README.md): an example of each artifact, the settings and
   dashboard templates, and the Dockerfile

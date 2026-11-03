@@ -9,10 +9,10 @@ It describes the modules the user's scope selects and every module in their prod
 closure.
 
 A module is one translation unit with the headers it defines its items in, as
-`specs/decomposition.md` describes. The decomposition follows the
+`specs/planning/decomposition.md` describes. The decomposition follows the
 C codebase rather than a judgement of how it is organized: a module exists because a TU,
 or a header that implements what no TU does, exists. It is also the shape the Rust tree
-mirrors, as `specs/conventions.md` describes: there is no second placement document.
+mirrors, as `specs/rust/conventions.md` describes: there is no second placement document.
 
 | root field | meaning |
 |---|---|
@@ -36,7 +36,7 @@ describes:
 Their in-tree records together are every module it depends on, and `scheduled` alone is
 acyclic across the decomposition. Within a cycle, the dependency kept is the one on the
 member the most other members depend on, and the edges between tied members break ties,
-as `specs/scheduling.md`'s Order section describes. Modules are ordered one after another,
+as `specs/planning/scheduling.md`'s Order section describes. Modules are ordered one after another,
 in the order of `scheduled`; their waves run whenever they are scheduled, as
 [`schedule.md`](schedule.md) orders them. Among the modules ready at once, a foundational one runs first, then the one whose link
 unit has the lower index, then the one with the lower index. Link units are ordered the
@@ -93,7 +93,7 @@ number within the link unit, which orders and numbers the modules a run adds.
 | `index` | the module's id within its link unit, from zero |
 | `name` | the path below the C root of its translation unit, or of its header for a header module |
 | `status` | `todo` or `frozen`; see [Status](#2-status) |
-| `foundational` | `true` for a foundational module, `false` otherwise; see `specs/decomposition.md`'s Foundational modules section |
+| `foundational` | `true` for a foundational module, `false` otherwise; see `specs/planning/decomposition.md`'s Foundational modules section |
 | `depends_on` | `scheduled` and `cut`, each an array of dependency records; see [Dependencies](#8-link_unitsmodulesdepends_on) |
 | `translation_unit` | the module's TU, as a [file entry](#5-file-entries); `null` for a header module |
 | `internal_headers` | the headers the build does not install that the module defines items in, as file entries |
@@ -142,7 +142,7 @@ gated with, as `specs/workflows/porting.md`'s Principles section describes, and 
 | `rust_equivalent` | what Rust already provides in its place: `std` and `crates`, below |
 
 A module carries one objective, which follows from its `rust_equivalent` as
-`specs/decomposition.md`'s Objectives section describes: `wrap` when `std` or a crate has `full` feature parity with
+`specs/planning/decomposition.md`'s Objectives section describes: `wrap` when `std` or a crate has `full` feature parity with
 it, `port` otherwise, and `wrap` for every foundational module. A TU is not split for its
 objective.
 

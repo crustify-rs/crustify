@@ -7,7 +7,7 @@ libraries the campaign's target uses. Layout example:
 Planning emits it beside `modules.json`, whose dependency records name each library and
 count what each module consumes from it; this artifact records what holds for the
 library as a whole, once. How a campaign reaches these libraries is
-[`specs/dependencies.md`](../dependencies.md).
+[`specs/planning/dependencies.md`](../planning/dependencies.md).
 
 | root field | meaning |
 |---|---|
@@ -33,7 +33,7 @@ The assessment fields, `resolved`, `source` and `rust_equivalent`, are the plan'
 `ported` lists the crates that reimplement the library in Rust, and `bindings` the crates
 that put a safe Rust API over the C library itself. Each is in descending order of feature
 parity, and empty when no such crate exists. They inform whether a crate is adopted in
-place of the wrapper, which the user decides, as `specs/dependencies.md` describes.
+place of the wrapper, which the user decides, as `specs/planning/dependencies.md` describes.
 
 | `ported[*]` and `bindings[*]` field | meaning |
 |---|---|

@@ -19,137 +19,76 @@ _PKG_ROOT = Path(__file__).parent.parent
 KICKOFF = "Start the work described by your system prompt."
 
 
-#: Plain-markdown skill fields — `- Skill name:` / `- Bin path:` /
-#: `- Doc path:` / `- Description:`, each continued by its indented wrap lines.
-#: The shape a skill takes when its whole content IS its metadata, so there is
-#: no body left to warrant frontmatter. `Doc path` is where the procedure DID
-#: end up: relative to the skill file's own directory, so it survives whatever
-#: absolute path the checkout sits at.
-_MD_FIELD_RE = _re.compile(
-    r"^-\s*(Skill name|Bin path|Doc path|Description)\s*:\s*(.*)$",
-    _re.IGNORECASE)
-
-# A local role header wraps guidance around a repository-owned generic skill.
-# Keeping the anchor in the header makes that composition explicit in source.
-_GENERIC_SKILL_ANCHOR = "<!-- SKILL -->"
-
 #: Where a stage prompt takes its task's additional instructions: replaced by
 #: the instructions file's text, or by nothing when the task gives none.
 INSTRUCTIONS_MARKER = "<!-- INSTRUCTIONS -->"
 
-#: `<!-- INCLUDE specs/items/binding.md -->`: a crustify document,
+#: `<!-- INCLUDE specs/rust/items/binding.md -->`: a crustify document,
 #: by its path in the checkout, spliced whole into a stage prompt.
 _INCLUDE_RE = _re.compile(r"<!-- INCLUDE ([^ ]+) -->")
+
+#: The specs of the tools an agent reaches for: `specs/tools/<tool>/<tool>.md`,
+#: the tool's header, and `specs/tools/<tool>/<spec path>`, how the tool serves
+#: the spec at that path. A prompt includes each it needs, as it includes any spec.
+TOOLS_DIR = "specs/tools"
+
+def _tool_of(path: str) -> str | None:
+    """The tool a spec path belongs to, or None for a spec of no tool."""
+    if not path.startswith(TOOLS_DIR + "/"):
+        return None
+    return path[len(TOOLS_DIR) + 1:].split("/", 1)[0]
+
+
+def _header(tool: str) -> str:
+    """A tool's header, by its path in the checkout."""
+    return f"{TOOLS_DIR}/{tool}/{tool}.md"
+
+
+def tool_available(tool: str) -> bool:
+    """Whether a tool's specs are spliced into the prompts that include them:
+    its header is on disk. The tool itself is on the agent's ``PATH``, or in
+    its build, by the time the agent runs.
+
+    Presence is the whole selection mechanism, so a tool is ablated by
+    deleting its header, and one of its uses by deleting that spec."""
+    return (deps.CHECKOUT / _header(tool)).is_file()
+
+
+def included_tools(template: str) -> tuple[str, ...]:
+    """The available tools whose headers a prompt template includes, in order."""
+    tools = []
+    for path in _INCLUDE_RE.findall(template):
+        tool = _tool_of(path)
+        if (tool and path == _header(tool) and tool not in tools
+                and tool_available(tool)):
+            tools.append(tool)
+    return tuple(tools)
 
 
 def expand_includes(text: str) -> str:
     """Splice every included document into a stage prompt template.
 
-    The documents are the conventions and the how-tos under ``specs/``:
-    public, human-readable descriptions that an agent follows throughout,
-    so the prompt hands them over whole rather than naming a file the agent
-    may skip reading. Braces are escaped, because the template is formatted
-    with the agent's arguments afterwards and the documents are not
-    templates. A missing document is an error, not an ablation."""
+    The documents are the specs under ``specs/``: public, human-readable
+    descriptions that an agent follows throughout, so the prompt hands them
+    over whole rather than naming a file the agent may skip reading. Braces
+    are escaped, because the template is formatted with the agent's arguments
+    afterwards and the documents are not templates.
+
+    A missing spec is an error, not an ablation, but for a tool's: a tool spec
+    that is missing, or whose tool is not available, splices nothing, which is
+    how a tool or one of its uses is ablated."""
     def splice(m: _re.Match) -> str:
-        path = deps.CHECKOUT / m.group(1)
-        if not path.is_file():
+        rel = m.group(1)
+        path = deps.CHECKOUT / rel
+        tool = _tool_of(rel)
+        if tool is not None:
+            if not (tool_available(tool) and path.is_file()):
+                return ""
+        elif not path.is_file():
             raise SystemExit(f"included document does not exist: {path}")
-        return (path.read_text().strip()
-                .replace("{", "{{").replace("}", "}}"))
+        return path.read_text().strip().replace("{", "{{").replace("}", "}}")
     return _INCLUDE_RE.sub(splice, text)
 
-
-@dataclass(frozen=True)
-class SkillSpec:
-    """A generic skill plus optional role-specific prompt guidance.
-
-    ``dep`` names the checkout the skill file belongs to and ``path`` locates
-    it inside that checkout; :func:`crustify.deps.dep_root` turns the pair into
-    an absolute path. ``capability`` is set when the skill is optional — the
-    name a run logs it under.
-
-    ``role_header`` is ``skills/<skill>/<role>.md``: one directory per skill,
-    one file per role that carries it. Both named files are load-bearing for
-    discovery, so the layout gives an ablation two grains — delete one file
-    and that skill leaves one role's prompt, delete the directory and it
-    leaves every role's, even though the generic skill it wraps is still
-    installed.
-
-    ``meta`` is set when crustify keeps a dependency's skill metadata itself,
-    as ``skills/<skill>/SKILL.md``: the name, description and binary come from
-    that file, and ``path`` names the document in the dependency's checkout
-    that the agent reads in full.
-    """
-
-    dep: str
-    path: str
-    capability: str | None = None
-    role_header: str | None = None
-    meta: str | None = None
-
-
-def _skill_meta(path: Path) -> tuple[str, str, str | None, Path | None]:
-    """Parse ``name`` + ``description`` + optional ``bin`` + optional ``doc``
-    from a skill file.
-
-    Two shapes, because crustify has two kinds of skill. One carries a real
-    procedure in its body and declares its metadata in YAML frontmatter. The
-    other IS its metadata, written as a plain markdown list — either because
-    the procedure lives in a tool's ``--help``, or because it lives in a
-    document the skill points at with ``Doc path``.
-
-    Deliberately minimal — no YAML dependency. Frontmatter: scalar ``name:``, a
-    folded/indented ``description:`` (block scalar ``>-``/``>`` or inline), and
-    a scalar ``bin:``. Plain markdown: ``- Skill name:`` / ``- Bin path:`` /
-    ``- Doc path:`` / ``- Description:``. Either way the description's wrapped
-    continuation lines are collapsed to one line, ``bin`` is the LOGICAL tool
-    name (resolved to an absolute path by the caller via
-    :func:`crustify.deps.resolve_bin`), and ``doc`` is resolved here against the skill file's own
-    directory."""
-    text = path.read_text()
-    if not text.startswith("---"):
-        name, desc, binname, doc, cur = path.stem, [], None, None, None
-        for line in text.splitlines():
-            m = _MD_FIELD_RE.match(line)
-            if m:
-                key, val = m.group(1).lower(), m.group(2).strip()
-                cur = key
-                if key == "skill name":
-                    name = val
-                elif key == "bin path":
-                    binname = val or None
-                elif key == "doc path":
-                    doc = (path.parent / val).resolve() if val else None
-                else:
-                    desc.append(val)
-                continue
-            # An indented line continues the field above; anything else ends it.
-            if cur == "description" and line[:1] in (" ", "\t") and line.strip():
-                desc.append(line.strip())
-            elif line.strip():
-                cur = None
-        return name, " ".join(" ".join(desc).split()), binname, doc
-    fm = text.split("---", 2)[1]
-    name, desc, in_desc, binname = path.stem, [], False, None
-    for line in fm.splitlines():
-        if in_desc:
-            # A new top-level key (non-indented, contains ':') ends the block.
-            if line[:1] not in (" ", "\t", "") and ":" in line:
-                in_desc = False
-            else:
-                desc.append(line.strip())
-                continue
-        if line.startswith("name:"):
-            name = line.split(":", 1)[1].strip()
-        elif line.startswith("bin:"):
-            binname = line.split(":", 1)[1].strip().strip("'\"") or None
-        elif line.startswith("description:"):
-            rest = line.split(":", 1)[1].strip().lstrip(">|").lstrip("-").strip()
-            if rest:
-                desc.append(rest)
-            in_desc = True
-    return name, " ".join(" ".join(desc).split()), binname, None
 
 class CrustifyAgent:
     """One pipeline stage, driven by a provider-CLI backend.
@@ -170,11 +109,6 @@ class CrustifyAgent:
     #: or assistant. Subclasses set this.
     role: str = "agent"
     stage: str        # label recorded in the usage record + log filename
-    # Every skill this role can carry, in prompt order. Which of them it
-    # ACTUALLY carries is decided by discovery, not by configuration: a skill
-    # whose files are on disk is rendered, and one whose files are not is
-    # silently absent. See :meth:`skill_specs`.
-    SKILLS: tuple[SkillSpec, ...] = ()
     #: Where this agent's stage prompt goes. False puts it in the user turn,
     #: which is right when it carries per-agent data: a wave's translators
     #: would otherwise each have a different system prefix to cache. True puts
@@ -317,17 +251,15 @@ class CrustifyAgent:
         """
         return KICKOFF if self.prompt_in_system_slot else self._body()
 
-    def _body(self) -> str:
-        """This stage's prompt template, before argument substitution.
-
-        No substitution beyond the caller's `.format(**arguments)`. The
-        `<!-- SKILLS -->` marker a stage prompt carries is inert: it records
-        where the skill index sits relative to the task, and is deliberately
-        NOT a sentinel — a marker that silently expanded would put the text
-        back in the user turn, which is the compaction path this design exists
-        to leave.
-        """
+    def _template(self) -> str:
+        """This stage's prompt template, its specs not yet included."""
         raise NotImplementedError
+
+    def _body(self) -> str:
+        """This stage's prompt, its specs included, before argument
+        substitution: no substitution beyond the caller's
+        `.format(**arguments)`."""
+        return expand_includes(self._template())
 
     def _arguments(self) -> dict:
         # `workdir` is the full path every `crustify <command> <workdir> …` invocation
@@ -345,160 +277,33 @@ class CrustifyAgent:
             "module": placement.module_label if placement else "",
         }
 
-    def skill_specs(self) -> tuple[SkillSpec, ...]:
-        """The skills rendered for this agent: every one whose files exist.
-
-        Discovery is the whole selection mechanism. A skill is present in a
-        prompt because its files are on disk, so removing one from
-        ``prompts/skills/<skill>/`` — or not installing the checkout a generic
-        skill lives in — removes it from the prompt. That makes an ablation a
-        deletion rather than an edit to a config file that has to agree with
-        the tree, and it is the same rule a skill-aware harness already
-        follows: what is in the directory is what loads.
-
-        A path that is missing because it is misspelled therefore ablates
-        silently. That is a source bug, not an operator mistake, and it is
-        caught by a test that asserts every declared path resolves.
-        """
-        cached = getattr(self, "_skill_specs_cache", None)
-        if cached is None:
-            cached = tuple(spec for spec in self.SKILLS
-                           if self._skill_present(spec))
-            self._skill_specs_cache = cached
-        return cached
-
-    def _skill_present(self, spec: SkillSpec) -> bool:
-        """Whether every file ``spec`` names is on disk."""
-        if not (deps.dep_root(spec.dep) / spec.path).exists():
-            return False
-        if spec.meta is not None and not (_PKG_ROOT / "prompts" / spec.meta).is_file():
-            return False
-        return (spec.role_header is None
-                or (_PKG_ROOT / "prompts" / spec.role_header).is_file())
-
     def prompt_capabilities(self) -> tuple[str, ...]:
-        """The optional capabilities this prompt ended up carrying.
+        """The tools this prompt ended up carrying: those whose headers it
+        includes and that are available.
 
         Logged per run, so the transcript records what the agent was told
         without anyone having to reconstruct which files were on disk at the
-        time. Descriptive, not an access-control boundary: a capability that
-        is absent from the prompt stays reachable through the ordinary shell.
+        time. Descriptive, not an access-control boundary: a tool that is
+        absent from the prompt stays reachable through the ordinary shell.
         """
-        return tuple(
-            spec.capability for spec in self.skill_specs()
-            if spec.capability is not None
-        )
-
-    def _render_skills(self) -> str:
-        """Render this agent's :attr:`SKILLS` set as a metadata index
-        (name — description + on-disk path), as its own section of the system
-        preamble.
-
-        Mirrors a skill-aware harness's tier-1 load: the metadata rides in the
-        system prompt unconditionally (the routing signal), while the body is
-        read on demand from the path. That indirection is what makes this work
-        on codex, which has no skill mechanism of its own — the index is prose
-        naming a file the agent opens with the tool it already has.
-
-        Descriptions are single-sourced from each skill's metadata, so
-        they never drift from the skill itself. The framing sentence is emitted
-        here because it is about how to read the index, so it belongs to the
-        index rather than to any one skill."""
-        blocks = []
-        for spec in self.skill_specs():
-            # Paths are derived, never configured: see crustify.deps. Both
-            # files are known to exist -- skill_specs() dropped any spec whose
-            # did not, which is how an ablation is expressed.
-            p = deps.dep_root(spec.dep) / spec.path
-            if spec.meta is not None:
-                name, desc, binname, _ = _skill_meta(_PKG_ROOT / "prompts" / spec.meta)
-                doc = p
-            else:
-                name, desc, binname, doc = _skill_meta(p)
-            block = f"- {name} — {desc}"
-            # What to open, if anything. A frontmatter skill carries its own
-            # procedure, so the path is the skill file. A metadata-only one
-            # points at wherever the procedure actually lives (`Doc path`), and
-            # when it names nothing there is nothing to open — pointing back at
-            # the file would spend a tool call re-reading what was just inlined.
-            body = (doc if spec.meta is not None
-                    else p if p.read_text().startswith("---") else doc)
-            if body:
-                if not body.is_file():
-                    # Not an ablation: `path` and `role_header` decide whether
-                    # a skill is present, and both resolved. A `Doc path` that
-                    # does not is a malformed skill, and emitting it would
-                    # spend the agent a turn opening nothing.
-                    raise SystemExit(
-                        f"skill {name!r}: Doc path does not exist: {body}")
-                block += f"\n  read in full: {body}"
-            # A skill that declares a `bin:` also advertises that tool's
-            # absolute invocation — so the agent runs it directly rather than
-            # relying on PATH, which is whatever the provider CLI inherited and
-            # is not something crustify controls. Same rail as the SKILL.md
-            # path, and resolved the same way: from the environment crustify is
-            # itself running in.
-            if binname:
-                block += f"\n  binary: {deps.resolve_bin(binname)}"
-            if spec.role_header:
-                guidance = self._header_guidance(spec)
-                if guidance:
-                    block += "\n  Additional role guidance:\n" + "\n".join(
-                        f"  {line}" if line else ""
-                        for line in guidance.splitlines()
-                    )
-            blocks.append(block)
-        body = "\n".join(blocks) if blocks else "(no skills configured)"
-        return (
-            "## Skills\n\n"
-            "Reusable how-to guides for recurring decisions. If a skill's "
-            "`description` below matches what you're doing, **read that skill's "
-            "file in full** before proceeding - the description is the routing "
-            "signal; the body is the procedure.\n\n"
-            f"{body}"
-        )
-
-    def _header_guidance(self, spec: SkillSpec) -> str:
-        """The role guidance ``spec``'s header wraps around its skill."""
-        header = _PKG_ROOT / "prompts" / spec.role_header
-        template = header.read_text()
-        if template.count(_GENERIC_SKILL_ANCHOR) != 1:
-            raise SystemExit(
-                f"prompt capability {spec.capability or spec.path!r}: "
-                f"role header must contain one "
-                f"{_GENERIC_SKILL_ANCHOR} anchor: {header}")
-        return template.replace(_GENERIC_SKILL_ANCHOR, "").strip()
+        return included_tools(self._template())
 
     def system_preamble(self) -> str:
         """What the backend puts in its system slot, above the stage prompt.
 
-        The skill index goes here rather than into the stage prompt for one
-        reason: the system prompt is not part of ``messages``, so nothing a
-        long agent run does can summarize it away. A 100+ turn agent that has
-        had its routing to the conventions or the testing procedure compacted
-        into a paraphrase is the failure this prevents, and it is silent when
-        it happens — the agent keeps working, just against a lossy copy of
-        the rules.
-
-        An agent that sets `prompt_in_system_slot` puts its whole body here
-        too, ahead of the index. That trades the shared prefix away when the
-        body carries per-agent data: a wave's translators then each write
-        their own preamble instead of N-1 of them reading one. The trade is
-        deliberate -- the shared prefix only ever saved those N-1 first-turn
-        writes, because longest-prefix matching sends every later turn to the
-        agent's own chain, while compaction reaching the procedure costs the
-        run itself.
-
-        The coding conventions and the how-tos are not skills: they are
-        crustify's own documents, which a stage prompt includes whole with
-        ``<!-- INCLUDE <path> -->`` (see :func:`expand_includes`). Skills are
-        for the external tools an agent reaches for on demand."""
-        parts = []
-        if self.prompt_in_system_slot:
-            parts.append(self._fill_instructions(
-                self._body().format(**self._arguments())))
-        parts.append(self._render_skills())
-        return "\n\n---\n\n".join(part for part in parts if part)
+        An agent that sets `prompt_in_system_slot` puts its whole body here,
+        with the specs and the tool specs it includes: the system prompt is
+        not part of ``messages``, so nothing a long run does can summarize the
+        procedure away. That trades the shared prefix away when the body
+        carries per-agent data: a wave's translators then each write their own
+        preamble instead of N-1 of them reading one. The trade is deliberate --
+        the shared prefix only ever saved those N-1 first-turn writes, because
+        longest-prefix matching sends every later turn to the agent's own
+        chain, while compaction reaching the procedure costs the run itself.
+        """
+        if not self.prompt_in_system_slot:
+            return ""
+        return self._fill_instructions(self._body().format(**self._arguments()))
 
     def _fill_instructions(self, body: str) -> str:
         """``body`` with its instructions marker replaced by the task's

@@ -1,3 +1,11 @@
+<!-- INCLUDE specs/workflows/audit.md -->
+
+The tools serve it as follows:
+
+<!-- INCLUDE specs/tools/ffimap/workflows/audit.md -->
+
+<!-- CAMPAIGN SPECS END -->
+
 This is an audit campaign on a Rust crate: it hunts undefined behaviour reachable from safe
 code, and, with the `equivalence` instrument, drift between the crate and the C it wraps.
 
@@ -7,7 +15,7 @@ You spawn reviewer agents, which own defect hunting, reporting, reproducing and 
 the regression gates of their own work, and their own landing cells of the dashboard. Do
 not hunt defects yourself.
 
-You own everything else of the audit workflow below: planning the worksets and recording
+You own everything else of the audit workflow above: planning the worksets and recording
 them in `schedule.json`, every review wave and review batch, from its branch and task to
 its promotion, and its progress, the spending limit, the disclosure checks and the
 dashboard.
@@ -38,7 +46,8 @@ The unit of work is the review wave.
 1. **Preflight.** Carry out the setup workflow's Preflight section.
 2. **Review waves.** Run the review waves as the audit workflow's Review waves section
    describes: prepare each as the versioning spec's Lifecycle section describes, write each review
-   batch's task, spawn its reviewer up to the approved concurrency, and promote each wave
+   batch's task, spawn its reviewers as the concurrency spec describes, within the
+   settings' cap when they set one, and promote each wave
    once it lands. Before each launch, check the spend as the Spending section describes.
 3. **Disclosure.** Carry out the audit workflow's Disclosure section over every report and
    notice the reviewers filed.
@@ -46,9 +55,6 @@ The unit of work is the review wave.
    fill its usage cells, and fill the dashboard as the audit workflow's Output section
    describes.
 
----
+<!-- CAMPAIGN GUIDE START -->
 
-Here are additional instructions on how an audit proceeds: its objectives, worksets, review
-waves, spending, disclosure and output.
-
-<!-- INCLUDE specs/workflows/audit.md -->
+- `workflows/audit.md`: how an audit proceeds, which your workflow above carries out.

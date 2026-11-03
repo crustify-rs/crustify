@@ -75,7 +75,7 @@ then promoted to the working branch, `crustify/devel`.
 | `foundational` | its wave's `foundational` |
 
 `wave` and `batch` form the batch id, `wave-<wave>/batch-<batch>`, which names the batch's
-branch, worktree and reviews dir as `specs/versioning.md` and `specs/layout.md` spell them, and leads from the run
+branch, worktree and reviews dir as `specs/operations/versioning.md` and `specs/operations/layout.md` spell them, and leads from the run
 back to the batch's entry in `schedule.json`. A binder, translator or reviewer task
 carries all four; a planner task carries none.
 
@@ -144,8 +144,8 @@ The optional `instructions` is the only other root field accepted.
 
 The reviewer's prompt offers `unsafety`, `contracts`, `ub`, `equiv`, `internal`,
 `conventions`, `misc`, `coverage`, `revisit`, `disclose` and `fix`, with `conventions`
-applying to a Crustify-generated batch only. Its skills add their own. A batch naming
-an objective the installed skills do not offer is rejected.
+applying to a Crustify-generated batch only. Its tools add their own. A batch naming
+an objective the installed tools do not offer is rejected.
 Without `fix`, the reviewer reports and reproduces what it finds but patches nothing.
 
 ## 5. Planner tasks
@@ -198,4 +198,4 @@ batch mixing routes is rejected.
 A batch of a foundational module routes like any other. Its `module` and `foundational` name the module,
 which `modules.json` marks `foundational`, and its binder binds the items with a
 lifecycle role as
-strategies (`specs/items/binding.md`, Lifecycle strategies).
+strategies (`specs/rust/items/binding.md`, Lifecycle strategies).

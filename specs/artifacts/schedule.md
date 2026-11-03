@@ -38,7 +38,7 @@ The schedule holds two kinds of field:
 `depends_on.scheduled` lists the waves that run before this one, and `depends_on.cut` the
 waves it depends on that run after it, its dependency on them cut to break a cycle; it
 reaches what they hold through the safe wrappers a wrap wave before it adds, as
-`specs/scheduling.md`'s Wrap waves section describes. Their
+`specs/planning/scheduling.md`'s Wrap waves section describes. Their
 union is every wave this one depends on, and `scheduled` alone is acyclic across the
 schedule.
 
@@ -101,7 +101,7 @@ within the `review-workload` caps.
 ## 5. Derived paths
 
 A batch's id, `wave-<index>/batch-<index>`, names its branch and worktree, and its wave
-index the wave branch, as `specs/versioning.md` spells them. Its artifact dirs are those of the
+index the wave branch, as `specs/operations/versioning.md` spells them. Its artifact dirs are those of the
 agents that ran it, each holding a `task.json` that names the batch's wave and index.
 
 ## 6. Earlier versions
@@ -112,4 +112,4 @@ an `objective` in place of `kind`. Schema-v1 was one campaign-wide schedule nest
 `link_units` → `subsystems` → `waves`. A campaign on either is converted by its next
 planner run: its waves are numbered in the order they ran or were to run, every v2
 `objective` becomes the batch's `kind`, and every wave's `subsystem` becomes the `module`
-its units are re-decomposed into, as `specs/decomposition.md` describes.
+its units are re-decomposed into, as `specs/planning/decomposition.md` describes.

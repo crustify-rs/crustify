@@ -43,7 +43,7 @@ and in Notes.
   running it alone; `Total tests` — all four, whose coverage is one joint run's union,
   never the sum
 - `total`, `ported` and `wrapped` types and symbols — the scheduled public-API units, and
-  those with a `Replaces:` or a `Wraps:` anchor at the tip; `share` is of the total
+  those with a `Replaces` or a `Wraps` anchor at the tip; `share` is of the total
 
 Every table below is a heading, a model line and the table. All prose belongs
 in Notes.
@@ -99,10 +99,10 @@ batch run's dir.
 | pub raw ptr | `raw_ptr_pub` | raw pointers anywhere on the public interface, `unsafe fn`s included |
 | pub void ptr | `void_ptr_ty_pub_fields_pub` + `void_ptr_fn_pub_safe` + `void_ptr_fn_pub_unsafe` | type-erased pointers left to the API's users |
 | pub unsafe fn | `unsafe_fns_pub` | the obligations the crate exports to its callers |
-| C borrow | `c_type_borrow_non_sanctioned` | Rust references into C memory outside the sanctioned handle positions; target 0 |
+| C borrow | `c_type_borrow.fn_sig.non_sanctioned` | Rust references into C memory on the public interface, outside the sanctioned handle positions; target 0 |
 | slice borrow | `raw_ptr_as_slice_borrow` | slices and strings borrowed over raw pointers, which C must neither free nor change |
-| unsafe loc % | `unsafe_loc_ratio` | unsafe block lines over code lines; context, not a score |
-| unsafe blocks | `unsafe_blocks` | unsafe blocks, the denominator of the ratio's reading |
+| unsafe loc | `unsafe_block_code_lines` / `code_lines` | lines of unsafe code over code lines; the comparable measure of unsafe volume |
+| unsafe blocks | `unsafe_blocks` | how that code is divided up; moves with the crate's one-op-per-block policy, so not comparable across crates |
 | Send/Sync | `unsafe_send_impl` + `unsafe_sync_impl` | thread safety asserted rather than derived from the fields |
 | C by value | Σ `c_type_by_val_*` + Σ `c_type_std_owner_*` | C types held outside an ffibox owner, which a move can leave dangling |
 | Drop/Clone | `drop_impl` + `clone_impl` | lifecycles written by hand rather than through an owner |
@@ -122,7 +122,7 @@ the corrections it made to what earlier runs committed.
 ## Side campaigns
 
 One row per out-of-tree library the campaign wraps in a side campaign, as
-`specs/dependencies.md` describes. Each wrapper's own dashboard, in its
+`specs/planning/dependencies.md` describes. Each wrapper's own dashboard, in its
 `<source>-bindings` repository, is its record; its row here copies that dashboard's
 figures as of the commit the campaign pins, and the `side campaigns` row of `Module stats`
 sums them.

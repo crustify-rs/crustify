@@ -26,7 +26,7 @@ import sysconfig
 from pathlib import Path
 
 #: The crustify checkout itself: ``src/crustify/`` → two levels up. crustify's
-#: own skills, prompts and specs are read from here rather than from a share
+#: own prompts and specs are read from here rather than from a share
 #: path, because they ship with the code that renders them and cannot be
 #: out of step with it.
 CHECKOUT = Path(__file__).resolve().parent.parent.parent
@@ -34,16 +34,6 @@ CHECKOUT = Path(__file__).resolve().parent.parent.parent
 #: Dependencies that are separate checkouts. The value is the share directory
 #: name, which is also the environment-variable suffix.
 _SHARED_DEPS = ("wavefront", "ffibox")
-
-
-def bin_dir() -> Path:
-    """The console-script directory of the environment crustify runs in.
-
-    ``sysconfig``, not ``Path(sys.executable).parent``: in a venv the
-    interpreter is a symlink, and resolving it lands in the base Python's
-    ``bin/`` where none of the venv's entry points exist.
-    """
-    return Path(sysconfig.get_path("scripts"))
 
 
 def share_dir() -> Path:
@@ -63,22 +53,3 @@ def dep_root(name: str) -> Path:
         raise SystemExit(f"unknown crustify dependency: {name}")
     override = os.environ.get(f"CRUSTIFY_DEP_{name.upper()}")
     return Path(override).resolve() if override else share_dir() / name
-
-
-def resolve_bin(spec: str) -> str:
-    """Absolute invocation for a skill's ``Bin path``.
-
-    The spec is a logical executable optionally followed by subcommand words
-    (``crustify audit``); only the first is a file to find. Falls back to
-    ``PATH`` so a system-installed tool still resolves, and to the spec
-    verbatim when neither locates it — a wrong path in a prompt is better
-    diagnosed by the agent running it than by a crash at render time.
-    """
-    exe, _, rest = spec.partition(" ")
-    candidate = bin_dir() / exe
-    if not candidate.is_file():
-        found = shutil.which(exe)
-        if found is None:
-            return spec
-        candidate = Path(found)
-    return f"{candidate} {rest}".rstrip()

@@ -2,7 +2,7 @@
 
 How a `port` campaign proceeds. It follows the [binding workflow](binding.md) throughout;
 this document gives the principles a port follows and where it differs. How each item is
-ported is [`../items/porting.md`](../items/porting.md).
+ported is [`../rust/items/porting.md`](../rust/items/porting.md).
 
 ## 1. Principles
 
@@ -59,7 +59,7 @@ leave it.
 
 ## 2. Batches
 
-A port campaign's schedule mixes both kinds of batch, as [`../scheduling.md`](../scheduling.md)'s
+A port campaign's schedule mixes both kinds of batch, as [`../planning/scheduling.md`](../planning/scheduling.md)'s
 Waves and batches section describes: a selected symbol is `port` from the start, a
 selected type is `wrap` while another module's unported C depends on its layout and `port`
 once none does, and a dependency outside the selected migration set stays `wrap`. A type
@@ -72,7 +72,7 @@ A module's waves do not change the compiled target. Its `port` batches add Rust 
 built and tested on its own, against the target's C build, which still compiles the
 module's C and links no Rust: there is no build switch, and no batch flips one. The
 module's `ffi_export` gateway is written with its items but compiled only under its export
-feature, as the [conventions](../conventions.md)' Exports and Export features sections
+feature, as the [conventions](../rust/conventions.md)' Exports and Export features sections
 describe, which stays off, so its bare-named exports never collide with the C the tests
 link. Native Rust items carry mangled names and cannot collide with it.
 
@@ -84,7 +84,7 @@ Once the module's last wave has landed, it is integrated in one step: its export
 turned on, its Rust is linked into the target in place of its TU, through the target's
 actual build system, the TU and the C tests gated with it are removed, and the target's
 test suite runs over the hybrid as the integration regression gate. The C side of the step
-is a commit on the fork's `main`, as [`../versioning.md`](../versioning.md)'s
+is a commit on the fork's `main`, as [`../operations/versioning.md`](../operations/versioning.md)'s
 Repositories section describes, and the campaign's commit records the submodule at it: integrations
 run one at a time, so the two repositories move together. The shared variants are rebuilt once the integration
 lands.

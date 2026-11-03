@@ -73,6 +73,12 @@ Unanswered optional questions are decided by the orchestrator.
    `crustify/artifacts/audit-dashboard.md`, from `templates/audit/dashboard.template.md`.**
    - Answer: `<default | <dashboard path>, <templates/audit/dashboard.template.md | custom template>>`
 
+## Commits
+
+10. **Which git identity should the campaign's commits carry: an author, and any
+    co-authors? By default, Crustify's own, `crustify <crustify@berkeley.edu>` (the
+    GitHub account `crustify-ai`), as the author, with no co-author.** (`id: identity`)
+    - Answer: `<default | author: Name <email>[, co-authors: Name <email>, ...]>`
 
 ## Additional instructions
 

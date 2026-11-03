@@ -14,61 +14,40 @@ from __future__ import annotations
 from pathlib import Path
 
 from crustify.agents.base import (
-    CrustifyAgent, SkillSpec, _PKG_ROOT, expand_includes,
+    CrustifyAgent, _PKG_ROOT, expand_includes,
 )
-
-#: Every skill an orchestrator can carry, per campaign kind, in prompt order.
-#: Which of them it actually carries is decided by discovery: a skill whose
-#: files are on disk is rendered, one whose files are not is silently absent.
-#: Each lives at `prompts/skills/<skill>/<kind>-assistant.md`, named like
-#: the kind's prompt — one directory per skill, one file per role — so
-#: deleting the file ablates it for that kind and deleting the directory
-#: ablates it everywhere.
-#:
-#: The coding conventions are not a skill: the prompt includes them whole.
-TRANSLATE_SKILLS = (
-    SkillSpec(
-        "crustify", "src/crustify/prompts/skills/ffimap/SKILL.md",
-        capability="ffimap",
-        role_header="skills/ffimap/translate-assistant.md",
-    ),
-    #: One wavefront skill, two role overlays. The oracle a translator queries
-    #: and the oracle an orchestrator plans with are the same tool used for
-    #: different work, so the metadata is shared and only the guidance splits.
-    SkillSpec(
-        "wavefront", "README.md", capability="wavefront",
-        role_header="skills/wavefront/translate-assistant.md",
-        meta="skills/wavefront/SKILL.md",
-    ),
-)
-
-#: An audit plans from the crate's unsafe surface, which is ffimap's; it has
-#: no C decomposition to plan, so it carries no wavefront.
-AUDIT_SKILLS = (
-    SkillSpec(
-        "crustify", "src/crustify/prompts/skills/ffimap/SKILL.md",
-        capability="ffimap",
-        role_header="skills/ffimap/audit-assistant.md",
-    ),
-)
-
-SKILLS_BY_KIND = {"translate": TRANSLATE_SKILLS, "audit": AUDIT_SKILLS}
-
 
 #: Where the assistant's one prompt, `prompts/assistant.md`, takes its campaign
 #: kind's part: replaced by `prompts/assistant/<kind>.md`, what the assistant
 #: owns in that kind of campaign and the documents only that kind includes.
 CAMPAIGN_MARKER = "<!-- CAMPAIGN -->"
+CAMPAIGN_SPECS_MARKER = "<!-- CAMPAIGN SPECS -->"
+CAMPAIGN_GUIDE_MARKER = "<!-- CAMPAIGN GUIDE -->"
+SPECS_END = "<!-- CAMPAIGN SPECS END -->"
+GUIDE_START = "<!-- CAMPAIGN GUIDE START -->"
 
 
 def campaign_prompt(kind: str) -> str:
     """The assistant's prompt template for one campaign kind, its documents not
-    yet included: the shared prompt with the kind's part in its marker."""
+    yet included: the shared prompt with the kind's part in its markers.
+
+    A kind's file holds three parts, in order: the specs only that kind
+    includes, up to `<!-- CAMPAIGN SPECS END -->`, which join the shared Specs
+    section; what the assistant owns and does in that kind, up to
+    `<!-- CAMPAIGN GUIDE START -->`, which fills the Campaign section; and how
+    those specs apply, which closes the shared How the specs apply section."""
     shared = (_PKG_ROOT / "prompts" / "assistant.md").read_text()
-    if shared.count(CAMPAIGN_MARKER) != 1:
-        raise SystemExit(f"assistant.md must hold one {CAMPAIGN_MARKER} marker")
-    part = (_PKG_ROOT / "prompts" / "assistant" / f"{kind}.md").read_text().strip()
-    return shared.replace(CAMPAIGN_MARKER, part)
+    for marker in (CAMPAIGN_SPECS_MARKER, CAMPAIGN_MARKER, CAMPAIGN_GUIDE_MARKER):
+        if shared.count(marker) != 1:
+            raise SystemExit(f"assistant.md must hold one {marker} marker")
+    part = (_PKG_ROOT / "prompts" / "assistant" / f"{kind}.md").read_text()
+    specs, sep1, rest = part.partition(SPECS_END)
+    campaign, sep2, guide = rest.partition(GUIDE_START)
+    if not (sep1 and sep2):
+        raise SystemExit(f"assistant/{kind}.md must hold {SPECS_END} and {GUIDE_START}")
+    return (shared.replace(CAMPAIGN_SPECS_MARKER, specs.strip())
+            .replace(CAMPAIGN_MARKER, campaign.strip())
+            .replace(CAMPAIGN_GUIDE_MARKER, guide.strip()))
 
 
 #: The first turn of a session started with `--start`: the user's instruction
@@ -90,7 +69,6 @@ class AssistAgent(CrustifyAgent):
     role = "assistant"
     stage = "assist"
     prompt_in_system_slot = True
-    SKILLS = TRANSLATE_SKILLS
 
     def __init__(self, workdir: Path, *, kind: str, task: Path,
                  model: str, task_only: bool = False,
@@ -98,7 +76,6 @@ class AssistAgent(CrustifyAgent):
                  resume: str | None = None, checkout=_WORKDIR,
                  session_id: str | None = None, **kwargs) -> None:
         self.kind = kind
-        self.SKILLS = SKILLS_BY_KIND[kind]
         self.task = Path(task)
         self.model = model
         self.task_only = task_only
@@ -152,17 +129,20 @@ class AssistAgent(CrustifyAgent):
             raise SystemExit(f"campaign settings file is empty: {self.task}")
         return text
 
-    def skill_specs(self) -> tuple[SkillSpec, ...]:
+    def prompt_capabilities(self) -> tuple[str, ...]:
         # `--task-only` is the control arm: the harness contributes nothing,
-        # so it contributes no skill index either.
-        return () if self.task_only else super().skill_specs()
+        # so it contributes no tool either.
+        return () if self.task_only else super().prompt_capabilities()
 
     def _body(self) -> str:
         """The stage prompt. The campaign settings are not in it: the prompt says
         where the task lives, and the orchestrator reads it from there, so an
         edit made mid-campaign is what the next module runs under."""
         self._task_text()
-        return expand_includes(campaign_prompt(self.kind))
+        return super()._body()
+
+    def _template(self) -> str:
+        return campaign_prompt(self.kind)
 
     def _prompt(self) -> str:
         if self.task_only:
