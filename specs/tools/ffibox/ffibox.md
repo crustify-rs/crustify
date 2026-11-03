@@ -8,4 +8,4 @@ documentation, its `README.md`, which walks from a C declaration to the wrapper 
 and the documents under its `docs/`, is read in full before the first wrapper is written.
 
 A representation ffibox cannot express is hand-written, with the same seam and
-safety-comment discipline, and marked `/// Handwritten`, so that it is accounted for.
+safety-comment discipline.

@@ -3,8 +3,7 @@
 ## Objectives
 
 A workset's use of ffibox's primitives is reviewed against ffibox's documentation, and its
-hand-written representations (`/// Handwritten`) against the contract ffibox would have
-enforced.
+hand-written representations against the contract ffibox would have enforced.
 
 ## Reports
 
