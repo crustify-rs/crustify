@@ -38,6 +38,11 @@ wraps it.
 The porting instructions below describe how to port each part, on top of the binding
 instructions.
 
+Set the parallelism of every build, test run and gate you start when you start it, from
+the jobs already running on the host, as the concurrency spec below describes: give it
+through the command's environment, never by editing a committed command, and take the
+whole host only when nothing else runs on it.
+
 ### 1. Analysis
 
 Analyze your worklist's items in the C code, as well as their dependencies. Use the hints
@@ -90,6 +95,18 @@ tests under Miri; the wave's and the module's gates belong to the review that fo
 
 Commit one changeset, with your batch's dashboard rows, and land it on `{git_base}` as
 the versioning spec's Landing section below describes.
+
+Land under the integration branch's landing lock, as the versioning spec's Landing lock
+section describes. Find your CLI's pid by walking up your shell's parent processes, and
+bind the lock's holder to it, so that the kernel releases the lock if you end. Take the
+lock only once your work is validated and committed, rebase once under it, and keep it
+until your push has succeeded: resolve a conflict and fix a failing gate while you hold
+it, never by releasing it first. Release it as soon as the push lands.
+
+After the rebase, do not rerun every gate by default. Reason about which gates are relevant
+to catch a regression of the integration, from what your change and the rebased-in changes
+touch and how they could interact, and rerun those; say in your final message which you
+reran and why the others could not have changed.
 
 ---
 
@@ -155,6 +172,13 @@ of its cells is measured. You fill your batch's landing cells, in your last comm
 usage and campaign cells are not yours.
 
 <!-- INCLUDE specs/accounting.md -->
+
+---
+
+Here is how your work shares the host with the other agents and builds running on it: how
+to choose the parallelism of each build, test run and gate you start.
+
+<!-- INCLUDE specs/concurrency.md -->
 
 ---
 

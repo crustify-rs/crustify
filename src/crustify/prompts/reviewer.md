@@ -54,6 +54,11 @@ worktree of that tool's local checkout. If `fix` is enabled, add the patch there
 The reviewing instructions below describe what each objective looks for, what makes a
 finding, and how it is filed and fixed.
 
+Set the parallelism of every build, test run and gate you start when you start it, from
+the jobs already running on the host, as the concurrency spec below describes: give it
+through the command's environment, never by editing a committed command, and take the
+whole host only when nothing else runs on it.
+
 ### 1. Analysis
 
 Analyze your workset in the Rust code and the C code it binds or ports. Use the hints given
@@ -97,7 +102,9 @@ as the reviewing instructions' Gates section describes:
   before any change, and triage its reports on earlier waves' items too. In every other
   wave, run BSan only on the individual reproducers you emit.
 
-If `fix` is enabled, rerun the gates you own on the tree you land, after your last rebase.
+If `fix` is enabled, rerun the gates you own on the tree you land: after your fixes, and
+after your rebase under the landing lock those relevant to its integration, as the Landing
+step describes.
 If `fix` is not enabled, file each true positive a gate finds as a UB report.
 
 ### 4. Landing
@@ -105,6 +112,18 @@ If `fix` is not enabled, file each true positive a gate finds as a UB report.
 Make two commits, first the `crustify/reviews/` changes, then the Rust tree changes, if you
 made any, with your batch's dashboard rows in the last, and land them on `{git_base}` as the
 versioning spec's Landing section below describes.
+
+Land under the integration branch's landing lock, as the versioning spec's Landing lock
+section describes. Find your CLI's pid by walking up your shell's parent processes, and
+bind the lock's holder to it, so that the kernel releases the lock if you end. Take the
+lock only once your work is validated and committed, rebase once under it, and keep it
+until your push has succeeded: resolve a conflict and fix a failing gate while you hold
+it, never by releasing it first. Release it as soon as the push lands.
+
+After the rebase, do not rerun every gate by default. Reason about which gates are relevant
+to catch a regression of the integration, from what your change and the rebased-in changes
+touch and how they could interact, and rerun those; say in your final message which you
+reran and why the others could not have changed.
 
 ---
 
@@ -178,6 +197,13 @@ of its cells is measured. You fill your review batch's landing cells, in your la
 the usage and campaign cells are not yours.
 
 <!-- INCLUDE specs/accounting.md -->
+
+---
+
+Here is how your work shares the host with the other agents and builds running on it: how
+to choose the parallelism of each build, test run and gate you start.
+
+<!-- INCLUDE specs/concurrency.md -->
 
 ---
 

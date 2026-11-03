@@ -43,6 +43,11 @@ the target, change the build, or touch the Rust tree.
 The decomposition and scheduling specs below describe what each artifact holds and how it
 is decided.
 
+Set the parallelism of every build, test run and gate you start when you start it, from
+the jobs already running on the host, as the concurrency spec below describes: give it
+through the command's environment, never by editing a committed command, and take the
+whole host only when nothing else runs on it.
+
 ### 1. The committed plan
 
 Start from what your branch holds. For each artifact you own:
@@ -168,6 +173,13 @@ of its cells is measured. You fill your run's landing cells, its row in `Plannin
 its usage cells, in your commit; the usage and campaign cells are not yours.
 
 <!-- INCLUDE specs/accounting.md -->
+
+---
+
+Here is how your work shares the host with the other agents and builds running on it: how
+to choose the parallelism of each build, test run and gate you start.
+
+<!-- INCLUDE specs/concurrency.md -->
 
 ---
 

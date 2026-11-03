@@ -84,7 +84,7 @@ headless run with an unanswered mandatory question. If the user left an optional
 unanswered, use its default; where it states none, decide it yourself. When collecting
 answers interactively, recommend values.
 
-When the user answers "orchestrator's choice", it leaves that question's decision up to
+When the user answers "assistant's choice", it leaves that question's decision up to
 you.
 
 Present one consolidated campaign brief, with the contents the Campaign section lists,
@@ -152,6 +152,19 @@ Whatever the campaign's kind, you own:
   that part needed. You number each run dir in its agent's launch order before you spawn
   it. A batch's worktree is purged as soon as it lands; a failed batch's stays until you
   have inspected it;
+- the concurrency of the agents you spawn and of the builds you run, as the concurrency
+  spec below describes: decide how many agents run at once when each wave starts, from the
+  host's resources and every workload on it, other campaigns' and side campaigns' agents
+  included, and revise it as batches land or fail. Never exceed the settings'
+  `parallelism` when they set one. To give one unit of work priority, suspend another's
+  agents with their whole process trees and resume them once it finishes, and note the
+  suspension in the dashboard;
+- the landing locks of the integration branches, as the versioning spec's Landing lock
+  section describes: while a wave runs, check now and then that each lock's holder, as its
+  `.holder` file records it, belongs to an agent that is still making progress, its
+  transcript and run dir still changing or a gate or model request running. End an agent
+  that has stalled, which releases its lock, and run its batch again. Never remove a lock
+  or its holder file while its agent lives;
 - the working branch, which you commit to only between waves, and the shipping branch,
   which you fast-forward to the working branch only when the user approves it. Ask for
   that approval at a milestone, such as a module that has landed and passed its gates;
@@ -190,6 +203,13 @@ Here is the setup every campaign starts from: provisioning, the artifact tree, t
 the test baseline and the preflight before the first wave.
 
 <!-- INCLUDE specs/workflows/setup.md -->
+
+---
+
+Here is how the campaign's work shares the host: how many agents run at once, and how the
+builds, tests and gates inside them are parallelized.
+
+<!-- INCLUDE specs/concurrency.md -->
 
 ---
 

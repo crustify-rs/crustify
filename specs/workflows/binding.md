@@ -78,8 +78,9 @@ Each batch then gets:
 - its branch and worktree, forked from the wave branch; and
 - symlinks to the gitignored state its tree needs from the base checkout.
 
-The wave's batches run concurrently, up to the campaign's parallelism. A `wrap` batch runs
-a binder, a `port` batch a translator:
+The wave's batches run concurrently, as many at once as
+[`../concurrency.md`](../concurrency.md) describes. A `wrap` batch runs a binder, a `port`
+batch a translator:
 
 ```bash
 crustify spawn-binder <batch worktree> <run dir>/task.json --log-dir <run dir>

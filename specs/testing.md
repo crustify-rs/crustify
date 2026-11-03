@@ -212,11 +212,13 @@ BSan, when available, is run for every batch and at module end:
   trigger it, each by exact name and alone; never on a whole test binary, a suite or the
   workspace.
 - At module end, it runs as a gate over everything the module landed: the
-  whole workspace, one invocation per test binary in parallel, each under a `timeout`.
+  whole workspace, one invocation per test binary, as many side by side as
+  [`concurrency.md`](concurrency.md) describes, each under a `timeout`.
 
 Miri is run after every wave, as a gate over the whole workspace: one
 `cargo +nightly miri test` per test binary (`--lib`, and `--test <name>` for each
-integration binary), in parallel, each with `-- --skip compile_fail`. The gate passes only
+integration binary), as many side by side as [`concurrency.md`](concurrency.md) describes,
+each with `-- --skip compile_fail`. The gate passes only
 with no Miri error: a test that stops at the foreign boundary without the attribute gets
 it, and any other Miri error is a UB candidate of the item it touches.
 
@@ -227,6 +229,14 @@ standalone reproducer, becomes a UB finding.
 
 When C changed, the configured C build and baseline run. A wrap-only batch with no C
 change does not need the full C baseline.
+
+A batch validates its own change on its own base first. Its rebase onto the integration
+branch, under the landing lock that [`versioning.md`](versioning.md)'s Landing section
+describes, then combines that change with the work landed since: the gates run again are
+those that could catch a regression the combination introduces, judged from what the
+batch's change and the rebased-in changes touch and how they could interact. A gate that
+neither side's changes could affect keeps the result it had, and a rebase that conflicts
+makes the resolved tree new work of the batch's own.
 
 TODO (porting): the gates of a `port` batch, which changes no C, and those of a module's
 integration, which links its Rust in place of its TU, removes the C tests gated with it and

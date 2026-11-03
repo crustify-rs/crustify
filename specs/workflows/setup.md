@@ -65,8 +65,10 @@ left out that is worth covering gets a variant of its own.
 The variants are recorded in `crustify/artifacts/build.json`, from
 [`templates/build.json`](../../templates/build.json): each an out-of-tree `dir` and the
 `configure` and `build` commands run from it, with the file's `version` raised whenever a
-command changes. They are built in parallel, and each is smoke-tested once built. The
-shared variants are rebuilt after a landing changes the compiled target.
+command changes. The commands carry no job count, which each build takes as
+[`../concurrency.md`](../concurrency.md) describes. The variants are built concurrently, and
+each is smoke-tested once built. The shared variants are rebuilt after a landing changes
+the compiled target.
 
 Campaigns run on Linux, with glibc, on a 64-bit architecture: the host's. Each variant links the
 out-of-tree libraries the target uses from their side campaigns' local installs of the

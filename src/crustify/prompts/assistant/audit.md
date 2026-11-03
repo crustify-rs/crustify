@@ -38,7 +38,8 @@ The unit of work is the review wave.
 1. **Preflight.** Carry out the setup workflow's Preflight section.
 2. **Review waves.** Run the review waves as the audit workflow's Review waves section
    describes: prepare each as the versioning spec's Lifecycle section describes, write each review
-   batch's task, spawn its reviewer up to the approved concurrency, and promote each wave
+   batch's task, spawn its reviewers as the concurrency spec describes, within the
+   settings' cap when they set one, and promote each wave
    once it lands. Before each launch, check the spend as the Spending section describes.
 3. **Disclosure.** Carry out the audit workflow's Disclosure section over every report and
    notice the reviewers filed.

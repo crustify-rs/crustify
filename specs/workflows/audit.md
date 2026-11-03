@@ -64,7 +64,8 @@ of an impl are never named as functions.
 For `revisit`, the reports are divided into their own batches, grouped so that reports
 needing the same instrument or the same build share a reviewer.
 
-Each round of reviewers, up to the configured concurrency, is one review wave, recorded in
+Each round of reviewers, as many as [`../concurrency.md`](../concurrency.md) describes, is
+one review wave, recorded in
 `schedule.json` as [`../artifacts/schedule.md`](../artifacts/schedule.md) describes: a
 wave of no link unit or module, each of its batches a `review` batch holding its
 `paths` or `reports`.

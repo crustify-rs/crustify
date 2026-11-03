@@ -80,9 +80,9 @@ Planning section describes, under the new answers. Landed work is never re-plann
 2. **Waves and batches.** Run the waves the session covers, and their review waves, as
    the binding workflow's Order, Waves and batches, and Review waves sections describe,
    with the porting workflow's differences in a port campaign: prepare each wave as the
-   versioning spec's Lifecycle section describes, write each task, spawn its agent up to the
-   approved parallelism, record each batch's progress, and promote each wave once it
-   completes. Create each home before its batch launches, as the Rust tree section
+   versioning spec's Lifecycle section describes, write each task, spawn its agents as the
+   concurrency spec describes, within the settings' `parallelism` when it sets one, record
+   each batch's progress, and promote each wave once it completes. Create each home before its batch launches, as the Rust tree section
    describes.
 
    Before a wave whose items use entities of an out-of-tree library that its wrapper

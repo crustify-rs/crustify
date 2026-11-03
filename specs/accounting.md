@@ -33,7 +33,8 @@ They are filled in the landing's last commit, and measured against the integrati
 tip it was rebased onto: coverage as [`testing.md`](testing.md)'s Coverage section measures
 it, and the safety audit columns as the changes in the dashboard's Safety audit metrics. A
 rebase that conflicts in the dashboard keeps every row both sides added, and the landing's
-cells, `Σ` rows included, are measured again when its validation reruns.
+cells, `Σ` rows included, are measured again where the gates its rebase reruns cover them;
+the others stand as measured on the batch's base.
 
 ### 2.2 Usage cells
 

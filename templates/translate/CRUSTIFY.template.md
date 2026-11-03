@@ -18,7 +18,7 @@ for campaign decisions that remain unresolved.
    now or we can brainstorm them during the live session. You can also let the
    orchestrator decide.** (`id: scope`)
    - Answer: `<named modules | named functions/types | whole target |
-     orchestrator's choice>`
+     assistant's choice>`
 
 4. **Which model and billing should do the translation work?**
    (`id: translate-agent`)
@@ -56,7 +56,7 @@ Unanswered optional questions use their defaults.
 8. **Should the campaign use the default batching and parallelism settings, or
    customize them?** (`id: workload`)
    - Answer: `<defaults | max-types: N, max-syms: N, max-loc: N,
-     parallelism: N | orchestrator's choice>`
+     parallelism: N | assistant's choice>`
 
 9. **What batch caps should review agents use? We recommend the same caps as
    translation by default.** (`id: review-workload`)

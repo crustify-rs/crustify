@@ -70,11 +70,62 @@ git push "$(git rev-parse --git-common-dir)" HEAD:refs/heads/<integration branch
 `git update-ref` is no substitute: its compare-and-swap form makes the ref update atomic,
 but does not enforce that the new commit descends from the expected old commit.
 
-On a non-fast-forward rejection, the batch:
+### 4.1 The landing lock
 
-1. rebases only its own branch onto the current integration branch;
-2. reruns its validation; and
-3. retries the fast-forward.
+An integration branch is landed on by one batch at a time, under its landing lock: an
+exclusive `flock` on a file in the Git common directory, named after the branch with its
+`refs/heads/` prefix dropped, so that every worktree of the repository sees the same lock:
+
+```text
+$(git rev-parse --git-common-dir)/crustify/landing/<integration branch>.lock
+```
+
+A batch whose validated work is committed on its own branch takes the lock and holds it
+until its landing has succeeded:
+
+1. it acquires the lock, waiting while another batch holds it;
+2. it rebases only its own branch onto the current integration branch, once: nothing else
+   lands while it holds the lock;
+3. it resolves any conflict the rebase raises and runs again, on the rebased tree, the
+   gates that could catch a regression of the integration, as
+   [`testing.md`](testing.md)'s Regressions section describes, fixing what fails;
+4. it pushes the fast-forward, which nothing can reject; and
+5. it releases the lock.
+
+A conflict or a failing gate is resolved under the lock rather than after releasing it, so
+that the branch cannot move again in between and no batch rebases twice.
+
+The waiter blocks in `flock` itself, so the kernel wakes it the moment the lock is released,
+and nothing polls. Once it holds the lock, it hands the locked descriptor to a process of
+its own, detached from the shell that started it and bound to the lifetime of the agent's
+CLI: a `flock` lock belongs to the open file, so that process keeps it after the command
+that took it exits, until the agent ends, however it ends, and the kernel releases it. The
+holder records itself beside the lock, in `<integration branch>.lock.holder`, as its own pid
+and the CLI's. A waiter bounds each wait, to stay within the time a single command may run,
+and waits again when it expires. For example, with `$CLI_PID` the agent CLI's pid, found by
+walking up the shell's parent processes:
+
+```bash
+lock="$(git rev-parse --git-common-dir)/crustify/landing/<integration branch>.lock"
+mkdir -p "$(dirname "$lock")"
+# wait in the kernel, up to 10 minutes per command; then hand the lock to a detached holder
+sh -c '
+  exec 9>"$1"
+  flock -w 600 9 || exit 1
+  setsid sh -c "echo \"\$\$ $2\" > \"$1.holder\"; exec tail --pid=$2 -f /dev/null" 9>&9 &
+' sh "$lock" "$CLI_PID"
+# release, once the push has succeeded
+holder=$(cut -d' ' -f1 "$lock.holder"); rm -f "$lock.holder"; kill "$holder"
+```
+
+The holder file is removed before the holder is ended, while the lock is still held, so
+that a release never removes the next holder's record.
+
+The lock has no timeout: the regression gates it covers vary in length. A holder that has
+stopped making progress keeps it until its agent is ended, which releases it; the batch is
+then run again, as any failed batch is.
+
+### 4.2 Commits
 
 Every landing is a fast-forward, so an integration branch is linear, and each batch's
 commits are one unbroken run of it, ending at its branch's tip and starting after the wave

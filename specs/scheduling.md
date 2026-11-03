@@ -34,8 +34,8 @@ one module, or to none when the campaign has no decomposition, and records the w
 depends on, split as modules' are into `scheduled` and `cut`: within a module, the
 dependency order of its units; across modules, the modules' order, so that a wave depends
 on the last waves of the modules its units depend on. Waves execute one at a
-time, in that order; the batches of a wave execute in parallel, up to the campaign's
-parallelism, and the `workload` caps bound each batch.
+time, in that order; the batches of a wave execute concurrently, as many at once as
+[`concurrency.md`](concurrency.md) describes, and the `workload` caps bound each batch.
 
 When review is enabled, each translation wave is followed by a review wave, whose batches
 group the reviewed wave's batches as [`reviewing.md`](reviewing.md)'s Review waves and
