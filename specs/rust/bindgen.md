@@ -49,7 +49,10 @@ every campaign:
 - `Default` is derived, and layout tests are generated;
 - C comments are kept as doc comments, and the crate's doctests are off, since they hold
   C;
-- each allowlisted `static inline` function gets a compiled wrapper, in `static_fns.c`;
+- each allowlisted `static inline` function gets a compiled wrapper, `<name>__extern`, in
+  `static_fns.c`, and is bound under its own name through
+  `#[link_name = "<name>__extern"]`, so that it is called as an exported function is:
+  bindgen's `wrap_static_fns`;
 - macro shims are bound like the functions they wrap; and
 - an empty allowlist generates nothing.
 
