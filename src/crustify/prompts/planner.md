@@ -202,7 +202,7 @@ These are the tools you reach for, each with its binary and its own documentatio
 you read in full before the tool's first command. How each serves your work is given
 beside the spec it serves, above.
 
-<!-- INCLUDE specs/tools/wavefront.md -->
+<!-- INCLUDE specs/tools/wavefront/wavefront.md -->
 
 ---
 

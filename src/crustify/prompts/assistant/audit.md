@@ -62,7 +62,7 @@ These are the tools you reach for, each with its binary and its own documentatio
 you read in full before the tool's first command, followed by how each serves the specs
 above.
 
-<!-- INCLUDE specs/tools/ffimap.md -->
+<!-- INCLUDE specs/tools/ffimap/ffimap.md -->
 
 <!-- INCLUDE specs/tools/ffimap/workflows/audit.md -->
 

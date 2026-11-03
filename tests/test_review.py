@@ -169,11 +169,15 @@ class ReviewAgentTests(unittest.TestCase):
     def test_an_absent_tool_takes_its_objective_with_it(self) -> None:
         """A reviewer pointed at a crate wavefront does not describe is never
         asked about lifecycle primitives."""
-        _Checkouts(self, absent=("wavefront",))
-        agent = self.agent(None)
-        self.assertNotIn("lifecycle", agent.available_objectives())
-        with self.assertRaisesRegex(SystemExit, "lifecycle"):
-            self.agent(["lifecycle"])
+        _Checkouts(self)
+        real = Path.is_file
+        header = deps.CHECKOUT / "specs/tools/wavefront/wavefront.md"
+        with mock.patch.object(Path, "is_file",
+                               lambda p: False if p == header else real(p)):
+            agent = self.agent(None)
+            self.assertNotIn("lifecycle", agent.available_objectives())
+            with self.assertRaisesRegex(SystemExit, "lifecycle"):
+                self.agent(["lifecycle"])
 
     def test_unknown_objectives_are_rejected(self) -> None:
         _Checkouts(self)

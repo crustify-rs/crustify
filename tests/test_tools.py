@@ -57,11 +57,10 @@ class ToolSpecTests(unittest.TestCase):
         for name, text in _templates().items():
             paths = _INCLUDE_RE.findall(text)
             for path in paths:
-                rest = path.removeprefix(TOOLS_DIR + "/")
-                if path.startswith(TOOLS_DIR + "/") and "/" in rest:
-                    tool = rest.split("/", 1)[0]
+                if path.startswith(TOOLS_DIR + "/"):
+                    tool = path.removeprefix(TOOLS_DIR + "/").split("/", 1)[0]
                     with self.subTest(prompt=name, spec=path):
-                        self.assertIn(f"{TOOLS_DIR}/{tool}.md", paths)
+                        self.assertIn(f"{TOOLS_DIR}/{tool}/{tool}.md", paths)
 
 
 class IncludeTests(unittest.TestCase):
@@ -139,21 +138,11 @@ class IncludeTests(unittest.TestCase):
 
 
 class AblationTests(unittest.TestCase):
-    """A tool is ablated by deleting its header, or by not installing the
-    checkout it documents."""
+    """A tool is ablated by deleting its header, and one of its uses by
+    deleting that spec."""
 
     def setUp(self) -> None:
         self.repo = Path(__file__).resolve().parent
-        self.tmp = tempfile.TemporaryDirectory()
-        self.addCleanup(self.tmp.cleanup)
-        checkout = Path(self.tmp.name)
-        (checkout / "README.md").write_text("# stand-in\n")
-        real = deps.dep_root
-        patcher = mock.patch.object(
-            deps, "dep_root",
-            side_effect=lambda name: real(name) if name == "crustify" else checkout)
-        patcher.start()
-        self.addCleanup(patcher.stop)
 
     def _agent(self, **kw) -> AssistAgent:
         return AssistAgent(self.repo, kind="translate", task=Path(__file__),
@@ -166,7 +155,7 @@ class AblationTests(unittest.TestCase):
 
     def test_deleting_a_tool_header_ablates_the_tool(self) -> None:
         real = Path.is_file
-        header = _TOOLS / "wavefront.md"
+        header = _TOOLS / "wavefront/wavefront.md"
         with mock.patch.object(Path, "is_file",
                                lambda p: False if p == header else real(p)):
             agent = self._agent()
@@ -181,17 +170,6 @@ class AblationTests(unittest.TestCase):
             pre = self._agent().system_preamble()
             self.assertNotIn("# wavefront › workflows/setup", pre)
             self.assertIn("# wavefront › operations/versioning", pre)
-
-    def test_an_uninstalled_checkout_ablates_its_tool(self) -> None:
-        with mock.patch.object(deps, "dep_root",
-                               return_value=Path("/nonexistent")):
-            self.assertEqual(self._agent().prompt_capabilities(), ("ffimap",))
-
-    def test_markers_resolve(self) -> None:
-        body = expand_includes("<!-- INCLUDE specs/tools/wavefront.md -->")
-        self.assertNotIn("<!-- BIN", body)
-        self.assertNotIn("<!-- DOC", body)
-        self.assertIn(f"{self.tmp.name}/README.md", body)
 
     def test_the_ablation_control_carries_no_tools(self) -> None:
         agent = self._agent(task_only=True)
@@ -220,7 +198,7 @@ class PromptRenderTests(unittest.TestCase):
             with self.subTest(kind=kind):
                 text = campaign_prompt(kind)
                 self.assertNotIn(CAMPAIGN_MARKER, text)
-                self.assertIn(f"<!-- INCLUDE {TOOLS_DIR}/ffimap.md -->", text)
+                self.assertIn(f"<!-- INCLUDE {TOOLS_DIR}/ffimap/ffimap.md -->", text)
 
 
 class PromptArgumentTests(unittest.TestCase):

@@ -27,39 +27,31 @@ INSTRUCTIONS_MARKER = "<!-- INSTRUCTIONS -->"
 #: by its path in the checkout, spliced whole into a stage prompt.
 _INCLUDE_RE = _re.compile(r"<!-- INCLUDE ([^ ]+) -->")
 
-#: The specs of the tools an agent reaches for: `specs/tools/<tool>.md`, the
-#: tool's header, and `specs/tools/<tool>/<spec path>`, how the tool serves the
-#: spec at that path. A prompt includes each it needs, as it includes any spec.
+#: The specs of the tools an agent reaches for: `specs/tools/<tool>/<tool>.md`,
+#: the tool's header, and `specs/tools/<tool>/<spec path>`, how the tool serves
+#: the spec at that path. A prompt includes each it needs, as it includes any spec.
 TOOLS_DIR = "specs/tools"
-
-#: In a tool spec: `<!-- BIN <name> -->`, the absolute invocation of an
-#: executable, and `<!-- DOC <dependency> <path> -->`, a document in a
-#: dependency's checkout. Resolved where crustify runs, so that no path is
-#: configured.
-_BIN_RE = _re.compile(r"<!-- BIN ([^ ]+) -->")
-_DOC_RE = _re.compile(r"<!-- DOC ([^ ]+) ([^ ]+) -->")
-
 
 def _tool_of(path: str) -> str | None:
     """The tool a spec path belongs to, or None for a spec of no tool."""
     if not path.startswith(TOOLS_DIR + "/"):
         return None
-    rest = path[len(TOOLS_DIR) + 1:]
-    return rest.split("/", 1)[0].removesuffix(".md")
+    return path[len(TOOLS_DIR) + 1:].split("/", 1)[0]
+
+
+def _header(tool: str) -> str:
+    """A tool's header, by its path in the checkout."""
+    return f"{TOOLS_DIR}/{tool}/{tool}.md"
 
 
 def tool_available(tool: str) -> bool:
     """Whether a tool's specs are spliced into the prompts that include them:
-    its header is on disk, and so is every dependency document it names.
+    its header is on disk. The tool itself is on the agent's ``PATH``, or in
+    its build, by the time the agent runs.
 
     Presence is the whole selection mechanism, so a tool is ablated by
-    deleting its header, or by not installing the checkout it documents; one
-    of its specs, by deleting that file."""
-    header = deps.CHECKOUT / TOOLS_DIR / f"{tool}.md"
-    if not header.is_file():
-        return False
-    return all((deps.dep_root(dep) / doc).exists()
-               for dep, doc in _DOC_RE.findall(header.read_text()))
+    deleting its header, and one of its uses by deleting that spec."""
+    return (deps.CHECKOUT / _header(tool)).is_file()
 
 
 def included_tools(template: str) -> tuple[str, ...]:
@@ -67,15 +59,10 @@ def included_tools(template: str) -> tuple[str, ...]:
     tools = []
     for path in _INCLUDE_RE.findall(template):
         tool = _tool_of(path)
-        if (tool and path == f"{TOOLS_DIR}/{tool}.md" and tool not in tools
+        if (tool and path == _header(tool) and tool not in tools
                 and tool_available(tool)):
             tools.append(tool)
     return tuple(tools)
-
-
-def _resolve_tool_markers(text: str) -> str:
-    text = _BIN_RE.sub(lambda m: deps.resolve_bin(m.group(1)), text)
-    return _DOC_RE.sub(lambda m: str(deps.dep_root(m.group(1)) / m.group(2)), text)
 
 
 def expand_includes(text: str) -> str:
@@ -97,12 +84,9 @@ def expand_includes(text: str) -> str:
         if tool is not None:
             if not (tool_available(tool) and path.is_file()):
                 return ""
-            body = _resolve_tool_markers(path.read_text().strip())
-        else:
-            if not path.is_file():
-                raise SystemExit(f"included document does not exist: {path}")
-            body = path.read_text().strip()
-        return body.replace("{", "{{").replace("}", "}}")
+        elif not path.is_file():
+            raise SystemExit(f"included document does not exist: {path}")
+        return path.read_text().strip().replace("{", "{{").replace("}", "}}")
     return _INCLUDE_RE.sub(splice, text)
 
 

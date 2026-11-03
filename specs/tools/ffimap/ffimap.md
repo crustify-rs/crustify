@@ -1,7 +1,5 @@
 # ffimap
 
-- binary: <!-- BIN ffimap -->
-
 ffimap maps a Rust crate's FFI and unsafe surface deterministically: a rustc driver over
 HIR and typeck counts unsafe blocks and fns, raw and void pointers by position and
 visibility, FFI calls and wrapper use. No model is involved, so two runs over one tree

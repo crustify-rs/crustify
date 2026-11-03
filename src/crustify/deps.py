@@ -36,16 +36,6 @@ CHECKOUT = Path(__file__).resolve().parent.parent.parent
 _SHARED_DEPS = ("wavefront", "ffibox")
 
 
-def bin_dir() -> Path:
-    """The console-script directory of the environment crustify runs in.
-
-    ``sysconfig``, not ``Path(sys.executable).parent``: in a venv the
-    interpreter is a symlink, and resolving it lands in the base Python's
-    ``bin/`` where none of the venv's entry points exist.
-    """
-    return Path(sysconfig.get_path("scripts"))
-
-
 def share_dir() -> Path:
     """``<prefix>/share`` for the environment crustify runs in."""
     return Path(sysconfig.get_path("data")) / "share"
@@ -63,22 +53,3 @@ def dep_root(name: str) -> Path:
         raise SystemExit(f"unknown crustify dependency: {name}")
     override = os.environ.get(f"CRUSTIFY_DEP_{name.upper()}")
     return Path(override).resolve() if override else share_dir() / name
-
-
-def resolve_bin(spec: str) -> str:
-    """Absolute invocation for a tool spec's ``<!-- BIN <name> -->``.
-
-    The spec is a logical executable optionally followed by subcommand words
-    (``crustify audit``); only the first is a file to find. Falls back to
-    ``PATH`` so a system-installed tool still resolves, and to the spec
-    verbatim when neither locates it — a wrong path in a prompt is better
-    diagnosed by the agent running it than by a crash at render time.
-    """
-    exe, _, rest = spec.partition(" ")
-    candidate = bin_dir() / exe
-    if not candidate.is_file():
-        found = shutil.which(exe)
-        if found is None:
-            return spec
-        candidate = Path(found)
-    return f"{candidate} {rest}".rstrip()

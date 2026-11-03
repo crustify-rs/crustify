@@ -1,13 +1,9 @@
 # wavefront
 
-- binary: <!-- BIN wavefront -->
-- documentation: <!-- DOC wavefront README.md -->, with its `--help` and the documents
-  under its `docs/`
-
 Wavefront answers deterministic queries about a C codebase: type and symbol records,
 pointer analysis, lifecycle roles, dependency closures and the source inventory, and it
-generates objective-neutral, dependency-ordered wave plans. Its own documentation is read
-in full before its first command: `docs/scoping.md`, `docs/graph.md` and
+generates objective-neutral, dependency-ordered wave plans. Its own documentation, its `README.md`, its `--help` and the documents under its `docs/`,
+is read in full before its first command: `docs/scoping.md`, `docs/graph.md` and
 `docs/batching.md` describe how it selects, orders and batches; `docs/artifacts/t3.md`
 the T3 tables; and `docs/type-lifecycle.md` how a type's lifecycle primitives are
 identified.

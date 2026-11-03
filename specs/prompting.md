@@ -79,10 +79,9 @@ steps, and the workflows, documents and tool specs that kind includes.
 A tool is one program an agent reaches for: wavefront, ffimap, ffibox. Its specs sit under
 `specs/tools/`, written as every spec is, descriptively and without naming roles:
 
-- `<tool>.md`, its header: what the tool is, its binary and the documentation of its own
-  that is read in full before its first use, as `<!-- BIN <name> -->` and
-  `<!-- DOC <dependency> <path> -->` markers resolved where crustify runs, and what holds
-  in every use of it; and
+- `<tool>/<tool>.md`, its header: what the tool is, which documentation of its own is
+  read in full before its first use, and what holds in every use of it. The tool itself is
+  installed, on the agent's `PATH` or in its build, by the time an agent runs; and
 - `<tool>/<spec path>`, how the tool serves the spec at that path, `<spec path>` mirroring
   the spec tree: `wavefront/rust/items/binding.md` augments `rust/items/binding.md`. It
   opens with `# <tool> › <spec path>`, and each of its sections is named after the section
@@ -91,9 +90,8 @@ A tool is one program an agent reaches for: wavefront, ffimap, ffibox. Its specs
 A prompt includes the tool specs it needs, as it includes any spec: each tool's header
 once, in its Tools section, and each augmentation beside the spec it augments, so that a
 role takes exactly the uses of a tool its work has, and two roles that share a use share
-its text. A tool spec that is missing, or whose tool's documentation is not installed,
-includes as nothing: a tool is ablated by deleting its header or not installing it, and
-one of its uses by deleting that augmentation.
+its text. A tool spec that is missing includes as nothing: a tool is ablated by deleting
+its header, and one of its uses by deleting that augmentation.
 
 ## 2. Placement
 
@@ -107,7 +105,7 @@ one of its uses by deleting that augmentation.
 | what one role does, in which steps, and which steps it owns | that role's prompt |
 | what the assistant does in one kind of campaign | `src/crustify/prompts/assistant/<kind>.md` |
 | how a tool serves a spec | `specs/tools/<tool>/<spec path>` |
-| what a tool is, and what holds in every use of it | `specs/tools/<tool>.md` |
+| what a tool is, and what holds in every use of it | `specs/tools/<tool>/<tool>.md` |
 | what one run needs beyond its role | that task's `instructions.md` |
 
 A rule that two roles share goes in a document both include, not in both prompts. A
