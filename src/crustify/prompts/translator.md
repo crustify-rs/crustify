@@ -48,8 +48,8 @@ given in the binding how-to's Item analysis.
 Every item in the worklist names the authored `.rs` file it belongs in. Use it. Use the
 conventions below for homing un-homed items.
 
-Use filled anchors as context. A `Wraps:` anchor on an item of your worklist marks the
-binding your port replaces with a `Replaces:` one.
+Use filled anchors as context. A `Wraps` anchor on an item of your worklist marks the
+binding your port replaces with a `Replaces` one, its alias kept.
 
 ### 3. Raw binding synthesis
 

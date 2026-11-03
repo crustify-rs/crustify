@@ -85,28 +85,65 @@ definition site co-home. A home may be shared across waves.
 
 ## 3. Anchors
 
-A scheduled item arrives with the authored Rust file it belongs in, named by its batch.
-Nothing is written into that file ahead of the agent: the binder or translator emits exactly
-one filled doc-comment anchor per item, and those anchors are the only record that an item
-was translated.
+The binder or translator annotates the Rust item that stands in for each C item, and those annotations are the only record
+that an item was translated.
+
+An annotation is two attributes on the same Rust item, a doc-comment anchor and a rustdoc
+alias:
+
+```rust
+/// Wraps `fn::git_repository_open`
+#[doc(alias = "git_repository_open")]
+pub fn open(path: &Path) -> Result<RepositoryBox, Error> { … }
+```
 
 | anchor | meaning |
 |---|---|
-| `/// Wraps: <name>{.<field>}` | safe view over the FFI seam |
-| `/// Replaces: <name>{.<field>}` | native Rust translation |
-| `/// Field: <name>.<field>` | field accessor over a wrapped type |
+| ``/// Wraps `<kind>::<name>{.<field>}` `` | safe view over the FFI seam |
+| ``/// Replaces `<kind>::<name>{.<field>}` `` | native Rust translation |
 
-`Field:` applies to a field only. It is what a field accessor emitted on a wrapped type
-carries, and campaign coverage counts distinct `type.field` paths that reached one.
+The anchor's path is a code span, in backticks, as rustdoc renders it and as the
+workspace's `clippy::doc_markdown` lint requires of a path in a doc comment.
 
-`Wraps` and `Replaces` apply to symbols and types. `Wraps: <name>{.<field>}` is for anonymous
-embedded structs. For release/clone strategies `<name>` takes the name of the lifecycle routine called by the
-strategy via FFI. Emit anchors for the raw/typed lifecycle routines when implementing the Drop/Clone
-that calls them.
+`<name>` is the C item's name as its batch schedules it, and `<kind>` what it is in C:
 
-Duplicate a filled anchor only when several wrappers intentionally represent the same
-item. Existing filled anchors are completed work unless the current objective deliberately
-promotes that item.
+| kind | C item |
+|---|---|
+| `fn` | a function |
+| `ty` | a type: a struct, a union or a callback typedef |
+| `fld` | a field, as `<name>.<field>`, `<name>` its struct |
+| `var` | a global |
+
+An anonymous struct embedded in `<name>` is the type `ty::<name>.<field>`.
+
+The alias is the bare `<name>{.<field>}`, without the backticks, so that a consumer who
+searches the documentation for the C name finds every item that stands in for it. The kind
+is the anchor's alone: a label in the alias would no longer match that search.
+
+### 3.1 What is annotated
+
+The annotation goes on the public item a consumer uses in place of the C item, which is
+not necessarily the item that makes the FFI call:
+
+- a function: the function or method the public API exports, which a consumer imports
+  instead of the FFI function. The private helper that makes the call, an `ffi_export`
+  gateway and a test are not annotated.
+- a lifecycle routine, raw, typed or string: the method of the public lifecycle trait the
+  strategy implements, such as `CDrop::c_drop`, where it is handwritten, or the macro
+  invocation that mints it, which passes the annotation to the method. Again, the method
+  annotated need not be the one making the unsafe call.
+- a type: the layout newtype that defines the FFI type, handwritten or minted by
+  `define_ctype!`.
+- a field: each of its accessors, the getter and the setter alike.
+
+### 3.2 Several stand-ins
+
+One C item may have several annotated Rust items, each carrying the same anchor and
+alias: the ownership variants one C function is split into when one signature cannot
+express every valid contract, as [`items/binding.md`](items/binding.md)'s Functions
+section describes, and the accessors of one field. That is the only case in which an
+annotation is duplicated. Existing annotations are completed work unless the current
+objective deliberately promotes their item.
 
 ## 4. Testing
 
