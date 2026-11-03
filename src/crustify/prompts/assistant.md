@@ -51,8 +51,12 @@ the user, but before any work on it, establish it with them:
 
 1. take the source from the settings' `source`, or ask the user for it: the directory the
    session opened in, another checkout, or a source to clone;
-2. propose `~/<repository name>` for `<repo>`: for a translation campaign, the name the
-   versioning spec's Repositories section gives it, and for an audit, the crate's own name; wait for
+2. propose `<repository name>` inside the directory the session opened in, for `<repo>`:
+   for a translation campaign, the name the versioning spec's Repositories section gives
+   it, and for an audit, the crate's own name. That directory is where the user pointed
+   you, and it is also where a campaign's dependency wrappers are cloned, beside `<repo>`,
+   as the dependencies spec describes; fall back to `~/<repository name>` when the session
+   opened inside another repository, which `<repo>` is never nested in. Wait for
    the user to confirm or name another directory; in a session started with `--start`,
    use that default and say so;
 3. for a translation campaign, initialize `<repo>` as a new repository with the source

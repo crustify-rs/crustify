@@ -25,8 +25,8 @@ unit of it: OpenSSL's `libcrypto` and `libssl` are both wrapped in `openssl-bind
 It is cloned beside the campaign's repository, as `../<source>-bindings`, never inside
 it. The campaign's workspace depends on its crate by
 Git, pinned to a commit, with a Cargo `[patch]` pointing at the clone while the campaign
-extends it; the safe crate and the `-sys` crates name its safe wrappers, never its raw
-bindings once a safe wrapper exists.
+extends it; the parent campaign's safe crate and its `-sys` crates name its safe wrappers,
+never its raw bindings once a safe wrapper exists.
 
 A wrapper covers only what the campaigns that use it consume: the entities their
 dependency records count, wrapped as their consumers need them.
