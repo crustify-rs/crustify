@@ -140,11 +140,21 @@ bindings as they describe, following the Type route or the Symbol route for your
 
 <!-- INCLUDE specs/rust/items/binding.md -->
 
+The tools you carry serve it as follows:
+
+<!-- INCLUDE specs/tools/wavefront/rust/items/binding.md -->
+<!-- INCLUDE specs/tools/ffibox/rust/items/binding.md -->
+<!-- INCLUDE specs/tools/ffimap/rust/items/binding.md -->
+
 ---
 
 Here are additional instructions on how to test what you generate.
 
 <!-- INCLUDE specs/verification/testing.md -->
+
+The tools you carry serve it as follows:
+
+<!-- INCLUDE specs/tools/ffibox/verification/testing.md -->
 
 ---
 
@@ -168,6 +178,10 @@ usage and campaign cells are not yours.
 
 <!-- INCLUDE specs/operations/accounting.md -->
 
+The tools you carry serve it as follows:
+
+<!-- INCLUDE specs/tools/ffimap/operations/accounting.md -->
+
 ---
 
 Here is how your work shares the host with the other agents and builds running on it: how
@@ -186,7 +200,14 @@ if any, follow; where they conflict with the rest of this prompt, follow them.
 
 ---
 
-Reach for the skills advertised by the headers in the following skill index and leverage
-them to conduct your workflow:
+## Tools
 
-<!-- SKILLS -->
+These are the tools you reach for, each with its binary and its own documentation, which
+you read in full before the tool's first command. How each serves your work is given
+beside the spec it serves, above.
+
+<!-- INCLUDE specs/tools/wavefront.md -->
+
+<!-- INCLUDE specs/tools/ffibox.md -->
+
+<!-- INCLUDE specs/tools/ffimap.md -->

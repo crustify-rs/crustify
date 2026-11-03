@@ -11,7 +11,7 @@ before that, nothing in the repository changes.
 
 ## 1. Provisioning
 
-Every dependency the campaign's workflow, its enabled skills and its target need is
+Every dependency the campaign's workflow, the tools it uses and its target need is
 installed: the toolchains, the target's build system, the system dependencies of the C and
 C++ libraries it builds, and the instruments its sanitizers need. BorrowSanitizer, when it
 is not installed, is built from source as its repository describes

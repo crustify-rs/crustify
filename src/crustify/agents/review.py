@@ -6,28 +6,7 @@ import re
 from pathlib import Path
 
 from crustify.agents.base import (
-    CrustifyAgent, SkillSpec, _PKG_ROOT, expand_includes,
-)
-
-#: Every skill a reviewer can carry, in prompt order; discovery decides which
-#: it actually carries, exactly as for the translator. A skill's reviewer
-#: header may describe objectives of its own (see `SKILL_OBJECTIVES`).
-_SKILLS = (
-    SkillSpec(
-        "crustify", "src/crustify/prompts/skills/ffimap/SKILL.md",
-        capability="ffimap",
-        role_header="skills/ffimap/reviewer.md",
-    ),
-    SkillSpec(
-        "wavefront", "README.md", capability="wavefront",
-        role_header="skills/wavefront/reviewer.md",
-        meta="skills/wavefront/SKILL.md",
-    ),
-    SkillSpec(
-        "ffibox", "README.md", capability="ffibox",
-        role_header="skills/ffibox/reviewer.md",
-        meta="skills/ffibox/SKILL.md",
-    ),
+    CrustifyAgent, _PKG_ROOT, expand_includes,
 )
 
 #: The objectives the reviewer's prompt describes, each under a heading named
@@ -40,15 +19,15 @@ OBJECTIVES = (
     "coverage", "revisit", "disclose", "fix",
 )
 
-#: Objectives a skill's reviewer header describes, offered only while that
-#: skill is carried: a reviewer pointed at a crate wavefront does not
+#: Objectives a tool's spec of the review describes, offered only while the
+#: prompt carries that tool: a reviewer pointed at a crate wavefront does not
 #: describe is never asked about its lifecycles.
-SKILL_OBJECTIVES = {"wavefront": ("lifecycle",)}
+TOOL_OBJECTIVES = {"wavefront": ("lifecycle",)}
 
-#: Listing order: the skills' objectives lead, since they review the
+#: Listing order: the tools' objectives lead, since they review the
 #: analysis every binding was built from.
 OBJECTIVE_ORDER = (
-    *(o for objectives in SKILL_OBJECTIVES.values() for o in objectives),
+    *(o for objectives in TOOL_OBJECTIVES.values() for o in objectives),
     *OBJECTIVES,
 )
 
@@ -68,7 +47,6 @@ class ReviewAgent(CrustifyAgent):
     #: objectives, and compaction reaching the procedure costs more than the
     #: cache writes the shared prefix would save.
     prompt_in_system_slot = True
-    SKILLS = _SKILLS
 
     def __init__(
         self,
@@ -102,16 +80,16 @@ class ReviewAgent(CrustifyAgent):
             if missing:
                 raise SystemExit(
                     "review: objective(s) not offered by this reviewer's prompt "
-                    "and skills: " + ", ".join(missing)
+                    "and tools: " + ", ".join(missing)
                     + "; available: " + ", ".join(_ordered(available)))
             self._objectives = frozenset(objectives)
 
     def available_objectives(self) -> list[str]:
         """Every objective this reviewer can run: those its prompt describes,
-        plus those of the skills it carries."""
+        plus those of the tools it carries."""
         keys = set(OBJECTIVES)
-        for spec in self.skill_specs():
-            keys |= set(SKILL_OBJECTIVES.get(spec.capability or "", ()))
+        for tool in self.prompt_capabilities():
+            keys |= set(TOOL_OBJECTIVES.get(tool, ()))
         return _ordered(keys)
 
     @property
@@ -132,9 +110,8 @@ class ReviewAgent(CrustifyAgent):
         return (f"review-{self._route}_"
                 f"{re.sub(r'[^A-Za-z0-9_]+', '_', key)}")
 
-    def _body(self) -> str:
-        return expand_includes(
-            (_PKG_ROOT / "prompts" / "reviewer.md").read_text())
+    def _template(self) -> str:
+        return (_PKG_ROOT / "prompts" / "reviewer.md").read_text()
 
     def _arguments(self) -> dict:
         return {

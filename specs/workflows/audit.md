@@ -50,8 +50,8 @@ reviews dirs.
 ## 4. Worksets
 
 For `audit`, the crate is divided into disjoint worksets of modules, one per review batch,
-from the crate and the reports filed so far. The modules that hold the smells the ffimap
-skill names are batched first.
+from the crate and the reports filed so far. The modules that hold the smells ffimap's tool
+spec names are batched first.
 
 A batch spans around the settings' `max-loc` lines of code, 500 by default; a small margin
 either way keeps a type with its impls, or avoids a small remainder. A module too large for
@@ -94,7 +94,7 @@ report dirs (the batch and run fields are left out of these two examples):
 ```
 
 `crustify spawn-reviewer --help` describes the batch, and a dry run lists the objectives it
-resolves to and rejects any the reviewer's prompt and skills do not offer. The wave's
+resolves to and rejects any the reviewer's prompt and tool specs do not offer. The wave's
 reviewers run concurrently, launched a moment apart so that no two share a timestamp:
 
 ```bash

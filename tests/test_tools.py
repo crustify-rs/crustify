@@ -1,4 +1,4 @@
-"""Discovery is the whole skill-selection mechanism."""
+"""The tool specs under specs/tools/, and how the prompts include them."""
 from __future__ import annotations
 
 import collections
@@ -6,120 +6,62 @@ import re
 import tempfile
 import unittest
 from pathlib import Path
-from types import SimpleNamespace
 from unittest import mock
 
 from crustify import deps, translate
-from crustify.agents.base import _PKG_ROOT
-from crustify.agents.assist import (
-    AUDIT_SKILLS, CAMPAIGN_MARKER, AssistAgent, campaign_prompt,
+from crustify.agents.base import (
+    _INCLUDE_RE, _PKG_ROOT, TOOLS_DIR, expand_includes, included_tools,
 )
+from crustify.agents.assist import CAMPAIGN_MARKER, AssistAgent, campaign_prompt
 from crustify.agents.plan import PlanAgent
 from crustify.agents.review import ReviewAgent
 from crustify.agents.bind import BindAgent
 from crustify.agents.translate import TranslateAgent
 
-_ROLES = (BindAgent, TranslateAgent, ReviewAgent, AssistAgent, PlanAgent,
-          SimpleNamespace(name="audit-assistant", SKILLS=AUDIT_SKILLS))
-_ROLE_NAMES = ((BindAgent, "binder"), (TranslateAgent, "translator"),
-               (ReviewAgent, "reviewer"),
-               (AssistAgent, "translate-assistant"),
-               (PlanAgent, "planner"),
-               (SimpleNamespace(name="audit-assistant", SKILLS=AUDIT_SKILLS),
-                "audit-assistant"))
+_TOOLS = deps.CHECKOUT / TOOLS_DIR
 
 
-class DeclaredPathTests(unittest.TestCase):
-    """A misspelled path ablates silently at run time, by design. It is a
-    source bug rather than an operator mistake, so it is caught here."""
+def _templates() -> dict[str, str]:
+    """Every prompt template, the assistant's once per campaign kind."""
+    out = {path.name: path.read_text()
+           for path in (_PKG_ROOT / "prompts").glob("*.md")
+           if path.name != "assistant.md"}
+    for kind in ("translate", "audit"):
+        out[f"{kind}-assistant"] = campaign_prompt(kind)
+    return out
 
-    def test_every_role_header_exists(self) -> None:
-        for cls in _ROLES:
-            for spec in cls.SKILLS:
-                if spec.role_header is None:
-                    continue
-                with self.subTest(role=cls.name, header=spec.role_header):
-                    self.assertTrue(
-                        (_PKG_ROOT / "prompts" / spec.role_header).is_file())
 
-    def test_every_in_tree_skill_file_exists(self) -> None:
-        """Skills owned by this distribution, as opposed to the wavefront and
-        ffibox checkouts, which a bare test environment need not have."""
-        for cls in _ROLES:
-            for spec in cls.SKILLS:
-                if spec.dep != "crustify":
-                    continue
-                with self.subTest(role=cls.name, path=spec.path):
-                    self.assertTrue((deps.CHECKOUT / spec.path).is_file())
+class ToolSpecTests(unittest.TestCase):
+    """A tool spec is a header, `specs/tools/<tool>.md`, or an augmentation,
+    `specs/tools/<tool>/<spec path>`, of the spec at that path."""
 
-    def test_role_headers_follow_the_directory_layout(self) -> None:
-        """`skills/<skill>/<role>.md`, one directory per skill and one file
-        per role. The layout is what gives an ablation two grains, so a spec
-        that spells its path some other way silently loses the coarse one."""
-        for cls, role in _ROLE_NAMES:
-            for spec in cls.SKILLS:
-                if spec.role_header is None:
-                    continue
-                with self.subTest(role=role, header=spec.role_header):
-                    self.assertEqual(
-                        spec.role_header, f"skills/{spec.capability}/{role}.md")
+    def test_every_tool_spec_is_included(self) -> None:
+        """A tool spec no prompt includes is dead text."""
+        included = {path for text in _templates().values()
+                    for path in _INCLUDE_RE.findall(text)}
+        for path in sorted(_TOOLS.rglob("*.md")):
+            rel = str(path.relative_to(deps.CHECKOUT))
+            with self.subTest(spec=rel):
+                self.assertIn(rel, included)
 
-    def test_every_declared_doc_path_resolves(self) -> None:
-        """A `Doc path` is followed by the agent but decides no discovery, so
-        a broken one is a dead instruction rather than an ablation."""
-        from crustify.agents.base import _skill_meta
-        for cls in _ROLES:
-            for spec in cls.SKILLS:
-                if spec.dep != "crustify":
-                    continue
-                _, _, _, doc = _skill_meta(deps.CHECKOUT / spec.path)
-                with self.subTest(role=cls.name, path=spec.path):
-                    self.assertTrue(doc is None or doc.is_file(), doc)
+    def test_every_tool_include_resolves(self) -> None:
+        """Deleting a tool spec ablates it silently, so a misspelled include is
+        caught here rather than at run time."""
+        for name, text in _templates().items():
+            for path in _INCLUDE_RE.findall(text):
+                if path.startswith(TOOLS_DIR + "/"):
+                    with self.subTest(prompt=name, spec=path):
+                        self.assertTrue((deps.CHECKOUT / path).is_file())
 
-    def test_a_self_contained_skill_carries_its_own_metadata(self) -> None:
-        """A skill with no generic file to wrap must be frontmatter, or the
-        renderer emits its name and description and nothing points at the
-        body — the procedure would never reach the agent."""
-        for cls in _ROLES:
-            for spec in cls.SKILLS:
-                if spec.role_header is not None:
-                    continue
-                with self.subTest(role=cls.name, path=spec.path):
-                    text = (deps.CHECKOUT / spec.path).read_text()
-                    self.assertTrue(
-                        text.startswith("---") or "Doc path:" in text)
-
-    def test_a_skill_directory_holds_every_role_that_carries_it(self) -> None:
-        """The inverse: nothing sits in prompts/skills/ that no role reads."""
-        declared = {
-            (spec.capability or spec.path.rsplit("/", 2)[-2], role)
-            for cls, role in _ROLE_NAMES
-            for spec in cls.SKILLS
-        }
-        root = _PKG_ROOT / "prompts" / "skills"
-        # A skill whose metadata crustify ships keeps that file beside its
-        # role headers; it belongs to no single role.
-        on_disk = {(f.parent.name, f.stem) for f in root.glob("*/*.md")
-                   if f.name != "SKILL.md"}
-        self.assertEqual(on_disk, declared)
-
-    def test_every_capability_is_ablatable_by_deleting_one_file(self) -> None:
-        """Each optional skill is governed by exactly one file under
-        prompts/skills/<capability>/<role>.md — its role header when it wraps
-        a generic skill, its own path when it is self-contained. Without one,
-        a skill shipped inside this distribution could not be removed from a
-        prompt without uninstalling crustify."""
-        for cls, role in _ROLE_NAMES:
-            for spec in cls.SKILLS:
-                if spec.capability is None:
-                    continue
-                with self.subTest(role=role, cap=spec.capability):
-                    governing = spec.role_header or spec.path
-                    self.assertTrue(
-                        governing.endswith(
-                            f"prompts/skills/{spec.capability}/{role}.md")
-                        or governing == f"skills/{spec.capability}/{role}.md",
-                        governing)
+    def test_a_prompt_with_an_augmentation_carries_its_tool(self) -> None:
+        for name, text in _templates().items():
+            paths = _INCLUDE_RE.findall(text)
+            for path in paths:
+                rest = path.removeprefix(TOOLS_DIR + "/")
+                if path.startswith(TOOLS_DIR + "/") and "/" in rest:
+                    tool = rest.split("/", 1)[0]
+                    with self.subTest(prompt=name, spec=path):
+                        self.assertIn(f"{TOOLS_DIR}/{tool}.md", paths)
 
 
 class IncludeTests(unittest.TestCase):
@@ -147,8 +89,7 @@ class IncludeTests(unittest.TestCase):
     }
     _REF = re.compile(r"^## ([a-z/]+) › (.+?)(?:, for `[a-z]+`)?$", re.M)
     #: A numbered heading's number, which a reference leaves out.
-    _NUMBER = re.compile(r"^\d+(?:\.\d+)*\.?\s+")
-
+    
     def _included(self, prompt: str) -> set[str]:
         if prompt.endswith("-assistant.md"):
             text = campaign_prompt(prompt.removesuffix("-assistant.md"))
@@ -182,7 +123,7 @@ class IncludeTests(unittest.TestCase):
                          shared | {"workflows/audit"})
 
     def test_included_documents_are_plain_markdown(self) -> None:
-        """Public documents, not skills: no frontmatter for an agent to see."""
+        """Public documents: no frontmatter for an agent to see."""
         for name, path in self._DOCS.items():
             with self.subTest(doc=name):
                 self.assertFalse(
@@ -196,75 +137,65 @@ class IncludeTests(unittest.TestCase):
             "<!-- INCLUDE specs/rust/conventions.md -->")
         self.assertIn("{.<field>}", body.format())
 
-    def test_every_how_to_section_a_header_names_exists(self) -> None:
-        """A header augments `<how-to> › <section> [› <subsection>]`. Renaming
-        a section would otherwise leave the augmentation pointing nowhere."""
-        headings = {
-            name: {self._NUMBER.sub("", line.lstrip("#").strip())
-                   for line in (deps.CHECKOUT / path).read_text().splitlines()
-                   if line.startswith("#")}
-            for name, path in self._DOCS.items()
-        }
-        refs = 0
-        for header in (_PKG_ROOT / "prompts" / "skills").glob("*/*.md"):
-            for doc, path in self._REF.findall(header.read_text()):
-                refs += 1
-                with self.subTest(header=str(header.relative_to(_PKG_ROOT)),
-                                  ref=f"{doc} › {path}"):
-                    self.assertIn(doc, headings)
-                    for part in path.split(" and "):
-                        for name in part.split(" › "):
-                            self.assertIn(name.strip(), headings[doc])
-        self.assertGreater(refs, 0)
 
+class AblationTests(unittest.TestCase):
+    """A tool is ablated by deleting its header, or by not installing the
+    checkout it documents."""
 
-class DiscoveryTests(unittest.TestCase):
     def setUp(self) -> None:
         self.repo = Path(__file__).resolve().parent
-        # A stand-in wavefront checkout: the README crustify points at is all
-        # discovery needs from it; the skill metadata is crustify's own.
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         checkout = Path(self.tmp.name)
-        (checkout / "README.md").write_text("# wavefront\n")
-        patcher = mock.patch.object(deps, "dep_root", return_value=checkout)
+        (checkout / "README.md").write_text("# stand-in\n")
+        real = deps.dep_root
+        patcher = mock.patch.object(
+            deps, "dep_root",
+            side_effect=lambda name: real(name) if name == "crustify" else checkout)
         patcher.start()
         self.addCleanup(patcher.stop)
 
-    def _agent(self) -> AssistAgent:
-        return AssistAgent(
-            self.repo, kind="translate", task=Path(__file__),
-            model="anthropic/claude-opus-5")
+    def _agent(self, **kw) -> AssistAgent:
+        return AssistAgent(self.repo, kind="translate", task=Path(__file__),
+                           model="anthropic/claude-opus-5", **kw)
 
-    def test_a_present_skill_is_carried(self) -> None:
-        self.assertIn("wavefront", self._agent().prompt_capabilities())
+    def test_a_present_tool_is_carried(self) -> None:
+        agent = self._agent()
+        self.assertEqual(agent.prompt_capabilities(), ("wavefront", "ffimap"))
+        self.assertIn("# wavefront › workflows/setup", agent.system_preamble())
 
-    def test_deleting_a_role_header_ablates_it(self) -> None:
-        """The role header is one file under prompts/skills/, and deleting it
-        removes the skill from that role even with its checkout installed."""
+    def test_deleting_a_tool_header_ablates_the_tool(self) -> None:
         real = Path.is_file
-        header = _PKG_ROOT / "prompts" / "skills/wavefront/translate-assistant.md"
-        with mock.patch.object(
-                Path, "is_file",
-                lambda p: False if p == header else real(p)):
-            self.assertNotIn("wavefront", self._agent().prompt_capabilities())
+        header = _TOOLS / "wavefront.md"
+        with mock.patch.object(Path, "is_file",
+                               lambda p: False if p == header else real(p)):
+            agent = self._agent()
+            self.assertNotIn("wavefront", agent.prompt_capabilities())
+            self.assertNotIn("# wavefront › ", agent.system_preamble())
 
-    def test_an_uninstalled_dependency_ablates_its_skill(self) -> None:
-        """The other half of the same rule: a generic skill lives in a
-        checkout, and not installing the checkout removes it."""
+    def test_deleting_an_augmentation_ablates_that_use_only(self) -> None:
+        real = Path.is_file
+        aug = _TOOLS / "wavefront/workflows/setup.md"
+        with mock.patch.object(Path, "is_file",
+                               lambda p: False if p == aug else real(p)):
+            pre = self._agent().system_preamble()
+            self.assertNotIn("# wavefront › workflows/setup", pre)
+            self.assertIn("# wavefront › operations/versioning", pre)
+
+    def test_an_uninstalled_checkout_ablates_its_tool(self) -> None:
         with mock.patch.object(deps, "dep_root",
                                return_value=Path("/nonexistent")):
-            agent = AssistAgent(
-                self.repo, kind="translate", task=Path(__file__),
-                model="anthropic/claude-opus-5")
-            self.assertEqual(agent.skill_specs(), ())
+            self.assertEqual(self._agent().prompt_capabilities(), ("ffimap",))
 
-    def test_the_ablation_control_carries_no_skills(self) -> None:
-        agent = AssistAgent(
-            self.repo, kind="translate", task=Path(__file__),
-            model="anthropic/claude-opus-5",
-            task_only=True)
-        self.assertEqual(agent.skill_specs(), ())
+    def test_markers_resolve(self) -> None:
+        body = expand_includes("<!-- INCLUDE specs/tools/wavefront.md -->")
+        self.assertNotIn("<!-- BIN", body)
+        self.assertNotIn("<!-- DOC", body)
+        self.assertIn(f"{self.tmp.name}/README.md", body)
+
+    def test_the_ablation_control_carries_no_tools(self) -> None:
+        agent = self._agent(task_only=True)
+        self.assertEqual(agent.prompt_capabilities(), ())
         self.assertEqual(agent.system_preamble(), "")
 
 
@@ -289,7 +220,7 @@ class PromptRenderTests(unittest.TestCase):
             with self.subTest(kind=kind):
                 text = campaign_prompt(kind)
                 self.assertNotIn(CAMPAIGN_MARKER, text)
-                self.assertIn("<!-- SKILLS -->", text)
+                self.assertIn(f"<!-- INCLUDE {TOOLS_DIR}/ffimap.md -->", text)
 
 
 class PromptArgumentTests(unittest.TestCase):
@@ -413,7 +344,7 @@ class OrchestratorPromptTests(unittest.TestCase):
     def test_the_ablation_arm_contributes_nothing(self) -> None:
         agent = self._agent(task_only=True)
         self.assertEqual(agent.system_preamble(), "")
-        self.assertEqual(agent.skill_specs(), ())
+        self.assertEqual(agent.prompt_capabilities(), ())
 
 
 if __name__ == "__main__":

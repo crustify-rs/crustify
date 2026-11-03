@@ -33,7 +33,7 @@ or ported and the `commits` it landed. In an audit it names paths of the crate. 
 report only on your workset.
 
 Your objectives are listed in your inputs, and the reviewing instructions' Objectives
-section describes each by its id; a skill's role guidance describes the objectives it
+section describes each by its id; a tool's spec describes the objectives the tool
 contributes. Review only for the objectives listed in your inputs, and skip what the
 instructions say about the others. `fix` decides whether you patch what you find, and
 `disclose` whether you draft a disclosure notice for each finding.
@@ -42,10 +42,10 @@ instructions say about the others. `fix` decides whether you patch what you find
 
 `<reviews-dir>` is your reviews dir, `crustify/reviews/{batch_id}/`. File each
 finding in the sub-directory of its objective, as the reviewing instructions' Reports
-section lists them. A skill may define sub-directories of its own for findings on its
-tool's output.
+section lists them. A tool's spec may define sub-directories of its own for findings on
+the tool's output.
 
-A defect in a tool rather than in the reviewed codebase (crustify, or from your skill index)
+A defect in a tool rather than in the reviewed codebase (crustify, or one of your tools)
 is not filed in your reviews dir. Emit its reproducer and report on a dedicated branch and
 worktree of that tool's local checkout. If `fix` is enabled, add the patch there too. If
 `fix` is not enabled, do not.
@@ -135,6 +135,12 @@ objectives, and how findings are filed and fixed.
 
 <!-- INCLUDE specs/verification/reviewing.md -->
 
+The tools you carry serve it as follows:
+
+<!-- INCLUDE specs/tools/wavefront/verification/reviewing.md -->
+<!-- INCLUDE specs/tools/ffimap/verification/reviewing.md -->
+<!-- INCLUDE specs/tools/ffibox/verification/reviewing.md -->
+
 ---
 
 The following describes the conventions of Crustify-generated codebases. If you are
@@ -179,6 +185,10 @@ review batch owns.
 
 <!-- INCLUDE specs/verification/testing.md -->
 
+The tools you carry serve it as follows:
+
+<!-- INCLUDE specs/tools/ffibox/verification/testing.md -->
+
 ---
 
 Here are additional instructions on how a campaign is laid out: its branches, worktrees and
@@ -201,6 +211,10 @@ the usage and campaign cells are not yours.
 
 <!-- INCLUDE specs/operations/accounting.md -->
 
+The tools you carry serve it as follows:
+
+<!-- INCLUDE specs/tools/ffimap/operations/accounting.md -->
+
 ---
 
 Here is how your work shares the host with the other agents and builds running on it: how
@@ -219,7 +233,14 @@ if any, follow; where they conflict with the rest of this prompt, follow them.
 
 ---
 
-Reach for the skills advertised by the headers in the following skill index and leverage
-them to conduct your workflow:
+## Tools
 
-<!-- SKILLS -->
+These are the tools you reach for, each with its binary and its own documentation, which
+you read in full before the tool's first command. How each serves your work is given
+beside the spec it serves, above.
+
+<!-- INCLUDE specs/tools/ffimap.md -->
+
+<!-- INCLUDE specs/tools/wavefront.md -->
+
+<!-- INCLUDE specs/tools/ffibox.md -->

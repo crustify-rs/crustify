@@ -50,8 +50,8 @@ class WorklistAgent(CrustifyAgent):
         return (f"{self.objective}-{self._route}_"
                 f"{re.sub(r'[^A-Za-z0-9_]+', '_', key or 'batch')}")
 
-    def _body(self) -> str:
-        return expand_includes((_PKG_ROOT / "prompts" / self.prompt).read_text())
+    def _template(self) -> str:
+        return (_PKG_ROOT / "prompts" / self.prompt).read_text()
 
     def _arguments(self) -> dict:
         # Base first: `workdir` and `git_base` (the wave's integration

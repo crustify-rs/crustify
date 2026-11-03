@@ -118,4 +118,4 @@ and, when it has one, its reproducer, under the sub-directory of the finding's k
 
 A planner that amends an earlier plan files its findings the same way under
 `crustify/reviews/planner/`: `modules/` for `modules.json` and `schedule.json`, and
-one sub-directory per skill artifact it amends.
+one sub-directory per tool artifact it amends.

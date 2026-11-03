@@ -183,7 +183,7 @@ every agent's prompt includes the ones it follows.
   usage records, and how cost is derived
 - [`specs/artifacts/`](specs/artifacts/): the fields of `modules.json`, `dependencies.json`, the campaign's
   `schedule.json`, and `task.json`
-- [`specs/prompting.md`](specs/prompting.md): how the agents' prompts, specs and skills
+- [`specs/prompting.md`](specs/prompting.md): how the agents' prompts, specs and tool specs
   are composed
 - [`templates/`](templates/README.md): an example of each artifact, the settings and
   dashboard templates, and the Dockerfile

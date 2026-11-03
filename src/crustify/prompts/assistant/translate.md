@@ -7,7 +7,7 @@ answer selects.
 You spawn four kinds of agent, and each owns its part:
 
 - planner agents own the plan: the module decomposition, the plan fields of the
-  schedule, and the planning artifacts of the enabled skills;
+  schedule, and the planning artifacts of the tools it uses;
 - binder agents own the `wrap` batches, and translator agents the `port` batches;
 - reviewer agents own the review batches.
 
@@ -168,4 +168,20 @@ Here is how translators port C to safe Rust.
 
 ---
 
+---
 
+## Tools
+
+These are the tools you reach for, each with its binary and its own documentation, which
+you read in full before the tool's first command, followed by how each serves the specs
+above.
+
+<!-- INCLUDE specs/tools/wavefront.md -->
+
+<!-- INCLUDE specs/tools/wavefront/workflows/setup.md -->
+
+<!-- INCLUDE specs/tools/wavefront/operations/versioning.md -->
+
+<!-- INCLUDE specs/tools/ffimap.md -->
+
+<!-- INCLUDE specs/tools/ffimap/operations/accounting.md -->

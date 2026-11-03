@@ -53,3 +53,17 @@ Here are additional instructions on how an audit proceeds: its objectives, works
 waves, spending, disclosure and output.
 
 <!-- INCLUDE specs/workflows/audit.md -->
+
+---
+
+## Tools
+
+These are the tools you reach for, each with its binary and its own documentation, which
+you read in full before the tool's first command, followed by how each serves the specs
+above.
+
+<!-- INCLUDE specs/tools/ffimap.md -->
+
+<!-- INCLUDE specs/tools/ffimap/workflows/audit.md -->
+
+<!-- INCLUDE specs/tools/ffimap/verification/reviewing.md -->

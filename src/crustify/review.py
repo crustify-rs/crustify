@@ -122,7 +122,7 @@ def load_batch(path: Path) -> ReviewBatch:
     ``objectives`` replaces a translation batch's single ``objective``.
     ``reports`` names the report dirs a ``revisit`` batch re-examines, and is
     given exactly when ``revisit`` is. Which objective names exist depends on
-    the skills the reviewer carries, so they are checked against the agent,
+    the tools the reviewer carries, so they are checked against the agent,
     not here."""
     raw = read_object(path, _fail)
     check_fields(raw, {"base_branch"} | RUN_FIELDS | BATCH_FIELDS,
@@ -182,7 +182,7 @@ def execute(
     from crustify.agents.review import ReviewAgent
 
     # Built before the dry-run returns: constructing the agent is what checks
-    # the batch's objectives against the skills actually installed.
+    # the batch's objectives against the tools actually installed.
     agent = ReviewAgent(
         workdir.resolve(),
         route=batch.route,

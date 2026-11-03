@@ -31,7 +31,7 @@ its objectives, its review wave branch and its model and billing:
 
 Without `objectives`, a batch runs every objective its reviewer offers that applies.
 `crustify spawn-reviewer --help` describes them, and a dry run lists those a batch
-resolves to and rejects any the reviewer's prompt and skills do not offer.
+resolves to and rejects any the reviewer's prompt and tool specs do not offer.
 
 ## 2. Worklists
 
@@ -55,7 +55,7 @@ but only the workset is reported on.
 
 ## 3. Objectives
 
-Each objective names a kind of defect. A skill may contribute objectives of its own.
+Each objective names a kind of defect. A tool may contribute objectives of its own.
 
 ### 3.1 Unsafety (`unsafety`)
 
@@ -147,7 +147,7 @@ reproducer, in the sub-directory of its objective:
 | `conventions` | `conventions/` |
 | `misc` | `misc/` |
 
-A skill may add sub-directories for findings on its tool's output. A defect in a tool
+A tool may add sub-directories for findings on its own output. A defect in a tool
 rather than in the reviewed codebase is filed, with its reproducer, on a dedicated branch
 and worktree of that tool's local checkout.
 
@@ -215,7 +215,7 @@ changes to the Rust tree, if any.
 
 A planner run that corrects what an earlier run decided files each correction as a finding
 under `crustify/reviews/planner/`: `modules/` for `modules.json` and
-`schedule.json`, and one sub-directory per skill artifact. Adding what the plan lacks,
+`schedule.json`, and one sub-directory per tool artifact. Adding what the plan lacks,
 updating it to the current schema and re-planning the waves a change moves are no
 findings.
 

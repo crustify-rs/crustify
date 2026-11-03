@@ -4,7 +4,7 @@ Decomposition turns the target's build into the campaign's modules, recorded in
 `crustify/artifacts/modules.json`: what each module holds, its tests, its objective, the
 Rust that could replace it, and what it depends on. The waves and batches that execute
 them are [scheduling](scheduling.md)'s; together they are the campaign's plan, with the
-planning artifacts of the enabled skills.
+planning artifacts of the tools it uses.
 
 A plan is bounded by the campaign's settings in `crustify/CRUSTIFY.md`: its `campaign`
 (port or wrap), `scope`, `target-config` and `workload` answers. A feature the target is

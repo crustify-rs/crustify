@@ -136,7 +136,7 @@ every instructions file you write and the request behind it.
 
 ## Self repair
 
-When a campaign exposes a defect in Crustify or enabled skills with a local checkout,
+When a campaign exposes a defect in Crustify or one of its tools with a local checkout,
 create a dedicated branch and worktree in that component's repository, implement and
 validate the reusable fix there; do not mix it into campaign commits.
 
@@ -196,7 +196,7 @@ gates of their own work: do not rerun them for a wave.
 
 ---
 
-Here are additional instructions on how Crustify's prompts, documents and skills are
+Here are additional instructions on how Crustify's prompts, specs and tool specs are
 composed, and where each kind of text lives.
 
 <!-- INCLUDE specs/prompting.md -->
@@ -250,10 +250,3 @@ Here is how a campaign accounts for its work: what the dashboard records, the se
 usage records its figures come from, and how cost and time are derived.
 
 <!-- INCLUDE specs/operations/accounting.md -->
-
----
-
-Reach for the skills advertised by the headers in the following skill index and leverage
-them to conduct your workflow:
-
-<!-- SKILLS -->

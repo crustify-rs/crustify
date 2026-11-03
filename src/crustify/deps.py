@@ -26,7 +26,7 @@ import sysconfig
 from pathlib import Path
 
 #: The crustify checkout itself: ``src/crustify/`` → two levels up. crustify's
-#: own skills, prompts and specs are read from here rather than from a share
+#: own prompts and specs are read from here rather than from a share
 #: path, because they ship with the code that renders them and cannot be
 #: out of step with it.
 CHECKOUT = Path(__file__).resolve().parent.parent.parent
@@ -66,7 +66,7 @@ def dep_root(name: str) -> Path:
 
 
 def resolve_bin(spec: str) -> str:
-    """Absolute invocation for a skill's ``Bin path``.
+    """Absolute invocation for a tool spec's ``<!-- BIN <name> -->``.
 
     The spec is a logical executable optionally followed by subcommand words
     (``crustify audit``); only the first is a file to find. Falls back to
