@@ -91,7 +91,7 @@ needs root on the host.
 
 `/target` is the directory the campaign works in, mounted read-write. The
 campaign repository goes in it — the Rust at its root, the C under `c/`, the
-campaign's own state under `crustify/`, as [`specs/layout.md`](../../specs/layout.md)
+campaign's own state under `crustify/`, as [`specs/operations/layout.md`](../../specs/operations/layout.md)
 lays it out — and the wrapper repositories of out-of-tree libraries are cloned
 beside it there. That is why the mount is a directory rather than the
 repository itself.

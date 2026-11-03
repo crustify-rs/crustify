@@ -2,9 +2,9 @@
 
 How a `wrap` campaign proceeds from its setup to its landed modules. A `port` campaign
 follows the same workflow, with the differences [`porting.md`](porting.md) gives. How each
-item is bound is [`../items/binding.md`](../items/binding.md); the branches, worktrees and artifact
-dirs named below, and when each is created and purged, are [`../versioning.md`](../versioning.md)'s
-and [`../layout.md`](../layout.md)'s.
+item is bound is [`../rust/items/binding.md`](../rust/items/binding.md); the branches, worktrees and artifact
+dirs named below, and when each is created and purged, are [`../operations/versioning.md`](../operations/versioning.md)'s
+and [`../operations/layout.md`](../operations/layout.md)'s.
 
 The workflow runs after the [setup workflow](setup.md)'s Provisioning, Artifact tree,
 Builds and Baseline, and its waves start after Preflight.
@@ -12,7 +12,7 @@ Builds and Baseline, and its waves start after Preflight.
 ## 1. Planning
 
 The plan is produced by planner runs, one after another, as
-[`../decomposition.md`](../decomposition.md)'s Runs section describes: as many as the settings'
+[`../planning/decomposition.md`](../planning/decomposition.md)'s Runs section describes: as many as the settings'
 `plan-agent` answer asks for, by default two, under the translation model and billing. Each
 run's `task.json`, `{"model": "<model>", "billing": "<billing>"}`, sits in its artifact dir.
 
@@ -31,19 +31,19 @@ answers. Landed work is never re-planned.
 ## 2. Rust tree
 
 Once the plan is complete, the Rust tree is scaffolded on the working branch, as
-[`../conventions.md`](../conventions.md) lays it out, for the link units in scope only:
+[`../rust/conventions.md`](../rust/conventions.md) lays it out, for the link units in scope only:
 
 - the safe crate at the repository's root, its `Cargo.toml` declaring the workspace, its
   shared package fields, its lints and its pinned nightly, and its `src/lib.rs` with a
   module per link unit;
-- `rust-toolchain.toml` and `rustfmt.toml`, as [`../rust.md`](../rust.md) describes;
-- one `-sys` crate per link unit, laid out as [`../bindgen.md`](../bindgen.md) describes,
+- `rust-toolchain.toml` and `rustfmt.toml`, as [`../rust/toolchain.md`](../rust/toolchain.md) describes;
+- one `-sys` crate per link unit, laid out as [`../rust/bindgen.md`](../rust/bindgen.md) describes,
   with its bindgen input over the C under `c/`, the allowlists of which the batches fill as
   they bind items, and its bindings generated from them; and
 - the integration test suites the conventions' Testing section places.
 
 The wrappers of out-of-tree libraries are repositories of their own, cloned beside the
-campaign's, as [`../dependencies.md`](../dependencies.md) describes.
+campaign's, as [`../planning/dependencies.md`](../planning/dependencies.md) describes.
 
 Everything below a link unit is created lazily: a module's `.rs` file, and the modules
 of the directories on its path, before its first wave, and each item's home, as
@@ -79,7 +79,7 @@ Each batch then gets:
 - symlinks to the gitignored state its tree needs from the base checkout.
 
 The wave's batches run concurrently, as many at once as
-[`../concurrency.md`](../concurrency.md) describes. A `wrap` batch runs a binder, a `port`
+[`../operations/concurrency.md`](../operations/concurrency.md) describes. A `wrap` batch runs a binder, a `port`
 batch a translator:
 
 ```bash
@@ -89,10 +89,10 @@ crustify spawn-translator <batch worktree> <run dir>/task.json --log-dir <run di
 
 The spawn command validates the batch, rejects one whose objective belongs to the other
 command, and writes the agent's session record into the `--log-dir`. Each batch lands on
-the wave branch as [`../versioning.md`](../versioning.md)'s Landing section describes, after running the gates of
-[`../testing.md`](../testing.md)'s Regressions section on the tree it lands; those gates
+the wave branch as [`../operations/versioning.md`](../operations/versioning.md)'s Landing section describes, after running the gates of
+[`../verification/testing.md`](../verification/testing.md)'s Regressions section on the tree it lands; those gates
 are not run again for the wave. Its `status` follows its run, and once it lands, its
-`commits` are derived from its branch, as [`../versioning.md`](../versioning.md)'s Landing
+`commits` are derived from its branch, as [`../operations/versioning.md`](../operations/versioning.md)'s Landing
 section describes.
 
 A batch that fails keeps its branch and worktree for inspection. It is run again in a new
@@ -105,7 +105,7 @@ the wave's progress and accounting are committed on it.
 ## 5. Review waves
 
 When review is enabled, every translated wave is followed by its review wave, as
-[`../reviewing.md`](../reviewing.md) describes. It is prepared and promoted as a wave, and
+[`../verification/reviewing.md`](../verification/reviewing.md) describes. It is prepared and promoted as a wave, and
 each of its batches reviews the batches of the reviewed wave its entry `reviews`, or
 reviews each translation batch alone when the settings ask for that.
 
@@ -127,6 +127,6 @@ passed its gates.
 ## 7. Accounting
 
 Each run's records are collected once it lands or fails, and its dashboard cells filled,
-as [`../accounting.md`](../accounting.md) describes: a batch's usage cells on the working
+as [`../operations/accounting.md`](../operations/accounting.md) describes: a batch's usage cells on the working
 branch once its wave is promoted, a planner run's once the run is promoted, and a
 module's row once its last wave is promoted.

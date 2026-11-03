@@ -6,7 +6,7 @@ safe crate: its generated bindings are published with it, so that a dependent bu
 without bindgen or libclang, and its build script regenerates them on request against the
 headers a dependent builds with. How the safe crate uses them is
 [`items/binding.md`](items/binding.md)'s; their lints and formatting are
-[`rust.md`](rust.md)'s Generated code section's.
+[`toolchain.md`](toolchain.md)'s Generated code section's.
 
 ## 1. Crate layout
 
@@ -57,7 +57,7 @@ A type that another link unit's crate, or an out-of-tree library's wrapper, publ
 blocklisted, as `external.txt` lists it or as the dependency's crate defines it, and
 re-exported from that crate under its C name, so that each C type has one Rust type
 across the graph. An out-of-tree type is re-exported as its wrapper's safe type, as
-[`dependencies.md`](dependencies.md)'s Wrappers section describes.
+[`../planning/dependencies.md`](../planning/dependencies.md)'s Wrappers section describes.
 
 The bindings are generated for `x86_64-unknown-linux-gnu`, the only target the crates
 support: `lib.rs` fails to compile on any other, naming the target.
@@ -107,7 +107,7 @@ library it was built for.
 A batch that changes an allowlist, `external.txt`, a shim or `wrapper.h` regenerates the
 bindings and commits them in the same landing, so that the committed bindings always match
 their input. The gates that check it, and that each crate packages, are
-[`testing.md`](testing.md)'s Regressions section's.
+[`../verification/testing.md`](../verification/testing.md)'s Regressions section's.
 
 ## 5. Publishing
 

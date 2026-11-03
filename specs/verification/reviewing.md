@@ -3,14 +3,14 @@
 Review inspects work that has already landed, for a set of objectives, and files a report
 for every defect it finds. In a translation campaign, reviewers inspect what each
 translation wave landed before the next one starts; in an audit, the modules of a crate
-that Crustify did not generate (see [`workflows/audit.md`](workflows/audit.md)); and planner runs review the
+that Crustify did not generate (see [`../workflows/audit.md`](../workflows/audit.md)); and planner runs review the
 plan that earlier runs committed (see [Plan corrections](#9-plan-corrections)).
 
 ## 1. Review waves and batches
 
 When review is enabled, every translated wave is followed by its review wave, a wave of
 its own in `schedule.json` that `reviews` it, before the next translation wave starts. Its
-batches land on its integration branch, never checked out, as [`versioning.md`](versioning.md)
+batches land on its integration branch, never checked out, as [`../operations/versioning.md`](../operations/versioning.md)
 names it, and once they land, its tip is promoted to the working branch.
 
 A review batch takes the commits of one or more of the wave's translation batches, within
@@ -20,7 +20,7 @@ for symbols, without overwhelming its reviewer. The batches that bound a type an
 that added methods on it share a review batch where the caps allow. A campaign may also
 review every translation batch on its own, with that batch's commits.
 
-A review batch's `task.json` ([`artifacts/task.md`](artifacts/task.md)) holds its worklist,
+A review batch's `task.json` ([`../artifacts/task.md`](../artifacts/task.md)) holds its worklist,
 its objectives, its review wave branch and its model and billing:
 
 ```json
@@ -94,7 +94,7 @@ Defects in the workset's private implementation that its unit tests missed.
 
 ### 3.6 Conventions (`conventions`)
 
-Deviations from the [conventions](conventions.md), in a Crustify-generated batch only.
+Deviations from the [conventions](../rust/conventions.md), in a Crustify-generated batch only.
 
 ### 3.7 Misc (`misc`)
 
@@ -207,7 +207,7 @@ a UB report. A BSan report on an earlier wave's items belongs to the last wave's
 
 ## 8. Landing
 
-A review batch lands two commits, as [`versioning.md`](versioning.md)'s Landing section describes: first its
+A review batch lands two commits, as [`../operations/versioning.md`](../operations/versioning.md)'s Landing section describes: first its
 `crustify/reviews/` changes, so the reproducers run on the affected commit, then its
 changes to the Rust tree, if any.
 

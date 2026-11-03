@@ -49,7 +49,7 @@ wrappers a wrap wave adds before its consumer, never through raw bindings. A wra
 the items of a module that will be ported is written as that module's API: the names,
 ownership and error types its port keeps, so that its consumers do not change when it
 ports. Every unsafe block carries
-the safety comment [`../rust.md`](../rust.md)'s Unsafe code section specifies.
+the safety comment [`../toolchain.md`](../toolchain.md)'s Unsafe code section specifies.
 
 ---
 

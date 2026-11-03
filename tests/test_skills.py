@@ -127,18 +127,18 @@ class IncludeTests(unittest.TestCase):
     role headers name their sections when they augment them."""
 
     _DOCS = {
-        "conventions": "specs/conventions.md",
-        "rust": "specs/rust.md",
-        "items/binding": "specs/items/binding.md",
-        "items/porting": "specs/items/porting.md",
-        "testing": "specs/testing.md",
-        "versioning": "specs/versioning.md",
-        "layout": "specs/layout.md",
-        "decomposition": "specs/decomposition.md",
-        "scheduling": "specs/scheduling.md",
-        "dependencies": "specs/dependencies.md",
-        "reviewing": "specs/reviewing.md",
-        "accounting": "specs/accounting.md",
+        "conventions": "specs/rust/conventions.md",
+        "toolchain": "specs/rust/toolchain.md",
+        "items/binding": "specs/rust/items/binding.md",
+        "items/porting": "specs/rust/items/porting.md",
+        "testing": "specs/verification/testing.md",
+        "versioning": "specs/operations/versioning.md",
+        "layout": "specs/operations/layout.md",
+        "decomposition": "specs/planning/decomposition.md",
+        "scheduling": "specs/planning/scheduling.md",
+        "dependencies": "specs/planning/dependencies.md",
+        "reviewing": "specs/verification/reviewing.md",
+        "accounting": "specs/operations/accounting.md",
         "prompting": "specs/prompting.md",
         "workflows/setup": "specs/workflows/setup.md",
         "workflows/binding": "specs/workflows/binding.md",
@@ -161,13 +161,13 @@ class IncludeTests(unittest.TestCase):
         """The reviewer is told to ignore the conventions outside a
         Crustify-generated batch."""
         self.assertEqual(self._included("binder.md"),
-                         {"conventions", "rust", "items/binding", "testing", "versioning",
+                         {"conventions", "toolchain", "items/binding", "testing", "versioning",
                           "layout", "accounting"})
         self.assertEqual(self._included("translator.md"),
-                         {"conventions", "rust", "items/binding", "items/porting", "testing",
+                         {"conventions", "toolchain", "items/binding", "items/porting", "testing",
                           "versioning", "layout", "accounting"})
         self.assertEqual(self._included("reviewer.md"),
-                         {"conventions", "rust", "items/binding", "items/porting", "testing",
+                         {"conventions", "toolchain", "items/binding", "items/porting", "testing",
                           "versioning", "layout", "reviewing", "accounting"})
         self.assertEqual(self._included("planner.md"),
                          {"conventions", "decomposition", "scheduling", "dependencies",
@@ -176,7 +176,7 @@ class IncludeTests(unittest.TestCase):
                   "reviewing", "accounting"}
         self.assertEqual(self._included("translate-assistant.md"),
                          shared | {"workflows/binding", "workflows/porting",
-                                   "decomposition", "scheduling", "dependencies", "conventions", "rust", "items/binding",
+                                   "decomposition", "scheduling", "dependencies", "conventions", "toolchain", "items/binding",
                                    "items/porting"})
         self.assertEqual(self._included("audit-assistant.md"),
                          shared | {"workflows/audit"})
@@ -193,7 +193,7 @@ class IncludeTests(unittest.TestCase):
         is formatted after the include."""
         from crustify.agents.base import expand_includes
         body = expand_includes(
-            "<!-- INCLUDE specs/conventions.md -->")
+            "<!-- INCLUDE specs/rust/conventions.md -->")
         self.assertIn("{.<field>}", body.format())
 
     def test_every_how_to_section_a_header_names_exists(self) -> None:

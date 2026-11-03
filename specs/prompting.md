@@ -10,7 +10,7 @@ An agent's system prompt is assembled from three layers and one task-specific se
 
 | layer | where | voice | holds |
 |---|---|---|---|
-| specs | `specs/`, `specs/items/`, `specs/workflows/`, `specs/artifacts/` | descriptive, third person | what Crustify's artifacts are and how its work is done: workflows, how-tos, conventions, schemas |
+| specs | `specs/` and its `workflows/`, `planning/`, `rust/` (with `rust/items/`), `verification/`, `operations/` and `artifacts/` | descriptive, third person | what Crustify's artifacts are and how its work is done: workflows, how-tos, conventions, schemas |
 | prompts | `src/crustify/prompts/<role>.md`, and the assistant's `assistant/<campaign>.md` | instructive, second person | a role's identity, inputs, what it owns, its steps and stage-specific guidelines |
 | skills | `src/crustify/prompts/skills/<skill>/` | instructive, second person | how one tool serves the work: its metadata, and per role, how that role uses it |
 | additional instructions | `instructions.md` beside a task's `task.json` | instructive | what one run needs beyond its role |
@@ -31,7 +31,7 @@ in a document, and the wavefront command that records it belongs in wavefront's 
 
 Two kinds of document describe how work is done. A how-to, such as `items/binding.md` or
 `items/porting.md`, describes how one item is handled; the item how-tos sit under
-`specs/items/`. A workflow, under `specs/workflows/`,
+`specs/rust/items/`. A workflow, under `specs/workflows/`,
 describes how one kind of campaign proceeds from its settings to its results:
 `setup.md`, which every campaign shares, and one document per kind of campaign
 (`binding.md`, `porting.md`, `audit.md`). A workflow names the how-tos and the layout
@@ -103,7 +103,7 @@ read on demand.
 | what an artifact looks like | its example under `templates/` |
 | how a kind of work is done, independent of tools | the document for that work |
 | how a kind of campaign proceeds, step by step | its workflow under `specs/workflows/`, with the steps every campaign shares in `setup.md` |
-| a convention every role follows | `specs/conventions.md` |
+| a convention every role follows | `specs/rust/conventions.md` |
 | what one role does, in which steps, and which steps it owns | that role's prompt |
 | what the assistant does in one kind of campaign | `src/crustify/prompts/assistant/<kind>.md` |
 | how a tool serves a step or a section | the tool's skill, in the file of each role that uses it |

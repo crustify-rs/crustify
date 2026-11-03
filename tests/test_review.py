@@ -196,7 +196,7 @@ class ReviewAgentTests(unittest.TestCase):
         step."""
         from crustify.agents.base import _PKG_ROOT, deps
         from crustify.agents.review import OBJECTIVES, SKILL_OBJECTIVES
-        text = (deps.CHECKOUT / "specs/reviewing.md").read_text()
+        text = (deps.CHECKOUT / "specs/verification/reviewing.md").read_text()
         for objective in OBJECTIVES:
             if objective == "fix":
                 continue
@@ -223,7 +223,7 @@ class ReviewAgentTests(unittest.TestCase):
 
     def test_testing_says_when_gates_run_the_prompts_who_runs_them(self) -> None:
         from crustify.agents.base import _PKG_ROOT, deps
-        testing = (deps.CHECKOUT / "specs/testing.md").read_text()
+        testing = (deps.CHECKOUT / "specs/verification/testing.md").read_text()
         self.assertIn("BSan, when available, is run for every batch and at module end",
                       testing)
         self.assertIn("Miri is run after every wave", testing)

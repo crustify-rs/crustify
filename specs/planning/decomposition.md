@@ -25,19 +25,19 @@ A campaign may be planned in several sessions, each for part of its scope: a few
 a few of their waves, or a few named items. Each session's runs add what its scope adds to
 the same plan: modules and link units with the next free indices, and
 waves after the highest wave index. What is frozen, or has started, is kept as
-[`artifacts/modules.md`](artifacts/modules.md) and
-[`artifacts/schedule.md`](artifacts/schedule.md) describe. A run that corrects an earlier decision files a report on it, as
-[`reviewing.md`](reviewing.md#9-plan-corrections) describes.
+[`../artifacts/modules.md`](../artifacts/modules.md) and
+[`../artifacts/schedule.md`](../artifacts/schedule.md) describe. A run that corrects an earlier decision files a report on it, as
+[`../verification/reviewing.md`](../verification/reviewing.md#9-plan-corrections) describes.
 
 ## 2. Modules
 
-`modules.json` follows [`artifacts/modules.md`](artifacts/modules.md); its layout example
-is [`templates/modules.json`](../templates/modules.json).
+`modules.json` follows [`../artifacts/modules.md`](../artifacts/modules.md); its layout example
+is [`templates/modules.json`](../../templates/modules.json).
 
 The C codebase is the decomposition's spec. A module is one translation unit with the
 headers it defines its items in, so that the plan follows how the codebase is organized
 rather than a judgement of how it should be, and the Rust tree mirrors it, as the
-[conventions](conventions.md)' Crates, modules, and TUs section describes. Dependencies
+[conventions](../rust/conventions.md)' Crates, modules, and TUs section describes. Dependencies
 between modules are what the C has: the decomposition does not group files to hide them.
 
 Link units are identified from the actual linker outputs. The decomposition covers the
@@ -61,7 +61,7 @@ A shared header, one that carries no single TU's name, is split item by item:
 A header that implements what no TU does, and so has no TU to go to, is a header module of
 its own. Each split is recorded with the file entries' `items` lists, which stay empty for
 a file a module owns whole. Macros are not homed: they are not translated, and a binding
-that needs one reaches it as [`items/binding.md`](items/binding.md)'s Macros section describes.
+that needs one reaches it as [`../rust/items/binding.md`](../rust/items/binding.md)'s Macros section describes.
 
 A module also lists its tests: the test files gated with it, those that use its
 internals: the fields or the layout of the types it owns, and its static functions and
@@ -82,7 +82,7 @@ consumed across them, and each out-of-tree library it uses is one record of its 
 names the library and counts what the module consumes from it. What holds for the library
 as a whole, the release the target links, its source and the crates that port or bind it
 with their feature parity, is recorded once, in `dependencies.json`, as
-[`artifacts/dependencies.md`](artifacts/dependencies.md) describes. The records keep the
+[`../artifacts/dependencies.md`](../artifacts/dependencies.md) describes. The records keep the
 graph as it is,
 cycles included, split as [scheduling](scheduling.md)'s Order section describes.
 
@@ -131,7 +131,7 @@ told apart by their `index` and `foundational`. Both home in the TU's Rust file.
 
 Each member's lifecycle role (allocator or constructor, releaser, disposer, cloner) is
 established while planning, so that the foundational modules' members are bound as
-strategies, as [Lifecycle strategies](items/binding.md#54-lifecycle-strategies) describes. The
+strategies, as [Lifecycle strategies](../rust/items/binding.md#54-lifecycle-strategies) describes. The
 foundational modules are planned and scheduled like any other: waves of batches of units.
 They are `wrap` in every campaign: their members become the lifecycle strategies that the
 other modules' bindings release through, and while any C remains it allocates and frees

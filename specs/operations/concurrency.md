@@ -2,7 +2,7 @@
 
 How a campaign's work shares the host it runs on: how much of it runs at once, and how
 the builds, tests and gates inside it are parallelized. What runs in which order is
-[scheduling](scheduling.md)'s; this spec describes only how much of what may run is in
+[scheduling](../planning/scheduling.md)'s; this spec describes only how much of what may run is in
 flight.
 
 ## 1. Principle

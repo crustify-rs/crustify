@@ -23,7 +23,7 @@ mirrors the source's own `main` as `upstream/main`. The repositories are created
 
 A library the target uses from outside its tree is wrapped in a wrap campaign of its own,
 in `<source>-bindings`, named after the source it is built from, as
-[`dependencies.md`](dependencies.md) describes.
+[`../planning/dependencies.md`](../planning/dependencies.md) describes.
 
 An audit reviews an existing Rust crate in its own repository, and creates none.
 
@@ -88,7 +88,7 @@ until its landing has succeeded:
    lands while it holds the lock;
 3. it resolves any conflict the rebase raises and runs again, on the rebased tree, the
    gates that could catch a regression of the integration, as
-   [`testing.md`](testing.md)'s Regressions section describes, fixing what fails;
+   [`../verification/testing.md`](../verification/testing.md)'s Regressions section describes, fixing what fails;
 4. it pushes the fast-forward, which nothing can reject; and
 5. it releases the lock.
 

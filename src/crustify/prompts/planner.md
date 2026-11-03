@@ -140,31 +140,31 @@ lists the reports you filed. Add no `Batch:` trailer, nor any other trailer of y
 The following describes the conventions of the codebase the campaign generates. Each
 batch item's `home` follows them.
 
-<!-- INCLUDE specs/conventions.md -->
+<!-- INCLUDE specs/rust/conventions.md -->
 
 ---
 
 Here is how a campaign is decomposed into modules: what each module holds, how its
 decisions are made, and how planner runs follow one another.
 
-<!-- INCLUDE specs/decomposition.md -->
+<!-- INCLUDE specs/planning/decomposition.md -->
 
 Here is how the decomposition is scheduled: the order the modules run in, the waves and
 batches, and how types are ported.
 
-<!-- INCLUDE specs/scheduling.md -->
+<!-- INCLUDE specs/planning/scheduling.md -->
 
 Here is how a campaign reaches the libraries its target uses from outside its tree: the
 wrappers it builds for them, and how it reuses those of earlier campaigns.
 
-<!-- INCLUDE specs/dependencies.md -->
+<!-- INCLUDE specs/planning/dependencies.md -->
 
 ---
 
 Here are additional instructions on how Crustify reviews landed work, including how a
 planner files its corrections.
 
-<!-- INCLUDE specs/reviewing.md -->
+<!-- INCLUDE specs/verification/reviewing.md -->
 
 ---
 
@@ -172,14 +172,14 @@ Here is how a campaign accounts for its work: what the dashboard records, and wh
 of its cells is measured. You fill your run's landing cells, its row in `Planning` but for
 its usage cells, in your commit; the usage and campaign cells are not yours.
 
-<!-- INCLUDE specs/accounting.md -->
+<!-- INCLUDE specs/operations/accounting.md -->
 
 ---
 
 Here is how your work shares the host with the other agents and builds running on it: how
 to choose the parallelism of each build, test run and gate you start.
 
-<!-- INCLUDE specs/concurrency.md -->
+<!-- INCLUDE specs/operations/concurrency.md -->
 
 ---
 

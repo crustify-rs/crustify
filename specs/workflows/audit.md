@@ -64,7 +64,7 @@ of an impl are never named as functions.
 For `revisit`, the reports are divided into their own batches, grouped so that reports
 needing the same instrument or the same build share a reviewer.
 
-Each round of reviewers, as many as [`../concurrency.md`](../concurrency.md) describes, is
+Each round of reviewers, as many as [`../operations/concurrency.md`](../operations/concurrency.md) describes, is
 one review wave, recorded in
 `schedule.json` as [`../artifacts/schedule.md`](../artifacts/schedule.md) describes: a
 wave of no link unit or module, each of its batches a `review` batch holding its
@@ -72,8 +72,8 @@ wave of no link unit or module, each of its batches a `review` batch holding its
 
 ## 5. Review waves
 
-An audit's review waves are laid out as [`../versioning.md`](../versioning.md) and
-[`../layout.md`](../layout.md) describe. Before
+An audit's review waves are laid out as [`../operations/versioning.md`](../operations/versioning.md) and
+[`../operations/layout.md`](../operations/layout.md) describe. Before
 each, the settings are reread and their changes applied, and the agent memory every agent
 reads at startup is curated. Each review batch's `task.json` holds its workset, its
 objectives, its batch fields, its review wave branch and the model and billing, as
@@ -102,7 +102,7 @@ crustify spawn-reviewer <batch worktree> <run dir>/task.json --log-dir <run dir>
 ```
 
 Each reviewer lands its reports and fixes on the review wave branch as
-[`../versioning.md`](../versioning.md)'s Landing section describes. A reviewer that fails keeps its branch and
+[`../operations/versioning.md`](../operations/versioning.md)'s Landing section describes. A reviewer that fails keeps its branch and
 worktree for inspection; it is respawned, or its failure reported, and its workset is not
 reviewed outside an agent unless the user asks for it. Once the wave has landed, its tip is
 promoted to the working branch, and the shipping branch follows it with the user's
@@ -119,7 +119,7 @@ reached.
 
 Before the audit ends, its reports and disclosure notices are checked for consistency and
 for claims they cannot support, its reproducers for soundness, and each notice against
-[`../reviewing.md`](../reviewing.md)'s Disclosure section. No API key appears in a core dump
+[`../verification/reviewing.md`](../verification/reviewing.md)'s Disclosure section. No API key appears in a core dump
 or any other reproducer artifact: the audit tree may be published.
 
 ## 8. Output

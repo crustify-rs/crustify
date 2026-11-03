@@ -116,17 +116,17 @@ workflow, and where a port campaign departs from it.
 Here is how a campaign is decomposed into modules: what each module holds, how its
 decisions are made, and how planner runs follow one another.
 
-<!-- INCLUDE specs/decomposition.md -->
+<!-- INCLUDE specs/planning/decomposition.md -->
 
 Here is how the decomposition is scheduled: the order the modules run in, the waves and
 batches, and how types are ported.
 
-<!-- INCLUDE specs/scheduling.md -->
+<!-- INCLUDE specs/planning/scheduling.md -->
 
 Here is how a campaign reaches the libraries its target uses from outside its tree: the
 wrappers it builds for them, and how it reuses those of earlier campaigns.
 
-<!-- INCLUDE specs/dependencies.md -->
+<!-- INCLUDE specs/planning/dependencies.md -->
 
 ---
 
@@ -134,7 +134,7 @@ The following describes the conventions of the codebase the campaign generates. 
 wherever they apply: when you scaffold crates, modules and test suites,
 and when you home each batch's items.
 
-<!-- INCLUDE specs/conventions.md -->
+<!-- INCLUDE specs/rust/conventions.md -->
 
 ---
 
@@ -142,14 +142,14 @@ Here is how the Rust is built, linted and formatted: its toolchains, its edition
 every crate inherits, how it is formatted and how its unsafe code is justified. Follow
 them when you scaffold the workspace.
 
-<!-- INCLUDE specs/rust.md -->
+<!-- INCLUDE specs/rust/toolchain.md -->
 
 ---
 
 Here is how the `-sys` crates are laid out, generated, built and shipped. Follow it when
 you scaffold them and when you publish the crates.
 
-<!-- INCLUDE specs/bindgen.md -->
+<!-- INCLUDE specs/rust/bindgen.md -->
 
 ---
 
@@ -158,13 +158,13 @@ brief the user, to write additional instructions, and to judge what the agents r
 
 Here is how binders and translators generate safe bindings.
 
-<!-- INCLUDE specs/items/binding.md -->
+<!-- INCLUDE specs/rust/items/binding.md -->
 
 ---
 
 Here is how translators port C to safe Rust.
 
-<!-- INCLUDE specs/items/porting.md -->
+<!-- INCLUDE specs/rust/items/porting.md -->
 
 ---
 

@@ -5,7 +5,7 @@ OpenSSL and the like. The [decomposition](decomposition.md) records each one a m
 uses as a dependency record, counting the entities the module consumes from it, and
 `dependencies.json` records each library once: the release the target links, its source,
 its wrapper and the Rust crates that port or bind it, as
-[`artifacts/dependencies.md`](artifacts/dependencies.md) describes. This spec describes
+[`../artifacts/dependencies.md`](../artifacts/dependencies.md) describes. This spec describes
 what the campaign does with them.
 
 ## 1. Wrappers
@@ -18,7 +18,7 @@ do not make it.
 A library's wrapper is a wrap campaign of the source it is built from, in a repository of
 its own: `<source>-bindings` under the `crustify-rs` organization, `<source>` being the
 name of that source's repository, named and laid out as
-[`versioning.md`](versioning.md)'s Repositories section and [`layout.md`](layout.md)'s
+[`../operations/versioning.md`](../operations/versioning.md)'s Repositories section and [`../operations/layout.md`](../operations/layout.md)'s
 Tree section describe for any wrap campaign, so that a later campaign whose target is the
 source itself continues it. The libraries one source builds share its wrapper, each a link
 unit of it: OpenSSL's `libcrypto` and `libssl` are both wrapped in `openssl-bindings`.

@@ -4,7 +4,7 @@ Deferred decisions and follow-up work on the crustify contracts and prompts.
 
 ## 1. Side campaigns for out-of-tree dependencies
 
-[`dependencies.md`](dependencies.md) now describes a side campaign: a wrap campaign of an
+[`dependencies.md`](../specs/planning/dependencies.md) now describes a side campaign: a wrap campaign of an
 out-of-tree library's source in its own `<source>-bindings` repository, cloned beside the
 parent's, continued by every campaign that uses the library, and advancing at the
 parent's pace. The assistant's translate prompt runs them.
@@ -16,7 +16,7 @@ Open questions:
 
 ## 2. Ship `specs/` so a non-editable install keeps its conventions
 
-The conventions and the how-tos (`specs/conventions.md`,
+The conventions and the how-tos (`specs/rust/conventions.md`,
 `specs/*.md`) resolve under `deps.CHECKOUT`, which is the source checkout.
 A wheel install has no `specs/` there, so every agent runs without its conventions and
 how-tos. Only the editable install the Dockerfile performs hides this.
@@ -137,7 +137,7 @@ but it needs the C instrumented, which forfeits the reach advantage.
 ## 6. Port individual items without their module
 
 A port campaign's scope is whole modules
-([`workflows/porting.md`](workflows/porting.md)'s Scope section). A campaign that ports
+([`workflows/porting.md`](../specs/workflows/porting.md)'s Scope section). A campaign that ports
 only a few named types or symbols, and leaves the rest of their module in C, has no
 workflow yet.
 

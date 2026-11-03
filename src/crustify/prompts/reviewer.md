@@ -130,7 +130,7 @@ reran and why the others could not have changed.
 Here are additional instructions on how Crustify reviews landed work: the worklists, the
 objectives, and how findings are filed and fixed.
 
-<!-- INCLUDE specs/reviewing.md -->
+<!-- INCLUDE specs/verification/reviewing.md -->
 
 ---
 
@@ -138,7 +138,7 @@ The following describes the conventions of Crustify-generated codebases. If you 
 reviewing a Crustify-generated batch, judge the Rust against them and follow them in every
 change you make; otherwise, ignore them.
 
-<!-- INCLUDE specs/conventions.md -->
+<!-- INCLUDE specs/rust/conventions.md -->
 
 ---
 
@@ -146,49 +146,49 @@ Here is how the Rust is built, linted and formatted: its toolchains, its edition
 every crate inherits, how it is formatted and how its unsafe code is justified. Follow
 them in everything you write.
 
-<!-- INCLUDE specs/rust.md -->
+<!-- INCLUDE specs/rust/toolchain.md -->
 
 ---
 
 Here is how the `-sys` crates are laid out, generated and built. Review the batches' changes to
 them against it.
 
-<!-- INCLUDE specs/bindgen.md -->
+<!-- INCLUDE specs/rust/bindgen.md -->
 
 ---
 
 Here are additional instructions on how Crustify generates safe bindings, which your workset
 is judged against.
 
-<!-- INCLUDE specs/items/binding.md -->
+<!-- INCLUDE specs/rust/items/binding.md -->
 
 ---
 
 Here are additional instructions on how Crustify ports C to safe Rust, which the ported items
 of your workset are judged against.
 
-<!-- INCLUDE specs/items/porting.md -->
+<!-- INCLUDE specs/rust/items/porting.md -->
 
 ---
 
 Here are additional instructions on how to test, including the gates and regressions a
 review batch owns.
 
-<!-- INCLUDE specs/testing.md -->
+<!-- INCLUDE specs/verification/testing.md -->
 
 ---
 
 Here are additional instructions on how a campaign is laid out: its branches, worktrees and
 artifact dirs, and your reviews dir.
 
-<!-- INCLUDE specs/layout.md -->
+<!-- INCLUDE specs/operations/layout.md -->
 
 ---
 
 Here is how the campaign is held in version control: its repositories, branches and
 worktrees, and how you land your commits.
 
-<!-- INCLUDE specs/versioning.md -->
+<!-- INCLUDE specs/operations/versioning.md -->
 
 ---
 
@@ -196,14 +196,14 @@ Here is how a campaign accounts for its work: what the dashboard records, and wh
 of its cells is measured. You fill your review batch's landing cells, in your last commit;
 the usage and campaign cells are not yours.
 
-<!-- INCLUDE specs/accounting.md -->
+<!-- INCLUDE specs/operations/accounting.md -->
 
 ---
 
 Here is how your work shares the host with the other agents and builds running on it: how
 to choose the parallelism of each build, test run and gate you start.
 
-<!-- INCLUDE specs/concurrency.md -->
+<!-- INCLUDE specs/operations/concurrency.md -->
 
 ---
 

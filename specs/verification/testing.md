@@ -149,7 +149,7 @@ baseline.
 
 TODO (porting): how a `port` batch's equivalence tests reach the C reference while its
 module's waves run, and how they are retired at integration, as
-[`workflows/porting.md`](workflows/porting.md)'s Principles and Builds sections describe.
+[`../workflows/porting.md`](../workflows/porting.md)'s Principles and Builds sections describe.
 The Rust feature switch this section assumed no longer exists.
 
 A confirmed C defect is not copied into Rust. The divergence is documented, equivalence
@@ -179,7 +179,7 @@ intentionally nondeterministic are reported as such.
 ## 6. Regressions
 
 Every batch checks, formats, lints and tests the workspace on the tree it lands, with
-warnings denied, as [`rust.md`](rust.md) describes:
+warnings denied, as [`../rust/toolchain.md`](../rust/toolchain.md) describes:
 
 ```bash
 cargo check --workspace --all-targets
@@ -189,7 +189,7 @@ cargo test --workspace
 ```
 
 Every build of those gates runs in the `-sys` crates' campaign mode, as
-[`bindgen.md`](bindgen.md)'s Build modes section describes, so that each fails when the
+[`../rust/bindgen.md`](../rust/bindgen.md)'s Build modes section describes, so that each fails when the
 committed bindings do not match their input. A batch that changed a `-sys` crate also
 packages every `-sys` crate together, each built alone in shipped mode against an install of
 the `plain` variant, staged under `crustify/tmp/`, since a build tree has no `pkg-config`
@@ -213,11 +213,11 @@ BSan, when available, is run for every batch and at module end:
   workspace.
 - At module end, it runs as a gate over everything the module landed: the
   whole workspace, one invocation per test binary, as many side by side as
-  [`concurrency.md`](concurrency.md) describes, each under a `timeout`.
+  [`../operations/concurrency.md`](../operations/concurrency.md) describes, each under a `timeout`.
 
 Miri is run after every wave, as a gate over the whole workspace: one
 `cargo +nightly miri test` per test binary (`--lib`, and `--test <name>` for each
-integration binary), as many side by side as [`concurrency.md`](concurrency.md) describes,
+integration binary), as many side by side as [`../operations/concurrency.md`](../operations/concurrency.md) describes,
 each with `-- --skip compile_fail`. The gate passes only
 with no Miri error: a test that stops at the foreign boundary without the attribute gets
 it, and any other Miri error is a UB candidate of the item it touches.
@@ -231,7 +231,7 @@ When C changed, the configured C build and baseline run. A wrap-only batch with 
 change does not need the full C baseline.
 
 A batch validates its own change on its own base first. Its rebase onto the integration
-branch, under the landing lock that [`versioning.md`](versioning.md)'s Landing section
+branch, under the landing lock that [`../operations/versioning.md`](../operations/versioning.md)'s Landing section
 describes, then combines that change with the work landed since: the gates run again are
 those that could catch a regression the combination introduces, judged from what the
 batch's change and the rebased-in changes touch and how they could interact. A gate that
@@ -241,5 +241,5 @@ makes the resolved tree new work of the batch's own.
 TODO (porting): the gates of a `port` batch, which changes no C, and those of a module's
 integration, which links its Rust in place of its TU, removes the C tests gated with it and
 runs the target's test suite over the hybrid, as
-[`workflows/porting.md`](workflows/porting.md)'s Builds section describes; and how a
+[`../workflows/porting.md`](../workflows/porting.md)'s Builds section describes; and how a
 module's C tests are ported into the Rust suites.

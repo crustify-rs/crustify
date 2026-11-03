@@ -2,12 +2,12 @@
 
 These are the shared, mechanical contracts of the code a campaign generates: how it is
 named, where it sits, how it records what it translated and where its tests go. The
-toolchain, edition, lints and formatting it is held to are [`rust.md`](rust.md)'s. The
+toolchain, edition, lints and formatting it is held to are [`toolchain.md`](toolchain.md)'s. The
 roles' prompts contain the decisions and procedures.
 
 ## 1. Naming
 
-The workspace's lints enforce the standard Rust casing below, as [`rust.md`](rust.md)'s
+The workspace's lints enforce the standard Rust casing below, as [`toolchain.md`](toolchain.md)'s
 Lints section describes.
 
 The safe surface uses ordinary Rust naming: `snake_case` for functions, methods and
@@ -51,7 +51,7 @@ integrated, so that its exports never collide with the C they replace.
 
 ## 2. Crates, modules, and TUs
 
-The Rust tree is the repository's own, as [`layout.md`](layout.md)'s Tree section lays it
+The Rust tree is the repository's own, as [`../operations/layout.md`](../operations/layout.md)'s Tree section lays it
 out, all relative to the repository's root:
 
 - `Cargo.toml` - the safe crate's manifest, which also declares the workspace.

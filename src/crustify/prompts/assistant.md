@@ -209,7 +209,7 @@ the test baseline and the preflight before the first wave.
 Here is how the campaign's work shares the host: how many agents run at once, and how the
 builds, tests and gates inside them are parallelized.
 
-<!-- INCLUDE specs/concurrency.md -->
+<!-- INCLUDE specs/operations/concurrency.md -->
 
 ---
 
@@ -217,13 +217,13 @@ Here is how a campaign is held in version control: its repositories, branches an
 worktrees, how batches land, and when each branch and worktree is created, promoted and
 purged.
 
-<!-- INCLUDE specs/versioning.md -->
+<!-- INCLUDE specs/operations/versioning.md -->
 
 ---
 
 Here is how a campaign's files are laid out: the repository's tree and its artifact dirs.
 
-<!-- INCLUDE specs/layout.md -->
+<!-- INCLUDE specs/operations/layout.md -->
 
 ---
 
@@ -231,21 +231,21 @@ Here are additional instructions on how the campaign's work is tested: the build
 run against, the kinds of tests, which bug classes each sanitizer covers, and the gates
 every batch and wave passes.
 
-<!-- INCLUDE specs/testing.md -->
+<!-- INCLUDE specs/verification/testing.md -->
 
 ---
 
 Here are additional instructions on how Crustify reviews: review waves and batches,
 worklists, objectives, reports and fixes.
 
-<!-- INCLUDE specs/reviewing.md -->
+<!-- INCLUDE specs/verification/reviewing.md -->
 
 ---
 
 Here is how a campaign accounts for its work: what the dashboard records, the session and
 usage records its figures come from, and how cost and time are derived.
 
-<!-- INCLUDE specs/accounting.md -->
+<!-- INCLUDE specs/operations/accounting.md -->
 
 ---
 
