@@ -325,5 +325,26 @@ class OrchestratorPromptTests(unittest.TestCase):
         self.assertEqual(agent.prompt_capabilities(), ())
 
 
+class PromptCacheTests(unittest.TestCase):
+    """A provider caches a prompt's prefix, so two batches of one role share
+    everything before their inputs: the specs come first, and no per-run
+    value appears before the Inputs section."""
+
+    def test_two_batches_share_everything_before_their_inputs(self) -> None:
+        import os
+        def item(name):
+            return [{"name": name, "defined_in": "a.h", "kind": "type",
+                     "field_anchors": [], "home": "src/a.rs"}]
+        with tempfile.TemporaryDirectory() as a, tempfile.TemporaryDirectory() as b:
+            for cls in (BindAgent, TranslateAgent):
+                with self.subTest(role=cls.role):
+                    one, two = (cls(Path(d), route="type", items=item(n),
+                                    git_base=f"crustify/waves/wave-{i}",
+                                    artifact_dir=Path(d), log_stem="x").system_preamble()
+                                for i, (d, n) in enumerate(((a, "A"), (b, "B"))))
+                    shared = len(os.path.commonprefix([one, two]))
+                    self.assertGreaterEqual(shared, one.index("## Inputs"))
+
+
 if __name__ == "__main__":
     unittest.main()

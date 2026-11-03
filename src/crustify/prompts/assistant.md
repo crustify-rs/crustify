@@ -160,7 +160,9 @@ Whatever the campaign's kind, you own:
   spec below describes: decide how many agents run at once when each wave starts, from the
   host's resources and every workload on it, other campaigns' and side campaigns' agents
   included, and revise it as batches land or fail. Never exceed the settings'
-  `parallelism` when they set one. To give one unit of work priority, suspend another's
+  `parallelism` when they set one. Launch a wave's first agent of each role alone, and the
+  rest once its first response has come back, so that they read the prompt prefix it
+  cached rather than each writing it. To give one unit of work priority, suspend another's
   agents with their whole process trees and resume them once it finishes, and note the
   suspension in the dashboard;
 - the landing locks of the integration branches, as the versioning spec's Landing lock

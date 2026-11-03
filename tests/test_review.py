@@ -248,7 +248,7 @@ class ReviewAgentTests(unittest.TestCase):
                         "# Versioning"):
             with self.subTest(heading=heading):
                 self.assertIn(heading, pre)
-        self.assertIn("otherwise, ignore them", pre)
+        self.assertIn("otherwise, ignore it", pre)
 
     def test_the_session_names_the_reviewer(self) -> None:
         _Checkouts(self)

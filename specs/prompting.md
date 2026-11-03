@@ -42,7 +42,8 @@ its number ("testing.md's Coverage section", "layout § Lifecycle › Waves"), s
 renumbering never silently points a reference at another section.
 
 A prompt that needs a document includes it whole, with an `<!-- INCLUDE specs/<path> -->`
-marker, introduced by one sentence saying what the document covers. An included document
+marker, in the prompt's opening Specs section, where the document's own title introduces
+it. An included document
 rides in the system prompt, which a long run cannot compact away, and an agent cannot skip
 reading it the way it can skip a file it is pointed at. Each document is included by every
 role that follows it, and by no role that does not: the reviewer includes the binding and
@@ -63,6 +64,16 @@ A prompt states what its role owns by naming the document sections it carries ou
 create and purge every level of layout's Lifecycle section"), and adds only what the
 documents leave to the role: the commands it runs, the judgements it makes, the cases it
 must not handle itself.
+
+A prompt is ordered from what every run shares to what one run holds, because a provider
+caches a prompt's prefix: two requests reuse the cache up to their first difference. It
+opens with its Specs section, the documents and tool specs it includes, in one order across
+every role, the documents most roles include first, so that roles running at once share
+the longest prefix. Its role's own text follows, with its How the specs apply section, which
+says what each document is to the role, and its Tools section, and names no value of one
+run: an integration branch or a batch id is "the one your inputs name". Its `## Inputs`
+section, the only one formatted with the run's values, and its `## Additional
+instructions` section close it.
 
 A prompt carries an `<!-- INSTRUCTIONS -->` marker in its `## Additional instructions`
 section, which a task's instructions file fills, and which states that those instructions
