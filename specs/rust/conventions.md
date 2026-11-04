@@ -99,26 +99,43 @@ pub fn open(path: &Path) -> Result<RepositoryBox, Error> { … }
 
 | anchor | meaning |
 |---|---|
-| ``/// Wraps `<kind>::<name>{.<field>}` `` | safe view over the FFI seam |
-| ``/// Replaces `<kind>::<name>{.<field>}` `` | native Rust translation |
+| ``/// Wraps `<kind>::<path>` `` | safe view over the FFI seam |
+| ``/// Replaces `<kind>::<path>` `` | native Rust translation |
 
 The anchor's path is a code span, in backticks, as rustdoc renders it and as the
 workspace's `clippy::doc_markdown` lint requires of a path in a doc comment.
 
-`<name>` is the C item's name as its batch schedules it, and `<kind>` what it is in C:
+`<path>` names the item as its batch schedules it, and `<kind>` says what it is:
 
-| kind | C item |
+| kind | item |
 |---|---|
 | `fn` | a function |
-| `ty` | a type: a struct, a union or a callback typedef |
-| `fld` | a field, as `<name>.<field>`, `<name>` its struct |
+| `ty` | a named type: a struct, a union or a callback typedef |
+| `fld` | a member of a struct or union |
 | `var` | a global |
 
-An anonymous struct embedded in `<name>` is the type `ty::<name>.<field>`.
+A path is made of names only: the names the source resolves the item by, outermost first,
+separated by `.`, as the source language scopes them. A function, a type or a global is its
+own name; a member is its struct's or union's path followed by the member's name, and a
+member of a member continues the path, as `fld::AVOption.default_val.i64`. An element
+without a name adds no step to the paths of what it holds:
 
-The alias is the bare `<name>{.<field>}`, without the backticks, so that a consumer who
-searches the documentation for the C name finds every item that stands in for it. The kind
-is the anchor's alone: a label in the alias would no longer match that search.
+- an anonymous struct or union held by a named member is reached through that member, so
+  its members are `fld::<path>.<member>.<inner>`;
+- the members of an unnamed struct or union member, such as C11's anonymous members, are
+  named as members of the type that holds it, as the source reaches them; and
+- an array's elements are reached without an index, so the members of an array member's
+  element type are `fld::<path>.<member>.<inner>`.
+
+An element without a name has no annotation of its own. The Rust item that stands in for
+it is annotated with the named member that holds it, or, when it is held by no name, with
+each member it stands in for. A type declared inside another is named as its language
+scopes it: a C struct tag has file scope, so a struct declared inside another is still
+`ty::<tag>`.
+
+The alias is the bare `<path>`, without the backticks, so that a consumer who searches the
+documentation for the source's name finds every item that stands in for it. The kind is
+the anchor's alone: a label in the alias would no longer match that search.
 
 ### 3.1 What is annotated
 
@@ -134,7 +151,7 @@ not necessarily the item that makes the FFI call:
   annotated need not be the one making the unsafe call.
 - a type: the layout newtype that defines the FFI type, handwritten or minted by
   `define_ctype!`.
-- a field: each of its accessors, the getter and the setter alike.
+- a member: each of its accessors, the getter and the setter alike.
 
 ### 3.2 Several stand-ins
 
