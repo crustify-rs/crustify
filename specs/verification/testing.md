@@ -14,9 +14,12 @@ Testing section places tests of its kind:
 - unit tests show that the internal routines behave correctly, mainly by passing Rust
   assertions.
 
-Test objects are constructed through safe constructors. While a type has none, one
-documented unsafe fixture per type adopts the raw constructor's result, and is replaced
-once the safe constructor exists.
+Test objects are constructed through safe constructors. The UB tests on the safe public
+interface use the safe API alone, their suite forbidding `unsafe_code` at its root: a type
+that no safe constructor or producer yields yet gets those tests in the batch that wraps
+its first one. Elsewhere, while a type has no safe constructor, one documented unsafe
+fixture per type adopts the raw constructor's result, and is replaced once the safe
+constructor exists.
 
 ## 1. Builds
 
