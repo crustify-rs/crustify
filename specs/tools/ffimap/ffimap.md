@@ -11,6 +11,21 @@ It counts what the build compiles of the safe crate itself, and prints one JSON 
 ffimap <workdir> > <file>.json
 ```
 
+Every scan names the crate's seams, the functions that hand a value between its wrapper and
+its raw form, so that each counter's `of_which.seam` share tells that plumbing apart from
+the pointer management a consumer of the safe API faces: ffibox's handle seams `as_ptr`,
+`as_mut_ptr`, `as_void_ptr`, `from_ptr` and `from_void_ptr`, and the ownership hand-offs
+`from_raw_parts`, `into_raw_parts`, `from_c`, `into_c` and `as_c_ptr`. A crate built on
+ffibox is scanned with `--ffibox`, and its `-sys` crates are named with `--sys-crates`:
+
+```bash
+ffimap <workdir> --ffibox --sys-crates <the -sys crates> \
+    --seams as_ptr,as_mut_ptr,as_void_ptr,from_ptr,from_void_ptr,from_raw_parts,into_raw_parts,from_c,into_c,as_c_ptr \
+    > <file>.json
+```
+
+Two scans are compared only when they name the same seams.
+
 `--sites <counter> ...` also lists where each named counter's increments are. The
 counters that recur:
 
