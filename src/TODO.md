@@ -165,3 +165,35 @@ Open questions:
 - how the user approves it: once per campaign as a setting, or per group of modules; and
 - how each module's base, the settings it ran under and its accounting are recorded when
   its waves no longer start from a commit of their own.
+
+## 8. Bind callback and payload fields as borrowed closures
+
+An options struct whose callback field comes with a `void *` payload field, such as
+`git_checkout_options`' `notify_cb`/`notify_payload`, `progress_cb`/`progress_payload` and
+`perfdata_cb`/`perfdata_payload`, is bound today with `unsafe` setters that take the raw
+callback and payload, and safe getters that return them. The callbacks themselves are
+bound as closures borrowed for one call, and the safe path is left to the wrappers of
+the routines that take the options (`git_checkout_head`, `_index` and `_tree`), which a
+later wave binds. The options' raw seams wait on those routines, although the C has no
+edge from the options to them: the dependency follows from the binding, not the graph.
+
+The options' handles already carry the lifetime of what they borrow
+(`CheckoutOptionsMut<'_, 'o>`), so the fields could be bound as one setter per pair, taking
+a closure borrowed for `'o`, that stores the trampoline and the closure's address: the
+borrow checker then keeps the closure alive for every call the options are passed to,
+the setters and getters are safe, and the pair's raw positions leave the public API
+without waiting for the routines.
+
+- Describe the pattern in [`binding.md`](../specs/rust/items/binding.md)'s Field accessors
+  section: a callback field and its payload field are one accessor pair, bound over a
+  closure borrowed for the handle's lifetime.
+- Rebind `git_checkout_options`' three pairs in libgit2-bindings, which removes its six
+  public `void *` sites, and find the other options structs bound the same way (the diff
+  options' notify and progress callbacks, `git_remote_callbacks`, `git_clone_options`).
+
+Open questions:
+
+- whether a closure borrowed `&'o mut` suits options values that are copied or shared, or
+  the options need an owned variant holding a boxed closure; and
+- how such a setter interacts with the per-call closures the routines' wrappers lend,
+  when both are given.
