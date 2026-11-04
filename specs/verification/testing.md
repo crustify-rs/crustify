@@ -108,7 +108,7 @@ stand for the sanitizer they implement.
 Each available sanitizer is a separate obligation:
 
 - ASan/UBSan: bounds errors, use-after-free, use-after-return, invalid free, double free,
-  leak, pointer/alignment UB, and integer/division/shift UB.
+  pointer/alignment UB, and integer/division/shift UB.
 - MSan: use of uninitialized memory, including branches and addresses computed from it,
   uninitialized bytes crossing the FFI boundary, and struct tails or buffers a foreign
   initializer left partly unwritten. Its build instruments every component, the standard
@@ -128,6 +128,9 @@ Each available sanitizer is a separate obligation:
   behaviour, a panic or a failed assertion, which are findings. Neither
   `#[cfg(not(miri))]` nor test-name filters stand in for the attribute: with it in place,
   `cargo miri test` runs every other test.
+
+A leak is not undefined behaviour, in Rust or in C, so neither a LeakSanitizer report,
+which ASan's runtime makes by default, nor Miri's leak check is a UB candidate.
 
 UB tests exercise every owner and borrowed form, shared and mutable access path, lifecycle
 strategy, generic instance, and callback variant a batch emits. They attempt to outlive the
