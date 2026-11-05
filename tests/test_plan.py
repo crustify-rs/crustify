@@ -10,7 +10,7 @@ from pathlib import Path
 from crustify import plan
 from crustify.translate import RunSettings
 
-RUN = {"model": "anthropic/claude-opus-5", "billing": "subscription"}
+RUN = {"backend": "claude", "billing": "subscription"}
 
 
 class PlanBatchTests(unittest.TestCase):
@@ -43,16 +43,15 @@ class PlanBatchTests(unittest.TestCase):
             self.assertIn(needle, str(cm.exception))
         with self.assertRaises(SystemExit) as cm:
             plan.load_batch(self._batch({}, complete=False))
-        self.assertIn("missing task field(s): billing, model", str(cm.exception))
+        self.assertIn("missing task field(s): billing", str(cm.exception))
 
 
-    def test_dry_run_names_the_model(self) -> None:
+    def test_dry_run_names_the_run(self) -> None:
         out = io.StringIO()
         with contextlib.redirect_stdout(out):
-            plan.execute(self.repo, self._batch({}),
-                         log_dir=self.out, dry_run=True)
-        self.assertIn("one planner; model anthropic/claude-opus-5 "
-                      "(subscription); no additional instructions; no agent spawned",
+            plan.execute(self.repo, self._batch({}), dry_run=True)
+        self.assertIn("one planner; claude, subscription; "
+                      "no additional instructions; no agent spawned",
                       out.getvalue())
 
     def test_instructions_are_read_beside_the_task(self) -> None:
@@ -62,8 +61,7 @@ class PlanBatchTests(unittest.TestCase):
         self.assertEqual(batch.instructions.text, "Re-plan libavutil only.")
         out = io.StringIO()
         with contextlib.redirect_stdout(out):
-            plan.execute(self.repo, self._batch({"instructions": "instructions.md"}),
-                         log_dir=self.out, dry_run=True)
+            plan.execute(self.repo, self._batch({"instructions": "instructions.md"}), dry_run=True)
         self.assertIn("additional instructions from "
                       f"{(self.out / 'instructions.md').resolve()}", out.getvalue())
 
@@ -102,11 +100,10 @@ class PlanBatchTests(unittest.TestCase):
                 self.assertLess(text.index("## Additional instructions"),
                                 text.index(INSTRUCTIONS_MARKER))
 
-    def test_log_dir_must_exist(self) -> None:
+    def test_the_task_file_must_exist(self) -> None:
         with self.assertRaises(SystemExit) as cm:
-            plan.execute(self.repo, self._batch({}),
-                         log_dir=self.repo / "missing", dry_run=True)
-        self.assertIn("--log-dir must name an existing directory", str(cm.exception))
+            plan.execute(self.repo, self.repo / "missing.json", dry_run=True)
+        self.assertIn("no task file at", str(cm.exception))
 
     def test_the_session_names_the_planner(self) -> None:
         from crustify.agents.plan import PlanAgent

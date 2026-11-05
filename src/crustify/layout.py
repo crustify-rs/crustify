@@ -21,11 +21,11 @@ class Layout:
         self.root = self.workdir / CRUSTIFY
 
     def providers(self, cli: str) -> Path:
-        """Config home crustify hands a provider CLI, under crustify's own
-        home rather than the checkout: its session files then stay out of
-        the repository and its worktrees. Only codex uses one, as its
-        ``CODEX_HOME`` under API-key billing; claude keeps its own home,
-        which holds its subscription login."""
+        """Config home crustify hands a provider CLI under API-key billing,
+        under crustify's own home rather than the checkout: codex's
+        ``CODEX_HOME`` and claude's ``CLAUDE_CONFIG_DIR``. Holding no
+        subscription login, it leaves the API key the CLI's only credential,
+        and its session files stay out of the repository and its worktrees."""
         d = crustify_home() / "providers" / cli
         d.mkdir(parents=True, exist_ok=True)
         return d

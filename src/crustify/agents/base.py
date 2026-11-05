@@ -98,13 +98,12 @@ class CrustifyAgent:
     path the prompt hands it resolves there rather than in the main
     repo.
 
-    A batch agent writes its log and usage record into the explicit
-    ``artifact_dir`` it is given; an agent without one logs under
-    ``crustify/logs``.
+    Its session record goes to its session's directory in crustify's home;
+    the assistant names that directory as ``artifact_dir`` before its CLI
+    starts.
     """
 
     name: str         # subclasses set this
-    model: str        # subclasses set this
     #: The agent a session record names: binder, translator, reviewer, planner
     #: or assistant. Subclasses set this.
     role: str = "agent"
@@ -133,6 +132,9 @@ class CrustifyAgent:
     #: :class:`crustify.translate.Placement`), set per instance by the harness
     #: that read the task; None for an agent of no batch.
     placement = None
+    #: Called with the session id as soon as the CLI has one, so the harness
+    #: can tie the run to its task; None when nothing needs it.
+    on_session = None
 
     def __init__(
         self,
@@ -150,9 +152,8 @@ class CrustifyAgent:
         self.layout = Layout(workdir)
         self.workdir = self.layout.workdir
         self.git_base = git_base
-        # Where this agent's artifacts land. For a batch that is its own
-        # directory under the wave: the log and usage record, and whatever
-        # else the agent is told to write there.
+        # The assistant's session directory in crustify's home; None for
+        # any other agent, whose record is filed by its session id.
         self.artifact_dir = artifact_dir
         self.log_stem = log_stem
 
@@ -163,18 +164,15 @@ class CrustifyAgent:
         rendered_prompt = prompt.format(**arguments)
         from crustify import config as _cfg
         from crustify.agents.backends import get_backend
-        from crustify.core.models import resolve as _resolve_model
+        from crustify.core.models import route as _route
 
-        # The model selects the backend: a Claude model can only be driven
-        # by the claude CLI, an OpenAI one only by codex.
-        model = _cfg.MODEL_OVERRIDE or self.model
         try:
-            route = _resolve_model(model)
+            route = _route(_cfg.BACKEND, _cfg.BILLING, _cfg.MODEL_PROXY,
+                           _cfg.PROVIDER_ARGS)
         except ValueError as exc:
             raise SystemExit(str(exc)) from exc
         backend = get_backend(route.backend)
-        cli = "claude" if route.backend == "claude_cli" else "codex"
-        provider_home = self.layout.providers(cli)
+        provider_home = self.layout.providers(route.backend)
         #: The session to resume, when the agent continues one.
         resume = getattr(self, "resume", None)
 
@@ -192,10 +190,10 @@ class CrustifyAgent:
                 system_preamble=system_preamble,
                 work_dir=str(self.workdir),
                 log=log,
-                billing=_cfg.BILLING,
                 override_base_prompt=_cfg.OVERRIDE_BASE_PROMPT,
                 provider_home=provider_home,
                 interactive=self.interactive,
+                on_session=self.on_session,
                 **({"resume": resume} if resume else {}),
                 # A session id chosen before the run, where the CLI takes one.
                 **({"session_id": self.session_id}
@@ -222,12 +220,12 @@ class CrustifyAgent:
     def _make_log(self) -> AgentLog:
         """Open this agent's output sinks (see :mod:`crustify.agentlog`).
 
-        A batch harness injects its explicit output directory and fixed log
-        stem. An agent without one, the orchestrator, logs under
-        ``crustify/logs``.
+        The assistant names its session's directory in crustify's home, which
+        exists before its CLI starts. Any other agent's record goes to its
+        session's directory there, named by its session id.
         """
         return open_agent_log(
-            self.artifact_dir or self.layout.root / "logs",
+            self.artifact_dir,
             self.log_stem or self._log_stem(),
             agent=self.role,
             **self._index(),

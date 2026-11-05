@@ -26,8 +26,9 @@ Optional answers may be left unresolved for Crustify to decide.
 3. **What is the maximum spend, in USD? Once the audit's priced usage reaches
    it, the orchestrator launches no further reviewers.**
    - Answer: `<USD>`
-4. **Which backend and model should the reviewers use?**
-   - Answer: `<backend, model>`
+4. **Which agent CLI should the reviewers use, with which of its arguments?**
+   - Answer: `<claude | codex>[, proxy: openrouter][, args: <the CLI's own
+     arguments, such as --model opus>]`
 5. **Which billing mode should agentic stages use?**
    - Answer: `<api | subscription>`
 6. **Which instruments should the reviewers hunt with?**

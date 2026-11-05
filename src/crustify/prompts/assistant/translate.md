@@ -83,7 +83,7 @@ names.
 ### Brief
 
 The campaign brief lists the modules, the out-of-tree libraries and whether each has a
-wrapper on `crustify-rs` already, the assumptions you made, the models of every agent, the review policy with its objectives, the sanitizers, and the execution policy:
+wrapper on `crustify-rs` already, the assumptions you made, the backend, billing, model proxy and arguments of every agent, the review policy with its objectives, the sanitizers, and the execution policy:
 parallelism, review caps and the settings' approval gates.
 
 ### Settings changes
@@ -105,8 +105,7 @@ Planning section describes, under the new answers. Landed work is never re-plann
    `task.json` (see `specs/artifacts/task.md`) in its artifact dir, and spawn it:
 
    ```bash
-   crustify spawn-planner <repo> crustify/artifacts/planner/run-<n>/task.json \
-       --log-dir crustify/artifacts/planner/run-<n>
+   crustify spawn-planner <repo> crustify/artifacts/planner/run-<n>/task.json
    ```
 
    Once it has committed, check its diff against the plan's rules the Planning section

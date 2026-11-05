@@ -58,16 +58,19 @@ class UsageTests(unittest.TestCase):
         self.assertEqual((record["provider"], record["model"]),
                          ("anthropic", "claude-sonnet-5"))
         self.assertEqual(record["requests"], [{
+            "model": "claude-sonnet-5",
             "input_tokens": 2, "output_tokens": 66, "cache_read_tokens": 10,
             "cache_write_tokens": 0, "cache_write_1h_tokens": 100}])
         self.assertEqual(record["duration_ms"], 11000)
 
     def test_a_provider_the_transcript_cannot_know(self) -> None:
         path = self.write("a.transcript.jsonl", CLAUDE)
-        record = transcript_record(path, provider="openrouter",
-                                   model="anthropic/claude-sonnet-5")
+        record = transcript_record(path, backend="claude",
+                                   model_proxy="openrouter")
         self.assertEqual((record["provider"], record["model"]),
-                         ("openrouter", "anthropic/claude-sonnet-5"))
+                         ("openrouter", "claude-sonnet-5"))
+        with self.assertRaisesRegex(ValueError, "not a codex one"):
+            transcript_record(path, backend="codex")
 
     def test_a_codex_rollout(self) -> None:
         path = self.write("b.transcript.jsonl", CODEX)
@@ -76,6 +79,7 @@ class UsageTests(unittest.TestCase):
         self.assertEqual((record["provider"], record["model"]),
                          ("openrouter", "openai/gpt-6.1-sol"))
         self.assertEqual(record["requests"], [{
+            "model": "openai/gpt-6.1-sol",
             "input_tokens": 100, "output_tokens": 30, "cache_read_tokens": 20,
             "cache_write_tokens": 0, "cache_write_1h_tokens": 0}])
         self.assertEqual(record["duration_ms"], 120000)
@@ -86,13 +90,11 @@ class UsageTests(unittest.TestCase):
             transcript_format(path)
 
 
-if __name__ == "__main__":
-    unittest.main()
 
 
-class ReportTests(unittest.TestCase):
-    """The report prices each session request by request, and fetches the
-    rates again only for a model the cache does not know."""
+
+class _Rates(unittest.TestCase):
+    """Transcripts and rate sources the pricing tests share."""
 
     RATES = {"base": {"input": 1e-6, "output": 2e-6, "cache_read": 1e-7,
                       "cache_write": 1e-6, "cache_write_1h": 2e-6},
@@ -102,26 +104,32 @@ class ReportTests(unittest.TestCase):
         tmp = tempfile.TemporaryDirectory()
         self.addCleanup(tmp.cleanup)
         self.dir = Path(tmp.name)
+        self.rates = self.dir / "rates"
         self.claude = self.dir / "a.transcript.jsonl"
         self.claude.write_text("".join(json.dumps(e) + "\n" for e in CLAUDE))
         self.codex = self.dir / "b.transcript.jsonl"
         self.codex.write_text("".join(json.dumps(e) + "\n" for e in CODEX))
 
-    def report(self, paths, tables):
+    def sources(self, tables: dict):
+        """The fetched rates: ``tables`` per provider, every other empty."""
         from unittest import mock
-        from crustify.usage import report
-        calls = []
+        from crustify.core import pricing
+        return mock.patch.dict(pricing._SOURCES, {
+            p: (lambda p=p: tables.get(p, {})) for p in pricing._SOURCES})
 
-        def load_prices(*, refresh=False):
-            calls.append(refresh)
-            return tables[refresh]
-        with mock.patch("crustify.usage.load_prices", side_effect=load_prices):
-            return report(paths), calls
+    def report(self, paths, tables, **kw):
+        from crustify.usage import report
+        with self.sources(tables):
+            return report(paths, rates=self.rates, **kw)
+
+
+class ReportTests(_Rates):
+    """The report prices each session request by request, at the rates it
+    fetched, and keeps them as a snapshot when they changed."""
 
     def test_sessions_and_total(self) -> None:
-        known = {"anthropic": {"claude-sonnet-5": self.RATES}}
-        doc, calls = self.report([self.claude, self.codex],
-                                 {False: known, True: known})
+        doc = self.report([self.claude, self.codex],
+                          {"anthropic": {"claude-sonnet-5": self.RATES}})
         a, b = doc["sessions"]
         # 2 in, 66 out, 10 cache reads, 100 1h cache writes.
         self.assertAlmostEqual(a["cost_usd"], 2e-6 + 132e-6 + 1e-6 + 200e-6)
@@ -130,36 +138,105 @@ class ReportTests(unittest.TestCase):
         self.assertEqual(doc["total"]["request_count"], 2)
         self.assertAlmostEqual(doc["total"]["cost_usd"], a["cost_usd"])
         self.assertEqual(a["source"], str(self.claude))
-        self.assertEqual(calls, [False, True])  # one refetch, for the unknown
+        self.assertEqual(b["requests"][0]["model"], "openai/gpt-6.1-sol")
 
-    def test_a_known_model_needs_no_fetch(self) -> None:
-        known = {"anthropic": {"claude-sonnet-5": self.RATES}}
-        _, calls = self.report([self.claude], {False: known, True: {}})
-        self.assertEqual(calls, [False])
+    def test_a_snapshot_is_kept_only_when_the_rates_change(self) -> None:
+        tables = {"anthropic": {"claude-sonnet-5": self.RATES}}
+        self.report([self.claude], tables)
+        self.report([self.claude], tables)
+        self.assertEqual(len(list(self.rates.glob("*.json"))), 1)
 
-    def test_a_new_model_is_priced_after_a_refetch(self) -> None:
-        doc, calls = self.report(
-            [self.claude], {False: {}, True: {"anthropic": {"claude-sonnet-5": self.RATES}}})
-        self.assertEqual(calls, [False, True])
-        self.assertIsNotNone(doc["sessions"][0]["cost_usd"])
+    def test_a_run_prices_at_the_rates_it_fetched(self) -> None:
+        double = {"base": {k: 2 * v for k, v in self.RATES["base"].items()},
+                  "tiers": []}
+        first = self.report([self.claude], {"anthropic": {"claude-sonnet-5": self.RATES}})
+        second = self.report([self.claude], {"anthropic": {"claude-sonnet-5": double}})
+        self.assertAlmostEqual(second["sessions"][0]["cost_usd"],
+                               2 * first["sessions"][0]["cost_usd"])
+        # A change is a new snapshot, and each report names its own.
+        self.assertEqual(len(list(self.rates.glob("*.json"))), 2)
+        self.assertIn(second["rates"], {p.stem for p in self.rates.glob("*.json")})
+        # A kept snapshot reproduces the costs of the report that named it,
+        # whatever the rates are now.
+        again = self.report([self.claude], {}, snapshot=first["rates"])
+        self.assertEqual(again["sessions"][0]["cost_usd"],
+                         first["sessions"][0]["cost_usd"])
+        self.assertEqual(again["rates"], first["rates"])
+        latest = self.report([self.claude], {}, snapshot="latest")
+        self.assertEqual(latest["sessions"][0]["cost_usd"],
+                         second["sessions"][0]["cost_usd"])
+        with self.assertRaisesRegex(ValueError, "no rate snapshot 19990101"):
+            self.report([self.claude], {}, snapshot="19990101T000000Z")
 
-
-class PriceCacheTests(unittest.TestCase):
-    def test_a_failed_refetch_keeps_the_cached_rates(self) -> None:
+    def test_a_failed_fetch_keeps_the_latest_rates(self) -> None:
         from unittest import mock
         from crustify.core import pricing
-        with tempfile.TemporaryDirectory() as tmp:
-            cache = Path(tmp) / "prices.json"
-            cache.write_text(json.dumps({"openrouter": {"m": {
-                "base": {"input": 1e-6}, "tiers": []}}}))
+        self.report([self.claude], {"anthropic": {"claude-sonnet-5": self.RATES}})
 
-            def boom():
-                raise OSError("offline")
-            with mock.patch.dict(pricing._SOURCES, {p: boom for p in pricing._SOURCES}), \
-                    mock.patch("sys.stderr"):
-                prices = pricing.load_prices(str(cache), refresh=True)
-        self.assertIn("m", prices["openrouter"])
+        def boom():
+            raise OSError("offline")
+        with mock.patch.dict(pricing._SOURCES, {p: boom for p in pricing._SOURCES}), \
+                mock.patch("sys.stderr"):
+            from crustify.usage import report
+            doc = report([self.claude], rates=self.rates)
+        self.assertIsNotNone(doc["sessions"][0]["cost_usd"])
+        # A failure reads as no change: no new snapshot.
+        self.assertEqual(len(list(self.rates.glob("*.json"))), 1)
 
+class SessionTests(_Rates):
+    """`crustify usage` prices a session as its record says, and records the
+    rate snapshot it priced at, which later pricings reuse."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.home = self.dir / "home"
+        d = self.home / "sessions" / "s"
+        d.mkdir(parents=True)
+        self.record = d / "binder.session.json"
+        self.record.write_text(json.dumps({
+            "agent": "binder", "backend": "claude", "billing": "subscription",
+            "model_proxy": None, "args": [], "session_id": "s"}))
+
+    def price(self, tables, **kw):
+        from crustify.usage import price_session
+        with self.sources(tables):
+            return price_session("s", self.claude, rates=self.rates,
+                                 home=self.home, **kw)
+
+    def test_the_record_names_the_snapshot_and_reuses_it(self) -> None:
+        double = {"base": {k: 2 * v for k, v in self.RATES["base"].items()},
+                  "tiers": []}
+        first = self.price({"anthropic": {"claude-sonnet-5": self.RATES}})
+        self.assertEqual(json.loads(self.record.read_text())["rates"], first["rates"])
+        # The rates moved, but the session is priced as it was.
+        again = self.price({"anthropic": {"claude-sonnet-5": double}})
+        self.assertEqual(again["sessions"][0]["cost_usd"],
+                         first["sessions"][0]["cost_usd"])
+        self.assertEqual(again["session_id"], "s")
+
+    def test_a_named_snapshot_reprices_and_is_recorded(self) -> None:
+        self.price({"anthropic": {"claude-sonnet-5": self.RATES}})
+        from crustify.core import pricing
+        double = {"base": {k: 2 * v for k, v in self.RATES["base"].items()},
+                  "tiers": []}
+        with self.sources({"anthropic": {"claude-sonnet-5": double}}):
+            name, _ = pricing.fetch(self.rates)
+        doc = self.price({}, snapshot=name)
+        self.assertEqual(json.loads(self.record.read_text())["rates"], name)
+        self.assertEqual(doc["rates"], name)
+
+    def test_the_proxy_comes_from_the_record(self) -> None:
+        record = json.loads(self.record.read_text())
+        self.record.write_text(json.dumps(
+            {**record, "billing": "api", "model_proxy": "openrouter"}))
+        doc = self.price({"openrouter": {"claude-sonnet-5": self.RATES}})
+        self.assertEqual(doc["sessions"][0]["provider"], "openrouter")
+        self.assertIsNotNone(doc["sessions"][0]["cost_usd"])
+
+    def test_another_sessions_transcript_is_refused(self) -> None:
+        from crustify.usage import price_session
+        with self.assertRaisesRegex(ValueError, "transcript of session s, not t"):
+            price_session("t", self.claude, rates=self.rates, home=self.home)
 
 if __name__ == "__main__":
     unittest.main()

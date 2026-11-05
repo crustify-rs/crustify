@@ -6,26 +6,22 @@ authority -- which is how three campaigns published figures 3x too high. An
 unknown service or model is left UNPRICED by the caller: never zero, never
 guessed, because a plausible wrong number is worse than a missing one.
 
-Reconciled from the two copies that had grown apart. `_rate_set`,
-`_fetch_openrouter` and `_from_litellm` were the same on both sides. The other
-two were not, and each side had the better half: `load_prices` here is the
-audit copy, which adds `refresh` and stops `dirname("")` raising on a bare
-filename; `price_request` keeps the translation copy's tolerant `.get`, because
-its caller reads raw request records that need not carry every key. Neither
-difference was deliberate -- which is the argument for one copy.
+The rates are fetched whenever a session is priced, and kept as a dated
+snapshot in crustify's home when they differ from the latest: the history of
+the rates the campaign's figures were computed at.
 """
 from __future__ import annotations
 
 import json
-import os
 import re
 import sys
 import urllib.request
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
 OPENROUTER_MODELS = "https://openrouter.ai/api/v1/models"
 LITELLM_PRICES = ("https://raw.githubusercontent.com/BerriAI/litellm/main/"
                   "model_prices_and_context_window.json")
-DEFAULT_PRICE_CACHE = os.path.expanduser("~/.cache/crustify/model-prices.json")
 
 _TIER_RE = re.compile(r"_above_(\d+)k_tokens$")
 
@@ -92,46 +88,78 @@ _SOURCES = {
 }
 
 
-def load_prices(cache_path: str = DEFAULT_PRICE_CACHE,
-                offline: bool = False, refresh: bool = False) -> dict:
-    """`{provider: {model_id: rate_set}}`, cached on disk.
+def rates_dir() -> Path:
+    """Where the rate snapshots live: crustify's home, beside the sessions
+    they price."""
+    from crustify.layout import crustify_home
+    return crustify_home() / "rates"
 
-    Rates only move when a provider changes them, so the cache is the normal
-    path. ``refresh`` fetches again, which is how a newly released model gets
-    a price; a provider whose fetch fails keeps the rates it had in the cache.
-    ``offline`` refuses to fetch and leaves unknown models unpriced rather
-    than guessing.
-    """
-    cached_prices: dict = {}
-    if os.path.exists(cache_path):
+
+def _stamp(when: datetime) -> str:
+    return when.astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+
+
+def latest(directory: Path | None = None) -> tuple[str | None, dict]:
+    """The latest rate snapshot: ``(its name, {provider: {model:
+    rate_set}})``, or ``(None, {})`` when none is kept."""
+    directory = directory or rates_dir()
+    paths = sorted(directory.glob("*.json"))
+    if not paths:
+        return None, {}
+    return paths[-1].stem, json.loads(paths[-1].read_text())
+
+
+def kept(snapshot: str, directory: Path | None = None) -> tuple[str, dict]:
+    """A kept snapshot: ``latest``, its name, ``<timestamp>``, or the path of
+    its file. Raises ``ValueError`` when there is none such."""
+    directory = directory or rates_dir()
+    if snapshot == "latest":
+        name, rates = latest(directory)
+        if name is None:
+            raise ValueError(f"no rate snapshot kept in {directory}")
+        return name, rates
+    path = Path(snapshot)
+    if not path.is_file():
+        path = directory / f"{snapshot.removesuffix('.json')}.json"
+    if not path.is_file():
+        raise ValueError(f"no rate snapshot {snapshot} in {directory}")
+    return path.stem, json.loads(path.read_text())
+
+
+def fetch(directory: Path | None = None, now: datetime | None = None
+          ) -> tuple[str, dict]:
+    """Fetch the current rates, and keep them as a new snapshot when they
+    differ from the latest; return ``(the snapshot they match, the rates)``.
+
+    A provider whose fetch fails keeps the rates of the latest snapshot, so
+    a failure never reads as a change."""
+    directory = directory or rates_dir()
+    name, kept = latest(directory)
+    current = {}
+    for prov, get in _SOURCES.items():
         try:
-            with open(cache_path) as fh:
-                cached = json.load(fh)
-            cached_prices = {prov: {m: {"base": rs["base"],
-                                        "tiers": [(int(k), v) for k, v in rs["tiers"]]}
-                                    for m, rs in table.items()}
-                             for prov, table in cached.items()}
-        except Exception:
-            cached_prices = {}
-        if not refresh:
-            return cached_prices
-    if offline:
-        return cached_prices
-    prices = {}
-    for prov, fetch in _SOURCES.items():
-        try:
-            prices[prov] = fetch()
+            current[prov] = get()
         except Exception as exc:
-            kept = cached_prices.get(prov) or {}
+            old = kept.get(prov) or {}
             print(f"warning: could not fetch {prov} prices ({exc}); "
-                  + (f"keeping the {len(kept)} cached {prov} rates"
-                     if kept else f"{prov}-billed runs will be unpriced"),
+                  + (f"keeping the {len(old)} {prov} rates of the latest snapshot"
+                     if old else f"{prov}-billed runs will be unpriced"),
                   file=sys.stderr)
-            prices[prov] = kept
-    os.makedirs(os.path.dirname(cache_path) or ".", exist_ok=True)
-    with open(cache_path, "w") as fh:
-        json.dump(prices, fh)
-    return prices
+            current[prov] = old
+    # Compared as stored, so a tier's tuple and its stored list agree.
+    current = json.loads(json.dumps(current))
+    if current != kept and any(current.values()):
+        when = now or datetime.now(timezone.utc)
+        directory.mkdir(parents=True, exist_ok=True)
+        # Names sort as their times; two changes within a second keep both.
+        while (directory / f"{_stamp(when)}.json").exists():
+            when += timedelta(seconds=1)
+        name = _stamp(when)
+        path = directory / f"{name}.json"
+        tmp = path.with_suffix(".tmp")
+        tmp.write_text(json.dumps(current))
+        tmp.replace(path)
+    return name, current
 
 
 def price_request(rate_set: dict, req: dict) -> float:
@@ -158,38 +186,3 @@ def price_request(rate_set: dict, req: dict) -> float:
             + req.get("cache_write_tokens", 0) * r.get("cache_write", inp)
             + req.get("cache_write_1h_tokens", 0)
               * r.get("cache_write_1h", r.get("cache_write", inp)))
-
-
-def price_usage(path, prices: dict, *, provider: str = "",
-                model: str = "") -> tuple[float | None, int, str] | None:
-    """Price one Crustify usage record, or return ``None`` if malformed.
-
-    File evidence overrides fallback provider/model values. Unknown rates
-    produce an unpriced result rather than a guessed zero.
-    """
-    try:
-        with open(path, errors="replace") as fh:
-            record = json.load(fh)
-    except (OSError, ValueError):
-        return None
-    if not isinstance(record, dict):
-        return None
-
-    requests = record.get("requests") or []
-    buckets = (
-        "input_tokens", "output_tokens", "cache_read_tokens",
-        "cache_write_tokens", "cache_write_1h_tokens",
-    )
-    tokens = sum(
-        sum(request.get(bucket, 0) for bucket in buckets)
-        for request in requests
-        if isinstance(request, dict)
-    )
-    model = record.get("model") or model
-    provider = record.get("provider") or provider
-    rate_set = (prices.get(provider) or {}).get(model)
-    if rate_set is None:
-        return None, tokens, model
-    return (sum(price_request(rate_set, request) for request in requests
-                if isinstance(request, dict)),
-            tokens, model)

@@ -1,10 +1,9 @@
 # task.json schema
 
 Field meaning for `task.json`, the one input of a spawned agent: `crustify spawn-binder
-<workdir> <run dir>/task.json --log-dir <run dir>` for a `wrap` batch, `crustify
-spawn-translator` with the same arguments for a `port` batch, `crustify spawn-reviewer`
-for a review batch, and `crustify spawn-planner <workdir> <run dir>/task.json --log-dir
-<run dir>` for a planner run. The path names the file itself; a missing file fails the
+<workdir> <run dir>/task.json` for a `wrap` batch, `crustify spawn-translator` with the
+same arguments for a `port` batch, `crustify spawn-reviewer` for a review batch, and
+`crustify spawn-planner <workdir> <run dir>/task.json` for a planner run. The path names the file itself; a missing file fails the
 command. One task is one
 agent's entire worklist and how that agent runs, and each command rejects a task whose
 objective belongs to another.
@@ -14,10 +13,11 @@ A planner plans a binder's or translator's task as one batch entry of
 `task.json`: its `kind` as `objective`, its `items`, the [batch fields](#2-batch-fields)
 that place it in the schedule, and the [run fields](#1-run-fields).
 
-`task.json` sits in the artifact dir of the agent's run, `crustify/artifacts/<role>/run-<n>/`,
-which is also passed as `--log-dir`. The agent writes its log and usage record there, so
-the directory holds everything about the run: what it was given, how it ran, and what it
-produced. A batch that is run again gets a new run dir, so every attempt keeps its own.
+`task.json` sits in the artifact dir of the agent's run, `crustify/artifacts/<role>/run-<n>/`.
+The spawn command writes the run's `session_id` into it as soon as the CLI has one, which
+ties the run to its session's records in crustify's home, and refuses a task that already
+holds one. A batch that is run again gets a new run dir and task, so every attempt keeps
+its own.
 
 ```json
 {
@@ -28,7 +28,7 @@ produced. A batch that is run again gets a new run dir, so every attempt keeps i
   "module": "libavutil/frame.c",
   "foundational": false,
   "base_branch": "crustify/waves/wave-0",
-  "model": "anthropic/claude-opus-5-5",
+  "backend": "claude",
   "billing": "subscription",
   "items": [
     {
@@ -47,21 +47,27 @@ produced. A batch that is run again gets a new run dir, so every attempt keeps i
 | `objective` | execution objective for every item: `wrap` or `port` |
 | `items` | non-empty worklist; every item routes to the same agent |
 | `wave`, `batch`, `link_unit`, `module`, `foundational` | the [batch fields](#2-batch-fields) |
-| `base_branch`, `model`, `billing` | the [run fields](#1-run-fields) |
+| `base_branch`, `backend`, `billing`, `model_proxy`, `args` | the [run fields](#1-run-fields) |
 | `instructions` | optional [additional instructions](#3-additional-instructions) |
 
-All nine are required, and `instructions` is the only other root field accepted.
+All but `model_proxy` and `args` are required, and `instructions` is the only other root
+field accepted.
 
 ## 1. Run fields
 
 | field | meaning |
 |---|---|
 | `base_branch` | the unchecked-out integration branch the agent lands on: its wave branch, or its review wave branch; a `refs/heads/` prefix is accepted |
-| `model` | the agent's model, `<provider>/<model>`, such as `anthropic/claude-opus-5-5`; an unknown provider is rejected |
+| `backend` | the provider CLI the agent runs on: `claude`, Claude Code, or `codex` |
 | `billing` | how the provider CLI authenticates: `subscription`, its own logged-in account, or `api`, an API key from the environment |
+| `model_proxy` | optional: the gateway the CLI's requests go through, with its own key, such as `openrouter`; it needs `api` billing, and its rates price the run |
+| `session_id` | the session the run became, written by the spawn command, never by the task's author |
+| `args` | optional: arguments passed to the provider CLI unchanged, after Crustify's own, in the CLI's own syntax, such as `["--model", "opus", "--effort", "high"]` |
 
-A binder, translator or reviewer task carries all three. A planner task carries `model`
-and `billing` only: a planner commits on the planner branch it is spawned on, which is
+Without `args` naming one, the CLI runs its own default model; Codex through a model proxy
+needs its model named, as the proxy knows it. A binder, translator or reviewer task
+carries `base_branch`, `backend` and `billing`. A planner task carries `backend` and
+`billing` only: a planner commits on the planner branch it is spawned on, which is
 then promoted to the working branch, `crustify/devel`.
 
 ## 2. Batch fields
@@ -85,7 +91,7 @@ Every task may carry `instructions`, the path of a Markdown file, relative to th
 own directory, that customizes the agent's task on top of its role:
 
 ```json
-{"model": "anthropic/claude-opus-5-5", "billing": "subscription",
+{"backend": "claude", "billing": "subscription",
  "instructions": "instructions.md"}
 ```
 
@@ -114,7 +120,7 @@ landed; in an audit, modules of the crate.
   "module": "libavutil/frame.c",
   "foundational": false,
   "base_branch": "crustify/waves/wave-1",
-  "model": "anthropic/claude-opus-5-5",
+  "backend": "claude",
   "billing": "subscription"
 }
 ```
@@ -155,12 +161,12 @@ on, forked from the working branch: every run emits what the committed plan lack
 schema, corrects what earlier runs decided, and re-plans the waves its changes move.
 
 ```json
-{"model": "anthropic/claude-opus-5-5", "billing": "subscription"}
+{"backend": "claude", "billing": "subscription"}
 ```
 
 | root field | meaning |
 |---|---|
-| `model`, `billing` | the [run fields](#1-run-fields) |
+| `backend`, `billing`, `model_proxy`, `args` | the [run fields](#1-run-fields) |
 | `instructions` | optional [additional instructions](#3-additional-instructions) |
 
 Both run fields are required, and `instructions` is the only other root field accepted. It is written as
@@ -199,3 +205,11 @@ A batch of a foundational module routes like any other. Its `module` and `founda
 which `modules.json` marks `foundational`, and its binder binds the items with a
 lifecycle role as
 strategies (`specs/rust/items/binding.md`, Lifecycle strategies).
+
+## 8. Earlier versions
+
+A task of an earlier version names a `model`, `<provider>/<model>`, in place of `backend`:
+`anthropic/<model>` runs on `claude` and `openai/<model>` on `codex`, each with the model
+in its `args`, and `openrouter/<vendor>/<model>` through the `openrouter` proxy, on `claude`
+for an `anthropic` vendor and on `codex` otherwise. A task names one or the other, never
+both.

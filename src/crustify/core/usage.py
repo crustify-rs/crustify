@@ -17,23 +17,12 @@ and it is per-provider -- a codex transcript needs its own reader.
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
-def _transcript_path(session_id: str, work_dir: Path) -> Path | None:
-    """Locate the session transcript for ``session_id``.
-
-    The CLI keys transcripts by working directory with ``/`` flattened to
-    ``-``. Note this tree is **not** relocated by ``ANTHROPIC_CONFIG_DIR``
-    (verified: the transcript lands in the real ``~/.claude`` even when
-    that variable points elsewhere), so the path is computed rather than
-    owned. A glob fallback covers any change to that escaping scheme.
-    """
-    projects = Path.home() / ".claude" / "projects"
-    direct = projects / str(work_dir).replace("/", "-") / f"{session_id}.jsonl"
-    if direct.is_file():
-        return direct
-    hits = sorted(projects.glob(f"*/{session_id}.jsonl"))
-    return hits[0] if hits else None
+def claude_config_dir() -> Path:
+    """The operator's own Claude Code config dir."""
+    return Path(os.environ.get("CLAUDE_CONFIG_DIR") or Path.home() / ".claude")
 
 
 def _read_usage(transcript: Path) -> tuple[list[dict], str]:
@@ -74,6 +63,7 @@ def _read_usage(transcript: Path) -> tuple[list[dict], str]:
             u = msg.get("usage") or {}
             cc = u.get("cache_creation") or {}
             requests.append({
+                "model": named if named and not named.startswith("<") else model,
                 "input_tokens": int(u.get("input_tokens") or 0),
                 "output_tokens": int(u.get("output_tokens") or 0),
                 "cache_read_tokens": int(u.get("cache_read_input_tokens") or 0),
@@ -81,16 +71,6 @@ def _read_usage(transcript: Path) -> tuple[list[dict], str]:
                 "cache_write_1h_tokens": int(cc.get("ephemeral_1h_input_tokens") or 0),
             })
     return requests, model
-
-
-def rollout_path(codex_home: Path, session_id: str) -> Path | None:
-    """Locate the session rollout for ``session_id``.
-
-    Codex files rollouts by date (``sessions/YYYY/MM/DD/rollout-<ts>-<id>``),
-    so the id is matched by glob rather than by computing the path.
-    """
-    hits = sorted(codex_home.glob(f"sessions/*/*/*/rollout-*-{session_id}.jsonl"))
-    return hits[-1] if hits else None
 
 
 def read_rollout_usage(rollout: Path) -> list[dict]:
@@ -108,6 +88,7 @@ def read_rollout_usage(rollout: Path) -> list[dict]:
     """
     requests: list[dict] = []
     prev_total = None
+    model = ""
     with open(rollout, errors="replace") as fh:
         for line in fh:
             try:
@@ -115,6 +96,9 @@ def read_rollout_usage(rollout: Path) -> list[dict]:
             except ValueError:
                 continue
             payload = d.get("payload") or {}
+            # Each turn names its model before its requests.
+            if d.get("type") == "turn_context" and payload.get("model"):
+                model = payload["model"]
             if payload.get("type") != "token_count":
                 continue
             info = payload.get("info") or {}
@@ -127,6 +111,7 @@ def read_rollout_usage(rollout: Path) -> list[dict]:
             cached = int(last.get("cached_input_tokens") or 0)
             inp = int(last.get("input_tokens") or 0)
             requests.append({
+                "model": model,
                 "input_tokens": max(inp - cached, 0),
                 "output_tokens": int(last.get("output_tokens") or 0),
                 "cache_read_tokens": cached,
@@ -154,6 +139,24 @@ def transcript_format(path: Path) -> str:
             if "sessionId" in e or e.get("type") in ("assistant", "user"):
                 return "claude"
     raise ValueError(f"{path}: not a Claude Code transcript or a Codex rollout")
+
+
+def transcript_session(path: Path) -> str | None:
+    """The session id a transcript names: a Claude Code transcript's
+    ``sessionId``, a Codex rollout's ``session_meta`` id."""
+    with open(path, errors="replace") as fh:
+        for n, line in enumerate(fh):
+            if n > 200:
+                break
+            try:
+                e = json.loads(line)
+            except ValueError:
+                continue
+            if e.get("type") == "session_meta":
+                return (e.get("payload") or {}).get("id")
+            if e.get("sessionId"):
+                return e["sessionId"]
+    return None
 
 
 def _codex_identity(rollout: Path) -> tuple[str, str]:
@@ -196,23 +199,35 @@ def _interval(path: Path) -> tuple[str | None, str | None, int | None]:
     return iso(first), iso(last), round((last - first).total_seconds() * 1000)
 
 
-def transcript_record(path: Path, *, provider: str | None = None,
-                      model: str | None = None) -> dict:
+def transcript_record(path: Path, *, backend: str | None = None,
+                      model_proxy: str | None = None) -> dict:
     """The usage record of one session, from its transcript: one entry per
     API request, in crustify's exclusive buckets, with the session's
-    interval. ``provider`` overrides what the transcript implies, which
-    matters for a Claude Code session billed through OpenRouter: the
-    transcript cannot tell the two services apart."""
+    interval and the service whose rates price it.
+
+    That service is the model proxy, when the run went through one: a Claude
+    Code transcript reads the same whether its requests went to Anthropic or
+    through a gateway. Without one, it is the backend's own service. The
+    transcript's format names the backend when ``backend`` does not, and must
+    agree with it when it does."""
+    from crustify.core.models import NATIVE
+
     fmt = transcript_format(path)
+    if backend is not None and backend != fmt:
+        raise ValueError(f"{path} is a {fmt} transcript, not a {backend} one")
+    from crustify.core.models import PROXIES
+
+    provider = model_proxy or NATIVE[fmt]
     if fmt == "claude":
-        requests, seen_model = _read_usage(path)
-        provider = provider or "anthropic"
-        model = model or seen_model
+        requests, model = _read_usage(path)
     else:
         requests = read_rollout_usage(path)
-        seen_provider, seen_model = _codex_identity(path)
-        provider = provider or seen_provider
-        model = model or seen_model
+        seen_provider, model = _codex_identity(path)
+        # A rollout names the provider block crustify gave codex, which for a
+        # proxy is the proxy's own name.
+        if model_proxy is None and seen_provider in PROXIES:
+            provider = seen_provider
     started, ended, duration = _interval(path)
-    return {"provider": provider, "model": model, "requests": requests,
-            "started_at": started, "ended_at": ended, "duration_ms": duration}
+    return {"provider": provider, "model": model,
+            "requests": requests, "started_at": started, "ended_at": ended,
+            "duration_ms": duration}

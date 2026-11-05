@@ -39,15 +39,13 @@ class AgentLog:
         self.index_facts = dict(index_facts or {})
         self.metadata = dict(metadata or {})
         self.session_path: Path | None = None
+        self.stem = stem
         # Wall clock is OURS to measure: claude's stream carries a duration and
         # codex's carries none. `monotonic` for the span, so a clock step
         # cannot produce a negative duration; wall clock for the stamps.
         self._t0 = time.monotonic()
         self._started = time.time()
         if log_dir is not None:
-            # RESOLVED: an isolated agent may reach its log dir through a
-            # symlink in the worktree it purges as its last act, and the
-            # session record is written after that.
             log_dir = log_dir.resolve()
             log_dir.mkdir(parents=True, exist_ok=True)
             self.session_path = log_dir / f"{stem}.session.json"
@@ -67,20 +65,26 @@ class AgentLog:
     def session(self, record: dict) -> None:
         """Record this run's session, once, at the end::
 
-            {"cli": "claude",                    # the provider CLI that ran it
-             "provider": "anthropic",            # the service that billed it
-             "model": "claude-opus-5-5",         # its id with that service
+            {"backend": "claude",                # the provider CLI that ran it
+             "billing": "subscription",          # how it authenticated
+             "model_proxy": null,                # the gateway it went through
+             "args": ["--model", "opus"],        # the CLI's own arguments
              "session_id": "1adf327a-...",       # the CLI's session id
-             "transcript": "/abs/path.jsonl",    # where it was, or null
              "exit_code": 0,
-             "agent": "assistant",               # binder, translator, reviewer,
+             "resumed": false,
+             "agent": "binder",                  # binder, translator, reviewer,
                                                  # planner or assistant
              "started_at": "2026-10-19T19:03:10+00:00",
              "ended_at": "2026-10-19T19:03:56+00:00",
              "duration_ms": 46649}
 
-        ``transcript`` is a hint, valid when the run ended: the CLIs move and
-        prune their own files, so the assistant copies it promptly."""
+        Without a directory of its own, the record goes to the session's
+        directory in crustify's home, named by its session id."""
+        if self.session_path is None and record.get("session_id"):
+            from crustify.layout import crustify_home
+            d = crustify_home() / "sessions" / record["session_id"]
+            d.mkdir(parents=True, exist_ok=True)
+            self.session_path = d / f"{self.stem}.session.json"
         if self.session_path is not None:
             full = {**record, **self.metadata,
                     "started_at": _iso(self._started),

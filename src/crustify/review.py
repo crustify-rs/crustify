@@ -6,10 +6,11 @@ from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import NoReturn
 
-from crustify.translate import (BATCH_FIELDS, RUN_FIELDS, Instructions, Placement,
+from crustify.translate import (BATCH_FIELDS, RUN_FIELDS, RUN_OPTIONAL, Instructions, Placement,
                                 RunSettings, check_fields, instructions_note,
                                 parse_branch, parse_instructions, parse_placement,
-                                parse_run, read_object, task_and_log_dir)
+                                parse_run, read_object, session_recorder,
+                                task_file)
 
 _OBJECTIVE = re.compile(r"^[a-z]+$")
 
@@ -125,9 +126,9 @@ def load_batch(path: Path) -> ReviewBatch:
     the tools the reviewer carries, so they are checked against the agent,
     not here."""
     raw = read_object(path, _fail)
-    check_fields(raw, {"base_branch"} | RUN_FIELDS | BATCH_FIELDS,
-                 {"commits", "paths", "reports", "objectives", "instructions"},
-                 _fail)
+    check_fields(raw, {"base_branch", "billing"} | BATCH_FIELDS,
+                 {"commits", "paths", "reports", "objectives", "instructions"}
+                 | RUN_FIELDS | RUN_OPTIONAL, _fail)
     if "commits" in raw and "paths" in raw:
         _fail("a batch carries commits or paths, not both")
     if not {"commits", "paths", "reports"} & set(raw):
@@ -166,16 +167,14 @@ def execute(
     workdir: Path,
     task_path: Path,
     *,
-    log_dir: Path,
     dry_run: bool = False,
 ) -> None:
     """Run exactly one reviewer in ``workdir``.
 
     As for a translator, ``workdir`` is the worktree the orchestrator forked
-    for this batch and ``log_dir`` the existing directory its log and usage
-    record land in; the harness creates and purges neither.
+    for this batch, which the harness neither creates nor purges.
     """
-    task_path, output = task_and_log_dir(task_path, log_dir, _fail)
+    task_path = task_file(task_path, _fail)
     batch = load_batch(task_path)
     base_branch = batch.base_branch
 
@@ -191,11 +190,11 @@ def execute(
         reports=batch.reports,
         objectives=batch.objectives,
         git_base=base_branch,
-        artifact_dir=output,
         log_stem=_LOG_STEM,
     )
     agent.instructions = batch.instructions
     agent.placement = batch.placement
+    agent.on_session = session_recorder(task_path)
     if dry_run:
         print(
             f"[review dry-run] one {batch.route} agent for "
@@ -203,7 +202,7 @@ def execute(
             f"{len(batch.commits)} commit(s), {len(batch.paths)} path(s), "
             f"{len(batch.reports)} report(s); objectives "
             f"{', '.join(agent.objectives)}; landing on {base_branch}; "
-            f"model {batch.run.model} ({batch.run.billing}); "
+            f"{batch.run.describe()}; "
             f"{instructions_note(batch.instructions)}; no agent spawned."
         )
         return
@@ -211,8 +210,7 @@ def execute(
     print(f"[crustify spawn-reviewer] workdir: {agent.workdir}")
     print(f"[crustify spawn-reviewer] landing on: {base_branch}")
     print(f"[crustify spawn-reviewer] objectives: {', '.join(agent.objectives)}")
-    print(f"[crustify spawn-reviewer] model: {batch.run.model} ({batch.run.billing})")
-    print(f"[crustify spawn-reviewer] session: {output / f'{_LOG_STEM}.session.json'}")
+    print(f"[crustify spawn-reviewer] run: {batch.run.describe()}")
     if batch.instructions is not None:
         print("[crustify spawn-reviewer] additional instructions: "
               f"{batch.instructions.path}")

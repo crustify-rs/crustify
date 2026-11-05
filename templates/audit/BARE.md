@@ -16,7 +16,7 @@ assistant role, no conventions, no skill index.
         crustify
     docker exec -it bare-git2 \
         crustify /target --settings /campaign/CRUSTIFY.md --campaign audit --task-only --start \
-        --model openrouter/anthropic/claude-opus-5 --billing api
+        --backend claude --billing api --model-proxy openrouter
 
 Nothing spawns reviewers in bare mode, so there is no maximum spend: the run
 takes whatever the single agent takes. Cap it from outside if you need one.

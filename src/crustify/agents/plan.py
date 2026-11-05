@@ -24,7 +24,6 @@ class PlanAgent(CrustifyAgent):
     role = "planner"
     #: Every run does the same, so one stage names them all.
     stage = "plan"
-    model = "anthropic/claude-opus-5"
     #: A planner runs for many turns over one procedure; keep it out of
     #: compaction's reach, as for the orchestrator.
     prompt_in_system_slot = True

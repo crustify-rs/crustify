@@ -1,7 +1,7 @@
 # Accounting
 
-What a campaign records about its own work: the dashboard, the session and usage records
-its figures come from, and how cost and time are derived from them.
+What a campaign records about its own work: the dashboard, the session records and
+transcripts its figures come from, and how cost and time are derived from them.
 
 ## 1. The dashboard
 
@@ -38,11 +38,10 @@ the others stand as measured on the batch's base.
 
 ### 2.2 Usage cells
 
-The cells known only once an agent has ended, from its usage record: its cost, tokens and
-wall, the per-unit costs derived from them, and their `Σ` cells. A batch's are filled on
-the working branch once its wave is promoted, a planner run's once the run is promoted.
-A batch run more than once costs the sum of its runs. Each usage record is committed with
-the dashboard update that cites it.
+The cells known only once an agent has ended, from its usage: its cost, tokens and wall,
+the per-unit costs derived from them, and their `Σ` cells. A batch's are filled on the
+working branch once its wave is promoted, a planner run's once the run is promoted. A
+batch run more than once costs the sum of its runs.
 
 ### 2.3 Campaign cells
 
@@ -65,44 +64,45 @@ An audit's dashboard follows the same kinds over its own tables.
 
 ## 3. Records
 
-Every agent's `--log-dir` receives its `<role>.session.json`: the CLI that ran it, the
-provider and model, its session id, which agent it was, its exit status and interval, and
-where its transcript was when it ended. The transcript is the agent's full log and the
-source of its accounting.
+Every agent's session leaves its `<role>.session.json` in its directory in crustify's
+home, `sessions/<session id>/`, as [`layout.md`](layout.md) describes: which agent it was,
+its backend, billing, model proxy and the arguments its CLI was given, its session id, and
+its exit status and interval. A spawned agent's run is tied to its session by the
+`session_id` the spawn command writes into its `task.json`. The session's transcript,
+which its CLI keeps by session id, is the agent's full log and the source of its
+accounting.
 
 A transcript is copied into crustify's home, as `transcripts/<session id>.jsonl`, as soon
-as its batch lands or fails, because the CLIs move and prune their own files. One that is
-no longer where its session record says is found by its session id: Claude Code keeps each
-session's transcript under its configuration directory, and Codex each session's rollout
-under its `CODEX_HOME`, in a file whose name contains the session id. The usage record is
-derived from the copy:
+as its batch lands or fails, because the CLIs move and prune their own files. Its usage is
+derived from the copy, as its session record says the session ran:
 
 ```bash
-crustify usage ~/.crustify/transcripts/<session id>.jsonl -o <run dir>/<role>.usage.json
+crustify usage <session id> ~/.crustify/transcripts/<session id>.jsonl
 ```
 
-`crustify usage` prices every request the transcript records and reports the session's
-tokens, cost and interval as JSON. A Claude Code session whose record names the
-`openrouter` provider is priced with `--provider openrouter`: the transcript cannot tell it
-apart from Anthropic.
+`crustify usage` prices every request the transcript records, at the rates of the model
+proxy, or of the backend's own service without one, and reports the session's tokens,
+cost and interval as JSON. The transcript names the model of each request, but not the
+service that billed it. A session priced for the first time is priced at the rates fetched
+then, which are kept in crustify's home as `rates/<timestamp>.json` whenever they differ
+from the latest kept, and its session record names that snapshot as its `rates`; every
+later pricing of it uses the same snapshot, unless `--rates` names another, so its figures
+never move. Its usage is not kept: the dashboard holds its figures, and `crustify usage`
+gives them again.
 
 The assistant's sessions leave `assistant-<timestamp>.session.json` in their directories in
-crustify's home, as [`layout.md`](layout.md) describes. At the start of each session, the
-records of the sessions before it are copied into `crustify/artifacts/assistant/`, and
-their transcripts collected the same way. A resumed session keeps its id while its
-transcript grows, so it leaves several session records with one id: its transcript is
-copied again after each run, replacing the earlier copy, and its usage record derived once,
-from the latest copy, into the directory of the newest of those records. The session and
-usage records are committed; the transcripts stay in crustify's home.
+crustify's home. At the start of each session, the transcripts of the sessions before it
+are collected the same way. A resumed session keeps its id while its transcript grows, so
+it leaves several session records with one id: its transcript is copied again after each
+run, replacing the earlier copy. The session records, transcripts and rates stay in
+crustify's home.
 
 ## 4. Cost and time
 
-A batch's cost and tokens are its usage record's `total.cost_usd` and `total.tokens`:
-`binder.usage.json` for a `wrap` batch, `translator.usage.json` for a `port` batch,
-`reviewer.usage.json` for a review batch and `planner.usage.json` for a planner run. The
-computed cost is used, never a provider-reported dollar total; under subscription billing
-it is the API-equivalent cost.
+A run's cost and tokens are its usage's `total.cost_usd` and `total.tokens`, from
+`crustify usage` on its transcript. The computed cost is used, never a provider-reported
+dollar total; under subscription billing it is the API-equivalent cost.
 
-An agent's wall time is its usage record's interval. A wave's runs from its first batch's
+An agent's wall time is its usage's interval. A wave's runs from its first batch's
 launch through its final review and regression gates, a review wave's in an audit through
 its landing, and a module's from its first launch through its final gate.

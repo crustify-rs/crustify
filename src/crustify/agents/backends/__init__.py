@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import os
 import tempfile
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from typing import Protocol, runtime_checkable
 
@@ -90,19 +90,18 @@ class Backend(Protocol):
         system_preamble: str,
         work_dir: str,
         log: AgentLog,
-        billing: str = "subscription",
-        effort: str | None = None,
         override_base_prompt: bool = False,
         provider_home: Path | None = None,
         interactive: bool = False,
         resume: str | None = None,
         session_id: str | None = None,
+        on_session: Callable[[str], None] | None = None,
     ) -> None:
         """Drive one agent to completion.
 
-        ``route`` fixes the CLI backend, provider and model before execution;
-        ``prompt`` arrives as the first user message. ``billing`` and
-        ``provider_home`` select authentication without either backend importing
+        ``route`` fixes the CLI backend, its billing, its model proxy and the
+        user's arguments before execution; ``prompt`` arrives as the first
+        user message. ``route`` and ``provider_home`` select authentication without either backend importing
         a mode-specific config or layout module. The return value is
         intentionally unused -- success is judged by on-disk artifacts.
 
@@ -119,18 +118,25 @@ class Backend(Protocol):
         ``resume`` continues the session with that id instead of starting one:
         same id, same transcript. ``session_id`` is the id a new session takes,
         where the CLI accepts one (claude does, codex picks its own).
+
+        ``on_session`` is called with the session id as soon as the CLI has
+        one: before it starts, where the CLI takes one chosen ahead (claude),
+        and once it reports it otherwise (codex).
+
+        ``route`` carries the user's arguments, passed to the CLI unchanged
+        after crustify's own options, so that they override them.
         """
         ...
 
 
 def get_backend(name: str) -> Backend:
-    """Resolve a backend by name (see :mod:`crustify.core.models`)."""
-    if name == "claude_cli":
+    """The backend of a provider CLI, ``claude`` or ``codex``."""
+    if name == "claude":
         from crustify.agents.backends.claude_cli import ClaudeCliBackend
         return ClaudeCliBackend()
-    if name == "codex_cli":
+    if name == "codex":
         from crustify.agents.backends.codex_cli import CodexCliBackend
         return CodexCliBackend()
     raise ValueError(
-        f"Unknown backend {name!r}; expected one of: claude_cli, codex_cli."
+        f"Unknown backend {name!r}; expected one of: claude, codex."
     )

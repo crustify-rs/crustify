@@ -22,12 +22,12 @@ without overwhelming its reviewer. A campaign may also review every translation 
 its own, with that batch's commits.
 
 A review batch's `task.json` ([`../artifacts/task.md`](../artifacts/task.md)) holds its worklist,
-its objectives, its review wave branch and its model and billing:
+its objectives, its review wave branch and its run fields:
 
 ```json
 {"objectives": ["lifecycle", "unsafety", "ub", "equiv", "fix"], "commits": ["3f2a9c1", "8be04d7"],
  "wave": 8, "batch": 0, "link_unit": "<link unit>", "module": "<module name>", "foundational": false,
- "base_branch": "<review wave branch>", "model": "<model>", "billing": "<billing>"}
+ "base_branch": "<review wave branch>", "backend": "<backend>", "billing": "<billing>"}
 ```
 
 Without `objectives`, a batch runs every objective its reviewer offers that applies.

@@ -22,9 +22,9 @@ dashboard.
 
 ### Brief
 
-The audit brief lists its worksets, the assumptions you made, the model, the review
-objectives, the instruments with the bug classes the testing document gives each, and the
-maximum spend. Do not silently broaden the instrument scope. In a headless run, settings
+The audit brief lists its worksets, the assumptions you made, the reviewers' backend,
+billing, model proxy and arguments, the review objectives, the instruments with the bug
+classes the testing document gives each, and the maximum spend. Do not silently broaden the instrument scope. In a headless run, settings
 that answer every mandatory question authorize the run in place of an approval.
 
 ### Settings changes

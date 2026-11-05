@@ -60,7 +60,7 @@ docker run -d --init --name crustify-libgit2 \
     -v crustify-libgit2-work:/work \
     crustify
 
-docker exec -it crustify-libgit2 crustify /target --model anthropic/claude-opus-5 --billing api
+docker exec -it crustify-libgit2 crustify /target --backend claude --billing api
 ```
 
 [`templates/docker/README.md`](templates/docker/README.md) documents the mounts, build arguments and
@@ -98,8 +98,10 @@ Common options:
 | `--campaign port\|wrap\|audit` | Pick the campaign when the settings don't name one. |
 | `--start` | Run the campaign right away, as the settings configure it. A headless session needs it. |
 | `--resume [SESSION_ID]` | Continue an earlier session, from any directory. Without an id, the most recent one. |
-| `--model PROVIDER/MODEL` | Pick the assistant's model, e.g. `anthropic/claude-opus-5` or `openrouter/openai/gpt-5.6-sol`. |
+| `--backend claude\|codex` | Run the assistant on Claude Code (the default) or Codex. |
 | `--billing subscription\|api` | Use the CLI's logged-in account or an API key from the environment. |
+| `--model-proxy openrouter` | Send the CLI's requests through OpenRouter, with `OPENROUTER_API_KEY`. Needs `--billing api`. |
+| `-- <args>` | Pass the rest to the CLI unchanged, e.g. `-- --model opus --effort high`. Without a model there, the CLI runs its default. |
 
 `crustify usage <transcripts>` reports the tokens and cost of agent sessions. Crustify
 runs the `spawn-planner`, `spawn-binder`, `spawn-translator` and `spawn-reviewer`
@@ -132,9 +134,9 @@ Deterministic tools ground the agents' judgement:
 - the target's own tests run under sanitizers.
 
 Claude Code and OpenAI Codex are supported as agent backends, with API or subscription
-billing, directly or through OpenRouter. Each agentic stage can use its own model. We
-recommend `claude-opus-5` for the assistant and reviewers and `gpt-5.6-sol` for
-translators.
+billing, directly or through OpenRouter. Each agentic stage can use its own backend, and
+its own model and settings through the CLI's own arguments; without them, each CLI runs
+its default model.
 
 ## Results
 
@@ -179,8 +181,8 @@ every agent's prompt includes the ones it follows.
   work and plans are reviewed
 - [`specs/operations/`](specs/operations/): a campaign's repositories, branches and
   worktrees, and how batches land and work is promoted and shipped; the repository's tree
-  and artifact directories; how its work shares the host; and the dashboard, session and
-  usage records, and how cost is derived
+  and artifact directories; how its work shares the host; and the dashboard, the session
+  records and rates, and how cost is derived
 - [`specs/artifacts/`](specs/artifacts/): the fields of `modules.json`, `dependencies.json`, the campaign's
   `schedule.json`, and `task.json`
 - [`specs/prompting.md`](specs/prompting.md): how the agents' prompts, specs and tool specs

@@ -59,7 +59,7 @@ Open Crustify on the target:
 ```sh
 docker exec -it crustify-libgit2 \
     crustify /target --settings /campaign/CRUSTIFY.md \
-    --model anthropic/claude-opus-5 --billing api
+    --backend claude --billing api
 ```
 
 The settings' `campaign` answer, `port`, `wrap` or `audit`, decides which campaign

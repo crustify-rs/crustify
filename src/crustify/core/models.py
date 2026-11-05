@@ -1,58 +1,118 @@
-"""Model name -> (backend, model id, billing service). Shared by both tools.
+"""How an agent's provider CLI runs: its backend, billing, model proxy and the
+user's own arguments. Shared by both tools.
 
-Every model is named ``<provider>/<model id>``. The provider is the service
-that bills the run; the model id passes to the provider CLI verbatim. Only the
-first segment is interpreted, so ids containing slashes (OpenRouter's
-``vendor/model`` convention) pass through untouched.
-
-The prefix is mandatory rather than inferred. The same weights are reachable
-through more than one service at different prices, and guessing wrong silently
-prices a run against the wrong rate table -- the failure this package exists to
-prevent. Naming the service also selects the backend, since a model can only be
-driven by the CLI that speaks its API.
+Crustify names no model. The backend is the CLI, ``claude`` or ``codex``, and
+runs its own default model unless the user's arguments name another, in the
+CLI's own syntax (``--model opus``, ``-m gpt-6-sol``). A model proxy is a
+gateway that the CLI's requests go through with the proxy's key, such as
+OpenRouter; it bills the run, so it decides the rates the run is priced at,
+which the transcript alone cannot tell.
 
 Raises ``ValueError``, not ``SystemExit``: a library says what is wrong and the
-entry point decides whether that ends the process. The two copies this replaces
-disagreed on exactly that, which is how you can tell neither chose it.
+entry point decides whether that ends the process.
 """
 from __future__ import annotations
 
-from typing import NamedTuple
+from dataclasses import dataclass, field
+
+#: The provider CLIs crustify drives.
+BACKENDS = ("claude", "codex")
+
+#: How a CLI authenticates: its own logged-in account, or an API key from
+#: the environment.
+BILLINGS = ("subscription", "api")
+
+#: The service that bills a backend's runs without a proxy.
+NATIVE = {"claude": "anthropic", "codex": "openai"}
 
 
-class Route(NamedTuple):
-    backend: str    # registered name in crustify.agents.backends
-    model: str      # id handed to the provider CLI, verbatim
-    provider: str   # billing service
+@dataclass(frozen=True)
+class Proxy:
+    """A gateway the CLIs reach through their own endpoint settings."""
+
+    #: The environment variable holding the proxy's key.
+    key_env: str
+    #: Its Anthropic-compatible endpoint, for claude.
+    anthropic_url: str
+    #: Its OpenAI-compatible (Responses) endpoint, for codex.
+    openai_url: str
+    #: Its display name.
+    name: str
 
 
-_BACKENDS = {
-    "anthropic": "claude_cli",
-    "openai": "codex_cli",
-    "openrouter": "codex_cli",
+PROXIES = {
+    "openrouter": Proxy(key_env="OPENROUTER_API_KEY",
+                        anthropic_url="https://openrouter.ai/api",
+                        openai_url="https://openrouter.ai/api/v1",
+                        name="OpenRouter"),
 }
 
 
-def resolve(model: str) -> Route:
-    name = (model or "").strip()
-    provider, sep, model_id = name.partition("/")
+@dataclass(frozen=True)
+class Route:
+    """One agent's run: which CLI, how it bills, through which proxy, and
+    the arguments passed to the CLI after crustify's own."""
+
+    backend: str
+    billing: str = "subscription"
+    model_proxy: str | None = None
+    args: tuple[str, ...] = field(default_factory=tuple)
+
+    @property
+    def provider(self) -> str:
+        """The service that bills the run, whose rates price it."""
+        return self.model_proxy or NATIVE[self.backend]
+
+    def record(self) -> dict:
+        """The fields a session record keeps, to rerun or price it."""
+        return {"backend": self.backend, "billing": self.billing,
+                "model_proxy": self.model_proxy, "args": list(self.args)}
+
+
+def _names_model(args: tuple[str, ...]) -> bool:
+    return any(a in ("-m", "--model") or a.startswith(("-m=", "--model="))
+               for a in args)
+
+
+def route(backend: str, billing: str = "subscription",
+          model_proxy: str | None = None, args=()) -> Route:
+    """A checked :class:`Route`."""
+    if backend not in BACKENDS:
+        raise ValueError(f"unknown backend {backend!r}; expected one of: "
+                         f"{', '.join(BACKENDS)}.")
+    if billing not in BILLINGS:
+        raise ValueError(f"unknown billing {billing!r}; expected one of: "
+                         f"{', '.join(BILLINGS)}.")
+    if model_proxy is not None and model_proxy not in PROXIES:
+        raise ValueError(f"unknown model proxy {model_proxy!r}; expected one "
+                         f"of: {', '.join(PROXIES)}.")
+    if model_proxy is not None and billing != "api":
+        raise ValueError(f"a model proxy bills by its own key: "
+                         f"{model_proxy} needs --billing api.")
+    args = tuple(args)
+    if not all(isinstance(a, str) for a in args):
+        raise ValueError("args must be strings")
+    # Codex's default model is a bare OpenAI id, which a proxy does not know
+    # by that name; Claude Code's defaults are mapped by the proxies it
+    # supports.
+    if backend == "codex" and model_proxy is not None and not _names_model(args):
+        raise ValueError(f"codex through {model_proxy} needs its model named "
+                         f"as the proxy knows it, e.g. -m openai/<model>.")
+    return Route(backend, billing, model_proxy, args)
+
+
+def from_model(model: str, billing: str) -> Route:
+    """The route of an earlier ``<provider>/<model>`` name, as task.json and
+    session records carried it."""
+    provider, sep, model_id = (model or "").strip().partition("/")
     if not sep or not model_id:
-        raise ValueError(
-            f"model {model!r} must be named <provider>/<model>, e.g. "
-            f"anthropic/claude-opus-5, openai/gpt-5.6, "
-            f"openrouter/z-ai/glm-4.6. Known providers: "
-            f"{', '.join(sorted(_BACKENDS))}.")
-    backend = _BACKENDS.get(provider)
-    if backend is None:
-        raise ValueError(
-            f"unknown provider {provider!r} in model {model!r}; "
-            f"expected one of: {', '.join(sorted(_BACKENDS))}.")
-    # OpenRouter resells every vendor behind one key, so the provider segment
-    # alone cannot pick a CLI. Anthropic weights are driven by Claude Code,
-    # which speaks to the gateway through ANTHROPIC_BASE_URL; everything else
-    # goes to Codex. Without this an `openrouter/anthropic/...` orchestrator
-    # would spawn Codex reviewers -- a different CLI, tools and system prompt
-    # from the one the run was configured with, and nothing would say so.
-    if provider == "openrouter" and model_id.startswith("anthropic/"):
-        backend = "claude_cli"
-    return Route(backend, model_id, provider)
+        raise ValueError(f"model {model!r} must be named <provider>/<model>")
+    if provider == "anthropic":
+        return route("claude", billing, None, ("--model", model_id))
+    if provider == "openai":
+        return route("codex", billing, None, ("-m", model_id))
+    if provider == "openrouter":
+        backend = "claude" if model_id.startswith("anthropic/") else "codex"
+        flag = "--model" if backend == "claude" else "-m"
+        return route(backend, "api", "openrouter", (flag, model_id))
+    raise ValueError(f"unknown provider {provider!r} in model {model!r}")

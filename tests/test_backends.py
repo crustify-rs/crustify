@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -7,7 +8,12 @@ from unittest import mock
 
 from crustify.agents.backends import _atomic_write_text
 from crustify.core.agentlog import AgentLog
-from crustify.core.models import resolve
+from crustify.core.models import from_model, route
+
+
+def resolve(model: str, billing: str = "subscription"):
+    """The route of an earlier ``<provider>/<model>`` name."""
+    return from_model(model, billing)
 
 
 class AtomicPromptFileTests(unittest.TestCase):
@@ -21,15 +27,30 @@ class AtomicPromptFileTests(unittest.TestCase):
 
 
 class ProviderRoutingTests(unittest.TestCase):
-    def test_openrouter_anthropic_models_use_claude_backend(self) -> None:
-        route = resolve("openrouter/anthropic/claude-opus-5")
-        self.assertEqual(route.backend, "claude_cli")
-        self.assertEqual(route.provider, "openrouter")
-        self.assertEqual(route.model, "anthropic/claude-opus-5")
-        self.assertEqual(
-            resolve("openrouter/openai/gpt-5.6").backend,
-            "codex_cli",
-        )
+    def test_earlier_model_names_map_to_routes(self) -> None:
+        r = resolve("openrouter/anthropic/claude-opus-5")
+        self.assertEqual((r.backend, r.billing, r.model_proxy, r.args),
+                         ("claude", "api", "openrouter",
+                          ("--model", "anthropic/claude-opus-5")))
+        self.assertEqual(r.provider, "openrouter")
+        r = resolve("openrouter/openai/gpt-5.6")
+        self.assertEqual((r.backend, r.args), ("codex", ("-m", "openai/gpt-5.6")))
+        r = resolve("anthropic/claude-opus-5")
+        self.assertEqual((r.backend, r.model_proxy, r.provider),
+                         ("claude", None, "anthropic"))
+
+    def test_a_route_is_checked(self) -> None:
+        self.assertEqual(route("claude").args, ())
+        for bad in (dict(backend="gemini"),
+                    dict(backend="claude", billing="free"),
+                    dict(backend="claude", billing="api", model_proxy="nowhere"),
+                    # A proxy bills by its own key.
+                    dict(backend="claude", model_proxy="openrouter"),
+                    # Codex's default model is no id a proxy knows.
+                    dict(backend="codex", billing="api", model_proxy="openrouter")):
+            with self.subTest(**bad), self.assertRaises(ValueError):
+                route(**bad)
+        route("codex", "api", "openrouter", ["-m", "openai/gpt-6-sol"])
 
     def test_claude_openrouter_route_uses_gateway_key(self) -> None:
         from crustify.agents.backends.claude_cli import ClaudeCliBackend
@@ -55,10 +76,7 @@ class ProviderRoutingTests(unittest.TestCase):
                     "os.environ", {"OPENROUTER_API_KEY": "test-key",
                                    "CLAUDE_CODE_CHILD_SESSION": "1"}, clear=True),
                   mock.patch("shutil.which", return_value="/bin/claude"),
-                  mock.patch("subprocess.Popen", side_effect=popen),
-                  mock.patch(
-                      "crustify.agents.backends.claude_cli._transcript_path",
-                      return_value=None)):
+                  mock.patch("subprocess.Popen", side_effect=popen)):
                 ClaudeCliBackend().run(
                     name="test",
                     route=resolve("openrouter/anthropic/claude-opus-5"),
@@ -66,7 +84,6 @@ class ProviderRoutingTests(unittest.TestCase):
                     system_preamble="role",
                     work_dir=tmp,
                     log=AgentLog(None, "test", console=False),
-                    billing="api",
                     provider_home=provider_home,
                 )
 
@@ -82,7 +99,7 @@ class ProviderRoutingTests(unittest.TestCase):
         # when crustify runs inside a Claude Code session.
         self.assertNotIn("CLAUDE_CODE_CHILD_SESSION", env)
 
-    def test_openrouter_openai_model_gets_high_reasoning_effort(self) -> None:
+    def _codex_command(self, r) -> list[str]:
         from crustify.agents.backends.codex_cli import CodexCliBackend
 
         captured: dict = {}
@@ -100,32 +117,31 @@ class ProviderRoutingTests(unittest.TestCase):
             return Process()
 
         with tempfile.TemporaryDirectory() as tmp:
-            provider_home = Path(tmp) / "codex"
             with (mock.patch.dict(
                     "os.environ", {"OPENROUTER_API_KEY": "test-key"}, clear=True),
                   mock.patch("shutil.which", return_value="/bin/codex"),
                   mock.patch("subprocess.Popen", side_effect=popen)):
                 CodexCliBackend().run(
-                    name="test",
-                    route=resolve("openrouter/openai/gpt-5.6-sol"),
-                    prompt="task",
-                    system_preamble="role",
-                    work_dir=tmp,
-                    log=AgentLog(None, "test", console=False),
-                    billing="api",
-                    provider_home=provider_home,
+                    name="test", route=r, prompt="task", system_preamble="role",
+                    work_dir=tmp, log=AgentLog(None, "test", console=False),
+                    provider_home=Path(tmp) / "codex",
                 )
+        return captured["command"]
 
-        self.assertIn('model_reasoning_effort="high"', captured["command"])
+    def test_codex_runs_its_default_model_at_high_effort(self) -> None:
+        command = self._codex_command(resolve("openrouter/openai/gpt-5.6-sol"))
+        self.assertIn('model_reasoning_effort="high"', command)
+        self.assertIn("model_provider=openrouter", command)
+        # The model is the user's, after crustify's own options.
+        self.assertEqual(command[-3:-1], ["-m", "openai/gpt-5.6-sol"])
+        command = self._codex_command(route("codex"))
+        self.assertNotIn("-m", command)
 
-    def test_openrouter_gpt_6_models_get_high_reasoning_effort(self) -> None:
-        from crustify.agents.backends.codex_cli import _REASONING_EFFORT
-
-        for model in ("gpt-6-sol", "gpt-6-astra", "gpt-6-luna",
-                      "gpt-6.1-sol"):
-            route = resolve(f"openrouter/openai/{model}")
-            self.assertEqual(_REASONING_EFFORT.get(route.model), "high", model)
-            self.assertEqual(_REASONING_EFFORT.get(model), "high", model)
+    def test_the_users_effort_replaces_the_default(self) -> None:
+        command = self._codex_command(
+            route("codex", args=["-c", 'model_reasoning_effort="xhigh"']))
+        self.assertNotIn('model_reasoning_effort="high"', command)
+        self.assertIn('model_reasoning_effort="xhigh"', command)
 
     def test_translator_resolves_the_same_backend_registry(self) -> None:
         from crustify.agents.translate import TranslateAgent
@@ -151,21 +167,21 @@ class ProviderRoutingTests(unittest.TestCase):
                     "field_anchors": [],
                 }],
                 git_base="wave-0",
-                artifact_dir=logs,
                 log_stem="batch",
             )
             with (mock.patch(
                     "crustify.agents.backends.get_backend",
                     return_value=Backend()) as shared,
-                  mock.patch(
-                      "crustify.config.MODEL_OVERRIDE",
-                      "openrouter/anthropic/claude-opus-5"),
-                  mock.patch("crustify.config.BILLING", "api")):
+                  mock.patch("crustify.config.BACKEND", "claude"),
+                  mock.patch("crustify.config.BILLING", "api"),
+                  mock.patch("crustify.config.MODEL_PROXY", "openrouter"),
+                  mock.patch("crustify.config.PROVIDER_ARGS", ["--effort", "high"])):
                 agent.run()
 
-        shared.assert_called_once_with("claude_cli")
-        self.assertEqual(calls[0]["route"].provider, "openrouter")
-        self.assertEqual(calls[0]["billing"], "api")
+        shared.assert_called_once_with("claude")
+        r = calls[0]["route"]
+        self.assertEqual((r.provider, r.billing, r.args),
+                         ("openrouter", "api", ("--effort", "high")))
 
 
 if __name__ == "__main__":
@@ -190,10 +206,7 @@ class InteractiveModeTests(unittest.TestCase):
               mock.patch("shutil.which", return_value="/bin/cli"),
               mock.patch("subprocess.run", side_effect=run),
               mock.patch("subprocess.Popen",
-                         side_effect=AssertionError("headless path taken")),
-              mock.patch(
-                  "crustify.agents.backends.claude_cli._transcript_path",
-                  return_value=None)):
+                         side_effect=AssertionError("headless path taken"))):
             backend.run(
                 name="orchestrator",
                 route=resolve(model),
@@ -201,7 +214,6 @@ class InteractiveModeTests(unittest.TestCase):
                 system_preamble="role",
                 work_dir=tmp,
                 log=AgentLog(None, "test", console=False),
-                billing="api",
                 provider_home=Path(tmp) / "home",
                 interactive=True,
                 resume=resume,
@@ -218,9 +230,8 @@ class InteractiveModeTests(unittest.TestCase):
             command = self._run(ClaudeCliBackend(),
                                 "openrouter/anthropic/claude-opus-5", tmp)
         self.assertEqual(command[1], "kickoff")
-        # Headless-only flags; slash commands such as /model stay available.
-        for flag in ("-p", "--output-format", "--verbose",
-                     "--disable-slash-commands"):
+        # Headless-only flags.
+        for flag in ("-p", "--output-format", "--verbose"):
             self.assertNotIn(flag, command)
         self.assertIn("--append-system-prompt-file", command)
         self.assertIn("--session-id", command)
@@ -302,3 +313,137 @@ class SystemPromptFileTests(unittest.TestCase):
         oversized = "x" * (32 * 4096 + 1)
         with system_prompt_file(oversized) as path:
             self.assertEqual(len(path.read_bytes()), len(oversized))
+
+
+class ClaudeHeadlessTests(unittest.TestCase):
+    """What a headless claude run is given: bypassed permissions, the user's
+    forwarded options last, and under API billing a config dir of its own."""
+
+    def _run(self, tmp: str, env: dict, **kwargs) -> tuple[list[str], dict]:
+        from crustify.agents.backends.claude_cli import ClaudeCliBackend
+
+        captured: dict = {}
+
+        class Process:
+            stdout: tuple = ()
+            stderr: tuple = ()
+
+            @staticmethod
+            def wait() -> int:
+                return 0
+
+        def popen(command, **kw):
+            captured["command"] = command
+            captured["env"] = kw["env"]
+            return Process()
+
+        r = route("claude", kwargs.pop("billing", "subscription"),
+                  None, kwargs.pop("extra_args", ()))
+
+        with (mock.patch.dict("os.environ", env, clear=True),
+              mock.patch("shutil.which", return_value="/bin/claude"),
+              mock.patch("subprocess.Popen", side_effect=popen)):
+            with AgentLog(Path(tmp) / "logs", "test", console=False) as log:
+                ClaudeCliBackend().run(
+                    name="test",
+                    route=r,
+                    prompt="task",
+                    system_preamble="role",
+                    work_dir=tmp,
+                    log=log,
+                    **kwargs,
+                )
+            captured["record"] = json.loads(
+                (Path(tmp) / "logs" / "test.session.json").read_text())
+        self.record = captured["record"]
+        return captured["command"], captured["env"]
+
+    def test_headless_run_bypasses_permissions_and_restricts_nothing(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            command, env = self._run(tmp, {"HOME": tmp})
+        self.assertEqual(
+            command[command.index("--permission-mode") + 1], "bypassPermissions")
+        for flag in ("--tools", "--setting-sources", "--strict-mcp-config",
+                     "--disable-slash-commands", "--add-dir", "--bare"):
+            self.assertNotIn(flag, command)
+        self.assertNotIn("CLAUDE_CONFIG_DIR", env)
+        # The CLI's default model: crustify names none.
+        self.assertNotIn("--model", command)
+        # The record is what reruns or prices the session, not where its
+        # transcript was.
+        self.assertEqual(
+            {k: self.record[k] for k in
+             ("backend", "billing", "model_proxy", "args", "exit_code")},
+            {"backend": "claude", "billing": "subscription",
+             "model_proxy": None, "args": [], "exit_code": 0})
+        for gone in ("transcript", "model", "provider", "cli"):
+            self.assertNotIn(gone, self.record)
+
+    def test_forwarded_options_come_last(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            command, _ = self._run(tmp, {"HOME": tmp},
+                                   extra_args=["--effort", "high"])
+        self.assertEqual(command[-2:], ["--effort", "high"])
+
+    def test_api_billing_uses_a_config_dir_without_a_login(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            own = Path(tmp) / "own"
+            own.mkdir()
+            (own / "settings.json").write_text("{}")
+            (own / ".credentials.json").write_text("{}")
+            home = Path(tmp) / "providers" / "claude"
+            command, env = self._run(
+                tmp, {"HOME": tmp, "CLAUDE_CONFIG_DIR": str(own),
+                      "ANTHROPIC_API_KEY": "test-key"},
+                billing="api", provider_home=home)
+            self.assertEqual(env["CLAUDE_CONFIG_DIR"], str(home.resolve()))
+            self.assertNotIn("--bare", command)
+            # The user's settings follow the agent; their login does not.
+            self.assertTrue((home / "settings.json").is_symlink())
+            self.assertFalse((home / ".credentials.json").exists())
+
+
+class ProviderArgsTests(unittest.TestCase):
+    """`--` ends crustify's options: the rest go to the provider CLI."""
+
+    def test_codex_takes_them_before_the_first_turn(self) -> None:
+        from crustify.agents.backends.codex_cli import CodexCliBackend
+
+        captured: dict = {}
+
+        def run(command, **kwargs):
+            captured["command"] = command
+            return mock.Mock(returncode=0)
+
+        with tempfile.TemporaryDirectory() as tmp, \
+                mock.patch.dict("os.environ", {"HOME": tmp,
+                                               "CODEX_HOME": tmp}, clear=True), \
+                mock.patch("shutil.which", return_value="/bin/codex"), \
+                mock.patch("subprocess.run", side_effect=run):
+            CodexCliBackend().run(
+                name="test",
+                route=route("codex", args=["-c", "x=1"]),
+                prompt="kickoff",
+                system_preamble="role",
+                work_dir=tmp,
+                log=AgentLog(None, "test", console=False),
+                interactive=True,
+            )
+        command = captured["command"]
+        self.assertEqual(command[-3:], ["-c", "x=1", "kickoff"])
+
+    def test_the_command_line_splits_at_the_anchor(self) -> None:
+        from crustify import cli, config
+
+        seen: dict = {}
+        with mock.patch("sys.argv", ["crustify", "usage", "s-1", "t.jsonl",
+                                     "--", "--effort", "high"]), \
+                mock.patch.object(cli, "_handle_usage",
+                                  side_effect=lambda a: seen.update(a=a)), \
+                mock.patch.object(config, "PROVIDER_ARGS", []):
+            try:
+                cli.main()
+            except SystemExit:
+                pass
+            forwarded = list(config.PROVIDER_ARGS)
+        self.assertEqual(forwarded, ["--effort", "high"])

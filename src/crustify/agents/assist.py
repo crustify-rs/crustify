@@ -4,10 +4,10 @@ It used to be started by shell: the container cat'd a prompt, appended a task
 and some context, and exec'd `claude` or `codex` directly. That path had no
 system slot at all -- every word the longest-lived agent in a campaign was
 given sat in `messages`, where compaction can paraphrase it away -- and it
-wrote no `usage.json`, so the supervision cost of every campaign to date is
-unrecorded. Routing it through the same backend as every other agent fixes
-both, and deletes the second implementation of model routing that lived in
-that shell.
+left no session record, so the supervision cost of every campaign to date
+is unrecorded. Routing it through the same backend as every other agent fixes
+both, and deletes the second way of starting a CLI that lived in that
+shell.
 """
 from __future__ import annotations
 
@@ -71,13 +71,12 @@ class AssistAgent(CrustifyAgent):
     prompt_in_system_slot = True
 
     def __init__(self, workdir: Path, *, kind: str, task: Path,
-                 model: str, task_only: bool = False,
+                 task_only: bool = False,
                  interactive: bool = False, start: bool = False,
                  resume: str | None = None, checkout=_WORKDIR,
                  session_id: str | None = None, **kwargs) -> None:
         self.kind = kind
         self.task = Path(task)
-        self.model = model
         self.task_only = task_only
         #: The orchestrator presents a brief and waits at approval gates, so
         #: with a person at the terminal it runs in the CLI's own interface.

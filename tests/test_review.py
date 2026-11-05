@@ -12,7 +12,7 @@ from crustify.agents.review import ReviewAgent
 
 _COMMIT = "3f2a9c1"
 #: What every review task carries beside its worklist.
-_RUN = {"model": "anthropic/claude-opus-5", "billing": "subscription",
+_RUN = {"backend": "claude", "billing": "subscription",
         "base_branch": "review-wave-0",
         "wave": 1, "batch": 0, "link_unit": "demo", "module": "src/core.c",
         "foundational": False}
@@ -20,8 +20,10 @@ _RUN = {"model": "anthropic/claude-opus-5", "billing": "subscription",
 
 def _reset_run() -> None:
     from crustify import config
-    config.MODEL_OVERRIDE = None
+    config.BACKEND = "claude"
     config.BILLING = "subscription"
+    config.MODEL_PROXY = None
+    config.PROVIDER_ARGS = []
 _ITEM = {"name": "T", "defined_in": "include/t.h", "kind": "type",
          "field_anchors": [], "home": "crustify/rust/demo/src/t.rs"}
 
@@ -147,7 +149,7 @@ class ReviewAgentTests(unittest.TestCase):
     def agent(self, objectives: list[str] | None) -> ReviewAgent:
         return ReviewAgent(self.repo, route="commits", commits=[_COMMIT],
                            objectives=objectives, git_base="review-wave-0",
-                           artifact_dir=self.repo, log_stem="reviewer")
+                           log_stem="reviewer")
 
     def test_tools_contribute_their_objectives(self) -> None:
         _Checkouts(self)
@@ -162,7 +164,7 @@ class ReviewAgentTests(unittest.TestCase):
         agent = ReviewAgent(self.repo, route="reports",
                             reports=["crustify/reviews/b/ub_safe/x"],
                             objectives=None, git_base="review-wave-0",
-                            artifact_dir=self.repo, log_stem="reviewer")
+                            log_stem="reviewer")
         self.assertIn("revisit", agent.objectives)
         self.assertIn("crustify/reviews/b/ub_safe/x", agent.system_preamble())
 
@@ -274,25 +276,26 @@ class ExecuteTests(unittest.TestCase):
     def test_dry_run_lists_the_resolved_objectives(self) -> None:
         self.write({"objectives": ["fix", "ub"], "commits": [_COMMIT]})
         with mock.patch("builtins.print") as printed:
-            review.execute(self.repo, self.batch, log_dir=self.output, dry_run=True)
+            review.execute(self.repo, self.batch, dry_run=True)
         self.assertIn("objectives ub, fix", printed.call_args.args[0])
 
     def test_dry_run_rejects_an_objective_no_tool_offers(self) -> None:
         self.write({"objectives": ["nonesuch"], "commits": [_COMMIT]})
         with self.assertRaisesRegex(SystemExit, "nonesuch"):
-            review.execute(self.repo, self.batch, log_dir=self.output, dry_run=True)
+            review.execute(self.repo, self.batch, dry_run=True)
 
     def test_artifacts_take_the_reviewer_names(self) -> None:
         self.write({"commits": [_COMMIT]})
         seen = {}
 
         def run(agent):
-            seen.update(stem=agent.log_stem, dir=agent.artifact_dir)
+            seen.update(stem=agent.log_stem, dir=agent.artifact_dir,
+                        records=agent.on_session is not None)
 
         with mock.patch.object(ReviewAgent, "run", run), \
                 mock.patch("builtins.print"):
-            review.execute(self.repo, self.batch, log_dir=self.output)
-        self.assertEqual(seen, {"stem": "reviewer", "dir": self.output})
+            review.execute(self.repo, self.batch)
+        self.assertEqual(seen, {"stem": "reviewer", "dir": None, "records": True})
 
 
 if __name__ == "__main__":

@@ -42,7 +42,6 @@ class ReviewAgent(CrustifyAgent):
     name = "ReviewAgent"
     #: The agent its session record names.
     role = "reviewer"
-    model = "anthropic/claude-opus-5"
     #: As for the translator: the body carries this agent's worklist and
     #: objectives, and compaction reaching the procedure costs more than the
     #: cache writes the shared prefix would save.
@@ -58,12 +57,10 @@ class ReviewAgent(CrustifyAgent):
         reports: list[str] = (),
         objectives: list[str] | None,
         git_base: str,
-        artifact_dir: Path,
         log_stem: str,
     ) -> None:
         super().__init__(
-            workdir, git_base=git_base, artifact_dir=artifact_dir,
-            log_stem=log_stem,
+            workdir, git_base=git_base, log_stem=log_stem,
         )
         self._route = route
         self._commits = list(commits)

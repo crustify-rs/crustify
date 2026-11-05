@@ -129,12 +129,12 @@ class IncludeTests(unittest.TestCase):
                     (deps.CHECKOUT / path).read_text().startswith("---"))
 
     def test_an_included_document_survives_formatting(self) -> None:
-        """The conventions carry literal braces (`{{.<field>}}`), and the body
+        """The conventions carry literal braces (`mod ffi_export {{ … }}`), and the body
         is formatted after the include."""
         from crustify.agents.base import expand_includes
         body = expand_includes(
             "<!-- INCLUDE specs/rust/conventions.md -->")
-        self.assertIn("{.<field>}", body.format())
+        self.assertIn("mod ffi_export { use super::*;", body.format())
 
 
 class AblationTests(unittest.TestCase):
@@ -145,8 +145,7 @@ class AblationTests(unittest.TestCase):
         self.repo = Path(__file__).resolve().parent
 
     def _agent(self, **kw) -> AssistAgent:
-        return AssistAgent(self.repo, kind="translate", task=Path(__file__),
-                           model="anthropic/claude-opus-5", **kw)
+        return AssistAgent(self.repo, kind="translate", task=Path(__file__), **kw)
 
     def test_a_present_tool_is_carried(self) -> None:
         agent = self._agent()
@@ -236,7 +235,7 @@ class PromptArgumentTests(unittest.TestCase):
             self.repo, route="type",
             items=[{"name": "T", "defined_in": "a.h", "kind": "type",
                     "field_anchors": [], "home": "crustify/rust/x/src/a.rs"}],
-            git_base="wave-0", artifact_dir=self.repo, log_stem="x")
+            git_base="wave-0", log_stem="x")
         self._check(agent)
 
     def test_translator_arguments_match_its_placeholders(self) -> None:
@@ -245,14 +244,14 @@ class PromptArgumentTests(unittest.TestCase):
             items=[{"name": "T", "defined_in": "a.h", "kind": "type",
                     "field_anchors": [], "home": "crustify/rust/x/src/a.rs"}],
             git_base="wave-0",
-            artifact_dir=self.repo, log_stem="x")
+            log_stem="x")
         self._check(agent)
 
     def test_reviewer_arguments_match_its_placeholders(self) -> None:
         agent = ReviewAgent(
             self.repo, route="commits", commits=["3f2a9c1"],
             objectives=None, git_base="review-wave-0",
-            artifact_dir=self.repo, log_stem="x")
+            log_stem="x")
         self._check(agent)
 
     def test_a_batch_agent_names_its_batch(self) -> None:
@@ -260,7 +259,7 @@ class PromptArgumentTests(unittest.TestCase):
             self.repo, route="type",
             items=[{"name": "T", "defined_in": "a.h", "kind": "type",
                     "field_anchors": [], "home": "crustify/rust/x/src/a.rs"}],
-            git_base="crustify/waves/wave-3", artifact_dir=self.repo / "run-1",
+            git_base="crustify/waves/wave-3",
             log_stem="x")
         agent.placement = translate.Placement(3, 1, "lib", "src/core.c")
         arguments = agent._arguments()
@@ -269,13 +268,12 @@ class PromptArgumentTests(unittest.TestCase):
 
     def test_planner_arguments_match_its_placeholders(self) -> None:
         self._check(PlanAgent(self.repo,
-                              artifact_dir=self.repo, log_stem="x"))
+                              log_stem="x"))
 
     def test_orchestrator_arguments_match_its_placeholders(self) -> None:
         task = self.repo / "CRUSTIFY.md"
         task.write_text("- Answer: none")
-        agent = AssistAgent(self.repo, kind="translate", task=task,
-                                 model="anthropic/claude-opus-5")
+        agent = AssistAgent(self.repo, kind="translate", task=task)
         self._check(agent)
 
 
@@ -293,8 +291,7 @@ class OrchestratorPromptTests(unittest.TestCase):
         self.tmp.cleanup()
 
     def _agent(self, **kw):
-        return AssistAgent(self.repo, kind="translate", task=self.task,
-                                model="anthropic/claude-opus-5", **kw)
+        return AssistAgent(self.repo, kind="translate", task=self.task, **kw)
 
     def test_the_task_is_read_not_spliced(self) -> None:
         """The prompt says where the task lives; its answers stay in the file,
@@ -302,8 +299,7 @@ class OrchestratorPromptTests(unittest.TestCase):
         for kind in ("translate", "audit"):
             with self.subTest(kind=kind):
                 pre = AssistAgent(
-                    self.repo, kind=kind, task=self.task,
-                    model="anthropic/claude-opus-5").system_preamble()
+                    self.repo, kind=kind, task=self.task).system_preamble()
                 self.assertNotIn("`{brace}`", pre)
                 self.assertIn(f"{self.repo}/crustify/CRUSTIFY.md", pre)
 
@@ -340,7 +336,7 @@ class PromptCacheTests(unittest.TestCase):
                 with self.subTest(role=cls.role):
                     one, two = (cls(Path(d), route="type", items=item(n),
                                     git_base=f"crustify/waves/wave-{i}",
-                                    artifact_dir=Path(d), log_stem="x").system_preamble()
+                                    log_stem="x").system_preamble()
                                 for i, (d, n) in enumerate(((a, "A"), (b, "B"))))
                     shared = len(os.path.commonprefix([one, two]))
                     self.assertGreaterEqual(shared, one.index("## Inputs"))

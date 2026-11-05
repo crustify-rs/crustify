@@ -20,22 +20,23 @@ for campaign decisions that remain unresolved.
    - Answer: `<named modules | named functions/types | whole target |
      assistant's choice>`
 
-4. **Which model and billing should do the translation work?**
+4. **Which agent CLI and billing should do the translation work?**
    (`id: translate-agent`)
-   - Answer: `<provider/model, api | subscription>`, e.g.
-     `openrouter/anthropic/claude-opus-5, api`. The provider is the first
-     segment and selects both the billing rate table and the backend CLI.
-     Supported providers:
-     - `anthropic/<model>` — Anthropic direct, driven by Claude Code;
-     - `openai/<model>` — OpenAI direct, driven by Codex;
-     - `openrouter/<vendor>/<model>` — OpenRouter, which resells every vendor
-       behind one key, so the vendor segment picks the CLI: `anthropic/*` is
-       driven by Claude Code and everything else by Codex. OpenRouter
-       supports `api` billing only.
+   - Answer: `<claude | codex>, <subscription | api>[, proxy: openrouter][,
+     args: <the CLI's own arguments>]`, e.g. `claude, subscription, args:
+     --model opus --effort high`.
+     - `claude` is Claude Code, `codex` is Codex; each runs its own default
+       model unless `args` names another, in its own syntax (`--model opus`,
+       `-m gpt-6-sol`).
+     - `subscription` is the CLI's logged-in account; `api` is an API key from
+       the environment.
+     - `proxy: openrouter` sends the CLI's requests through OpenRouter, with
+       `OPENROUTER_API_KEY`; it needs `api` billing, and Codex needs its model
+       named as OpenRouter knows it (`-m openai/<model>`).
 
 5. **Do you want agentic review after translated work lands? If so, which
-   model and billing should perform each review?** (`id: review-agent`)
-   - Answer: `<no | provider/model, api | subscription>`
+   agent CLI and billing should perform each review?** (`id: review-agent`)
+   - Answer: `<no | claude | codex, subscription | api[, proxy: …][, args: …]>`
 
 6. **Should I run fully autonomously end to end?** (`id: autonomy`)
    - Answer: `<yes | no>`
@@ -46,12 +47,12 @@ Unanswered optional questions use their defaults.
 
 ## Campaign execution
 
-7. **Which model and billing should plan the campaign, and how many planner runs
+7. **Which agent CLI and billing should plan the campaign, and how many planner runs
    should it make? Each run emits what the plan lacks and corrects what the runs
    before it committed.** (`id: plan-agent`)
-   - Answer: `<provider/model, api | subscription>, runs: N | orchestrator's
-     choice>`
-   - By default: the translation model and billing, 2 runs.
+   - Answer: `<claude | codex, subscription | api[, proxy: …][, args: …]>, runs: N |
+     orchestrator's choice>`
+   - By default: the translation agent's, 2 runs.
 
 8. **Should the campaign use the default batching and parallelism settings, or
    customize them?** (`id: workload`)

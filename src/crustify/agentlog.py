@@ -3,7 +3,8 @@
 A CLI-backed agent is a subprocess whose stdout crustify owns. The providers
 run in their streaming-JSON mode (claude ``--output-format stream-json``,
 codex ``--json``); crustify renders that stream to the console as it happens
-and keeps none of it. What a run leaves is its ``<stem>.session.json`` (see
+and keeps none of it. What a run leaves is its ``<stem>.session.json`` in its
+session's directory in crustify's home (see
 :class:`crustify.core.agentlog.AgentLog`); the CLI's own transcript is the
 full record, and ``crustify usage`` prices it.
 """
@@ -16,7 +17,7 @@ from pathlib import Path
 from crustify.core.agentlog import AgentLog
 
 
-def open_agent_log(log_root: Path, stem: str, *, agent: str | None = None,
+def open_agent_log(log_root: Path | None, stem: str, *, agent: str | None = None,
                    index_path: Path | None = None,
                    index_facts: dict | None = None) -> AgentLog:
     """Build an :class:`AgentLog` for ``stem`` in the requested directory;

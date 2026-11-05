@@ -22,7 +22,7 @@
 #       crustify
 #   docker exec -it crustify-libgit2 \
 #       crustify /target --settings /campaign/CRUSTIFY.md \
-#       --model openrouter/anthropic/claude-opus-5 --billing api
+#       --backend claude --billing api --model-proxy openrouter
 #
 # The settings' `campaign` answer picks a port, wrap or audit campaign;
 # Crustify waits for instructions unless `--start` runs it right away, and

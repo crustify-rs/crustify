@@ -13,8 +13,8 @@ Builds and Baseline, and its waves start after Preflight.
 
 The plan is produced by planner runs, one after another, as
 [`../planning/decomposition.md`](../planning/decomposition.md)'s Runs section describes: as many as the settings'
-`plan-agent` answer asks for, by default two, under the translation model and billing. Each
-run's `task.json`, `{"model": "<model>", "billing": "<billing>"}`, sits in its artifact dir.
+`plan-agent` answer asks for, by default two, under the translation run fields. Each
+run's `task.json`, `{"backend": "<backend>", "billing": "<billing>"}`, sits in its artifact dir.
 
 The plan is complete when every run has committed and been promoted, and when the
 schedule covers the approved scope: every translation unit the build compiles in scope
@@ -74,7 +74,7 @@ Each batch then gets:
 
 - its run dir, holding its `task.json`: its `schedule.json` entry's `kind` as `objective`
   and its `items`, the batch fields, and the run fields: the wave branch as `base_branch`,
-  and the translation model and billing;
+  and the translation run fields;
 - its branch and worktree, forked from the wave branch; and
 - symlinks to the gitignored state its tree needs from the base checkout.
 
@@ -83,12 +83,12 @@ The wave's batches run concurrently, as many at once as
 batch a translator:
 
 ```bash
-crustify spawn-binder <batch worktree> <run dir>/task.json --log-dir <run dir>
-crustify spawn-translator <batch worktree> <run dir>/task.json --log-dir <run dir>
+crustify spawn-binder <batch worktree> <run dir>/task.json
+crustify spawn-translator <batch worktree> <run dir>/task.json
 ```
 
 The spawn command validates the batch, rejects one whose objective belongs to the other
-command, and writes the agent's session record into the `--log-dir`. Each batch lands on
+command, and writes the run's session id into its `task.json`. Each batch lands on
 the wave branch as [`../operations/versioning.md`](../operations/versioning.md)'s Landing section describes, after running the gates of
 [`../verification/testing.md`](../verification/testing.md)'s Regressions section on the tree it lands; those gates
 are not run again for the wave. Its `status` follows its run, and once it lands, its
@@ -111,11 +111,11 @@ reviews each translation batch alone when the settings ask for that.
 
 Each review batch's `task.json` holds the `commits` of the batches it reviews, as they sit
 on the working branch, the approved objectives, the batch fields, its review wave branch,
-and the review model and billing. A dry run checks the objectives it resolves to before
+and the review run fields. A dry run checks the objectives it resolves to before
 it is spawned:
 
 ```bash
-crustify spawn-reviewer <batch worktree> <run dir>/task.json --log-dir <run dir>
+crustify spawn-reviewer <batch worktree> <run dir>/task.json
 ```
 
 ## 6. Shipping

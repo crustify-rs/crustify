@@ -36,11 +36,12 @@ import shutil
 import subprocess
 import threading
 import uuid
+from collections.abc import Callable
 from pathlib import Path
 
 from crustify.agents.backends import system_prompt_file
 from crustify.core.agentlog import AgentLog
-from crustify.core.models import Route
+from crustify.core.models import PROXIES, Route
 
 # Tool-result payloads can be a whole file; keep the log readable.
 _RESULT_CLIP = 2000
@@ -71,8 +72,7 @@ def _render(evt: dict) -> list[str]:
                 out.append("[thinking] " + b["thinking"].strip()[:400])
             elif b.get("type") == "tool_use":
                 inp = b.get("input") or {}
-                # Bash is the only tool the backend allowlists; show the command
-                # itself rather than a JSON blob.
+                # A shell command is shown as itself rather than a JSON blob.
                 cmd = inp.get("command")
                 out.append(f"exec {cmd}" if cmd
                            else f"tool {b.get('name')} {json.dumps(inp)[:300]}")
@@ -106,7 +106,26 @@ def _render(evt: dict) -> list[str]:
                    f"duration: {evt.get('duration_ms')}ms]")
     return out
 
-from crustify.core.usage import _transcript_path  # noqa: F401
+from crustify.core.usage import claude_config_dir
+
+#: What a config dir of crustify's takes from the operator's own: their
+#: settings, instructions, skills, commands and agents. Never the login, nor
+#: `.claude.json`, which is the CLI's own state.
+_SHARED_CONFIG = ("settings.json", "CLAUDE.md", "skills", "commands", "agents")
+
+
+def _share_user_config(config_dir: Path) -> None:
+    """Create ``config_dir`` if needed, and link the operator's own
+    configuration into it, so that an API-billed agent runs under the same
+    settings as a subscription one."""
+    config_dir.mkdir(parents=True, exist_ok=True)
+    own = claude_config_dir()
+    if own.resolve() == config_dir:
+        return
+    for name in _SHARED_CONFIG:
+        src, dst = own / name, config_dir / name
+        if src.exists() and not dst.exists() and not dst.is_symlink():
+            dst.symlink_to(src)
 
 
 class ClaudeCliBackend:
@@ -119,18 +138,17 @@ class ClaudeCliBackend:
         system_preamble: str,
         work_dir: str,
         log: AgentLog,
-        billing: str = "subscription",
-        effort: str | None = None,
         override_base_prompt: bool = False,
         provider_home: Path | None = None,
         interactive: bool = False,
         resume: str | None = None,
         session_id: str | None = None,
+        on_session: Callable[[str], None] | None = None,
     ) -> None:
         exe = shutil.which("claude")
         if exe is None:
             raise SystemExit(
-                "claude_cli backend: the `claude` CLI is not on PATH."
+                "claude backend: the `claude` CLI is not on PATH."
             )
 
         wd = Path(work_dir).resolve()
@@ -138,10 +156,12 @@ class ClaudeCliBackend:
         # forked, which would copy the earlier turns into a new transcript and
         # count their cost twice.
         session_id = resume or session_id or str(uuid.uuid4())
+        if on_session is not None:
+            on_session(session_id)
 
-        # The prompt goes first: `--tools` and `--add-dir` take variadic
-        # values, so a trailing positional would be read as one of them.
-        # An interactive session may open with no first turn: the user types it.
+        # An interactive session may open with no first turn: the user types
+        # it. The prompt goes first, so that no variadic option the user
+        # forwards reads it as one of its values.
         cmd = ([exe, prompt] if prompt else [exe]) if interactive else [
             exe, "-p", prompt,
             # Stream each turn as it happens; `--verbose` is what the CLI
@@ -150,24 +170,16 @@ class ClaudeCliBackend:
             "--output-format", "stream-json",
             "--verbose",
         ]
-        cmd += [
-            "--model", route.model,
-            *(("--resume", session_id) if resume else ("--session-id", session_id)),
-            # One tool. `--tools` is an allowlist, so anything the CLI gains
-            # in a later version stays excluded by default.
-            "--tools", "Bash",
-            # Hermeticity: ignore the operator's settings files and every MCP
-            # server not passed explicitly here.
-            "--setting-sources", "",
-            "--strict-mcp-config",
-            "--permission-mode", "bypassPermissions",
-            "--add-dir", str(wd),
-        ]
-        # Slash commands (and the skills they expose) stay off in a headless
-        # run, where nobody types them. An interactive session keeps them:
-        # the person at the terminal drives `/model`, `/compact` and the rest.
+        # No model: the CLI runs its own default unless the user's arguments
+        # name one.
+        cmd += [*(("--resume", session_id) if resume
+                  else ("--session-id", session_id))]
+        # The CLI's default tools, settings, MCP servers and skills all apply.
+        # Nobody answers a permission prompt in a headless run, where one
+        # would deny the tool call, so permissions are bypassed there; an
+        # interactive session asks the person at the terminal.
         if not interactive:
-            cmd.append("--disable-slash-commands")
+            cmd += ["--permission-mode", "bypassPermissions"]
         # Role-owned system text is unconditional. The option decides only
         # whether Claude's own base prompt survives underneath it. It travels
         # as a file, not as an argument: see system_prompt_file.
@@ -177,48 +189,46 @@ class ClaudeCliBackend:
         # Claude Code marks the processes it starts as child sessions, and a
         # child session saves no transcript. Crustify run from a Claude Code
         # session would pass that marker on, and its agents would leave no
-        # transcript to log or price them by. Each agent is a session of its
-        # own, whatever started crustify.
+        # transcript to price them by. Each agent is a session of its own,
+        # whatever started crustify.
         env.pop("CLAUDE_CODE_CHILD_SESSION", None)
-        if route.provider == "openrouter":
-            if billing != "api":
-                raise SystemExit(
-                    "claude_cli backend: OpenRouter supports only API billing."
-                )
-            key = env.get("OPENROUTER_API_KEY")
+        if route.model_proxy is not None:
+            proxy = PROXIES[route.model_proxy]
+            key = env.get(proxy.key_env)
             if not key:
                 raise SystemExit(
-                    "claude_cli backend: provider openrouter needs "
-                    "OPENROUTER_API_KEY in the environment; without it the "
-                    "CLI issues no request and exits 0 having done nothing."
+                    f"claude backend: model proxy {route.model_proxy} needs "
+                    f"{proxy.key_env} in the environment; without it the CLI "
+                    "issues no request and exits 0 having done nothing."
                 )
-            # Claude Code supports Anthropic-compatible gateways through this
-            # endpoint and bearer-token pair.  Explicitly blank the direct
-            # Anthropic key because the CLI otherwise prefers it over the
-            # gateway token.  Do not add --bare: that forces the direct API-key
-            # authentication path which OpenRouter does not use.
-            env["ANTHROPIC_BASE_URL"] = "https://openrouter.ai/api"
+            # Claude Code reaches Anthropic-compatible gateways through this
+            # endpoint and bearer-token pair. The direct Anthropic key is
+            # blanked, because the CLI otherwise prefers it over the token.
+            env["ANTHROPIC_BASE_URL"] = proxy.anthropic_url
             env["ANTHROPIC_AUTH_TOKEN"] = key
             env["ANTHROPIC_API_KEY"] = ""
-        elif billing == "api":
-            # `--bare` is the only switch that makes the CLI authenticate by
-            # API key: exporting ANTHROPIC_API_KEY alone does not - it keeps
-            # sending the stored OAuth token (verified on the wire). It also
-            # strips hooks, LSP and CLAUDE.md discovery, which suits a
-            # pipeline invocation.
-            cmd.append("--bare")
+        elif route.billing == "api":
             if not os.environ.get("ANTHROPIC_API_KEY"):
                 raise SystemExit(
-                    "claude_cli backend: --billing api needs ANTHROPIC_API_KEY "
+                    "claude backend: --billing api needs ANTHROPIC_API_KEY "
                     "in the environment; without it the CLI issues no request "
                     "and exits 0 having done nothing."
                 )
-
-        # No config home of crustify's: claude keeps its transcripts, and the
-        # subscription login, in its own home whatever crustify sets.
+            # Exporting ANTHROPIC_API_KEY alone does not switch the CLI to
+            # it: it keeps sending the stored subscription login (verified on
+            # the wire). A config dir of crustify's holds no login, so the key
+            # is the only credential, without `--bare` and all it turns off.
+            if provider_home is None:
+                raise SystemExit(
+                    "claude backend: API billing requires a provider home.")
+            config_dir = provider_home.resolve()
+            _share_user_config(config_dir)
+            env["CLAUDE_CONFIG_DIR"] = str(config_dir)
 
         with system_prompt_file(system_preamble) as preamble:
             cmd += [preamble_flag, str(preamble)]
+            # The user's arguments go last, so they override crustify's.
+            cmd += list(route.args)
             if interactive:
                 # The terminal is the CLI's: nothing is captured, so the
                 # session transcript is the record of what was said.
@@ -227,25 +237,12 @@ class ClaudeCliBackend:
             else:
                 rc = self._stream(cmd, wd, env, log)
 
-        transcript = _transcript_path(session_id, wd)
-        if transcript is not None:
-            log.line(f"[crustify] transcript: {transcript}")
-        else:
-            log.line(f"[crustify] {name}: no session transcript for "
-                     f"{session_id}; this run is unaccounted.")
-        log.session({
-            "cli": "claude",
-            "provider": route.provider,
-            "model": route.model,
-            "session_id": session_id,
-            "transcript": str(transcript) if transcript is not None else None,
-            "exit_code": rc,
-            "resumed": bool(resume),
-        })
+        log.session({**route.record(), "session_id": session_id,
+                     "exit_code": rc, "resumed": bool(resume)})
 
         if rc != 0:
             raise SystemExit(
-                f"claude_cli backend: `claude` exited {rc} for {name}. "
+                f"claude backend: `claude` exited {rc} for {name}. "
                 f"See the agent log for its output."
             )
 

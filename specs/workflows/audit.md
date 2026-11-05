@@ -10,7 +10,7 @@ confirms.
 ## 1. Running one
 
 ```sh
-crustify /path/to/repo --settings /path/to/CRUSTIFY.md --model anthropic/claude-opus-5
+crustify /path/to/repo --settings /path/to/CRUSTIFY.md --backend claude
 ```
 
 The settings are filled from
@@ -76,13 +76,13 @@ An audit's review waves are laid out as [`../operations/versioning.md`](../opera
 [`../operations/layout.md`](../operations/layout.md) describe. Before
 each, the settings are reread and their changes applied, and the agent memory every agent
 reads at startup is curated. Each review batch's `task.json` holds its workset, its
-objectives, its batch fields, its review wave branch and the model and billing, as
+objectives, its batch fields, its review wave branch and its run fields, as
 [`../artifacts/task.md`](../artifacts/task.md) describes:
 
 ```json
 {"objectives": ["ub", "equiv", "disclose"], "paths": ["src/frame.rs", "src/codec/"],
  "wave": 0, "batch": 0, "link_unit": null, "module": null, "foundational": false,
- "base_branch": "<review wave branch>", "model": "<model>", "billing": "<billing>"}
+ "base_branch": "<review wave branch>", "backend": "<backend>", "billing": "<billing>"}
 ```
 
 A part of a module names its types, trait impls and functions, and a revisit batch its
@@ -98,7 +98,7 @@ resolves to and rejects any the reviewer's prompt and tool specs do not offer. T
 reviewers run concurrently, launched a moment apart so that no two share a timestamp:
 
 ```bash
-crustify spawn-reviewer <batch worktree> <run dir>/task.json --log-dir <run dir>
+crustify spawn-reviewer <batch worktree> <run dir>/task.json
 ```
 
 Each reviewer lands its reports and fixes on the review wave branch as

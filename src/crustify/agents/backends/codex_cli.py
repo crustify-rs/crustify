@@ -24,11 +24,12 @@ import shutil
 import subprocess
 import threading
 import time
+from collections.abc import Callable
 from pathlib import Path
 
 from crustify.agents.backends import system_prompt_file
 from crustify.core.agentlog import AgentLog
-from crustify.core.models import Route
+from crustify.core.models import PROXIES, Route
 
 _SESSION_RE = re.compile(r"session id:\s*([0-9a-fA-F-]{36})")
 
@@ -62,10 +63,6 @@ def _provider_block(key: str, name: str, base_url: str, env_key: str) -> list[st
     ]
 
 
-_OPENROUTER = _provider_block(
-    "openrouter", "OpenRouter", "https://openrouter.ai/api/v1",
-    "OPENROUTER_API_KEY")
-
 # Codex's *built-in* openai provider authenticates from `auth.json` in
 # CODEX_HOME (what `codex login` writes) and ignores OPENAI_API_KEY in the
 # environment - it fails 401 "Missing bearer or basic authentication".
@@ -76,44 +73,19 @@ _OPENAI_APIKEY = _provider_block(
     "OPENAI_API_KEY")
 
 
-# Reasoning effort per model id: codex never infers one, and its fallback is low
-# either way — `none` for a model missing from its catalog, and the catalog's own
-# `default_reasoning_level` (`low` for the gpt-5.6 family) for one that is in it.
-# Neither suits discovery or codegen. codex does NOT validate
-# the value locally (an unknown one is printed in its banner and fails at the
-# API), so this table is the whitelist.
-#
-# `codex debug models` reports the accepted set per model; for the gpt-5.6
-# family it is low | medium | high | xhigh | max | ultra, and the gpt-6
-# family accepts at least low | medium | high | xhigh | max. Note that codex's
-# catalog names them `gpt-5.6-{sol,terra,luna}` — a bare `gpt-5.6` reaches the
-# API fine but warns "Model metadata not found. Defaulting to fallback
-# metadata", so its context window and auto-compact limits are guesses.
-# Unlisted models keep codex's own default.
-_REASONING_EFFORT = {
-    "gpt-5.6": "high",
-    "gpt-5.6-sol": "high",
-    "gpt-5.6-terra": "high",
-    "gpt-5.6-luna": "high",
-    "gpt-6-sol": "high",
-    "gpt-6-astra": "high",
-    "gpt-6-luna": "high",
-    "gpt-6.1-sol": "high",
-    # OpenRouter's canonical OpenAI routes retain the vendor prefix after the
-    # outer provider component is resolved.
-    "openai/gpt-5.6": "high",
-    "openai/gpt-5.6-sol": "high",
-    "openai/gpt-5.6-terra": "high",
-    "openai/gpt-5.6-luna": "high",
-    "openai/gpt-6-sol": "high",
-    "openai/gpt-6-astra": "high",
-    "openai/gpt-6-luna": "high",
-    "openai/gpt-6.1-sol": "high",
-    # OpenRouter route. Not in codex's catalog either, so its fallback is
-    # `none` — the worst case the comment above describes. `high` verified
-    # accepted end to end against the OpenRouter responses API.
-    "moonshotai/kimi-k3": "high",
-}
+# Reasoning effort when the user's arguments set none: codex never infers one,
+# and its fallback is low either way — `none` for a model missing from its
+# catalog, and the catalog's own `default_reasoning_level` (`low` for the
+# gpt-5.6 family) for one that is in it. Neither suits discovery or codegen.
+# `high` is accepted by the gpt-5.6 and gpt-6 families (`codex debug models`)
+# and by OpenRouter's responses API; codex does not validate the value
+# locally, so a model that rejects it fails at the API, and the user's own
+# `-c model_reasoning_effort=...` replaces it.
+_DEFAULT_EFFORT = "high"
+
+
+def _sets_effort(args) -> bool:
+    return any("model_reasoning_effort" in a for a in args)
 
 
 # The paths a narrower sandbox had to be told about, kept as the record of what
@@ -137,9 +109,6 @@ _REASONING_EFFORT = {
 # a target outside the granted dir failed `Operation not permitted` (verified).
 
 
-from crustify.core.usage import (  # noqa: F401 - re-exported
-    rollout_path as _rollout_path,
-)
 
 
 
@@ -161,18 +130,17 @@ class CodexCliBackend:
         system_preamble: str,
         work_dir: str,
         log: AgentLog,
-        billing: str = "subscription",
-        effort: str | None = None,
         override_base_prompt: bool = False,
         provider_home: Path | None = None,
         interactive: bool = False,
         resume: str | None = None,
         session_id: str | None = None,
+        on_session: Callable[[str], None] | None = None,
     ) -> None:
         exe = shutil.which("codex")
         if exe is None:
             raise SystemExit(
-                "codex_cli backend: the `codex` CLI is not on PATH."
+                "codex backend: the `codex` CLI is not on PATH."
             )
 
         wd = Path(work_dir).resolve()
@@ -203,24 +171,23 @@ class CodexCliBackend:
         # takes its own before its `resume <id>` subcommand, below.
         cmd = ([exe, *(("resume",) if resume else ()), "-a", "never"] if interactive
                else [exe, "exec", "--skip-git-repo-check", "--ignore-user-config"])
+        # No model: the CLI runs its own default unless the user's arguments
+        # name one.
         cmd += ["-C", str(wd),
                 "-s", "danger-full-access",
-                "-m", route.model,
                 *_TOOL_OFF]
-        selected_effort = effort or _REASONING_EFFORT.get(route.model)
-        if selected_effort:
-            cmd += ["-c", f'model_reasoning_effort="{selected_effort}"']
-        if route.provider == "openrouter":
-            if billing != "api":
+        if not _sets_effort(route.args):
+            cmd += ["-c", f'model_reasoning_effort="{_DEFAULT_EFFORT}"']
+        if route.model_proxy is not None:
+            proxy = PROXIES[route.model_proxy]
+            cmd += _provider_block(route.model_proxy, proxy.name,
+                                   proxy.openai_url, proxy.key_env)
+            if not os.environ.get(proxy.key_env):
                 raise SystemExit(
-                    "codex_cli backend: OpenRouter supports only API billing.")
-            cmd += _OPENROUTER
-            if not os.environ.get("OPENROUTER_API_KEY"):
-                raise SystemExit(
-                    "codex_cli backend: routing via OpenRouter needs "
-                    "OPENROUTER_API_KEY in the environment."
+                    f"codex backend: model proxy {route.model_proxy} needs "
+                    f"{proxy.key_env} in the environment."
                 )
-        elif billing == "api":
+        elif route.billing == "api":
             cmd += _OPENAI_APIKEY
 
         env = dict(os.environ)
@@ -229,23 +196,23 @@ class CodexCliBackend:
         # comes from an env key (OpenRouter, or --billing api); otherwise
         # leave the operator's CODEX_HOME in place and rely on
         # --ignore-user-config for config hermeticity.
-        env_key_auth = route.provider == "openrouter" or billing == "api"
+        env_key_auth = route.billing == "api"
         if env_key_auth:
             # Crustify's home, outside the checkout and its worktrees, so the
             # rollout outlives the worktree an agent purges as it lands.
             # RESOLVED, so CODEX_HOME and the later rollout lookup agree.
             if provider_home is None:
                 raise SystemExit(
-                    "codex_cli backend: API billing requires a provider home.")
+                    "codex backend: API billing requires a provider home.")
             provider_home.mkdir(parents=True, exist_ok=True)
             codex_home = provider_home.resolve()
             env["CODEX_HOME"] = str(codex_home)
         else:
             codex_home = Path(env.get("CODEX_HOME") or (Path.home() / ".codex"))
-        if billing == "api" and route.provider == "openai" \
+        if route.billing == "api" and route.model_proxy is None \
                 and not env.get("OPENAI_API_KEY"):
             raise SystemExit(
-                "codex_cli backend: --billing api needs OPENAI_API_KEY in the "
+                "codex backend: --billing api needs OPENAI_API_KEY in the "
                 "environment."
             )
 
@@ -269,6 +236,9 @@ class CodexCliBackend:
                         "-c", "include_collaboration_mode_instructions=false",
                         "-c", "include_permissions_instructions=false"]
 
+            # The user's arguments follow crustify's options, so they override
+            # them, and precede the session and the first turn.
+            cmd += list(route.args)
             if resume:
                 # A resumed session keeps its id and its rollout.
                 cmd += [resume] if interactive else ["resume", resume]
@@ -282,42 +252,34 @@ class CodexCliBackend:
                 log.line(f"[crustify] {name}: interactive session")
                 started = time.time()
                 rc = subprocess.run(cmd, cwd=str(wd), env=env).returncode
-                rollout = (_rollout_path(codex_home, resume) if resume
-                           else _newest_rollout(codex_home, started))
+                rollout = None if resume else _newest_rollout(codex_home, started)
                 session_id = resume or ""
             else:
-                rc, session_id = self._stream(cmd, wd, env, log)
-                rollout = (_rollout_path(codex_home, session_id)
-                           if session_id else None)
+                rc, session_id = self._stream(cmd, wd, env, log, on_session)
+                rollout = None
 
         if rollout is not None:
-            log.line(f"[crustify] rollout: {rollout}")
             # The interactive CLI never prints its id; the rollout's name ends
             # with it, a UUID of five dash-separated groups.
             session_id = session_id or "-".join(rollout.stem.split("-")[-5:])
-        else:
-            log.line(f"[crustify] {name}: no session rollout found"
-                     f"{' for ' + session_id if session_id else ''}; "
-                     f"this run is unaccounted.")
-        log.session({
-            "cli": "codex",
-            "provider": route.provider,
-            "model": route.model,
-            "session_id": session_id,
-            "transcript": str(rollout) if rollout is not None else None,
-            "exit_code": rc,
-            "resumed": bool(resume),
-        })
+            if on_session is not None and not resume:
+                on_session(session_id)
+        if not session_id:
+            log.line(f"[crustify] {name}: no session id found; this run is "
+                     "unaccounted.")
+        log.session({**route.record(), "session_id": session_id,
+                     "exit_code": rc, "resumed": bool(resume)})
 
         if rc != 0:
             raise SystemExit(
-                f"codex_cli backend: `codex` exited {rc} for {name}. "
+                f"codex backend: `codex` exited {rc} for {name}. "
                 f"See the agent log for its output."
             )
 
     @staticmethod
-    def _stream(cmd: list[str], wd: Path, env: dict,
-                log: AgentLog) -> tuple[int, str]:
+    def _stream(cmd: list[str], wd: Path, env: dict, log: AgentLog,
+                on_session: Callable[[str], None] | None = None,
+                ) -> tuple[int, str]:
         """Run headless into ``log``; return the exit code and session id."""
         proc = subprocess.Popen(
             cmd, cwd=str(wd), env=env,
@@ -337,6 +299,8 @@ class CodexCliBackend:
                 m = _SESSION_RE.search(line)
                 if m:
                     found.append(m.group(1))
+                    if on_session is not None:
+                        on_session(m.group(1))
 
         def _drain_err() -> None:
             for ln in proc.stderr:

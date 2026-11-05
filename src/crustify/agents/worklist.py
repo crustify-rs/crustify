@@ -12,7 +12,6 @@ class WorklistAgent(CrustifyAgent):
     """One agent over one thin batch: its route and items, landing on a wave
     integration branch. A subclass names its objective and its prompt."""
 
-    model = "anthropic/claude-opus-5"
     #: The body carries this agent's worklist, so each agent of a wave gets
     #: its own system prefix rather than the shared one. Chosen deliberately:
     #: compaction reaching the procedure costs more than the cache writes it
@@ -30,12 +29,10 @@ class WorklistAgent(CrustifyAgent):
         route: str,
         items: list[dict],
         git_base: str,
-        artifact_dir: Path,
         log_stem: str,
     ) -> None:
         super().__init__(
-            workdir, git_base=git_base, artifact_dir=artifact_dir,
-            log_stem=log_stem,
+            workdir, git_base=git_base, log_stem=log_stem,
         )
         self._route = route
         self._items = [dict(item) for item in items]

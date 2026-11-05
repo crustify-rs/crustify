@@ -13,33 +13,49 @@ _KINDS = frozenset({"type", "symbol", "callback"})
 _ITEM_FIELDS = frozenset({"name", "defined_in", "kind", "field_anchors", "home"})
 _FIELD_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
-#: How a provider CLI authenticates: its own logged-in account, or an API key
-#: from the environment.
-BILLINGS = ("subscription", "api")
 #: The fields every task carries beside its worklist: how its agent runs.
-RUN_FIELDS = frozenset({"model", "billing"})
+RUN_FIELDS = frozenset({"backend", "billing"})
+#: The run fields a task may carry: the proxy, and the provider CLI's own
+#: arguments; ``session_id``, which the spawn command writes once its run
+#: has one; and ``model``, an earlier version's, read in place of
+#: ``backend``.
+RUN_OPTIONAL = frozenset({"model_proxy", "args", "model", "session_id"})
 #: The fields that place a binder's, translator's or reviewer's task in the
 #: campaign's schedule.json.
 BATCH_FIELDS = frozenset({"wave", "batch", "link_unit", "module", "foundational"})
 
 #: The role that runs each objective's tasks; its name is also the stem of
-#: the log and usage record a batch writes into its own `--log-dir`, so
-#: nothing has to be unique.
+#: the session record a batch's session leaves in crustify's home.
 _ROLE = {"wrap": "binder", "port": "translator"}
 
 
 @dataclass(frozen=True)
 class RunSettings:
-    """How a task's agent runs: its model and how its provider CLI bills."""
+    """How a task's agent runs: its provider CLI, how it bills, through
+    which proxy, and the CLI's own arguments."""
 
-    model: str
+    backend: str
     billing: str
+    model_proxy: str | None = None
+    args: tuple[str, ...] = ()
 
     def apply(self) -> None:
-        """Make these the settings every agent of this process runs under."""
+        """Make these the settings every agent of this process runs under.
+        Arguments given on the command line follow the task's."""
         from crustify import config
-        config.MODEL_OVERRIDE = self.model
+        config.BACKEND = self.backend
         config.BILLING = self.billing
+        config.MODEL_PROXY = self.model_proxy
+        config.PROVIDER_ARGS = [*self.args, *config.PROVIDER_ARGS]
+
+    def describe(self) -> str:
+        """One line for the spawn commands' output."""
+        parts = [self.backend, self.billing]
+        if self.model_proxy:
+            parts.append(f"via {self.model_proxy}")
+        if self.args:
+            parts.append("args: " + " ".join(self.args))
+        return ", ".join(parts)
 
 
 @dataclass(frozen=True)
@@ -113,32 +129,53 @@ def read_object(path: Path, fail: Callable[[str], NoReturn]) -> dict:
 
 
 def parse_run(raw: dict, fail: Callable[[str], NoReturn]) -> RunSettings:
-    """A task's ``model`` and ``billing``. The model must name a known
-    provider, so a typo fails here rather than after the worktree is set up."""
-    from crustify.core.models import resolve
+    """A task's run fields, checked, so a typo fails here rather than after
+    the worktree is set up. A task of an earlier version names a
+    ``<provider>/<model>`` in place of ``backend``."""
+    from crustify.core.models import from_model, route
 
-    model, billing = raw["model"], raw["billing"]
-    if not isinstance(model, str) or not model:
-        fail("model must be a non-empty <provider>/<model> name")
+    if "session_id" in raw:
+        fail(f"this task already ran, as session {raw['session_id']}: a rerun "
+             "takes a run dir and a task of its own")
     try:
-        resolve(model)
+        if "backend" not in raw and "model" in raw:
+            r = from_model(raw["model"], raw.get("billing", "subscription"))
+        else:
+            if "backend" not in raw:
+                fail("missing task field(s): backend")
+            if "model" in raw:
+                fail("a task names its backend, not a model: pass the model "
+                     "in args, in the CLI's own syntax")
+            args = raw.get("args", [])
+            if not isinstance(args, list):
+                fail("args must be an array of strings")
+            r = route(raw["backend"], raw.get("billing"),
+                      raw.get("model_proxy"), args)
     except ValueError as exc:
         fail(str(exc))
-    if billing not in BILLINGS:
-        fail(f"billing must be one of: {', '.join(BILLINGS)}")
-    return RunSettings(model=model, billing=billing)
+    return RunSettings(r.backend, r.billing, r.model_proxy, r.args)
 
 
-def task_and_log_dir(task_path: Path, log_dir: Path,
-                     fail: Callable[[str], NoReturn]) -> tuple[Path, Path]:
-    """The task file and the log dir, both resolved; a failure when either
-    is not where the command says, before anything else is read."""
-    task_path, log_dir = task_path.resolve(), log_dir.resolve()
+def task_file(task_path: Path, fail: Callable[[str], NoReturn]) -> Path:
+    """The task file, resolved; a failure when it is not where the command
+    says, before anything else is read."""
+    task_path = task_path.resolve()
     if not task_path.is_file():
         fail(f"no task file at {task_path}")
-    if not log_dir.is_dir():
-        fail(f"--log-dir must name an existing directory: {log_dir}")
-    return task_path, log_dir
+    return task_path
+
+
+def session_recorder(task_path: Path) -> Callable[[str], None]:
+    """What writes a run's session id into its task, as soon as the CLI has
+    one: the task is the run's record in the campaign, and its session's
+    records are in crustify's home, under that id."""
+    def record(session_id: str) -> None:
+        raw = json.loads(task_path.read_text())
+        raw["session_id"] = session_id
+        tmp = task_path.with_name(task_path.name + ".tmp")
+        tmp.write_text(json.dumps(raw, indent=2) + "\n")
+        tmp.replace(task_path)
+    return record
 
 
 def parse_branch(raw: dict, fail: Callable[[str], NoReturn]) -> str:
@@ -285,8 +322,8 @@ def load_batch(path: Path) -> Batch:
     """Load and strictly validate a binder or translator task, ``path``
     resolved."""
     raw = read_object(path, _fail)
-    check_fields(raw, {"objective", "items", "base_branch"} | RUN_FIELDS | BATCH_FIELDS,
-                 {"instructions"}, _fail)
+    check_fields(raw, {"objective", "items", "base_branch", "billing"} | BATCH_FIELDS,
+                 {"instructions"} | RUN_FIELDS | RUN_OPTIONAL, _fail)
     objective = raw["objective"]
     if not isinstance(objective, str) or objective not in _OBJECTIVES:
         _fail("objective must be one of: port, wrap"
@@ -305,17 +342,15 @@ def execute(
     task_path: Path,
     *,
     role: str,
-    log_dir: Path,
     dry_run: bool = False,
 ) -> None:
     """Run exactly one binder or translator, as ``role`` says, in ``workdir``.
 
-    A binder runs `wrap` tasks; a translator runs `port` tasks. ``workdir`` is the isolated worktree the
-    orchestrator forked for this batch, and ``log_dir`` the existing
-    directory its log and usage record land in; the harness creates and
-    purges neither.
+    A binder runs `wrap` tasks; a translator runs `port` tasks. ``workdir``
+    is the isolated worktree the orchestrator forked for this batch, which
+    the harness neither creates nor purges.
     """
-    task_path, output = task_and_log_dir(task_path, log_dir, _fail)
+    task_path = task_file(task_path, _fail)
     batch = load_batch(task_path)
     base_branch = batch.base_branch
     if _ROLE[batch.objective] != role:
@@ -328,18 +363,14 @@ def execute(
             f"{batch.placement.batch_id} ({batch.placement.module_label}); "
             f"{len(batch.items)} item(s); campaign objective "
             f"{batch.objective}; landing on {base_branch}; "
-            f"model {batch.run.model} ({batch.run.billing}); "
+            f"{batch.run.describe()}; "
             f"{instructions_note(batch.instructions)}; no agent spawned."
         )
         return
 
-    # Fixed names: `output` is this run's own directory, so there is nothing
-    # to disambiguate. The orchestrator decides what a run is called by
-    # deciding where its artifacts go.
     print(f"[crustify spawn-{role}] workdir: {workdir}")
     print(f"[crustify spawn-{role}] landing on: {base_branch}")
-    print(f"[crustify spawn-{role}] model: {batch.run.model} ({batch.run.billing})")
-    print(f"[crustify spawn-{role}] session: {output / f'{role}.session.json'}")
+    print(f"[crustify spawn-{role}] run: {batch.run.describe()}")
     if batch.instructions is not None:
         print(f"[crustify spawn-{role}] additional instructions: "
               f"{batch.instructions.path}")
@@ -355,10 +386,10 @@ def execute(
         route=batch.route,
         items=batch.items,
         git_base=base_branch,
-        artifact_dir=output,
         log_stem=role,
     )
     agent.instructions = batch.instructions
     agent.placement = batch.placement
+    agent.on_session = session_recorder(task_path)
     agent.run()
     print(f"[crustify spawn-{role}] batch completed.")

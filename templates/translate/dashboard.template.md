@@ -10,9 +10,9 @@ and in Notes.
 - **source** — `<repo>` @ `<commit>`
 - **campaign** — `<port | wrap>`
 - **scope** — `<scope>`
-- **translate-agent** — `<provider>/<model>`, `<api | subscription>`
-- **review-agent** — `<provider>/<model>`, `<api | subscription>`; objectives `<objectives>`
-- **plan-agent** — `<provider>/<model>`, `<api | subscription>`; `<n>` runs
+- **translate-agent** — `<backend>`, `<api | subscription>`, proxy `<proxy | none>`, args `<args | none>`
+- **review-agent** — `<backend>`, `<api | subscription>`, proxy `<proxy | none>`, args `<args | none>`; objectives `<objectives>`
+- **plan-agent** — `<backend>`, `<api | subscription>`, proxy `<proxy | none>`, args `<args | none>`; `<n>` runs
 - **workload** — max-types `<n>`, max-syms `<n>`, max-loc `<n>`, parallelism `<n>`
 - **review-workload** — `<caps>`
 - **sanitizers** — `<variants>`
@@ -45,8 +45,8 @@ and in Notes.
 - `total`, `ported` and `wrapped` types and symbols — the scheduled public-API units, and
   those with a `Replaces` or a `Wraps` anchor at the tip; `share` is of the total
 
-Every table below is a heading, a model line and the table. All prose belongs
-in Notes.
+Every table below is a heading, a model line, naming the model and backend its usage
+records name, and the table. All prose belongs in Notes.
 
 ## Overview
 
@@ -72,8 +72,8 @@ in Notes.
 
 ### Module stats
 
-Implementation `<provider>/<model>` via `<backend>`; review
-`<provider>/<model>` via `<backend>`.
+Implementation `<model>` on `<backend>`; review
+`<model>` on `<backend>`.
 
 | module | nr types | nr symbols | module wall | cost | tokens | $/type | $/sym | review cost | review tokens | review $/type | review $/sym | total | total tokens | total $/type | total $/sym |
 |---|---:|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
@@ -110,7 +110,7 @@ batch run's dir.
 
 ## Planning
 
-`<provider>/<model>` via `<backend>`. One row per planner run, in order; its reports are
+`<model>` on `<backend>`. One row per planner run, in order; its reports are
 the corrections it made to what earlier runs committed.
 
 | run | modules changed | items moved | wavefront artifacts changed | reports | $ | tokens | wall |
@@ -137,7 +137,7 @@ sums them.
 
 ### Batches — wrap
 
-`<provider>/<model>` via `<backend>`.
+`<model>` on `<backend>`.
 
 | module | wave | batch | pass | types | fields | +LoC | cov (C/Rust) | $ | tokens | wall | $/type | $/field |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -148,7 +148,7 @@ sums them.
 
 ### Batches — wrap: tests
 
-`<provider>/<model>` via `<backend>`.
+`<model>` on `<backend>`.
 
 | module | wave | batch | pass | +UB safe tests (+C/+Rust pp) | +UB unsafe tests (+C/+Rust pp) | +equiv tests (+C/+Rust pp) | +unit tests (+C/+Rust pp) |
 |---|---|---|---|---|---|---|---|
@@ -159,7 +159,7 @@ sums them.
 
 ### Batches — port
 
-`<provider>/<model>` via `<backend>`.
+`<model>` on `<backend>`.
 
 | module | wave | batch | pass | types | fields | +LoC | cov (C/Rust) | $ | tokens | wall | $/type | $/field |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -170,7 +170,7 @@ sums them.
 
 ### Batches — port: tests
 
-`<provider>/<model>` via `<backend>`.
+`<model>` on `<backend>`.
 
 | module | wave | batch | pass | +UB safe tests (+C/+Rust pp) | +UB unsafe tests (+C/+Rust pp) | +equiv tests (+C/+Rust pp) | +unit tests (+C/+Rust pp) |
 |---|---|---|---|---|---|---|---|
@@ -193,7 +193,7 @@ Deterministic `ffimap`; no model.
 
 ### Batches — review: PoC + reports
 
-`<provider>/<model>` via `<backend>`.
+`<model>` on `<backend>`.
 
 | module | wave | batch | +lifecycle | +unsafe | +UB safe | +UB unsafe | +equiv | +internal | +conventions | +misc | total |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -204,7 +204,7 @@ Deterministic `ffimap`; no model.
 
 ### Batches
 
-`<provider>/<model>` via `<backend>`.
+`<model>` on `<backend>`.
 
 | module | wave | batch | objective | pass | symbols | loc | +LoC | cov (C/Rust) | $ | tokens | wall | $/symbol | $/loc |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -216,7 +216,7 @@ Deterministic `ffimap`; no model.
 
 ### Batches: tests
 
-`<provider>/<model>` via `<backend>`.
+`<model>` on `<backend>`.
 
 | module | wave | batch | pass | +UB safe tests (+C/+Rust pp) | +UB unsafe tests (+C/+Rust pp) | +equiv tests (+C/+Rust pp) | +unit tests (+C/+Rust pp) |
 |---|---|---|---|---|---|---|---|
@@ -239,7 +239,7 @@ Deterministic `ffimap`; no model.
 
 ### Batches — review: PoC + reports
 
-`<provider>/<model>` via `<backend>`.
+`<model>` on `<backend>`.
 
 | module | wave | batch | +lifecycle | +unsafe | +UB safe | +UB unsafe | +equiv | +internal | +conventions | +misc | total |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |

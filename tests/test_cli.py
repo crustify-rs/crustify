@@ -21,7 +21,7 @@ class CommandShapeTests(unittest.TestCase):
         (self.repo / "crustify").mkdir()
         self.task = self.repo / "CRUSTIFY.md"
         self.task.write_text("task")
-        for name in ("MODEL_OVERRIDE", "BILLING"):
+        for name in ("BACKEND", "BILLING", "MODEL_PROXY", "PROVIDER_ARGS"):
             patcher = mock.patch.object(config, name, getattr(config, name))
             patcher.start()
             self.addCleanup(patcher.stop)
@@ -43,14 +43,18 @@ class CommandShapeTests(unittest.TestCase):
 
     def test_a_workdir_opens_the_assistant(self) -> None:
         seen = self._run(str(self.repo), "--campaign", "wrap", "--start",
-                         "--model", "openrouter/anthropic/claude-opus-5",
-                         "--billing", "api")
+                         "--backend", "claude", "--billing", "api",
+                         "--model-proxy", "openrouter",
+                         "--", "--model", "anthropic/claude-opus-5")
         self.assertEqual(seen["handler"], "assist")
         self.assertEqual(seen["args"].workdir, str(self.repo))
         self.assertEqual(seen["args"].campaign, "wrap")
         self.assertTrue(seen["args"].start)
-        self.assertEqual(config.MODEL_OVERRIDE, "openrouter/anthropic/claude-opus-5")
-        self.assertEqual(config.BILLING, "api")
+        self.assertEqual((config.BACKEND, config.BILLING, config.MODEL_PROXY),
+                         ("claude", "api", "openrouter"))
+        # What follows `--` is the CLI's, not crustify's.
+        self.assertEqual(config.PROVIDER_ARGS,
+                         ["--model", "anthropic/claude-opus-5"])
 
     def test_no_argument_opens_the_assistant_here(self) -> None:
         seen = self._run()
@@ -72,9 +76,10 @@ class CommandShapeTests(unittest.TestCase):
         self.assertEqual(seen["args"].task, Path("task.json"))
 
     def test_spawn_binder_runs_one_task(self) -> None:
+        # `--log-dir` is accepted and ignored, for the sessions that still
+        # pass it.
         seen = self._run("spawn-binder", str(self.repo), "task.json",
                          "--log-dir", "out")
-        self.assertEqual(seen["args"].log_dir, Path("out"))
         self.assertEqual(seen["handler"], "spawn-worklist")
         self.assertEqual(seen["args"].role, "binder")
 
@@ -94,17 +99,16 @@ class CommandShapeTests(unittest.TestCase):
         self.assertTrue(seen["args"].dry_run)
 
     def test_a_spawned_agent_takes_its_settings_from_its_task(self) -> None:
-        """Model, billing and branch live in task.json, so the spawn commands
-        no longer accept them as flags; the log dir is still a flag, and a
-        required one."""
+        """Backend, billing and branch live in task.json, so the spawn
+        commands do not accept them as flags."""
         for command in ("spawn-binder", "spawn-translator", "spawn-reviewer",
                         "spawn-planner"):
             for flag in (("--model", "openai/gpt-5.6"), ("--billing", "api"),
-                         ("--base-branch", "wave"), ("--output", "out"), ()):
+                         ("--backend", "codex"), ("--base-branch", "wave"),
+                         ("--output", "out")):
                 with self.subTest(command=command, flag=flag[:1]), \
                         mock.patch("sys.stderr"), self.assertRaises(SystemExit):
-                    self._run(command, str(self.repo), "task.json", *flag,
-                              *(("--log-dir", "out") if flag else ()))
+                    self._run(command, str(self.repo), "task.json", *flag)
 
     def test_spawn_planner_needs_a_campaign_tree(self) -> None:
         bare = self.repo / "bare"
@@ -129,9 +133,10 @@ class CommandShapeTests(unittest.TestCase):
                       "--campaign", "x")
 
     def test_usage_needs_no_workdir(self) -> None:
-        seen = self._run("usage", "a.transcript.jsonl", "b.transcript.jsonl")
+        seen = self._run("usage", "s-1", "a.transcript.jsonl")
         self.assertEqual(seen["handler"], "usage")
-        self.assertEqual(len(seen["args"].files), 2)
+        self.assertEqual((seen["args"].session_id, seen["args"].transcript),
+                         ("s-1", Path("a.transcript.jsonl")))
         self.assertIsNone(seen["args"].output)
 
     def test_cost_is_folded_into_usage(self) -> None:
@@ -239,8 +244,7 @@ class AssistantSettingsTests(unittest.TestCase):
         task, _ = cli.detached_settings(None, "wrap", lambda: None)
         for start, first in ((False, ""), (True, START)):
             with self.subTest(start=start):
-                agent = AssistAgent(self.repo, kind="translate", task=task,
-                                    model="anthropic/claude-opus-5", start=start)
+                agent = AssistAgent(self.repo, kind="translate", task=task, start=start)
                 self.assertEqual(agent._prompt(), first)
 
 
@@ -268,6 +272,30 @@ class ResumeTests(unittest.TestCase):
                 "cli": "claude", "provider": "anthropic",
                 "model": "claude-opus-5"}))
 
+    def test_a_resume_runs_as_its_record_says(self) -> None:
+        def resumed(record: dict, *argv: str, forwarded=()):
+            args = SimpleNamespace(backend=None, billing=None, model_proxy=None)
+            for flag, value in zip(argv[::2], argv[1::2]):
+                setattr(args, flag, value)
+            cfg = SimpleNamespace(PROVIDER_ARGS=list(forwarded))
+            cli._resume_run(args, {"session_id": "s", **record}, cfg)
+            return (cfg.BACKEND, cfg.BILLING, cfg.MODEL_PROXY, cfg.PROVIDER_ARGS)
+
+        record = {"backend": "claude", "billing": "api", "model_proxy": "openrouter",
+                  "args": ["--model", "opus"]}
+        self.assertEqual(resumed(record),
+                         ("claude", "api", "openrouter", ["--model", "opus"]))
+        # Arguments after `--` replace the recorded ones.
+        self.assertEqual(resumed(record, forwarded=["--effort", "high"])[3],
+                         ["--effort", "high"])
+        with self.assertRaisesRegex(SystemExit, "only the CLI that ran"):
+            resumed(record, "backend", "codex")
+        # A record of an earlier version names its model.
+        self.assertEqual(
+            resumed({"cli": "claude", "provider": "anthropic",
+                     "model": "claude-opus-5"}),
+            ("claude", "subscription", None, ["--model", "claude-opus-5"]))
+
     def test_an_id_is_found_from_anywhere(self) -> None:
         self.assertEqual(cli.assistant_session(None, "s-3")["workdir"], str(self.b))
 
@@ -283,8 +311,7 @@ class ResumeTests(unittest.TestCase):
         import json
         from crustify.agents.assist import AssistAgent
         session = self.home / "sessions" / "c-4"
-        agent = AssistAgent(self.a, kind="translate", task=self.a / "CRUSTIFY.md",
-                            model="anthropic/claude-opus-5", checkout=None,
+        agent = AssistAgent(self.a, kind="translate", task=self.a / "CRUSTIFY.md", checkout=None,
                             artifact_dir=session, log_stem="assistant-x")
         with agent._make_log() as log:
             log.session({"session_id": "s-4", "cli": "claude"})
@@ -376,8 +403,8 @@ class PlannerPromptTests(unittest.TestCase):
         self.assertEqual(agent.stage, "plan")
         self.assertIn(f"{self.repo.resolve()}/crustify/CRUSTIFY.md", body)
         self.assertIn("### 1. The committed plan", body)
-        self.assertIn("Only a correction is a finding", body)
-        self.assertIn("re-plan only waves that are `todo`", body)
+        self.assertIn("Adding what the plan lacks", body)
+        self.assertIn("Only waves that are `todo` are re-planned", body)
         # The details of how to plan come from the included specs.
         self.assertIn("# Decomposition\n\nDecomposition turns", body)
         self.assertIn("# Scheduling\n\nScheduling turns", body)

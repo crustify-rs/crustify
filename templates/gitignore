@@ -5,10 +5,9 @@ tmp
 # Prebuilt variants of the target (see build.json).
 builds
 
-# Campaign plans, the tasks written from them, and each agent's session and usage
-# records are tracked: the usage records are the evidence behind dashboard.md's cost
-# cells. The transcripts they are derived from live in crustify's home, outside the
-# checkout.
+# Campaign plans and the tasks written from them are tracked; each task names the
+# session it became. The session records, transcripts and rates behind
+# dashboard.md's cost cells live in crustify's home, outside the checkout.
 
 # Review reproducers are tracked; the cargo trees their builds leave are not.
 reviews/**/target

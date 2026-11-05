@@ -10,7 +10,7 @@ prose belongs in Notes.
 - **objectives** — `<any of: audit, revisit, fix>`
 - **reviewer objectives** — `<ub, equiv, disclose, fix, ...>`
 - **agent backend** — `<claude | codex>`
-- **model** — `<provider>/<model>`
+- **agent** — `<backend>`, proxy `<proxy | none>`, args `<args | none>`; model `<model>`
 - **billing** — `<api | subscription>`
 - **maximum spend** — `$<n>`; reached: `<yes | no>`
 - **instruments** — `<miri | asan/ubsan | bsan | msan | tsan | equivalence | combination>`
@@ -49,10 +49,10 @@ Modules the reviewers were given. The per-batch split is in the table below.
 
 ## Review batches
 
-One row per reviewer. `wall` is `ended_at − started_at` from its
-`reviewer.usage.json`, so it includes whatever it spent building the C library.
-`$` is that record's `cost_usd`, from `crustify usage`; under subscription billing it is an
-API-equivalent comparison value, not a charged amount.
+One row per reviewer. `wall` is `ended_at − started_at` from `crustify usage` on its
+transcript, so it includes whatever it spent building the C library. `$` is that usage's
+`cost_usd`; under subscription billing it is an API-equivalent comparison value, not a
+charged amount.
 
 | batch | workset | files | wall | $ | findings |
 |---|---|---:|---|---:|---:|

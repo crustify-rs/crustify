@@ -17,12 +17,19 @@ SUBCOMMANDS = ("spawn-planner", "spawn-binder", "spawn-translator",
 CAMPAIGNS = {"port": "translate", "wrap": "translate", "audit": "audit"}
 
 
+#: How options reach the provider CLI, in every command's help.
+_FORWARDED = ("Options after `--` are passed unchanged to the provider CLI "
+              "(claude or codex) of every agent the command runs, after "
+              "crustify's own: crustify spawn-binder ... -- --effort high.")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         prog="crustify",
         description="Crustify, your co-translator for C-to-Rust work. "
                     "`crustify [WORKDIR]` opens the assistant; the commands "
                     "below run one job each.",
+        epilog=_FORWARDED,
     )
     sub = parser.add_subparsers(dest="command", required=True, metavar="COMMAND")
 
@@ -36,28 +43,34 @@ def main() -> None:
         default=False,
         help="Suppress live console output from agents.",
     )
-    # Model and billing of the commands that start an orchestrator. A spawned
-    # agent reads both from its task.json instead, so its run dir records
+    # How the commands that start an assistant run its CLI. A spawned agent
+    # reads the same from its task.json instead, so its run dir records
     # everything the run depended on.
     model_opts = argparse.ArgumentParser(add_help=False)
     model_opts.add_argument(
-        "--model",
+        "--backend",
         default=None,
-        metavar="NAME",
-        help="Override the agent's model. Named <provider>/<model>, "
-             "e.g. anthropic/claude-opus-4-8, openai/gpt-5.6, "
-             "openrouter/anthropic/claude-opus-5. The provider selects "
-             "billing; an OpenRouter anthropic/* model uses Claude Code, "
-             "while other OpenRouter models use Codex. Default: the agent's "
-             "hard-coded model.",
+        choices=["claude", "codex"],
+        help="The provider CLI to run: claude (Claude Code) or codex. It runs "
+             "its own default model; name another after `--`, in the CLI's own "
+             "syntax: -- --model opus, or -- -m gpt-6-sol. Default: claude, or, "
+             "with --resume, the session's.",
     )
     model_opts.add_argument(
         "--billing",
         default=None,
         choices=["subscription", "api"],
-        help="How the provider CLI authenticates: subscription (its own "
-             "logged-in account) or api (an API key from the environment). "
-             "Default: config.BILLING.",
+        help="How the CLI authenticates: subscription (its own logged-in "
+             "account) or api (an API key from the environment). Default: "
+             "subscription, or, with --resume, the session's.",
+    )
+    model_opts.add_argument(
+        "--model-proxy",
+        default=None,
+        metavar="PROXY",
+        help="Send the CLI's requests through a gateway, with its key: "
+             "openrouter (OPENROUTER_API_KEY). Needs --billing api. Default: "
+             "none, or, with --resume, the session's.",
     )
     agent_opts.add_argument(
         "--override-base-prompt",
@@ -91,6 +104,7 @@ def main() -> None:
             "in crustify/CRUSTIFY.md, and waits for your instructions; "
             "--start runs the campaign right away. Other commands: "
             + ", ".join(SUBCOMMANDS) + " (crustify <command> --help)."),
+        epilog=_FORWARDED,
     )
     assistant.set_defaults(handler=_handle_assist, command="assistant")
     assistant.add_argument(
@@ -143,17 +157,17 @@ def main() -> None:
     plan_p = sub.add_parser(
         "spawn-planner", parents=[agent_opts],
         help=_spawn_planner_blurb, description=_spawn_planner_blurb,
+        epilog=_FORWARDED,
     )
     plan_p.set_defaults(handler=_handle_spawn_planner)
     add_workdir(plan_p, "the campaign checkout, on the run's planner branch")
     plan_p.add_argument(
         "task", type=Path, metavar="TASK_JSON",
-        help="Path to the run's task.json: its model and billing, and "
+        help="Path to the run's task.json: its run fields, and "
              "optional additional instructions.")
+    # Accepted and ignored: session records are filed in crustify's home.
     plan_p.add_argument(
-        "--log-dir", required=True, type=Path, metavar="DIR",
-        help="Existing directory for the run's planner.session.json; give "
-             "each run its own.")
+        "--log-dir", type=Path, default=None, help=argparse.SUPPRESS)
     plan_p.add_argument(
         "--dry-run", action="store_true",
         help="Validate and summarize the batch without spawning an agent.")
@@ -172,19 +186,18 @@ def main() -> None:
             "is the whole input: which items, their objective, and the Rust "
             "home each item belongs in, and how it runs.")
         p = sub.add_parser(f"spawn-{role}", parents=[agent_opts],
-                           help=blurb, description=blurb)
+                           help=blurb, description=blurb, epilog=_FORWARDED)
         p.set_defaults(handler=_handle_spawn_worklist, role=role)
         add_workdir(p, "the batch's worktree, forked by the orchestrator")
         p.add_argument(
             "task", type=Path, metavar="TASK_JSON",
             help="Path to the batch's task.json: its objective and items, its "
                  "wave and batch indices, link unit and module, the wave "
-                 "integration branch it lands on, its model and billing, and "
+                 "integration branch it lands on, its run fields, and "
                  "optional additional instructions.")
+        # Accepted and ignored: session records are filed in crustify's home.
         p.add_argument(
-            "--log-dir", required=True, type=Path, metavar="DIR",
-            help=f"Existing directory for the run's {role}.session.json, "
-                 f"crustify/artifacts/{role}/run-<n>; give each run its own.")
+            "--log-dir", type=Path, default=None, help=argparse.SUPPRESS)
         p.add_argument(
             "--dry-run", action="store_true",
             help="Validate and summarize the batch without spawning an agent.")
@@ -201,6 +214,7 @@ def main() -> None:
     review_p = sub.add_parser(
         "spawn-reviewer", parents=[agent_opts],
         help=_spawn_reviewer_blurb, description=_spawn_reviewer_blurb,
+        epilog=_FORWARDED,
     )
     review_p.set_defaults(handler=_handle_spawn_reviewer)
     add_workdir(review_p, "the batch's worktree, forked by the orchestrator")
@@ -209,38 +223,55 @@ def main() -> None:
         help="Path to the batch's task.json: commits or paths, reports, "
              "optional objectives, its wave and batch indices, link unit and "
              "module, the review wave integration branch it lands on, its "
-             "model and billing, and optional additional instructions.")
+             "run fields, and optional additional instructions.")
+    # Accepted and ignored: session records are filed in crustify's home.
     review_p.add_argument(
-        "--log-dir", required=True, type=Path, metavar="DIR",
-        help="Existing directory for the run's reviewer.session.json, "
-             "crustify/artifacts/reviewer/run-<n>; give each run its own.")
+        "--log-dir", type=Path, default=None, help=argparse.SUPPRESS)
     review_p.add_argument(
         "--dry-run", action="store_true",
         help="Validate and summarize the batch without spawning an agent.")
 
     # -- usage (tokens and cost of agent sessions) ----------------------------
     _usage_blurb = (
-        "Report the tokens and cost of agent sessions as JSON, from the "
-        "transcripts their CLIs kept: a Claude Code session transcript or a "
-        "Codex rollout, recognized by its contents. One entry per session, "
-        "priced request by request, and a total.")
+        "Report the tokens and cost of one agent session as JSON, from the "
+        "transcript its CLI kept: a Claude Code session transcript or a Codex "
+        "rollout, recognized by its contents, and priced request by request, "
+        "as the session's record in crustify's home says it ran. A session is "
+        "priced at the rate snapshot its record names; one priced for the "
+        "first time, at the rates fetched now, kept as a dated snapshot when "
+        "they changed, which its record then names.")
     usage_p = sub.add_parser("usage", help=_usage_blurb,
                              description=_usage_blurb)
     usage_p.set_defaults(handler=_handle_usage)
     usage_p.add_argument(
-        "files", nargs="+", type=Path, metavar="TRANSCRIPT_JSONL",
-        help="Paths to session transcripts.")
+        "session_id", metavar="SESSION_ID",
+        help="The session's id, as its task.json or session record names it.")
+    usage_p.add_argument(
+        "transcript", type=Path, metavar="TRANSCRIPT_JSONL",
+        help="Path to the session's transcript.")
     usage_p.add_argument(
         "-o", "--output", type=Path, default=None, metavar="FILE",
         help="Write the JSON there instead of to standard output.")
     usage_p.add_argument(
-        "--provider", default=None,
-        help="The service that billed the sessions, as their session.json "
-             "records it. Needed only for a Claude Code session billed through "
-             "OpenRouter: by default a Claude Code transcript is priced as "
-             "anthropic, and a Codex rollout as the provider it records.")
+        "--rates", default=None, metavar="SNAPSHOT",
+        help="Price at this kept rate snapshot instead of the one the "
+             "session's record names: its timestamp, its file, or `latest`. "
+             "The record then names it.")
+    usage_p.add_argument(
+        "--backend", default=None, choices=["claude", "codex"],
+        help="For a session crustify keeps no record of: the CLI that ran it. "
+             "Default: read off the transcript.")
+    usage_p.add_argument(
+        "--model-proxy", default=None, metavar="PROXY",
+        help="For a session crustify keeps no record of: the model proxy it "
+             "ran through, whose rates price it.")
 
     argv = sys.argv[1:]
+    # Everything after `--` is the provider CLI's, not crustify's.
+    provider_args: list[str] = []
+    if "--" in argv:
+        cut = argv.index("--")
+        argv, provider_args = argv[:cut], argv[cut + 1:]
     if argv and argv[0] in SUBCOMMANDS:
         args = parser.parse_args(argv)
     elif argv[:1] in (["-h"], ["--help"]):
@@ -272,12 +303,15 @@ def main() -> None:
 
     if getattr(args, "no_console", False):
         crustify_config.LOG_TO_CONSOLE = False
-    if getattr(args, "model", None):
-        crustify_config.MODEL_OVERRIDE = args.model
+    if getattr(args, "backend", None):
+        crustify_config.BACKEND = args.backend
     if getattr(args, "billing", None):
         crustify_config.BILLING = args.billing
+    if getattr(args, "model_proxy", None):
+        crustify_config.MODEL_PROXY = args.model_proxy
     if getattr(args, "override_base_prompt", None) is not None:
         crustify_config.OVERRIDE_BASE_PROMPT = args.override_base_prompt
+    crustify_config.PROVIDER_ARGS = provider_args
 
     args.handler(args)
 
@@ -290,14 +324,14 @@ def main() -> None:
 # -- dispatch -------------------------------------------------------------
 
 def _handle_usage(args: argparse.Namespace) -> None:
-    """Report the tokens and cost of the sessions named, as JSON."""
+    """Report the tokens and cost of one session, as JSON."""
     import json
-    from crustify.usage import report
-    for path in args.files:
-        if not path.is_file():
-            raise SystemExit(f"no file at {path}")
+    from crustify.usage import price_session
+    if not args.transcript.is_file():
+        raise SystemExit(f"no file at {args.transcript}")
     try:
-        doc = report(args.files, provider=args.provider)
+        doc = price_session(args.session_id, args.transcript, snapshot=args.rates,
+                            backend=args.backend, model_proxy=args.model_proxy)
     except ValueError as exc:
         raise SystemExit(str(exc)) from exc
     text = json.dumps(doc, indent=1) + "\n"
@@ -496,29 +530,18 @@ def _handle_assist(args: argparse.Namespace) -> None:
     # repository with the user.
     workdir = given or Path(".").resolve()
     checkout = workdir if (workdir / TASK).is_file() else None
-    model = _cfg.MODEL_OVERRIDE or "anthropic/claude-opus-5"
     resume = None
     session_id = str(uuid.uuid4())
     session_dir = crustify_home() / "sessions" / session_id
     if getattr(args, "resume", None) is not None:
-        from crustify.core.models import resolve
         record = assistant_session(given, args.resume or None)
         resume = record["session_id"]
         workdir = Path(record["cwd"])
         checkout = Path(record["workdir"]) if record.get("workdir") else None
         session_dir = Path(record.get("dir") or crustify_home() / "sessions" / resume)
-        recorded = f"{record.get('provider')}/{record.get('model')}"
-        model = _cfg.MODEL_OVERRIDE or recorded
-        cli = "claude_cli" if record.get("cli") == "claude" else "codex_cli"
-        try:
-            backend = resolve(model).backend
-        except ValueError as exc:
-            raise SystemExit(str(exc)) from exc
-        if backend != cli:
-            raise SystemExit(
-                f"session {resume} ran on {record.get('cli')}, which {model} "
-                "does not: only the CLI that ran a session can resume it")
-        print(f"[crustify] resuming session {resume} ({model})")
+        _resume_run(args, record, _cfg)
+        print(f"[crustify] resuming session {resume} ({_cfg.BACKEND}, "
+              f"{_cfg.BILLING}{', via ' + _cfg.MODEL_PROXY if _cfg.MODEL_PROXY else ''})")
     # Interactive whenever a person is at the terminal: the assistant waits
     # for instructions and approvals, which a headless run cannot do.
     interactive = sys.stdin.isatty() and sys.stdout.isatty()
@@ -546,7 +569,7 @@ def _handle_assist(args: argparse.Namespace) -> None:
     if interactive and not args.start:
         print("[crustify] Crustify is waiting for your instructions.")
     # One record per run, so resuming never overwrites an earlier one.
-    AssistAgent(workdir, kind=kind, task=task, model=model,
+    AssistAgent(workdir, kind=kind, task=task,
                 task_only=args.task_only, interactive=interactive,
                 start=args.start, resume=resume, checkout=checkout,
                 session_id=None if resume else session_id,
@@ -554,11 +577,37 @@ def _handle_assist(args: argparse.Namespace) -> None:
                 log_stem=f"assistant-{run_start}").run()
 
 
+def _resume_run(args: argparse.Namespace, record: dict, cfg) -> None:
+    """Run a resumed session as its record says, but for what the command
+    line gives again: its backend, which must be the one that ran it, its
+    billing and model proxy, and its arguments, which those after `--`
+    replace. A record of an earlier version names a ``cli``, ``provider``
+    and ``model`` instead."""
+    from crustify.core.models import from_model
+    if "backend" in record:
+        backend, billing = record["backend"], record.get("billing", "subscription")
+        proxy, recorded_args = record.get("model_proxy"), record.get("args") or []
+    else:
+        try:
+            r = from_model(f"{record.get('provider')}/{record.get('model')}",
+                           "subscription")
+        except ValueError as exc:
+            raise SystemExit(str(exc)) from exc
+        backend, billing, proxy, recorded_args = (
+            record.get("cli") or r.backend, r.billing, r.model_proxy, list(r.args))
+    if args.backend and args.backend != backend:
+        raise SystemExit(f"session {record['session_id']} ran on {backend}: only "
+                         "the CLI that ran a session can resume it")
+    cfg.BACKEND = backend
+    cfg.BILLING = args.billing or billing
+    cfg.MODEL_PROXY = args.model_proxy or proxy
+    cfg.PROVIDER_ARGS = cfg.PROVIDER_ARGS or list(recorded_args)
+
+
 def _handle_spawn_planner(args: argparse.Namespace) -> None:
     """Run one planner over the campaign checkout."""
     from crustify.plan import execute
-    execute(Path(args.workdir), args.task, log_dir=args.log_dir,
-            dry_run=args.dry_run)
+    execute(Path(args.workdir), args.task, dry_run=args.dry_run)
 
 
 def _handle_spawn_worklist(args: argparse.Namespace) -> None:
@@ -566,11 +615,10 @@ def _handle_spawn_worklist(args: argparse.Namespace) -> None:
     translator."""
     from crustify.translate import execute
     execute(Path(args.workdir), args.task, role=args.role,
-            log_dir=args.log_dir, dry_run=args.dry_run)
+            dry_run=args.dry_run)
 
 
 def _handle_spawn_reviewer(args: argparse.Namespace) -> None:
     """Execute one orchestrator-projected review batch."""
     from crustify.review import execute
-    execute(Path(args.workdir), args.task, log_dir=args.log_dir,
-            dry_run=args.dry_run)
+    execute(Path(args.workdir), args.task, dry_run=args.dry_run)
