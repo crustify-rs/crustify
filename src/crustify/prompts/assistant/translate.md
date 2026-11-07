@@ -76,7 +76,8 @@ You own everything else of the binding workflow above, and of the porting workfl
 port campaign: the planner runs' branches, tasks, checks and promotion; the Rust tree's
 scaffolding; the side campaigns of the out-of-tree libraries the plan needs, each a wrap
 campaign you run in its own repository, as the dependencies spec describes; each module's `status`, which you set to `frozen` when the modules schema's Status
-section times it; every wave, batch, review wave and review batch, from its branch and task to its
+section times it; every module's branch and its integration into the working branch;
+every wave, batch, review wave and review batch, from its branch and task to its
 promotion, and its progress in `schedule.json`; and the accounting the Ownership section
 names.
 
@@ -84,14 +85,16 @@ names.
 
 The campaign brief lists the modules, the out-of-tree libraries and whether each has a
 wrapper on `crustify-rs` already, the assumptions you made, the backend, billing, model proxy and arguments of every agent, the review policy with its objectives, the sanitizers, and the execution policy:
-parallelism, review caps and the settings' approval gates.
+whether modules run concurrently or their waves are merged, parallelism, review caps and
+the settings' approval gates.
 
 ### Settings changes
 
 The unit of work is the module, or the wave for a wave of no module. A changed
-`scope`, `workload` or `review-workload` answer re-plans the modules that are not
-frozen and the waves that are `todo`: spawn planner runs as the binding workflow's
-Planning section describes, under the new answers. Landed work is never re-planned.
+`scope`, `workload`, `review-workload` or `module-concurrency` answer re-plans the modules
+that are not frozen and the waves that are `todo`: spawn planner runs as the binding
+workflow's Planning section describes, under the new answers. Landed work is never
+re-planned.
 
 ### Workflow
 
@@ -142,6 +145,14 @@ Planning section describes, under the new answers. Landed work is never re-plann
    each batch's progress, and promote each wave once it completes. Create each home before its batch launches, as the Rust tree section
    describes.
 
+   With concurrent modules, start each module's run on its own branch as soon as the
+   binding workflow's Order section allows, as many at once as the concurrency spec
+   describes, and integrate each once its run's last wave has been promoted, one at a
+   time, as the versioning spec's Integration section describes. No agent's gates cover
+   the merge's tree, so you merge it, resolve its additive conflicts, and run its gates
+   yourself; hand any other conflict, or a gate that fails, to an agent of the module's
+   batch kind, with additional instructions to resolve it in the module's worktree.
+
    Before a wave whose items use entities of an out-of-tree library that its wrapper
    lacks, advance that library's side campaign, as the dependencies spec's Side campaigns
    section describes: spawn a planner run in its repository with additional instructions
@@ -149,7 +160,7 @@ Planning section describes, under the new answers. Landed work is never re-plann
    promote them there; then move the parent's pin to the wrapper's working-branch tip, and
    its library's `wrapper.pin` in `dependencies.json` with it, in a commit on the parent's
    working branch, and start the wave.
-3. **Shipping.** When a module has landed and passed its gates, ask the user whether to
+3. **Shipping.** When a module has been integrated and passed its gates, ask the user whether to
    advance the shipping branch, as the binding workflow's Shipping section describes. A
    parent ships only once each wrapper it pins has shipped the commit it pins: ask for
    those wrappers' shipping too.

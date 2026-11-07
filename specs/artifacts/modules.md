@@ -19,37 +19,21 @@ mirrors, as `specs/rust/conventions.md` describes: there is no second placement 
 | `version` | the analyzed tree's revision — a commit, not a counter. What this decomposition describes, pinned |
 | `link_units` | the campaign's link units, in `index` order |
 
-## 1. Execution order
+## 1. Indices and order
 
 `index` identifies a link unit, and a module within its link unit; it is not a position.
 Each run numbers the link units and modules it adds after the highest index already used,
 so an index is never reused or renumbered.
 
-The order is computed from the dependencies. A module's `depends_on` records every
-dependency it has, split in two, as [Dependencies](#8-link_unitsmodulesdepends_on)
-describes:
+A module's `depends_on` records every dependency it has, as
+[Dependencies](#8-link_unitsmodulesdepends_on) describes. The order of the modules is not
+recorded here: it is computed from their units' dependencies and recorded in
+[`schedule.json`](schedule.md)'s `modules`, with the dependencies it keeps and those it
+cuts, as `specs/planning/scheduling.md`'s Order section describes.
 
-- `scheduled`, the modules that run before it, and the out-of-tree libraries it uses; and
-- `cut`, the modules it depends on that run after it, its dependency on them cut to break
-  a cycle.
-
-Their in-tree records together are every module it depends on, and `scheduled` alone is
-acyclic across the decomposition. Within a cycle, the dependency kept is the one on the
-member the most other members depend on, and the edges between tied members break ties,
-as `specs/planning/scheduling.md`'s Order section describes. Modules are ordered one after another,
-in the order of `scheduled`; their waves run whenever they are scheduled, as
-[`schedule.md`](schedule.md) orders them. Among the modules ready at once, a foundational one runs first, then the one whose link
-unit has the lower index, then the one with the lower index. Link units are ordered the
-same way by their own `depends_on`.
-
-A foundational module depends through `scheduled` on foundational modules only, so every
-foundational module runs before any other, and those whose items depend on others' run
-after them: the modules of string lifecycle routines after those of the type-erased
-allocators they call.
-
-A new module lands wherever its dependencies place it, without renumbering any other. When
-a frozen module depends on it, that dependency is one of the frozen module's cuts: it runs
-already, so the new module can only follow it.
+A foundational module depends on foundational modules only, so every foundational module
+is ordered before any other, and those whose items depend on others' after them: the
+modules of string lifecycle routines after those of the type-erased allocators they call.
 
 ## 2. Status
 
@@ -75,7 +59,7 @@ order.
 | `name` | unique link-unit identifier, normally the linked artifact's filename stem |
 | `kind` | `library` or `executable` |
 | `linkage` | `shared` or `static` for a library; `null` for an executable |
-| `depends_on` | `scheduled` and `cut`: the link units it depends on, by `name`, split as for modules |
+| `depends_on` | the link units it depends on, by `name` |
 | `modules` | the link unit's covered modules, in `index` order |
 
 ## 4. link_units[*].modules[*]
@@ -94,7 +78,7 @@ number within the link unit, which orders and numbers the modules a run adds.
 | `name` | the path below the C root of its translation unit, or of its header for a header module |
 | `status` | `todo` or `frozen`; see [Status](#2-status) |
 | `foundational` | `true` for a foundational module, `false` otherwise; see `specs/planning/decomposition.md`'s Foundational modules section |
-| `depends_on` | `scheduled` and `cut`, each an array of dependency records; see [Dependencies](#8-link_unitsmodulesdepends_on) |
+| `depends_on` | an array of dependency records; see [Dependencies](#8-link_unitsmodulesdepends_on) |
 | `translation_unit` | the module's TU, as a [file entry](#5-file-entries); `null` for a header module |
 | `internal_headers` | the headers the build does not install that the module defines items in, as file entries |
 | `api_headers` | the headers the build installs that the module defines or declares items in, as file entries |
@@ -193,7 +177,6 @@ once across the decomposition.
 | `structs` | struct definitions |
 | `functions` | function definitions |
 | `global_variables` | file- and program-scope variables |
-| `enums` | enum definitions |
 | `unions` | union definitions |
 | `callbacks` | function-pointer types the module defines |
 
@@ -205,20 +188,23 @@ once across the decomposition.
 | `opaque_structs` | structs the API headers only forward-declare |
 | `functions` | functions the API headers declare, prototypes and `static inline` alike |
 | `global_variables` | variables the API headers declare |
-| `enums` | enums the API headers define |
 | `unions` | unions the API headers define |
 | `callbacks` | function-pointer types the API headers define |
 
 The blocks overlap: a function defined in a translation unit and declared in an API
 header counts in both, once as a definition and once as published. Never add them.
 
+Enums are not counted, here or in a dependency record: no batch wraps an enum, as
+`specs/rust/items/binding.md`'s Type route section describes, so the plan neither counts
+them as a module's work nor orders a module by them.
+
 ## 8. link_units[*].modules[*].depends_on
 
 Every record is directed from this module, the consumer, to something it depends on: a
-module of the decomposition, in `scheduled` or `cut` as the order splits them, or an
-out-of-tree library, always in `scheduled`, since a library outside the tree depends on
-none of the modules and so forms no cycle with them. Imported producer modules are
-emitted as modules too, so every in-tree record resolves through `link_units`.
+module of the decomposition, or an out-of-tree library, which depends on none of the
+modules and so forms no cycle with them. Which in-tree dependencies the order keeps and
+which it cuts is `schedule.json`'s. Imported producer modules are emitted as modules too,
+so every in-tree record resolves through `link_units`.
 
 | in-tree record field | meaning |
 |---|---|
@@ -231,9 +217,8 @@ emitted as modules too, so every in-tree record resolves through `link_units`.
 
 `outgoing_edges` is what this module needs from the destination; `incoming_edges` is what
 the destination needs from it, and is non-zero exactly when the two form a cycle. The pair
-is mirrored: the destination's own record for this module carries the same two numbers
-swapped, in its `scheduled` when this one is in `cut`, and in its `cut` when this one is
-in `scheduled` and the two form a cycle.
+is mirrored: the destination's own record for this module, when the two form a cycle,
+carries the same two numbers swapped.
 
 | out-of-tree record field | meaning |
 |---|---|
@@ -245,9 +230,10 @@ its wrapper and the crates that port or bind it, is recorded once, in `dependenc
 as `specs/artifacts/dependencies.md` describes, not in each record that imports it.
 
 A record's `counters` carries the same item kinds a module's own does — `structs`,
-`functions`, `global_variables`, `enums`, `unions`, `callbacks` — counting what this
-module consumes, not what the destination contains. It has no `files` or `loc`: those
+`functions`, `global_variables`, `unions`, `callbacks` — counting what this module
+consumes, not what the destination contains. A module that uses only another's enums has
+no record of it, and its edges count no enum. It has no `files` or `loc`: those
 describe a module's own files, and a consumer imports entities, not files.
 
-The in-tree graph may contain cycles, and this artifact records them: `cut` holds the
-edges the order cuts.
+The in-tree graph may contain cycles, and these records keep them: a record whose
+`incoming_edges` is non-zero is one side of a cycle, which the order cuts.

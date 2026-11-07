@@ -34,13 +34,21 @@ An audit reviews an existing Rust crate in its own repository, and creates none.
 | shipping | `main` in the campaign's own repository; `crustify/main` in an audit, beside the reviewed crate's own branches | never while the campaign runs |
 | working | `crustify/devel` | in the repository's base dir |
 | planner run | `crustify/planner/run-<n>` | in the repository's base dir, while its run is live |
+| module | `crustify/modules/<link-unit>/<module>`, or `crustify/foundational/<link-unit>/<module>` for a foundational module | in its worktree, while it integrates |
 | wave | `crustify/waves/wave-<index>` | never |
 | batch | `crustify/batches/wave-<index>/batch-<index>` | in its worktree |
 
 The shipping branch holds what the user has approved to ship: it advances only with the
 user's approval, by a fast-forward to the working branch. The working branch is where the
-campaign integrates its work: planner runs and waves fork from it and are promoted back to
-it.
+campaign integrates its work: planner runs fork from it and are promoted back to it, and
+so are the waves with merged waves, and the modules with concurrent modules, as
+`specs/planning/scheduling.md` describes the two.
+
+A module's branch holds one run of its waves with concurrent modules: its waves fork from
+it and are promoted back to it, and it is integrated into the working branch once they
+have landed, as [Integration](#45-integration) describes. `<module>` is the module's
+`name`, the path of its TU or header below the C root; a path is never a directory of
+another, so no two module branches collide.
 
 A wave's branch is the integration branch its batches land on, a review wave's as much as
 a translation wave's. It is never checked out: a landing push to a checked-out branch
@@ -52,8 +60,8 @@ way.
 ## 3. Worktrees
 
 Each batch has its own worktree at `crustify/.worktrees/<its branch name>`, its `c/` a
-worktree of the base checkout's submodule. A planner run has none: it runs in the
-repository's base dir, on its branch.
+worktree of the base checkout's submodule, and so does a module while it integrates. A
+planner run has none: it runs in the repository's base dir, on its branch.
 
 ## 4. Landing
 
@@ -142,6 +150,43 @@ The integration branch is never reset, force-updated or moved backward, and noth
 pushed to a remote. The worktree stays after landing, until it is purged as [Lifecycle](#5-lifecycle)
 describes.
 
+### 4.3 Promotion
+
+A wave that has landed every batch is promoted to the branch it forked from, the module's
+branch or the working branch, by a fast-forward to its tip, with the same local push
+through the Git common directory, which rejects anything but a fast-forward.
+
+### 4.4 Progress
+
+The progress recorded while waves run, in `schedule.json` and the dashboard's usage and
+campaign cells, is committed on the working branch: between waves with merged waves, and
+whenever no module is integrating with concurrent modules. No agent writes
+`schedule.json`, and no module branch changes it.
+
+### 4.5 Integration
+
+With concurrent modules, a module's branch is integrated into the working branch once the
+last wave of its run has been promoted to it. Other modules may have been integrated since
+it forked, so the working branch is merged into it, in its worktree, rather than the
+other way around: the module's commits keep their ids, which its batches' `commits`
+record, and the working branch still moves only by fast-forward.
+
+1. The working branch's tip is merged into the module's branch. The files every module
+   adds to, the dashboard's rows, the `-sys` crates' allowlists, `src/lib.rs`'s module
+   declarations and the safe crate's export features, conflict additively: each conflict
+   keeps both sides. Any other conflict is a defect of the integration, resolved without
+   discarding either side.
+2. The merge's tree passes the gates of
+   [`../verification/testing.md`](../verification/testing.md)'s Regressions section, and in
+   a port campaign the module's integration, as
+   [`../workflows/porting.md`](../workflows/porting.md)'s Builds section describes.
+3. The working branch is fast-forwarded to the module's branch.
+
+Modules integrate one at a time, and nothing else is committed on the working branch while
+one does, so that its fast-forward cannot be rejected. With merged waves, a module is
+integrated when the last wave holding its units is promoted to the working branch, and
+its gates run there.
+
 ## 5. Lifecycle
 
 Each branch and worktree exists only while its part of the campaign needs it. Before a part starts, everything it is named for exists; once it is promoted, what
@@ -153,11 +198,10 @@ The working branch is created during setup, in the repository the campaign creat
 the C under `c/` and `crustify/CRUSTIFY.md` in its first commit. The shipping branch is created at the same commit and stays there
 until the user first approves shipping. Both last for the campaign.
 
-The working branch is committed to only between waves, so that every promotion is a
-fast-forward. The progress recorded while a wave runs, in `schedule.json` and the
-dashboard, stays in the base checkout's working tree until the wave has been promoted,
-and is then committed with its accounting. No agent writes `schedule.json`, so the
-fast-forward never conflicts with it.
+The working branch is committed to only when nothing is being promoted or integrated to
+it, so that every promotion and integration is a fast-forward: the progress recorded in
+the meantime stays in the base checkout's working tree until then, as
+[Progress](#44-progress) describes.
 
 ### 5.2 Planner runs
 
@@ -166,17 +210,26 @@ branch is checked out and fast-forwarded to it, and the next run forks from ther
 
 ### 5.3 Modules
 
-A module has no branch of its own. Its base is the working branch's commit its first
-wave forks from, which holds its scaffolded `.rs` file and the settings it runs under. Its
-end state is the working branch's commit its last wave is promoted to.
+A module's base is the working branch's commit that holds its scaffolded `.rs` file and
+the settings it runs under, committed before its first wave. With merged waves, a module
+has no branch of its own, and its end state is the working branch's commit its last wave
+is promoted to.
+
+With concurrent modules, a module's branch is forked from its base before its first wave,
+once the waves of other modules that its waves depend on have been integrated. A module
+whose waves the order splits, such as one that wraps a cut dependency ahead of its
+consumer, runs once per contiguous run of its waves, each run on a branch forked anew
+from the working branch. Once a run has been integrated, its branch and worktree are
+purged; its end state is the working branch's commit its last run integrates into.
 
 ### 5.4 Waves
 
-A wave's integration branch is forked from the working branch's tip before any of its
-batches launch; that commit is the wave's base. The branch exists before the first
-landing, because a landing push to a missing branch silently creates it, and is never
-checked out. Once every batch has landed, the working branch is fast-forwarded to the
-wave's tip.
+A wave's integration branch is forked from its module's branch's tip with concurrent
+modules, and from the working branch's tip with merged waves, before any of its batches
+launch; that commit is the wave's base. The branch exists before the first landing,
+because a landing push to a missing branch silently creates it, and is never checked out.
+Once every batch has landed, the wave is promoted, as [Promotion](#43-promotion)
+describes, and its branch purged.
 
 A review wave forks once the wave it reviews has been promoted, so the reviewed commits
 are on the working branch, and their batches' `commits` in `schedule.json`.

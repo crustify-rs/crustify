@@ -8,6 +8,8 @@ plan that earlier runs committed (see [Plan corrections](#9-plan-corrections)).
 
 ## 1. Review waves and batches
 
+TODO: `schedule.json`'s schema leaves review waves out for now, as [`../artifacts/schedule.md`](../artifacts/schedule.md) notes; the review waves below are not scheduled until it holds them again.
+
 When review is enabled, every translated wave is followed by its review wave, a wave of
 its own in `schedule.json` that `reviews` it, before the next translation wave starts. Its
 batches land on its integration branch, never checked out, as [`../operations/versioning.md`](../operations/versioning.md)

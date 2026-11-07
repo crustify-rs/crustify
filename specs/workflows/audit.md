@@ -65,10 +65,10 @@ For `revisit`, the reports are divided into their own batches, grouped so that r
 needing the same instrument or the same build share a reviewer.
 
 Each round of reviewers, as many as [`../operations/concurrency.md`](../operations/concurrency.md) describes, is
-one review wave, recorded in
-`schedule.json` as [`../artifacts/schedule.md`](../artifacts/schedule.md) describes: a
-wave of no link unit or module, each of its batches a `review` batch holding its
-`paths` or `reports`.
+one review wave: a wave of no link unit or module, each of its batches a `review` batch
+holding its `paths` or `reports`. TODO: `schedule.json`'s schema leaves review waves out
+for now, as [`../artifacts/schedule.md`](../artifacts/schedule.md) notes, so an audit's
+review waves are not recorded there until it holds them again.
 
 ## 5. Review waves
 

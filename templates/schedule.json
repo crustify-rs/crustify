@@ -1,24 +1,110 @@
 {
   "_comment": [
-    "Example `<workdir>/crustify/artifacts/schedule.json`: the campaign's waves and",
-    "batches. Planning appends waves after the highest index, and their `index` is",
-    "their permanent id, not their position: `todo` waves run in the order of",
-    "`depends_on.scheduled`, the lowest index first among those ready at once. Each",
-    "batch's id is wave-<index>/batch-<index>, which names its branch and worktree.",
-    "`status` and `commits` record progress as the work launches and lands. A",
-    "`wrap` or `port` batch's task.json carries its kind as `objective`, its",
-    "items, its batch fields and the run fields. Wave 2 reviews wave 1; wave 3 is a",
-    "wave of no module, planned from a few named items. Homes follow the coding",
-    "conventions: src/<link-unit>/ in the campaign's own repository; C paths are below c/.",
-    "An independent illustration: it is not a schedule for templates/modules.json."
+    "Example `<workdir>/crustify/artifacts/schedule.json`: the order of the campaign's",
+    "modules, and its waves and batches. `modules` lists them by `layer`: src/core.c",
+    "comes first, and its use of src/io.c's widget_stream is cut. Planning appends",
+    "waves after the highest index, and their `index` is their permanent id, not their",
+    "position: `todo` waves run in the order of `depends_on.scheduled`, the lowest",
+    "index first among those ready at once. Each batch's id is",
+    "wave-<index>/batch-<index>, which names its branch and worktree. `status` and",
+    "`commits` record progress as the work launches and lands. A batch's task.json",
+    "carries its kind as `objective`, its items, its batch fields and the run fields.",
+    "Homes follow the coding conventions: src/<link-unit>/ in the campaign's own",
+    "repository; C paths are below c/. An independent illustration: it is not a",
+    "schedule for templates/modules.json. With concurrent modules, the settings' default,",
+    "each wave is one module's; with merged waves, a wave of no module holds the",
+    "batches of every module at its `layer` and `sublayer`.",
+    "src/io.c's `external` record names libz, whose z_stream_s its widget_stream holds:",
+    "libz's side campaign wraps it, and no wave here does."
   ],
-  "schema_version": 3,
+  "schema_version": 4,
+  "modules": [
+    {
+      "link_unit": "libwidget",
+      "module": "src/core.c",
+      "foundational": false,
+      "layer": 0,
+      "waves": [
+        0,
+        1
+      ],
+      "depends_on": {
+        "scheduled": [],
+        "cut": [
+          {
+            "link_unit": "libwidget",
+            "module": "src/io.c",
+            "foundational": false,
+            "unique_edges": 1,
+            "total_edges": 1,
+            "items": [
+              {
+                "from": {
+                  "name": "widget_open",
+                  "defined_in": "src/core.c"
+                },
+                "to": {
+                  "name": "widget_stream",
+                  "defined_in": "include/widget/io.h"
+                },
+                "kind": "type"
+              }
+            ]
+          }
+        ],
+        "external": []
+      }
+    },
+    {
+      "link_unit": "libwidget",
+      "module": "src/io.c",
+      "foundational": false,
+      "layer": 1,
+      "waves": [
+        2
+      ],
+      "depends_on": {
+        "scheduled": [
+          {
+            "link_unit": "libwidget",
+            "module": "src/core.c",
+            "foundational": false,
+            "unique_edges": 2,
+            "total_edges": 3
+          }
+        ],
+        "cut": [],
+        "external": [
+          {
+            "library": "libz",
+            "unique_edges": 1,
+            "total_edges": 1,
+            "items": [
+              {
+                "from": {
+                  "name": "widget_stream",
+                  "defined_in": "include/widget/io.h"
+                },
+                "to": {
+                  "name": "z_stream_s",
+                  "defined_in": "/usr/include/zlib.h"
+                },
+                "kind": "type"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
   "waves": [
     {
       "index": 0,
       "link_unit": "libwidget",
       "module": "src/core.c",
       "foundational": false,
+      "layer": 0,
+      "sublayer": 0,
       "status": "done",
       "depends_on": {
         "scheduled": [],
@@ -33,6 +119,9 @@
       "batches": [
         {
           "index": 0,
+          "link_unit": "libwidget",
+          "module": "src/core.c",
+          "foundational": false,
           "kind": "wrap",
           "status": "done",
           "items": [
@@ -53,7 +142,10 @@
         },
         {
           "index": 1,
-          "kind": "port",
+          "link_unit": "libwidget",
+          "module": "src/core.c",
+          "foundational": false,
+          "kind": "wrap",
           "status": "done",
           "items": [
             {
@@ -76,13 +168,15 @@
       "link_unit": "libwidget",
       "module": "src/core.c",
       "foundational": false,
+      "layer": 0,
+      "sublayer": 1,
       "status": "wip",
       "depends_on": {
         "scheduled": [
           0
         ],
         "cut": [
-          4
+          2
         ]
       },
       "budgets": {
@@ -94,6 +188,9 @@
       "batches": [
         {
           "index": 0,
+          "link_unit": "libwidget",
+          "module": "src/core.c",
+          "foundational": false,
           "kind": "wrap",
           "status": "failed",
           "items": [
@@ -112,79 +209,14 @@
     {
       "index": 2,
       "link_unit": "libwidget",
-      "module": "src/core.c",
-      "foundational": false,
-      "reviews": 1,
-      "status": "todo",
-      "depends_on": {
-        "scheduled": [
-          1
-        ],
-        "cut": []
-      },
-      "budgets": {
-        "max-types": 2,
-        "min-fields": 20,
-        "max-syms": 25,
-        "max-loc": 500
-      },
-      "batches": [
-        {
-          "index": 0,
-          "kind": "review",
-          "status": "todo",
-          "reviews": [
-            0
-          ],
-          "commits": []
-        }
-      ]
-    },
-    {
-      "index": 3,
-      "link_unit": "libwidget",
-      "module": null,
-      "foundational": false,
-      "status": "todo",
-      "depends_on": {
-        "scheduled": [
-          2
-        ],
-        "cut": []
-      },
-      "budgets": {
-        "max-types": 2,
-        "min-fields": 20,
-        "max-syms": 25,
-        "max-loc": 500
-      },
-      "batches": [
-        {
-          "index": 0,
-          "kind": "port",
-          "status": "todo",
-          "items": [
-            {
-              "name": "widget_version",
-              "defined_in": "src/version.c",
-              "kind": "symbol",
-              "field_anchors": [],
-              "home": "src/libwidget/src/version.rs"
-            }
-          ],
-          "commits": []
-        }
-      ]
-    },
-    {
-      "index": 4,
-      "link_unit": "libwidget",
       "module": "src/io.c",
       "foundational": false,
+      "layer": 1,
+      "sublayer": 0,
       "status": "todo",
       "depends_on": {
         "scheduled": [
-          2
+          0
         ],
         "cut": []
       },
@@ -197,6 +229,9 @@
       "batches": [
         {
           "index": 0,
+          "link_unit": "libwidget",
+          "module": "src/io.c",
+          "foundational": false,
           "kind": "wrap",
           "status": "todo",
           "items": [

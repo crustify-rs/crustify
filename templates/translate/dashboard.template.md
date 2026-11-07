@@ -17,6 +17,7 @@ and in Notes.
 - **review-workload** — `<caps>`
 - **sanitizers** — `<variants>`
 - **target-config** — `<configuration>`, `build.json` version `<n>`
+- **module-concurrency** — `<concurrent | merged>`
 
 ## Legend
 

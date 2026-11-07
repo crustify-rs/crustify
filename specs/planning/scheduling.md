@@ -8,19 +8,28 @@ describes.
 
 ## 1. Order
 
-The campaign's order is computed from the dependencies `modules.json` records, as
-[`../artifacts/modules.md`](../artifacts/modules.md) describes: each module's in-tree
-dependencies are split into those that run before it, `depends_on.scheduled`, and those
-cut to break a cycle, `depends_on.cut`, so that the scheduled dependencies form a DAG.
-Within each strongly connected component, the member the most other members depend on
-comes first, and the edges between tied members break ties: every dependency on a member
-that comes later is cut, a derived type's dependency on its base included. Link units are
-ordered the same way. Modules are ordered one after another, and their waves run whenever
-they are scheduled, in the order [Waves and batches](#2-waves-and-batches) gives them.
+The campaign's order is computed over the units of every module of the decomposition, each
+module holding the units it owns, as [`../artifacts/modules.md`](../artifacts/modules.md)'s
+file entries select them, and recorded in `schedule.json`'s `modules`, as
+[`../artifacts/schedule.md`](../artifacts/schedule.md) describes. A module depends on the
+modules its units depend on, and each of its dependencies is split into those ordered
+before it, `depends_on.scheduled`, and those cut to break a cycle, `depends_on.cut`, so
+that the scheduled dependencies form a DAG.
 
-A frozen module keeps its place: a module added after it that it depends on is one of its
-cuts. A cut dependency is never reached through raw bindings: what a module uses of one is
-wrapped before it, as [Wrap waves](#3-wrap-waves) describes.
+A cut puts a dependency after its user, which then reaches it through a binding: one per
+distinct unit it puts after the user, however many edges reach that unit. Within each
+strongly connected component of the modules, the module the most distinct units of the
+others depend on, net of the distinct units of the others it depends on, comes first, and
+every dependency on a module that comes later is cut. The modules are then layered by the
+longest path over their scheduled dependencies, each module's `layer`. Each module's units
+are ordered within it the same way, every edge counting once, and layered: each layer is
+one of the module's waves, in `sublayer` order. Link units are ordered the same way.
+
+Every unit the plan schedules belongs to a module: a unit no module owns is a gap in the
+decomposition. Each planner run computes the order anew; the waves that have started keep
+their records, as `schedule.md`'s Re-planning section describes. A cut dependency is never
+reached through raw bindings: what a module uses of one is wrapped before it, as
+[Wrap waves](#3-wrap-waves) describes.
 
 The plan holds only the link units and modules the campaign's scope includes, without
 those that a previous campaign completed. The foundational modules depend on no other, so
@@ -29,17 +38,39 @@ they run first.
 ## 2. Waves and batches
 
 `schedule.json` follows [`../artifacts/schedule.md`](../artifacts/schedule.md); its layout
-example is [`templates/schedule.json`](../../templates/schedule.json). Each wave belongs to
-one module, or to none when the campaign has no decomposition, and records the waves it
-depends on, split as modules' are into `scheduled` and `cut`: within a module, the
-dependency order of its units; across modules, the modules' order, so that a wave depends
-on the last waves of the modules its units depend on. Waves execute one at a
-time, in that order; the batches of a wave execute concurrently, as many at once as
-[`../operations/concurrency.md`](../operations/concurrency.md) describes, and the `workload` caps bound each batch.
+example is [`templates/schedule.json`](../../templates/schedule.json). Each wave records
+the waves it depends on, split as modules' are into `scheduled` and `cut`: its module's
+previous wave, and the waves that hold its items' dependencies, in its module or in the
+modules ordered before it.
 
-When review is enabled, each translation wave is followed by a review wave, whose batches
-group the reviewed wave's batches as [`../verification/reviewing.md`](../verification/reviewing.md)'s Review waves and
-batches section describes, within the `review-workload` caps.
+How the modules run is the settings' `module-concurrency` answer, in a wrap and a port
+campaign alike:
+
+- concurrent modules, the default: each wave belongs to one module, and each module's
+  waves run one at a time, in `sublayer` order. Modules that do not depend on each other
+  run at once, within the campaign's scope and as many at once as
+  [`../operations/concurrency.md`](../operations/concurrency.md) describes: a module's
+  run starts once the waves of other modules that its waves depend on have been
+  integrated, as [`../operations/versioning.md`](../operations/versioning.md) describes,
+  so that each module is finished, and can be shipped, as early as its dependencies
+  allow; and
+- merged waves: the waves of every module at the same `layer` and `sublayer` merge into
+  one wave, each of its batches holding one module's units, and the waves run one at a
+  time, in the order of their `layer` and `sublayer`. The modules then finish together,
+  layer by layer.
+
+A wave belongs to no module when the campaign has no decomposition. The batches of a wave
+execute concurrently, as many at once as
+[`../operations/concurrency.md`](../operations/concurrency.md) describes.
+
+A wave's units are packed into batches under the campaign's `workload` caps, each batch
+holding types or symbols: a type batch is bounded by its types and their fields, a symbol
+batch by its symbols and their lines of code. Adjacent waves of a module fold into one
+while their units fit one batch.
+
+TODO: review waves, which follow each translation wave when review is enabled, as
+[`../verification/reviewing.md`](../verification/reviewing.md)'s Review waves and batches
+section describes, are not scheduled for now.
 
 A `wrap` or `port` batch entry holds its `kind` and `items`, which its task carries as
 `objective` and `items` ([`../artifacts/task.md`](../artifacts/task.md) gives their format and
@@ -49,7 +80,11 @@ Type-erased and string lifecycle primitives are units of the foundational module
 Typed lifecycle primitives stay in the schedule as free symbols, although the type
 batches discover them on the fly; their binders skip them.
 
-In a wrap campaign every batch is `wrap`. In a port campaign:
+In a wrap campaign every batch is `wrap`.
+
+TODO (porting): the scheduling of a port campaign, which this section and
+[Porting types](#4-porting-types) describe, is to be reworked over the order above. In a
+port campaign:
 
 - a selected symbol is `port` from the start;
 - a selected enum is `port`, where the DAG places it, and never `wrap`;
@@ -69,15 +104,18 @@ ports it once.
 A binding serves the code that consumes it, so wrap batches are scheduled lazily: right
 before their first consumer, and only for what consumers use.
 
-- In a port campaign, each `port` wave is preceded by the `wrap` waves of the in-tree
-  `wrap` modules it needs, the foundational ones included: an in-tree `wrap` module's
-  waves are those that precede its consumers.
+- TODO (porting): in a port campaign, each `port` wave is preceded by the `wrap` waves of
+  the in-tree `wrap` modules it needs, the foundational ones included: an in-tree `wrap`
+  module's waves are those that precede its consumers.
 - In either campaign, a wave is preceded by `wrap` waves holding what its items use of
   the modules its module's cuts name, which run after it: a cut dependency is bound
   before its consumer, by a binder, rather than reached through raw bindings, and its
   module ports it later.
 - In either campaign, the out-of-tree libraries a wave's items use are wrapped first in
-  their side campaigns, as [`dependencies.md`](dependencies.md) describes.
+  their side campaigns, as [`dependencies.md`](dependencies.md) describes: its module's
+  `depends_on.external` records in `schedule.json` name each library and the entities
+  the wave's items use of it. No entity of a library is a unit of the campaign's own
+  schedule.
 
 Wrapping an item brings in its own wrap dependencies, transitively: the types its
 signature names, those of the fields its consumers access, and theirs in turn, closed
@@ -96,6 +134,8 @@ module owns and wraps first, as [Porting types](#4-porting-types) describes, is 
 module's own work, not a preceding wrap wave's.
 
 ## 4. Porting types
+
+TODO (porting): to be reworked with the scheduling of a port campaign.
 
 A selected type's layout users are the target's C that depends on its layout. An enum
 has none: using its constants or values of its type is no layout use, and it is ported as

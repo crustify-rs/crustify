@@ -26,8 +26,8 @@ the rate the provider allows.
 
 The number of agents in flight follows from those, for each wave as it starts and again as
 its batches land or fail. A `parallelism` number in the settings is a cap on it; the
-default, `assistant's choice`, sets none. When the waves of several campaigns, or of a
-campaign and its side campaigns, run at once, they share the host as one workload.
+default, `assistant's choice`, sets none. When the waves of several modules, campaigns,
+or of a campaign and its side campaigns, run at once, they share the host as one workload.
 
 One unit of work may be given priority over another by suspending the other's agents, with
 every process of their trees, and resuming them once the first has finished. A suspended

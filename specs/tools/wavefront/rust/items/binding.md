@@ -2,7 +2,7 @@
 
 ## Item analysis
 
-The campaign-wide configuration, `crustify/wavefront/configs/wavefront-config.json`,
+The configuration, `crustify/wavefront/configs/wavefront-config.json`,
 answers the queries an item's analysis needs, and the analysis's findings are submitted
 with the CLI's `--update`, to be queried again rather than re-derived.
 

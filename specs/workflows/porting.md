@@ -80,7 +80,10 @@ The C stays until integration: the target's other C still calls the module's sym
 only the exports could define, and the module's equivalence tests and its cut cycles still
 run through it.
 
-Once the module's last wave has landed, it is integrated in one step: its export feature is
+Once the module's last wave has landed, it is integrated in one step, with concurrent
+modules as part of its branch's integration into the working branch, as
+[`../operations/versioning.md`](../operations/versioning.md)'s Integration section
+describes: its export feature is
 turned on, its Rust is linked into the target in place of its TU, through the target's
 actual build system, the TU and the C tests gated with it are removed, and the target's
 test suite runs over the hybrid as the integration regression gate. The C side of the step

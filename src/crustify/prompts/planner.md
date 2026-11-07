@@ -138,9 +138,9 @@ reimplementing or binding the target in your commit message.
 
 ### 3. Planning
 
-Record each module's and link unit's `depends_on`, then plan the waves and batches of the
-units your scope adds into `schedule.json`, from `templates/schedule.json`, as the
-scheduling spec describes. Plan no waves that replace raw seams.
+Record each module's and link unit's `depends_on`, then record the order of the modules
+and plan the waves and batches of the units your scope adds into `schedule.json`, from
+`templates/schedule.json`, as the scheduling spec describes. Plan no waves that replace raw seams.
 
 For each out-of-tree library your waves need, check `github.com/crustify-rs` for its
 wrapper, as the dependencies spec's Reuse section describes, and record in your commit

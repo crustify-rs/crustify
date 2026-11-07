@@ -16,15 +16,16 @@ A campaign keeps its wavefront state under `crustify/wavefront/`:
 
 - the CodeQL database and its T1/T2 tables, under `codeql/`, and wavefront's `.cache`,
   both gitignored;
-- the configurations, under `configs/`: the campaign-wide `wavefront-config.json`, whose
-  `impl_files` and `api_headers` are the union of every module's, which every query of
-  the bindings and reviews resolves through, which orders the link units and modules,
-  and whose graph alone shows the relations between two modules; and one
-  `<link-unit>/<module index>/wavefront-config.json` per module, which finds the
-  module's dependency edges and its schedule. Every configuration shares
+- the configuration, `configs/wavefront-config.json`, which every query of the bindings
+  and reviews resolves through, and which orders and schedules the modules. Its `closure`
+  holds the files of every module, its `impl_files` the translation units and internal
+  headers and its `api_headers` the installed headers; its `modules` holds one record per
+  module of `modules.json`, named `<link-unit>/<name>`, with ` (foundational)` after a
+  foundational module's name, whose `files` are the module's file entries with their
+  `items`; and its `schedule_seeds` names what a planner run schedules. It uses
   `../crustify/wavefront`, relative to the C root, as its `state_dir`, and sets
   `"t3_dir": "t3"`;
-- the T3 tables, under `t3/`, one campaign-wide pair serving every configuration:
+- the T3 tables, under `t3/`, one campaign-wide pair serving the configuration:
   `chased_casts.csv`, whose `erased_arg` and `erased_field` rows name the type a
   type-erased parameter or field holds and whose `base_derived` rows the base a type is
   reached through, and `type_generators.csv`, the type-minting macros and the shapes they
