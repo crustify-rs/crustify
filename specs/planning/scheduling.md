@@ -43,21 +43,13 @@ the waves it depends on, split as modules' are into `scheduled` and `cut`: its m
 previous wave, and the waves that hold its items' dependencies, in its module or in the
 modules ordered before it.
 
-How the modules run is the settings' `module-concurrency` answer, in a wrap and a port
-campaign alike:
-
-- concurrent modules, the default: each wave belongs to one module, and each module's
-  waves run one at a time, in `sublayer` order. Modules that do not depend on each other
-  run at once, within the campaign's scope and as many at once as
-  [`../operations/concurrency.md`](../operations/concurrency.md) describes: a module's
-  run starts once the waves of other modules that its waves depend on have been
-  integrated, as [`../operations/versioning.md`](../operations/versioning.md) describes,
-  so that each module is finished, and can be shipped, as early as its dependencies
-  allow; and
-- merged waves: the waves of every module at the same `layer` and `sublayer` merge into
-  one wave, each of its batches holding one module's units, and the waves run one at a
-  time, in the order of their `layer` and `sublayer`. The modules then finish together,
-  layer by layer.
+Each wave belongs to one module, and each module's waves run one at a time, in
+`sublayer` order, in a wrap and a port campaign alike. Modules that do not depend on each
+other run at once, within the campaign's scope and as many at once as
+[`../operations/concurrency.md`](../operations/concurrency.md) describes: a module's run
+starts once the waves of other modules that its waves depend on have been integrated, as
+[`../operations/versioning.md`](../operations/versioning.md) describes, so that each
+module is finished, and can be shipped, as early as its dependencies allow.
 
 A wave belongs to no module when the campaign has no decomposition. The batches of a wave
 execute concurrently, as many at once as
@@ -90,7 +82,7 @@ ports it once.
 A wave's batches are packed when it starts, from the state of the campaign at that
 moment, and packed again as its batches land or fail. Each batch holds items of one
 objective and one route, as [`../artifacts/task.md`](../artifacts/task.md)'s Routes
-section describes: types, or symbols and callbacks; with merged waves, of one module.
+section describes: types, or symbols and callbacks.
 
 A batch is sized so that its agent carries every item through its analysis, its tests and
 its gates within one session, without its context running out, and so that what it lands
@@ -154,11 +146,11 @@ in the modules that own them, and it lands on its consumer's wave branch before 
 consumer's batches launch. A type that a `port` module owns and wraps first, as
 [Later stages](#5-later-stages) describes, is that module's own work, in its own waves.
 
-The out-of-tree libraries a wave's items use are wrapped first in their side campaigns,
-before the wave starts, as [`dependencies.md`](dependencies.md) describes: its module's
-`depends_on.external` records in `schedule.json` name each library and the entities its
-items use of it. No
-entity of a library is a unit of the campaign's own schedule.
+What a wave's items need through an out-of-tree library's wrapper is wrapped first in the
+library's side campaign, before the wave starts, as [`dependencies.md`](dependencies.md)'s
+Side campaigns section describes, judged from the libraries and entities its module's
+`depends_on.external` records in `schedule.json` name. No entity of a library is a unit of
+the campaign's own schedule.
 
 ## 5. Later stages
 

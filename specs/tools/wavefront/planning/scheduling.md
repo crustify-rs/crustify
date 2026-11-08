@@ -46,9 +46,6 @@ A row wavefront warns is stale is corrected or deleted.
   they place, as [Later stages](#later-stages) describes. An item a wave
   that has started holds, or that a batch has landed with that objective, is dropped, and
   a dependency on it is one on that wave.
-- With merged waves, the waves of the same `layer` and `sublayer` merge into one, which
-  keeps every module's items, and whose `depends_on` is the union of theirs, less the
-  waves merged into it.
 
 ## Wrap batches
 

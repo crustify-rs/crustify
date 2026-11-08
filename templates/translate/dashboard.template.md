@@ -17,7 +17,6 @@ and in Notes.
 - **review-workload** — `<caps | no cap>`
 - **sanitizers** — `<variants>`
 - **target-config** — `<configuration>`, `build.json` version `<n>`
-- **module-concurrency** — `<concurrent | merged>`
 - **ship** — `<after every integrated module | after: modules | once the scope is done>`
 
 ## Legend

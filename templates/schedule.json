@@ -14,9 +14,7 @@
     "and packs only widget_read. Wave 0's batch 2 reviews its batches 0 and 1. Homes follow",
     "the coding conventions: src/<link-unit>/ in the campaign's own repository; C paths are",
     "below c/. An independent illustration: it is not a schedule for templates/modules.json.",
-    "With concurrent modules, the settings' default, each wave is one module's; with merged",
-    "waves, a wave of no module holds the items of every module at its `layer` and",
-    "`sublayer`. src/io.c's `external` record names libz, whose z_stream_s its",
+    "Each wave is one module's. src/io.c's `external` record names libz, whose z_stream_s its",
     "widget_stream holds: libz's side campaign wraps it, and no wave here does.",
     "Each planned item's release points are null in this wrap campaign, whose schedule binds the API; in a port campaign they place the later stages, `port/layout`, `port/memory` and `port/unexport`, each a planned item of its own with the stage as its objective."
   ],

@@ -40,8 +40,7 @@ the others stand as measured on the batch's base.
 
 The cells known only once an agent has ended, from its usage: its cost, tokens and wall,
 the per-unit costs derived from them, and their `Σ` cells. A batch's are filled on the
-working branch once its row is there: once its wave is promoted to it with merged waves,
-and once its module is integrated with concurrent modules, as
+working branch once its row is there, once its module is integrated, as
 [`versioning.md`](versioning.md) describes. A planner run's are filled once the run is
 promoted. A batch run more than once costs the sum of its runs.
 

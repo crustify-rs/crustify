@@ -109,7 +109,7 @@ Start from what your branch holds. For each artifact you own:
   deleted; per-subsystem schedules are converted as the schedule schema's Earlier versions
   section describes;
 - if it exists, add what it lacks: a module or link unit the scope now includes, items
-  it adds, or the waves a changed setting, such as `module-concurrency`, re-plans; and
+  it adds, or the waves a changed setting, such as `scope`, re-plans; and
 - check the entries an earlier run decided against the evidence, and correct the defects
   you find and the improvements the evidence supports. Do not rewrite what is right for
   style.

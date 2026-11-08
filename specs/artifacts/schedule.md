@@ -66,10 +66,10 @@ started keep their records, as [Re-planning](#5-re-planning) describes.
 |---|---|
 | `index` | the wave's id, from zero; see [Indices](#4-indices) |
 | `link_unit` | the `link_units[*].name` of `modules.json` its units belong to; `null` when the wave belongs to no module |
-| `module` | the module's `name` within that link unit; `null` when the wave belongs to no module: a merged wave, or one of a campaign with no decomposition |
+| `module` | the module's `name` within that link unit; `null` when the wave belongs to no module, in a campaign with no decomposition |
 | `foundational` | the module's `foundational`; `false` when the wave belongs to no module |
-| `layer` | its module's `layer`, or the `layer` of the modules whose waves a merged wave holds; `null` when the campaign has no decomposition |
-| `sublayer` | its place among its module's waves, from 0, or, for a merged wave, that of each of the waves it holds; `null` when the campaign has no decomposition |
+| `layer` | its module's `layer`; `null` when the campaign has no decomposition |
+| `sublayer` | its place among its module's waves, from 0; `null` when the campaign has no decomposition |
 | `status` | `todo`, `wip` or `done` |
 | `depends_on` | the waves this one depends on: `scheduled` and `cut`, each an array of wave indices |
 | `items` | the wave's items, each a planned item below |
@@ -101,9 +101,7 @@ through the safe wrappers a wrap batch before it adds, as `specs/planning/schedu
 Wrap batches section describes. Their union is every wave this one depends on, and
 `scheduled` alone is acyclic across the schedule.
 
-With concurrent modules, the settings' default, every wave belongs to one module; with
-merged waves, a wave holds the waves of every module at the same `layer` and `sublayer`,
-each batch one module's, as `specs/planning/scheduling.md` describes.
+Every wave belongs to one module, as `specs/planning/scheduling.md` describes.
 
 A wave is `todo` until its first batch launches, `wip` while any of its batches is
 running or has failed, and `done` once every batch has landed and the wave has been

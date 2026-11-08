@@ -57,7 +57,8 @@ or crosses to C only as values the boundary converts: `errno` set from an `io::E
 an export gateway, a `struct stat` filled from an `fs::Metadata`. It is reached through the
 library's bindings wherever that state is shared with C: a lock, a handle or an allocation
 the remaining C uses too. The agent doing the work judges which, from the code it
-translates; no plan records it.
+translates; no plan records it. An entity it needs through a wrapper that lacks it is
+reported, never reached through raw bindings.
 
 ---
 

@@ -26,7 +26,7 @@ but for its progress; no index reused or renumbered; the `depends_on.scheduled` 
 module's `modules.json` record holds in its `schedule.json` record's `scheduled` or
 `cut`.
 
-A changed `scope` or `module-concurrency` answer re-plans the modules that are not frozen
+A changed `scope` answer re-plans the modules that are not frozen
 and the waves that are `todo`, through further planner runs under the new answers. Landed
 work is never re-planned. A changed `workload` or `review-workload` answer re-plans
 nothing: it caps the batches packed from then on.
@@ -66,19 +66,13 @@ of the directories on its path, before its first wave, and each item's home, as
 
 ## 3. Order
 
-The modules run as the settings' `module-concurrency` answer asks, as
-[`../planning/scheduling.md`](../planning/scheduling.md)'s Waves and batches section
-describes:
-
-- with concurrent modules, a module's run starts once the waves of other modules that its
-  waves depend on have been integrated, on a branch of its own, and its waves that are
-  `todo` run one at a time, in the order of their `depends_on.scheduled`. The runs of
-  modules that do not depend on each other run at once, as many as
-  [`../operations/concurrency.md`](../operations/concurrency.md) describes, and among the
-  runs ready at once, the one whose first wave has the lowest index starts first;
-- with merged waves, the waves that are `todo` run one at a time, in the order of their
-  `depends_on.scheduled`, the lowest index first among those ready at once, as
-  [`../artifacts/schedule.md`](../artifacts/schedule.md) describes.
+The modules run as [`../planning/scheduling.md`](../planning/scheduling.md)'s Waves and
+batches section describes: a module's run starts once the waves of other modules that its
+waves depend on have been integrated, on a branch of its own, and its waves that are
+`todo` run one at a time, in the order of their `depends_on.scheduled`. The runs of
+modules that do not depend on each other run at once, as many as
+[`../operations/concurrency.md`](../operations/concurrency.md) describes, and among the
+runs ready at once, the one whose first wave has the lowest index starts first.
 
 A session may run every wave left, or the waves of the part of the scope it was given.
 
@@ -87,8 +81,8 @@ and its `.rs` file is scaffolded, both committed on the working branch: that com
 module's base, and records the settings the module runs under. A wave of no module
 rereads the settings the same way before it starts. The module is frozen in
 `modules.json` in the same commit, as
-[`../artifacts/modules.md`](../artifacts/modules.md)'s Status section describes. With
-concurrent modules, the module's branch is then forked from its base, as
+[`../artifacts/modules.md`](../artifacts/modules.md)'s Status section describes. The
+module's branch is then forked from its base, as
 [`../operations/versioning.md`](../operations/versioning.md)'s Lifecycle section
 describes.
 
@@ -140,8 +134,7 @@ Once every batch has landed, its review batches included, the wave is promoted t
 describes, and its progress and accounting are committed on the working branch, as its
 Progress section times them.
 
-With concurrent modules, once the last wave of a module's run has been promoted, the
-module is integrated into the working branch, as
+Once the last wave of a module's run has been promoted, the module is integrated into the working branch, as
 [`../operations/versioning.md`](../operations/versioning.md)'s Integration section
 describes: the working branch merged into its branch, its additive conflicts resolved,
 the merge's gates passed, and the working branch fast-forwarded to it. Its gates are
@@ -179,6 +172,5 @@ through wrappers, and the exports the C after it still calls.
 
 Each run's records are collected once it lands or fails, and its dashboard cells filled,
 as [`../operations/accounting.md`](../operations/accounting.md) describes: a batch's usage cells on the working
-branch once its wave's landings are there, when the wave is promoted to it with merged
-waves and when its module is integrated with concurrent modules; a planner run's once the
+branch once its module is integrated; a planner run's once the
 run is promoted; and a module's row once it is integrated.

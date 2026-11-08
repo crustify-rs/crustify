@@ -85,14 +85,13 @@ accounting the Ownership section names.
 
 The campaign brief lists the modules, the out-of-tree libraries and whether each has a
 wrapper on `crustify-rs` already, the assumptions you made, the backend, billing, model proxy and arguments of every agent, the review policy with its objectives, the sanitizers, and the execution policy:
-whether modules run concurrently or their waves are merged, the batch, review and
-parallelism caps if the settings set any, the ship points and the settings' approval
+the batch, review and parallelism caps if the settings set any, the ship points and the settings' approval
 gates.
 
 ### Settings changes
 
-The unit of work is the module, or the wave for a wave of no module. A changed `scope` or
-`module-concurrency` answer re-plans the modules that are not frozen and the waves that
+The unit of work is the module, or the wave for a wave of no module. A changed `scope` answer
+re-plans the modules that are not frozen and the waves that
 are `todo`: spawn planner runs as the binding workflow's Planning section describes,
 under the new answers. A changed `campaign` answer, `wrap` to `port` or back, re-plans
 under the new kind as the same section describes, the frozen modules' objectives
@@ -135,8 +134,9 @@ changed `ship` answer the points at which you ask to ship.
      initialize a new one there, with its `c/` as the Sources section describes, and
      create it on `crustify-rs` only once the user approves;
    - write its settings as the parent's, but for `campaign: wrap`, its source at the
-     release the target links, and its scope, the entities the plan's dependency records
-     count, and apply each settings change of the parent's to it as well;
+     release the target links, and its scope, the entities the parent's waves need through
+     the wrapper, which grows as they run, and apply each settings change of the parent's
+     to it as well;
    - carry out its setup workflow there, its builds installing the library once per
      variant of the parent, except for libc, which stays the system's; and
    - add it to the parent's workspace as a Git dependency pinned to its working branch's
@@ -162,14 +162,15 @@ changed `ship` answer the points at which you ask to ship.
    you launch a batch, check what its items depend on against what has landed, and bind
    what has not first, in a wrap batch of the same wave that lands before it, as the
    scheduling spec's Wrap batches section describes. When a batch fails, run it again or
-   pack its items anew.
+   pack its items anew; when it reports an out-of-tree entity a wrapper lacks, advance that
+   library's side campaign for it first, as below.
 
    When review is enabled, pack review batches as the batches they review land, larger
    than translation batches, as the reviewing spec's Review batches section describes, so
    that review runs beside the wave rather than after it, and mark the wave's last one,
    launched once every translation batch has landed, with `wave_gates`.
 
-   With concurrent modules, start each module's run on its own branch as soon as the
+   Start each module's run on its own branch as soon as the
    binding workflow's Order section allows, as many at once as the concurrency spec
    describes, and integrate each once its run's last wave has been promoted, one at a
    time, as the versioning spec's Integration section describes. No agent's gates cover
@@ -177,11 +178,12 @@ changed `ship` answer the points at which you ask to ship.
    yourself; hand any other conflict, or a gate that fails, to an agent of the module's
    batch kind, with additional instructions to resolve it in the module's worktree.
 
-   Before a wave whose items use entities of an out-of-tree library that its wrapper
-   lacks, advance that library's side campaign, as the dependencies spec's Side campaigns
-   section describes: spawn a planner run in its repository with additional instructions
-   naming the entities the wave needs, run the waves that run plans, and promote them
-   there; then move the parent's pin to the wrapper's working-branch tip, and its
+   Before each wave starts, judge which entities of out-of-tree libraries its items need
+   through the libraries' wrappers rather than the standard library, as the dependencies
+   spec's Side campaigns section describes. For each library whose wrapper lacks some of
+   them, advance its side campaign: spawn a planner run in its repository with additional
+   instructions naming the entities the wave needs, run the waves that run plans, and
+   promote them there; then move the parent's pin to the wrapper's working-branch tip, and its
    library's `wrapper.pin` in `dependencies.json` with it, in a commit on the parent's
    working branch, and start the wave.
 3. **Shipping.** At each point the settings' `ship` answer names, once its modules have

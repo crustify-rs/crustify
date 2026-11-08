@@ -34,8 +34,9 @@ Git, pinned to a commit, with a Cargo `[patch]` pointing at the clone while the 
 extends it; the parent campaign's safe crate, its raw bindings included, names its safe
 wrappers, never its raw bindings once a safe wrapper exists.
 
-A wrapper covers only what the campaigns that use it consume: the entities their
-dependency records count, wrapped as their consumers need them. It exposes its own safe
+A wrapper covers only what the campaigns that use it reach through it: the entities
+their waves need through the wrapper rather than the standard library, wrapped as those
+waves need them. It exposes its own safe
 types, with no conversions to or from the types of other crates that wrap the same
 library.
 
@@ -53,16 +54,22 @@ wrapper covers what the campaign's Rust reaches through it as its waves need it.
 A wrapper's work is a side campaign, continued in its own repository: it keeps its own
 settings, plan, schedule, branches, builds and accounting there, and its batches land on
 its own wave branches, as any wrap campaign's do. Its scope is what the parent campaign
-consumes from the library, not the whole library, and it grows as the parent's waves need
-more of it. Its settings are the parent's, but for its `campaign`, which is `wrap`, its
+reaches through the wrapper, not the whole library, and it grows as the parent's waves
+need more of it. Its settings are the parent's, but for its `campaign`, which is `wrap`, its
 `source`, the library at the release the target links, and its `scope`; a settings change
 the parent applies is applied to its side campaigns too.
 
-The side campaign advances at the parent's pace. Before a parent wave whose items use
-entities of the library that the wrapper lacks, as [scheduling](scheduling.md)'s Wrap
-batches section places it, the side campaign plans and runs the waves that wrap them; once
-those are promoted to its working branch, the parent's pin, its library's `wrapper.pin`
-in `dependencies.json`, moves to that commit, and the parent wave starts. The parent ships
+The side campaign advances at the parent's pace. Before a parent wave starts, the
+entities its items need through each library's wrapper are judged from the items, the
+libraries their modules' `depends_on.external` records name and the entities they use:
+every entity of a library the standard library does not replace, and of the others those
+whose state the items share with the remaining C, as
+[Standard-library equivalents](#2-standard-library-equivalents) describes. What the
+wrapper lacks of them, the side campaign plans and runs waves to wrap; once those are
+promoted to its working branch, the parent's pin, its library's `wrapper.pin` in
+`dependencies.json`, moves to that commit, and the parent wave starts. A batch that needs
+an entity through a wrapper that lacks it reports it rather than reaching it through raw
+bindings, and runs again once the side campaign has wrapped it. The parent ships
 only once each wrapper it pins has shipped the commit it pins, each with the user's
 approval.
 
