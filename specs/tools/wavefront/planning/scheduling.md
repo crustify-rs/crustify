@@ -41,9 +41,9 @@ A row wavefront warns is stale is corrected or deleted.
   `schedule.json`'s highest index, in wavefront's order, their `depends_on` renumbered,
   with their module's `layer` and their `sublayer`. A wave's `items` are those of its
   wavefront batches, each with its `name`, `defined_in` and `kind`, its `used_fields` as
-  `field_users`, the `home` its module gives it, its `objective`, and its `step`,
-  `translate`, with the deferred steps its release points place, as
-  [Deferred items](#deferred-items) describes. An item a wave
+  `field_users`, the `home` its module gives it, its `objective`, and its
+  `opaque_after`, `memory_unmanaged_after` and `unreferenced_after`, with the later stages
+  they place, as [Later stages](#later-stages) describes. An item a wave
   that has started holds, or that a batch has landed with that objective, is dropped, and
   a dependency on it is one on that wave.
 - With merged waves, the waves of the same `layer` and `sublayer` merge into one, which
@@ -57,19 +57,17 @@ the planner run's wavefront schedule, or `query dag --name <items>`. A wrap batc
 are closed over their wrap dependencies on the public-signature graph,
 `query dag --name <items> --api-headers-only`, less what has landed.
 
-## Deferred items
+## Later stages
 
 A port campaign's schedule, which is not `--api-headers-only`, gives each scheduled item
-its release points, which place its deferred steps: a struct's or union's `opaque_after`
-its `layout` step, and its `memory_unmanaged_after` its `memory` step. A function's or
-global's `unreferenced_after` names the integration whose module is the last of its
-referrers, at which its export is removed, as the porting workflow's Builds section
-describes; at an integration, the exports it frees are those whose `unreferenced_after`
-`closure.modules` it completes. A module's C leaves at its integration,
-so a step's `after` is its release point's `closure.modules`, less the item's own module;
-with none left, the step is not deferred. The users behind each point are a query away:
-`query types --name <T> --layout-users` lists a type's layout users with the site and kind
-of each use, `query types --name <T> --raw-sites` its memory users, and
+its release points, which `schedule.json`'s items carry as wavefront records them and which
+place its later stages: a struct's or union's `opaque_after` its `port/layout`, its
+`memory_unmanaged_after` its `port/memory`, and a function's or global's
+`unreferenced_after` its `port/unexport`. A module's C leaves at its integration, so a
+stage's wave waits for the last waves of the modules its point's `closure.modules` names,
+less the item's own; with none left, the stage is not planned. The users behind each point
+are a query away: `query types --name <T> --layout-users` lists a type's layout users with
+the site and kind of each use, `query types --name <T> --raw-sites` its memory users, and
 `query symbols --name <F> --callers` a function's or global's referrers. Whether a user
 stays C is read from those whole lists. `query types --name <T> --field-touchers` lists the
 functions that touch each field.

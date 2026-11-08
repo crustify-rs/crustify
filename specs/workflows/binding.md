@@ -114,8 +114,9 @@ Each batch then gets:
 - symlinks to the gitignored state its tree needs from the base checkout.
 
 The wave's batches run concurrently, as many at once as
-[`../operations/concurrency.md`](../operations/concurrency.md) describes. A `wrap` batch runs a binder, a `port`
-batch a translator:
+[`../operations/concurrency.md`](../operations/concurrency.md) describes. A `wrap` batch runs a binder, and a `port`
+batch, or one of a later stage, `port/layout`, `port/memory` or `port/unexport`, a
+translator:
 
 ```bash
 crustify spawn-binder <batch worktree> <run dir>/task.json

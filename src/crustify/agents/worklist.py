@@ -17,7 +17,9 @@ class WorklistAgent(CrustifyAgent):
     #: compaction reaching the procedure costs more than the cache writes it
     #: gives up.
     prompt_in_system_slot = True
-    #: `wrap` or `port`: what the usage record's stage leads with.
+    #: `wrap` or `port`, or a later stage of a port campaign such as
+    #: `port/layout`: what the usage record's stage leads with, and what the
+    #: worklist tells the agent its items are for.
     objective: str
     #: The stage prompt under `prompts/`.
     prompt: str
@@ -30,11 +32,14 @@ class WorklistAgent(CrustifyAgent):
         items: list[dict],
         git_base: str,
         log_stem: str,
+        objective: str | None = None,
     ) -> None:
         super().__init__(
             workdir, git_base=git_base, log_stem=log_stem,
         )
         self._route = route
+        if objective is not None:
+            self.objective = objective
         self._items = [dict(item) for item in items]
 
     @property
@@ -44,7 +49,7 @@ class WorklistAgent(CrustifyAgent):
         log stem when the harness gives none. Its session record names the
         agent, the role."""
         key = self._items[0]["name"] if self._items else "batch"
-        return (f"{self.objective}-{self._route}_"
+        return (f"{self.objective.replace('/', '-')}-{self._route}_"
                 f"{re.sub(r'[^A-Za-z0-9_]+', '_', key or 'batch')}")
 
     def _template(self) -> str:
@@ -57,5 +62,6 @@ class WorklistAgent(CrustifyAgent):
         # agent issues a request.
         return {
             **super()._arguments(),
-            "worklist": json.dumps({"route": self._route, "items": self._items}),
+            "worklist": json.dumps({"objective": self.objective, "route": self._route,
+                                    "items": self._items}),
         }

@@ -154,42 +154,26 @@ class BatchValidationTests(unittest.TestCase):
                 "items": [self.item(fields=["field"])],
             })
 
-    def test_an_item_is_its_translation_unless_a_step_says_otherwise(self) -> None:
-        batch = self.load({"objective": "port", "items": [self.item()]})
-        self.assertEqual(batch.items[0]["step"], "translate")
-        self.assertIsNone(batch.items[0]["of"])
+    def test_later_stages_of_a_port_campaign(self) -> None:
+        batch = self.load({"objective": "port/layout",
+                           "items": [self.item("Frame", kind="type")]})
+        self.assertEqual(batch.objective, "port/layout")
+        batch = self.load({"objective": "port/memory",
+                           "items": [self.item("Frame", kind="type")]})
+        self.assertEqual(batch.route, "type")
+        batch = self.load({"objective": "port/unexport", "items": [self.item()]})
+        self.assertEqual(batch.route, "symbol")
 
-    def test_deferred_steps_of_a_port_batch(self) -> None:
-        memcpy = {"name": "memcpy", "defined_in": "/usr/include/string.h"}
-        batch = self.load({"objective": "port", "items": [
-            {**self.item("Frame", kind="type"), "step": "memory"},
-        ]})
-        self.assertEqual(batch.items[0]["step"], "memory")
-        batch = self.load({"objective": "port", "items": [
-            {**self.item("copy_into"), "step": "std", "of": memcpy},
-        ]})
-        self.assertEqual(batch.items[0]["step"], "std")
-        self.assertEqual(batch.items[0]["of"], memcpy)
-        # One function moved onto std for two entities is two items.
-        strlen = {"name": "strlen", "defined_in": "/usr/include/string.h"}
-        batch = self.load({"objective": "port", "items": [
-            {**self.item(), "step": "std", "of": memcpy},
-            {**self.item(), "step": "std", "of": strlen},
-        ]})
-        self.assertEqual(len(batch.items), 2)
-
-    def test_rejects_invalid_deferred_steps(self) -> None:
-        with self.assertRaisesRegex(SystemExit, "step must be one of"):
-            self.load({"objective": "port", "items": [{**self.item(), "step": "correct"}]})
-        with self.assertRaisesRegex(SystemExit, "of must name"):
-            self.load({"objective": "port", "items": [{**self.item(), "step": "std"}]})
-        with self.assertRaisesRegex(SystemExit, "only carried by a std step"):
-            self.load({"objective": "port", "items": [
-                {**self.item("Frame", kind="type"), "step": "layout",
-                 "of": {"name": "x", "defined_in": "x.h"}}]})
-        with self.assertRaisesRegex(SystemExit, "only carried by a port batch"):
-            self.load({"objective": "wrap", "items": [
-                {**self.item("Frame", kind="type"), "step": "layout"}]})
+    def test_rejects_later_stages_of_the_wrong_kind_and_item_steps(self) -> None:
+        with self.assertRaisesRegex(SystemExit, "holds only items of kind type"):
+            self.load({"objective": "port/layout", "items": [self.item()]})
+        with self.assertRaisesRegex(SystemExit, "holds only items of kind symbol"):
+            self.load({"objective": "port/unexport",
+                       "items": [self.item("visit", kind="callback")]})
+        with self.assertRaisesRegex(SystemExit, "unknown field"):
+            self.load({"objective": "port", "items": [{**self.item(), "step": "layout"}]})
+        with self.assertRaisesRegex(SystemExit, "objective must be one of"):
+            self.load({"objective": "port/std", "items": [self.item()]})
 
     def test_raw_lifetime_is_no_kind(self) -> None:
         # The foundational modules schedule ordinary
@@ -326,6 +310,20 @@ class GitHarnessTests(unittest.TestCase):
         self.assertEqual(json.loads(arguments["worklist"])["route"], "type")
         self.assertIn("unchecked-out wave integration branch: `wave-0`", rendered)
         self.assertNotIn("{", agent._prompt())
+
+    def test_a_later_stage_reaches_the_translator_with_its_objective(self) -> None:
+        from crustify.agents.translate import TranslateAgent
+
+        items = json.loads(self.batch.read_text())["items"]
+        agent = TranslateAgent(self.repo, route="type", items=items, git_base="wave-0",
+                               log_stem="batch-id", objective="port/layout")
+        worklist = json.loads(agent._arguments()["worklist"])
+        self.assertEqual(worklist["objective"], "port/layout")
+        self.assertTrue(agent.stage.startswith("port-layout-type_"))
+        # Without an objective, the agent's own stands.
+        agent = TranslateAgent(self.repo, route="type", items=items, git_base="wave-0",
+                               log_stem="batch-id")
+        self.assertEqual(json.loads(agent._arguments()["worklist"])["objective"], "port")
 
     def test_artifacts_take_fixed_names_in_the_batch_directory(self) -> None:
         """The run's session id goes into its task as soon as the CLI has one,

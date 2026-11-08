@@ -18,7 +18,7 @@
     "waves, a wave of no module holds the items of every module at its `layer` and",
     "`sublayer`. src/io.c's `external` record names libz, whose z_stream_s its",
     "widget_stream holds: libz's side campaign wraps it, and no wave here does.",
-    "Each planned item's `step` is `translate` in this wrap campaign; in a port campaign a deferred step (`layout`, `memory`, `std`) is a `port` item whose `after` names the modules whose integration frees it."
+    "Each planned item's release points are null in this wrap campaign, whose schedule binds the API; in a port campaign they place the later stages, `port/layout`, `port/memory` and `port/unexport`, each a planned item of its own with the stage as its objective."
   ],
   "schema_version": 6,
   "modules": [
@@ -123,10 +123,10 @@
             "flags"
           ],
           "home": "src/libwidget/src/core.rs",
-          "step": "translate",
-          "of": null,
           "objective": "wrap",
-          "after": null
+          "opaque_after": null,
+          "memory_unmanaged_after": null,
+          "unreferenced_after": null
         },
         {
           "name": "widget_opts",
@@ -134,10 +134,10 @@
           "kind": "type",
           "field_users": [],
           "home": "src/libwidget/src/core.rs",
-          "step": "translate",
-          "of": null,
           "objective": "wrap",
-          "after": null
+          "opaque_after": null,
+          "memory_unmanaged_after": null,
+          "unreferenced_after": null
         }
       ],
       "packed_with": null,
@@ -227,10 +227,10 @@
           "kind": "symbol",
           "field_users": [],
           "home": "src/libwidget/src/core.rs",
-          "step": "translate",
-          "of": null,
           "objective": "wrap",
-          "after": null
+          "opaque_after": null,
+          "memory_unmanaged_after": null,
+          "unreferenced_after": null
         }
       ],
       "packed_with": null,
@@ -300,10 +300,10 @@
             "fd"
           ],
           "home": "src/libwidget/src/io.rs",
-          "step": "translate",
-          "of": null,
           "objective": "wrap",
-          "after": null
+          "opaque_after": null,
+          "memory_unmanaged_after": null,
+          "unreferenced_after": null
         },
         {
           "name": "widget_read",
@@ -311,10 +311,10 @@
           "kind": "symbol",
           "field_users": [],
           "home": "src/libwidget/src/io.rs",
-          "step": "translate",
-          "of": null,
           "objective": "wrap",
-          "after": null
+          "opaque_after": null,
+          "memory_unmanaged_after": null,
+          "unreferenced_after": null
         }
       ],
       "packed_with": null,

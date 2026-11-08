@@ -45,7 +45,7 @@ its own.
 
 | root field | meaning |
 |---|---|
-| `objective` | execution objective for every item: `wrap` or `port` |
+| `objective` | execution objective for every item: `wrap` or `port`, or a later stage of a port campaign, `port/layout`, `port/memory` or `port/unexport`, as `specs/planning/scheduling.md`'s Later stages section describes; a binder runs `wrap`, a translator every other |
 | `items` | non-empty worklist; every item routes to the same agent |
 | `wave`, `batch`, `link_unit`, `module`, `foundational` | the [batch fields](#2-batch-fields) |
 | `base_branch`, `backend`, `billing`, `model_proxy`, `args` | the [run fields](#1-run-fields) |
@@ -176,7 +176,7 @@ Both run fields are required, and `instructions` is the only other root field ac
 
 ## 6. items[*]
 
-Every field but `step` and `of` is required on every item, and no other field is accepted.
+Every field is required on every item, and no other field is accepted.
 
 | field | meaning |
 |---|---|
@@ -185,10 +185,10 @@ Every field but `step` and `of` is required on every item, and no other field is
 | `kind` | `type`, `symbol` or `callback` |
 | `field_users` | the C fields of the type its consumers use, whose accessors the batch writes; empty unless `kind` is `type` |
 | `home` | `.rs` path, relative to the repository's root, the item is authored into |
-| `step` | what the batch does to the item: `translate`, its wrap or port, when absent; in a `port` batch, one of the deferred steps `layout`, `memory` or `std`, as `specs/planning/scheduling.md`'s Deferred items section describes |
-| `of` | on a `std` step, the out-of-tree library's entity it moves onto the standard library, as `{name, defined_in}`; absent otherwise |
 
-`(name, defined_in, step, of)` identifies an item and must be unique within the batch.
+`(name, defined_in)` identifies an item and must be unique within the batch. A
+`port/layout` or `port/memory` batch holds only types, and a `port/unexport` batch only
+functions and globals.
 `field_users` must not repeat a name.
 
 `home` is the sole placement input. A translator resolves no repo-tier artifact to decide

@@ -139,9 +139,7 @@ To fill each `rust_equivalent`, a module's, a link unit's or a library's, search
 standard library's documentation and crates.io, and read each candidate's API against
 everything the campaign consumes from it: judge its feature parity on both counts, whether
 it covers everything and whether it behaves the same, and argue each record in its notes,
-since the user chooses from them. A library's `std` records list each entity the campaign
-consumes that the standard library provides with full parity, as the dependencies spec's
-Standard-library equivalents section describes. Name the crates you leave out for
+since the user chooses from them. Name the crates you leave out for
 reimplementing or binding the target in your commit message.
 
 ### 3. Planning

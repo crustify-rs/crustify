@@ -51,6 +51,14 @@ ownership and error types its port keeps, so that its consumers do not change wh
 ports. Every unsafe block carries
 the safety comment [`../toolchain.md`](../toolchain.md)'s Unsafe code section specifies.
 
+An out-of-tree library's entity, such as libc's or libm's, is reached through the Rust
+standard library wherever it provides it and the state the entity works on stays in Rust,
+or crosses to C only as values the boundary converts: `errno` set from an `io::Error` by
+an export gateway, a `struct stat` filled from an `fs::Metadata`. It is reached through the
+library's bindings wherever that state is shared with C: a lock, a handle or an allocation
+the remaining C uses too. The agent doing the work judges which, from the code it
+translates; no plan records it.
+
 ---
 
 ## 4. Type route

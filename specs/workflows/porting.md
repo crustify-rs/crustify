@@ -99,10 +99,7 @@ Once the module's last wave has landed, it is integrated in one step, with concu
 modules as part of its branch's integration into the working branch, as
 [`../operations/versioning.md`](../operations/versioning.md)'s Integration section
 describes: its export feature is turned on, its TU and the C tests tied to it are removed
-from `c/`, and the remaining C reaches the module through its exports. The exports of the
-modules integrated before it that no remaining C references any more, now that its C is
-gone, are removed with the raw bindings and allowlist entries that reach them, as the
-[conventions](../rust/conventions.md)' Exports section describes. The C side of the
+from `c/`, and the remaining C reaches the module through its exports. The C side of the
 step is a commit on the fork's `main`, as
 [`../operations/versioning.md`](../operations/versioning.md)'s Repositories section
 describes, and the campaign's commit records the submodule at it: integrations run one at a

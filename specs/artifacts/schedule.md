@@ -77,17 +77,22 @@ started keep their records, as [Re-planning](#5-re-planning) describes.
 | `batches` | the wave's batches, which execute in parallel; empty until the wave starts |
 
 A planned item is a batch item, as `specs/artifacts/task.md` describes its `items`, with
-the objective it is translated with and what frees a deferred step:
+the objective it is translated with and its entity's release points:
 
 | field | meaning |
 |---|---|
 | `name`, `defined_in`, `kind`, `field_users`, `home` | as on a batch item |
-| `step`, `of` | as on a batch item: `translate` for the item's wrap or port, or one of the deferred steps of `specs/planning/scheduling.md`'s Deferred items section, and the library entity a `std` step follows; `of` is `null` on every other step |
-| `objective` | `wrap` or `port`; `port` for every deferred step |
-| `after` | on a deferred step, the modules whose integration frees it, each by `link_unit`, `module` and `foundational`; `null` on a `translate` step |
+| `objective` | `wrap` or `port`, or one of the later stages of `specs/planning/scheduling.md`'s Later stages section: `port/layout` or `port/memory` for a struct or a union, `port/unexport` for a function or a global |
+| `opaque_after`, `memory_unmanaged_after` | on a struct or a union, the release points after which none of its layout users, and none of its memory users, is left, as the scheduling spec's Later stages section defines them; `null` on any other item |
+| `unreferenced_after` | on a function or a global, the release point after which none of its referrers is left; `null` on any other item |
 
-A wave that holds deferred steps lists, among its `depends_on.scheduled`, the last wave of
-each module its items' `after` names, so that it runs once those modules are integrated.
+A release point has two records, `closure` over every user and `scheduled` over those the
+schedule holds, each naming the last users, their waves and their `modules`, as the
+planning tools compute them. An entity's planned items carry the same release points. The
+wave of a later stage lists, among its `depends_on.scheduled`, the last wave of each module
+its release point's `closure.modules` names but the item's own, so that it runs once those
+modules are integrated: `opaque_after` for `port/layout`, `memory_unmanaged_after` for
+`port/memory`, and `unreferenced_after` for `port/unexport`.
 
 `depends_on.scheduled` lists the waves that complete before this one: its module's
 previous wave, and the waves that hold its items' dependencies. `depends_on.cut` lists the
@@ -111,9 +116,9 @@ that wave's, and it lands on that wave's integration branch.
 |---|---|
 | `index` | the batch's id within its wave, from zero |
 | `link_unit`, `module`, `foundational` | the module whose units it holds, as for its wave; `null`, `null` and `false` when the campaign has no decomposition |
-| `kind` | `wrap`, `port` or `review` |
+| `kind` | an objective of its items, as a planned item's, or `review` |
 | `status` | `todo`, `wip`, `done` or `failed` |
-| `items` | a `wrap` or `port` batch's worklist, as `specs/artifacts/task.md` describes its `items` |
+| `items` | a translation batch's worklist, as `specs/artifacts/task.md` describes its `items` |
 | `reviews` | a `review` batch's worklist: the indices of the batches of its wave it reviews |
 | `commits` | the commits the batch landed, in order; empty until it lands |
 
@@ -162,13 +167,11 @@ agents that ran it, each holding a `task.json` that names the batch's wave and i
 
 ## 7. Earlier versions
 
-Schema-v5 items had no `step`, `of` or `after`, and named their `field_users`
-`field_anchors`: each item was its translation, and a type's port after its last layout
-users a second `port` item of its module. A campaign on v5 is converted by its next planner
-run: each item's `field_anchors` become its `field_users`, and its `step` is `translate`, but for such a
-second `port` item, which becomes a `layout` step whose `after` names the modules of its
-type's last layout users, and the deferred steps the current scheduling calls for are
-planned.
+Schema-v5 items had no release points, and named their `field_users` `field_anchors`; a
+type's port after its last layout users was a second `port` item of its module. A campaign
+on v5 is converted by its next planner run: each item's `field_anchors` become its
+`field_users`, it gains its entity's release points, such a second `port` item becomes a
+`port/layout` item, and the later stages the current scheduling calls for are planned.
 
 Schema-v4 schedules planned each wave's batches, packed under the `workload` caps that
 each wave recorded as its `budgets`, and had no `items` or `packed_with` on a wave. A

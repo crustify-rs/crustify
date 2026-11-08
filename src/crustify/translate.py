@@ -8,16 +8,14 @@ from pathlib import Path
 from typing import Callable, NoReturn
 
 
-_OBJECTIVES = frozenset({"wrap", "port"})
+#: A batch's objective: an item's wrap or port, or a struct's or union's later
+#: stages and a function's or global's export removal in a port campaign
+#: (specs/planning/scheduling.md, Later stages).
+_OBJECTIVES = frozenset({"wrap", "port", "port/layout", "port/memory", "port/unexport"})
+#: The kinds each later stage applies to.
+_STAGE_KINDS = {"port/layout": {"type"}, "port/memory": {"type"}, "port/unexport": {"symbol"}}
 _KINDS = frozenset({"type", "symbol", "callback"})
 _ITEM_FIELDS = frozenset({"name", "defined_in", "kind", "field_users", "home"})
-#: The fields an item may carry beside those: its step, and what a step follows.
-_ITEM_OPTIONAL = frozenset({"step", "of"})
-#: An item's steps: its translation, and the deferred steps of a port campaign
-#: (specs/planning/scheduling.md, Deferred items). ``of`` names the library
-#: entity a ``std`` step moves onto the standard library.
-_STEPS = frozenset({"translate", "layout", "memory", "std"})
-_STEPS_WITH_OF = frozenset({"std"})
 _FIELD_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 #: The fields every task carries beside its worklist: how its agent runs.
@@ -33,7 +31,8 @@ BATCH_FIELDS = frozenset({"wave", "batch", "link_unit", "module", "foundational"
 
 #: The role that runs each objective's tasks; its name is also the stem of
 #: the session record a batch's session leaves in crustify's home.
-_ROLE = {"wrap": "binder", "port": "translator"}
+_ROLE = {"wrap": "binder", "port": "translator", "port/layout": "translator",
+         "port/memory": "translator", "port/unexport": "translator"}
 
 
 @dataclass(frozen=True)
@@ -265,13 +264,13 @@ def parse_items(items: object, fail: Callable[[str], NoReturn]
         fail("items must be a non-empty array")
 
     routes: set[str] = set()
-    identities: set[tuple] = set()
+    identities: set[tuple[str, str]] = set()
     validated: list[dict] = []
     for index, item in enumerate(items):
         label = f"items[{index}]"
         if not isinstance(item, dict):
             fail(f"{label} must be an object")
-        item_unknown = sorted(set(item) - _ITEM_FIELDS - _ITEM_OPTIONAL)
+        item_unknown = sorted(set(item) - _ITEM_FIELDS)
         item_missing = sorted(_ITEM_FIELDS - set(item))
         if item_unknown:
             fail(f"{label} has unknown field(s): " + ", ".join(item_unknown))
@@ -307,20 +306,7 @@ def parse_items(items: object, fail: Callable[[str], NoReturn]
         if not isinstance(defined_in, str) or not defined_in:
             fail(f"{label}.defined_in must be a non-empty string")
 
-        step = item.get("step", "translate")
-        if not isinstance(step, str) or step not in _STEPS:
-            fail(f"{label}.step must be one of: " + ", ".join(sorted(_STEPS)))
-        of = item.get("of")
-        if step in _STEPS_WITH_OF:
-            if (not isinstance(of, dict) or set(of) != {"name", "defined_in"}
-                    or not all(isinstance(v, str) and v for v in of.values())):
-                fail(f"{label}.of must name what its {step} step follows, "
-                     "as {name, defined_in}")
-        elif of is not None:
-            fail(f"{label}.of is only carried by a std step")
-
-        identity = (name, defined_in, step,
-                    None if of is None else (of["name"], of["defined_in"]))
+        identity = (name, defined_in)
         if identity in identities:
             fail(f"duplicate item: {kind} {name!r} defined in {defined_in!r}")
         identities.add(identity)
@@ -331,8 +317,6 @@ def parse_items(items: object, fail: Callable[[str], NoReturn]
             "kind": kind,
             "field_users": list(anchors),
             "home": home,
-            "step": step,
-            "of": None if of is None else dict(of),
         })
 
     if len(routes) != 1:
@@ -348,13 +332,14 @@ def load_batch(path: Path) -> Batch:
                  {"instructions"} | RUN_FIELDS | RUN_OPTIONAL, _fail)
     objective = raw["objective"]
     if not isinstance(objective, str) or objective not in _OBJECTIVES:
-        _fail("objective must be one of: port, wrap"
+        _fail("objective must be one of: " + ", ".join(sorted(_OBJECTIVES))
               + ("; a review batch runs under `crustify spawn-reviewer`"
                  if objective == "review" else ""))
     route, items = parse_items(raw["items"], _fail)
-    if objective == "wrap" and any(item["step"] != "translate" for item in items):
-        _fail("a deferred step (layout, memory, std) "
-              "is only carried by a port batch")
+    kinds = _STAGE_KINDS.get(objective)
+    if kinds is not None and any(item["kind"] not in kinds for item in items):
+        _fail(f"a {objective} batch holds only items of kind "
+              + ", ".join(sorted(kinds)))
     return Batch(objective=objective, route=route, items=items,
                  base_branch=parse_branch(raw, _fail),
                  run=parse_run(raw, _fail),
@@ -410,6 +395,7 @@ def execute(
         workdir,
         route=batch.route,
         items=batch.items,
+        objective=batch.objective,
         git_base=base_branch,
         log_stem=role,
     )

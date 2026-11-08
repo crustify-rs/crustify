@@ -75,9 +75,9 @@ batches discover them on the fly; their binders skip them.
 
 In a wrap campaign every item is `wrap`. In a port campaign, the items of the foundational
 modules are `wrap`, and those of every other module `port`: a symbol, a callback or an
-enum where the order places it, and a struct or a union in the steps
-[Deferred items](#5-deferred-items) describes, its first `wrap` while the remaining C uses
-its layout.
+enum where the order places it, a struct or a union `wrap` there while another module's C
+uses its layout, and each followed by the later stages
+[Later stages](#5-later-stages) describes, each a planned item of its own.
 
 An enum is a set of constants, with no fields, layout users or lifecycle for a binding to
 publish, so nothing wraps it: a wrap campaign schedules none for it and uses its
@@ -152,7 +152,7 @@ A wrap batch ahead of its consumer holds only what has not landed, so that no it
 wrapped twice and an item no consumer needs is never wrapped. Its items keep their homes
 in the modules that own them, and it lands on its consumer's wave branch before the
 consumer's batches launch. A type that a `port` module owns and wraps first, as
-[Deferred items](#5-deferred-items) describes, is that module's own work, in its own waves.
+[Later stages](#5-later-stages) describes, is that module's own work, in its own waves.
 
 The out-of-tree libraries a wave's items use are wrapped first in their side campaigns,
 before the wave starts, as [`dependencies.md`](dependencies.md) describes: its module's
@@ -160,16 +160,15 @@ before the wave starts, as [`dependencies.md`](dependencies.md) describes: its m
 items use of it. No
 entity of a library is a unit of the campaign's own schedule.
 
-## 5. Deferred items
+## 5. Later stages
 
-In a port campaign, part of an item's work waits until the remaining C no longer needs the
-item's C form. Each such step is a deferred item of its own, planned for each item it
-concerns, in a wave that depends on the last waves of the modules whose integration frees
-it, so that it runs once they are integrated, and each item takes its Rust form as soon as
-the C lets it. The deferred items the same integrations free share a wave, and the
-assistant packs them into batches when the wave starts, as [Batches](#3-batches)
-describes. A deferred item is `port`, and its step is recorded with it, as
-[`../artifacts/schedule.md`](../artifacts/schedule.md) describes.
+In a port campaign, part of an entity's work waits until the remaining C no longer needs
+its C form. Each such stage is a planned item of its own, with the stage as its objective,
+in a wave that depends on the last waves of the modules whose integration frees it, so
+that it runs once they are integrated and the entity takes its Rust form as soon as the C
+lets it. The later stages the same integrations free share a wave, and the assistant packs
+them into batches when the wave starts, as [Batches](#3-batches) describes, a stage's
+items forming batches of their own, by its objective.
 
 ### 5.1 Types
 
@@ -196,33 +195,34 @@ type's own module, which switches to Rust in one integration; the tests, which a
 the modules whose subject they are; and C outside the target, so that a definition in an
 installed header is no user either. Of the users of other modules, the last are those no
 other user depends on, over the order's scheduled dependencies: every other user's module
-is integrated before theirs starts, so a step waits for theirs alone.
+is integrated before theirs starts, so a stage waits for theirs alone. A type's release
+points name them: `opaque_after` its last layout users, `memory_unmanaged_after` its last
+memory users.
 
-A type is scheduled in steps:
+A type is scheduled in stages:
 
-1. its translation, where the order places it: `port` when no layout user of another
-   module remains, and `wrap` otherwise, so that the type keeps its C layout behind its
-   safe API. A consumer ported earlier that needs it has it wrapped ahead, as
-   [Wrap batches](#4-wrap-batches) describes;
-2. `layout`, after the integration of its last layout users: the type takes a Rust-native
-   layout; and
-3. `memory`, after the integration of its last memory users: its storage moves from C's
+1. `port` where the order places it when no layout user of another module remains, and
+   `wrap` otherwise, so that the type keeps its C layout behind its safe API. A consumer
+   ported earlier that needs it has it wrapped ahead, as [Wrap batches](#4-wrap-batches)
+   describes;
+2. `port/layout`, after its `opaque_after`: the type takes a Rust-native layout; and
+3. `port/memory`, after its `memory_unmanaged_after`: its storage moves from C's
    allocator, which its owners allocate and free through until then, to Rust's.
 
-Its safe API does not change between the steps: it exposes no representation, so that a
-step changes the type, its lifecycle and the code inside the crate that reaches its C form,
+A stage with no users to wait for is not planned: its change is part of the type's `port`.
+A user that stays C, in a foundational module, in a module the scope leaves out or in a
+struct that embeds the type and stays C, keeps the stage it holds back from being planned
+at all: the type keeps its C layout, or its storage in C's allocator, for good.
+
+Its safe API does not change between the stages: it exposes no representation, so that a
+stage changes the type, its lifecycle and the code inside the crate that reaches its C form,
 and none of its consumers.
 
-A step that has no users to wait for is not deferred: a type none of whose memory users
-remains has its storage in Rust's allocator from its translation on. A user that stays C,
-in a foundational module, in a module the scope leaves out or in a struct that embeds the
-type and stays C, keeps the step it holds back from being planned at all: the type keeps
-its C layout, or its storage in C's allocator, for good.
+### 5.2 Functions and globals
 
-### 5.2 Symbols
-
-A function that reaches an out-of-tree library's entity through the library's wrapper,
-because remaining C shares the value or state the entity works on, moves onto the
-entity's standard-library equivalent in a `std` step, after the integration of the last
-modules whose C shares it, as [`dependencies.md`](dependencies.md)'s Standard-library
-equivalents section describes.
+A ported function's or global's export, through which the remaining C reaches it, is
+removed with the raw binding that reaches it by a `port/unexport` item, after its
+`unreferenced_after`: the integration of its last referrers, the remaining C that calls it,
+takes its address or accesses it, as the [conventions](../rust/conventions.md)' Exports
+section describes. A function or global that remaining C never references has no export,
+and no `port/unexport`.

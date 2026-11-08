@@ -24,7 +24,7 @@ and in Notes.
 
 - `module` / `wave` / `batch` — the batch's place in `schedule.json`: its wave's module and
   the wave and batch indices
-- `objective` — `wrap` or `port`; `pass` — `first` for a translation batch, `review` for a
+- `objective` — `wrap` or `port`, or a later stage, `port/layout`, `port/memory` or `port/unexport`; `pass` — `first` for a translation batch, `review` for a
   review batch; `Σ first` / `Σ review` total each pass apart
 - `types` / `symbols` / `fields` — the batch's scheduled units (callbacks count as
   symbols) and its types' assigned field accessors; a review row counts what it reviewed

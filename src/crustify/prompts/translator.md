@@ -152,7 +152,9 @@ library.
 ### 4. Porting
 
 Port your worklist's items for your route using the porting how-to above, on top of the
-binding how-to's Macros and Safe boundary.
+binding how-to's Macros and Safe boundary. When your worklist's objective is a later stage,
+`port/layout`, `port/memory` or `port/unexport`, carry out that stage on items that have
+already landed, as the porting how-to's Later stages section describes.
 
 ### 5. Testing
 

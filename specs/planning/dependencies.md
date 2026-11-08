@@ -17,9 +17,9 @@ and `bindings` records of `dependencies.json`, each with its feature parity and 
 that argue it, are put to the user, who chooses, and the choice is recorded as the
 library's `decision`. The records inform the choice; they do not make it.
 
-What a library provides that the Rust standard library provides too is not wrapped, as
-[Standard-library equivalents](#2-standard-library-equivalents) describes: a wrapper covers
-the rest.
+What a library provides that the Rust standard library provides too is reached through
+the standard library wherever no state is shared with C, as
+[Standard-library equivalents](#2-standard-library-equivalents) describes.
 
 A library's wrapper is a wrap campaign of the source it is built from, in a repository of
 its own: `<source>-crustify` under the `crustify-rs` organization, `<source>` being the
@@ -41,25 +41,12 @@ library.
 
 ## 2. Standard-library equivalents
 
-An entity of an out-of-tree library that the Rust standard library provides with full
-feature parity, such as libc's `memcpy`, `strlen` and `stat` or libm's `pow`, is reached
-through the standard library in the campaign's Rust, not through the library's wrapper.
-Each such entity's equivalent is recorded in its library's `rust_equivalent.std` in
-`dependencies.json`, with what differs in its behaviour, such as `O_CLOEXEC` on the files
-`std::fs` opens or the locale `u8::is_ascii_alphabetic` ignores.
-
-The standard library serves only where no remaining C shares the value or the state the
-entity works on. While remaining C does, the entity is reached through the wrapper:
-
-- memory the C frees or reallocates;
-- a lock embedded in a type whose C layout the remaining C uses, which it locks too;
-- `errno`, when remaining C reads it after the call;
-- a handle the C uses, such as a `FILE *` or a `DIR *`; and
-- a type whose layout the remaining C reads, such as `struct stat` or `struct timespec`.
-
-Once the last remaining C that shares it has been integrated, each function that reaches
-the entity through the wrapper moves onto the standard library, in a `std` step of its
-own, as [scheduling](scheduling.md)'s Deferred items section describes.
+The campaign's Rust reaches an out-of-tree library's entity through the Rust standard
+library wherever the state the entity works on stays in Rust, or crosses to C only as
+values the boundary converts, and through the library's wrapper wherever that state is
+shared with C, as [`../rust/items/binding.md`](../rust/items/binding.md)'s Safe boundary
+section describes. The agent doing the work judges which; no plan records it, so a
+wrapper covers what the campaign's Rust reaches through it as its waves need it.
 
 ## 3. Side campaigns
 

@@ -1,5 +1,5 @@
 {
-  "_comment": "Example `<workdir>/crustify/artifacts/dependencies.json`, emitted by the planner beside modules.json: one entry per out-of-tree library a module depends on. `resolved` is what the target's build found, `source` the side campaign's c/ at that release, `linked_from` whether the target links the side campaign's install or the system's copy, as libc does, `decision` how the campaign reaches the library, as the user chose it once the plan was complete (`wrapper`, or the adopted crate), and `wrapper.pin` the wrapper commit the workspace pins, which the assistant moves as the side campaign advances. `rust_equivalent` lists the consumed entities the standard library provides with full parity (`std`), and judges each crate against everything the campaign consumes from the library, its notes arguing it for the user's choice.",
+  "_comment": "Example `<workdir>/crustify/artifacts/dependencies.json`, emitted by the planner beside modules.json: one entry per out-of-tree library a module depends on. `resolved` is what the target's build found, `source` the side campaign's c/ at that release, `linked_from` whether the target links the side campaign's install or the system's copy, as libc does, `decision` how the campaign reaches the library, as the user chose it once the plan was complete (`wrapper`, or the adopted crate), and `wrapper.pin` the wrapper commit the workspace pins, which the assistant moves as the side campaign advances. `rust_equivalent` judges each crate against everything the campaign consumes from the library, its notes arguing it for the user's choice.",
   "version": "1f053298e30c0a9b5d0f3c1e7a4b8d2f6c9e0a11",
   "libraries": [
     {
@@ -21,7 +21,6 @@
         "pin": null
       },
       "rust_equivalent": {
-        "std": [],
         "ported": [
           {
             "crate": "miniz_oxide",
@@ -60,38 +59,6 @@
         "pin": null
       },
       "rust_equivalent": {
-        "std": [
-          {
-            "entity": {
-              "name": "memcpy",
-              "defined_in": "/usr/include/string.h"
-            },
-            "library": [
-              "core::slice::copy_from_slice"
-            ],
-            "notes": ""
-          },
-          {
-            "entity": {
-              "name": "stat",
-              "defined_in": "/usr/include/x86_64-linux-gnu/sys/stat.h"
-            },
-            "library": [
-              "std::fs::metadata"
-            ],
-            "notes": "follows symlinks as stat does; errors are io::Error, and errno is left unset"
-          },
-          {
-            "entity": {
-              "name": "pthread_mutex_lock",
-              "defined_in": "/usr/include/pthread.h"
-            },
-            "library": [
-              "std::sync::Mutex"
-            ],
-            "notes": "not recursive, and poisoned by a panic while held"
-          }
-        ],
         "ported": [],
         "bindings": []
       }
