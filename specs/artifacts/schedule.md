@@ -20,7 +20,7 @@ The schedule holds two kinds of field:
 
 | root field | meaning |
 |---|---|
-| `schema_version` | `5` |
+| `schema_version` | `6` |
 | `modules` | the order of the campaign's modules, one record per module the schedule holds waves of, by `layer` |
 | `waves` | the campaign's waves, in `index` order |
 
@@ -77,12 +77,17 @@ started keep their records, as [Re-planning](#5-re-planning) describes.
 | `batches` | the wave's batches, which execute in parallel; empty until the wave starts |
 
 A planned item is a batch item, as `specs/artifacts/task.md` describes its `items`, with
-the objective it is translated with:
+the objective it is translated with and what frees a deferred step:
 
 | field | meaning |
 |---|---|
 | `name`, `defined_in`, `kind`, `field_anchors`, `home` | as on a batch item |
-| `objective` | `wrap` or `port` |
+| `step`, `of` | as on a batch item: `translate` for the item's wrap or port, or one of the deferred steps of `specs/planning/scheduling.md`'s Deferred items section, and what a `correct` or `std` step follows; `of` is `null` when the step carries none |
+| `objective` | `wrap` or `port`; `port` for every deferred step |
+| `after` | on a deferred step, the modules whose integration frees it, each by `link_unit`, `module` and `foundational`; `null` on a `translate` step |
+
+A wave that holds deferred steps lists, among its `depends_on.scheduled`, the last wave of
+each module its items' `after` names, so that it runs once those modules are integrated.
 
 `depends_on.scheduled` lists the waves that complete before this one: its module's
 previous wave, and the waves that hold its items' dependencies. `depends_on.cut` lists the
@@ -156,6 +161,13 @@ index the wave branch, as `specs/operations/versioning.md` spells them. Its arti
 agents that ran it, each holding a `task.json` that names the batch's wave and index.
 
 ## 7. Earlier versions
+
+Schema-v5 items had no `step`, `of` or `after`: each item was its translation, and a
+type's port after its last layout users a second `port` item of its module. A campaign on
+v5 is converted by its next planner run: each item's `step` is `translate`, but for such a
+second `port` item, which becomes a `layout` step whose `after` names the modules of its
+type's last layout users, and the deferred steps the current scheduling calls for are
+planned.
 
 Schema-v4 schedules planned each wave's batches, packed under the `workload` caps that
 each wave recorded as its `budgets`, and had no `items` or `packed_with` on a wave. A

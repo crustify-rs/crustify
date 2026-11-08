@@ -41,7 +41,9 @@ A row wavefront warns is stale is corrected or deleted.
   `schedule.json`'s highest index, in wavefront's order, their `depends_on` renumbered,
   with their module's `layer` and their `sublayer`. A wave's `items` are those of its
   wavefront batches, each with its `name`, `defined_in` and `kind`, its `used_fields` as
-  `field_anchors`, the `home` its module gives it, and its `objective`. An item a wave
+  `field_anchors`, the `home` its module gives it, its `objective`, and its `step`,
+  `translate`, with the deferred steps its release points place, as
+  [Deferred items](#deferred-items) describes. An item a wave
   that has started holds, or that a batch has landed with that objective, is dropped, and
   a dependency on it is one on that wave.
 - With merged waves, the waves of the same `layer` and `sublayer` merge into one, which
@@ -55,15 +57,23 @@ the planner run's wavefront schedule, or `query dag --name <items>`. A wrap batc
 are closed over their wrap dependencies on the public-signature graph,
 `query dag --name <items> --api-headers-only`, less what has landed.
 
-## Porting types
+## Deferred items
 
-Wavefront's T2 `layout_uses.csv` records every kind of layout use, and
-`query types --name <T> --layout-users` lists a type's users with the site and kind of
-each use; a test the closure leaves out is no user. A port campaign's schedule, which is
-not `--api-headers-only`, gives each scheduled struct or union its `opaque_after`, whose
-`closure` record names the `modules` of its last layout users over the order of the whole
-closure, those no other user depends on, the type's own module among them when its own
-wave is. Those modules, less the type's own, are the ones whose integration its `port`
-waits for; with none left, it is `port` where the order places it. Whether a user stays C
-is read from the whole list, `--layout-users`. `query types --name <T> --field-touchers`
-lists the functions that touch each field.
+A port campaign's schedule, which is not `--api-headers-only`, gives each scheduled item
+its release points, which place its deferred steps: a struct's or union's `opaque_after`
+its `layout` step, and its `memory_unmanaged_after` its `memory` step; a function's or
+global's `unreferenced_after` its `retire` step. A module's C leaves at its integration,
+so a step's `after` is its release point's `closure.modules`, less the item's own module;
+with none left, the step is not deferred. The users behind each point are a query away:
+`query types --name <T> --layout-users` lists a type's layout users with the site and kind
+of each use, `query types --name <T> --raw-sites` its memory users, and
+`query symbols --name <F> --callers` a function's or global's referrers. Whether a user
+stays C is read from those whole lists. `query types --name <T> --field-touchers` lists the
+functions that touch each field.
+
+The layout users are read from T2's `layout_uses.csv`, which the tables extracted before
+it lack, and the memory users from the lifecycle roles of the ownership store and T2's
+`arg_casts.csv`: without the store's raw roles, `memory_unmanaged_after` is `null`, and
+the planner establishes the roles first, as `docs/type-lifecycle.md` describes. A type's
+`correct` steps follow from its consumers in the planner run's schedule, the items that
+depend on it, `query dag --name <T>`, whose translation lands before its step.

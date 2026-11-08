@@ -154,6 +154,40 @@ class BatchValidationTests(unittest.TestCase):
                 "items": [self.item(fields=["field"])],
             })
 
+    def test_an_item_is_its_translation_unless_a_step_says_otherwise(self) -> None:
+        batch = self.load({"objective": "port", "items": [self.item()]})
+        self.assertEqual(batch.items[0]["step"], "translate")
+        self.assertIsNone(batch.items[0]["of"])
+
+    def test_deferred_steps_of_a_port_batch(self) -> None:
+        frame = {"name": "Frame", "defined_in": "include/frame.h"}
+        batch = self.load({"objective": "port", "items": [
+            {**self.item("Frame", kind="type"), "step": "layout"},
+            {**self.item("Packet", kind="type"), "step": "correct", "of": frame},
+        ]})
+        self.assertEqual([i["step"] for i in batch.items], ["layout", "correct"])
+        self.assertEqual(batch.items[1]["of"], frame)
+        # A consumer corrected after two steps of different types is two items.
+        other = {"name": "Stream", "defined_in": "include/stream.h"}
+        batch = self.load({"objective": "port", "items": [
+            {**self.item(), "step": "correct", "of": frame},
+            {**self.item(), "step": "correct", "of": other},
+        ]})
+        self.assertEqual(len(batch.items), 2)
+
+    def test_rejects_invalid_deferred_steps(self) -> None:
+        with self.assertRaisesRegex(SystemExit, "step must be one of"):
+            self.load({"objective": "port", "items": [{**self.item(), "step": "nativize"}]})
+        with self.assertRaisesRegex(SystemExit, "of must name"):
+            self.load({"objective": "port", "items": [{**self.item(), "step": "std"}]})
+        with self.assertRaisesRegex(SystemExit, "only carried by a correct or std"):
+            self.load({"objective": "port", "items": [
+                {**self.item(), "step": "retire",
+                 "of": {"name": "x", "defined_in": "x.h"}}]})
+        with self.assertRaisesRegex(SystemExit, "only carried by a port batch"):
+            self.load({"objective": "wrap", "items": [
+                {**self.item("Frame", kind="type"), "step": "layout"}]})
+
     def test_raw_lifetime_is_no_kind(self) -> None:
         # The foundational modules schedule ordinary
         # symbols and types: no marker item stands for them.

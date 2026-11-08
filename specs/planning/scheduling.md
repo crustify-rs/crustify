@@ -73,18 +73,11 @@ Type-erased and string lifecycle primitives are units of the foundational module
 Typed lifecycle primitives stay in the schedule as free symbols, although the type
 batches discover them on the fly; their binders skip them.
 
-In a wrap campaign every item is `wrap`.
-
-TODO (porting): the scheduling of a port campaign, which this section and
-[Porting types](#5-porting-types) describe, is to be reworked over the order above. In a
-port campaign:
-
-- a selected symbol is `port` from the start;
-- a selected enum is `port`, where the DAG places it, and never `wrap`;
-- a selected type is `port`, preceded by a `wrap` item only while another module's
-  unported C depends on its layout, as [Porting types](#5-porting-types) describes; and
-- a dependency outside the selected migration set, or that has not been ported yet,
-  is `wrap`.
+In a wrap campaign every item is `wrap`. In a port campaign, the items of the foundational
+modules are `wrap`, and those of every other module `port`: a symbol, a callback or an
+enum where the order places it, and a struct or a union in the steps
+[Deferred items](#5-deferred-items) describes, its first `wrap` while the remaining C uses
+its layout.
 
 An enum is a set of constants, with no fields, layout users or lifecycle for a binding to
 publish, so nothing wraps it: a wrap campaign schedules none for it and uses its
@@ -144,8 +137,8 @@ lands before it. What has not landed is wrapped by such a batch:
   or, in a wrap campaign, finds it bound;
 - a dependency of a wave run before the waves that hold it, or of a part of the scope
   run without them; and
-- TODO (porting): in a port campaign, what a `port` batch uses of the in-tree `wrap`
-  modules, the foundational ones included.
+- in a port campaign, what a `port` batch uses of a module the scope leaves out, whose C
+  stays.
 
 Wrapping an item brings in its own wrap dependencies, transitively: the types its
 signature names, those of the fields its consumers access, and theirs in turn, closed
@@ -159,7 +152,7 @@ A wrap batch ahead of its consumer holds only what has not landed, so that no it
 wrapped twice and an item no consumer needs is never wrapped. Its items keep their homes
 in the modules that own them, and it lands on its consumer's wave branch before the
 consumer's batches launch. A type that a `port` module owns and wraps first, as
-[Porting types](#5-porting-types) describes, is that module's own work, in its own waves.
+[Deferred items](#5-deferred-items) describes, is that module's own work, in its own waves.
 
 The out-of-tree libraries a wave's items use are wrapped first in their side campaigns,
 before the wave starts, as [`dependencies.md`](dependencies.md) describes: its module's
@@ -167,38 +160,75 @@ before the wave starts, as [`dependencies.md`](dependencies.md) describes: its m
 items use of it. No
 entity of a library is a unit of the campaign's own schedule.
 
-## 5. Porting types
+## 5. Deferred items
 
-TODO (porting): to be reworked with the scheduling of a port campaign.
+In a port campaign, part of an item's work waits until the remaining C no longer needs the
+item's C form. Each such step is a deferred item of its own, planned for each item it
+concerns, in a wave that depends on the last waves of the modules whose integration frees
+it, so that it runs once they are integrated, and each item takes its Rust form as soon as
+the C lets it. The deferred items the same integrations free share a wave, and the
+assistant packs them into batches when the wave starts, as [Batches](#3-batches)
+describes. A deferred item is `port`, and its step is recorded with it, as
+[`../artifacts/schedule.md`](../artifacts/schedule.md) describes.
 
-A selected type's layout users are the target's C that depends on its layout. An enum
-has none: using its constants or values of its type is no layout use, and it is ported as
-[Waves and batches](#2-waves-and-batches) describes. A struct or a union has:
+### 5.1 Types
+
+A struct's or a union's layout users are the target's C that depends on its layout:
 
 - code that touches a field: reads or writes it, or takes its address;
 - code that depends on the layout without naming a field: `sizeof`, `_Alignof` or
   `offsetof` on the type (`sizeof *p`, and macros such as `container_of`, included); a
   value of the type, as a local, a parameter or return, a global, a copy or a compound
   literal; pointer arithmetic or indexing on a pointer to it; and
-- another struct, or an array, that embeds it by value and so carries its layout.
+- another struct, or an array, that embeds it by value and so carries its layout, whose
+  own layout users are the type's too.
+
+Its memory users are the target's C that hands its storage to C's allocator: code that
+allocates it with an allocator of untyped memory, or frees or disposes of it with a
+releaser of untyped memory. Its own constructors, destructors and cloners are no memory
+users: the C that calls them reaches them as any other function. An enum has neither kind
+of user: using its constants or values of its type is no use of a layout.
 
 Each kind is found in every function that mentions the type, its globals and the struct
-fields declared with it, macro expansions included.
+fields declared with it, macro expansions included. Three kinds of C are no users, as
+[`../workflows/porting.md`](../workflows/porting.md)'s Principles section describes: the
+type's own module, which switches to Rust in one integration; the tests, which are tied to
+the modules whose subject they are; and C outside the target, so that a definition in an
+installed header is no user either. Of the users of other modules, the last are those no
+other user depends on, over the order's scheduled dependencies: every other user's module
+is integrated before theirs starts, so a step waits for theirs alone.
 
-Three kinds of C are not layout users, as [`../workflows/porting.md`](../workflows/porting.md)'s
-Principles section describes: the type's own module, which switches to Rust in one
-integration; the tests, which are tied to the modules whose subject they are; and C
-outside the target, so that a definition in an installed header is no user either. A type
-is then scheduled by its remaining users:
+A type is scheduled in steps:
 
-- with none, as when only pointers to it cross into other modules, it is `port` only, where
-  the DAG places it;
-- with layout users in other modules that are ported later, it is `wrap` where the DAG
-  places it, and `port` in a wave of its own module after the integration of the last of
-  those modules, which its module runs again for; and
-- with a layout user that stays C, in a `wrap` module, in a module the scope leaves out or
-  in a struct that embeds it and stays C, it is `wrap` only, and keeps its C layout.
+1. its translation, where the order places it: `port` when no layout user of another
+   module remains, and `wrap` otherwise, so that the type keeps its C layout behind its
+   safe API. A consumer ported earlier that needs it has it wrapped ahead, as
+   [Wrap batches](#4-wrap-batches) describes;
+2. `layout`, after the integration of its last layout users: the type takes a Rust-native
+   layout;
+3. `memory`, after the integration of its last memory users: its storage moves from C's
+   allocator, which its owners allocate and free through until then, to Rust's;
+4. `correct`, after each `layout` or `memory` step, one for each consumer that landed
+   against the type's earlier form: the consumer moves onto the form the step gives it.
+   A consumer that lands later uses that form from the start; and
+5. `unwrap`, after its last `correct` step: the earlier form, which nothing uses any more,
+   is removed.
 
-Of the users of other modules, the last are those no other user depends on, over the
-order's scheduled dependencies: every other user's module is integrated before theirs
-starts, so the type's `port` waits for theirs alone.
+A step that has no users to wait for is not deferred: a type none of whose memory users
+remains has its storage in Rust's allocator from its translation on. A user that stays C,
+in a foundational module, in a module the scope leaves out or in a struct that embeds the
+type and stays C, keeps the step it holds back from being planned at all: the type keeps
+its C layout, or its storage in C's allocator, for good.
+
+### 5.2 Symbols
+
+A ported function's or global's export is removed by a `retire` step, after the
+integration of its last referrers, the remaining C that calls it, takes its address or
+accesses it, with the raw binding that reaches it, as the
+[conventions](../rust/conventions.md)' Exports section describes.
+
+A function that reaches an out-of-tree library's entity through the library's wrapper,
+because remaining C shares the value or state the entity works on, moves onto the
+entity's standard-library equivalent in a `std` step, after the integration of the last
+modules whose C shares it, as [`dependencies.md`](dependencies.md)'s Standard-library
+equivalents section describes.

@@ -57,10 +57,9 @@ entity works on. While remaining C does, the entity is reached through the wrapp
 - a handle the C uses, such as a `FILE *` or a `DIR *`; and
 - a type whose layout the remaining C reads, such as `struct stat` or `struct timespec`.
 
-Once the last remaining C that shares it has been integrated, the module that reaches the
-entity through the wrapper switches to the standard library, in one wave of its own
-scheduled after that integration, as a type's deferred port is, in
-[scheduling](scheduling.md)'s Porting types section.
+Once the last remaining C that shares it has been integrated, each function that reaches
+the entity through the wrapper moves onto the standard library, in a `std` step of its
+own, as [scheduling](scheduling.md)'s Deferred items section describes.
 
 ## 3. Side campaigns
 

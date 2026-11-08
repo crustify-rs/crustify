@@ -11,6 +11,14 @@ from typing import Callable, NoReturn
 _OBJECTIVES = frozenset({"wrap", "port"})
 _KINDS = frozenset({"type", "symbol", "callback"})
 _ITEM_FIELDS = frozenset({"name", "defined_in", "kind", "field_anchors", "home"})
+#: The fields an item may carry beside those: its step, and what a step follows.
+_ITEM_OPTIONAL = frozenset({"step", "of"})
+#: An item's steps: its translation, and the deferred steps of a port campaign
+#: (specs/planning/scheduling.md, Deferred items). ``of`` names the type a
+#: ``correct`` step follows, or the library entity a ``std`` step moves onto
+#: the standard library.
+_STEPS = frozenset({"translate", "layout", "memory", "correct", "unwrap", "retire", "std"})
+_STEPS_WITH_OF = frozenset({"correct", "std"})
 _FIELD_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 #: The fields every task carries beside its worklist: how its agent runs.
@@ -258,13 +266,13 @@ def parse_items(items: object, fail: Callable[[str], NoReturn]
         fail("items must be a non-empty array")
 
     routes: set[str] = set()
-    identities: set[tuple[str, str | None]] = set()
+    identities: set[tuple] = set()
     validated: list[dict] = []
     for index, item in enumerate(items):
         label = f"items[{index}]"
         if not isinstance(item, dict):
             fail(f"{label} must be an object")
-        item_unknown = sorted(set(item) - _ITEM_FIELDS)
+        item_unknown = sorted(set(item) - _ITEM_FIELDS - _ITEM_OPTIONAL)
         item_missing = sorted(_ITEM_FIELDS - set(item))
         if item_unknown:
             fail(f"{label} has unknown field(s): " + ", ".join(item_unknown))
@@ -300,7 +308,20 @@ def parse_items(items: object, fail: Callable[[str], NoReturn]
         if not isinstance(defined_in, str) or not defined_in:
             fail(f"{label}.defined_in must be a non-empty string")
 
-        identity = (name, defined_in)
+        step = item.get("step", "translate")
+        if not isinstance(step, str) or step not in _STEPS:
+            fail(f"{label}.step must be one of: " + ", ".join(sorted(_STEPS)))
+        of = item.get("of")
+        if step in _STEPS_WITH_OF:
+            if (not isinstance(of, dict) or set(of) != {"name", "defined_in"}
+                    or not all(isinstance(v, str) and v for v in of.values())):
+                fail(f"{label}.of must name what its {step} step follows, "
+                     "as {name, defined_in}")
+        elif of is not None:
+            fail(f"{label}.of is only carried by a correct or std step")
+
+        identity = (name, defined_in, step,
+                    None if of is None else (of["name"], of["defined_in"]))
         if identity in identities:
             fail(f"duplicate item: {kind} {name!r} defined in {defined_in!r}")
         identities.add(identity)
@@ -311,6 +332,8 @@ def parse_items(items: object, fail: Callable[[str], NoReturn]
             "kind": kind,
             "field_anchors": list(anchors),
             "home": home,
+            "step": step,
+            "of": None if of is None else dict(of),
         })
 
     if len(routes) != 1:
@@ -330,6 +353,9 @@ def load_batch(path: Path) -> Batch:
               + ("; a review batch runs under `crustify spawn-reviewer`"
                  if objective == "review" else ""))
     route, items = parse_items(raw["items"], _fail)
+    if objective == "wrap" and any(item["step"] != "translate" for item in items):
+        _fail("a deferred step (layout, memory, correct, unwrap, retire, std) "
+              "is only carried by a port batch")
     return Batch(objective=objective, route=route, items=items,
                  base_branch=parse_branch(raw, _fail),
                  run=parse_run(raw, _fail),
