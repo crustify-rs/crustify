@@ -39,9 +39,17 @@ modules of string lifecycle routines after those of the type-erased allocators t
 
 A module's `status` is its decomposition's: `todo` while it may still change, and
 `frozen` from the launch of its first wave, of any kind, or earlier when the user freezes
-it, since that wave homes items in the module's file. A frozen module's record, and its
-place in the order, change only when the user asks: a re-plan neither re-decomposes nor
-re-homes it, and moves no item into or out of it.
+it, since that wave homes items in the module's file. A frozen module's decomposition, its
+file entries and the homes of its items, and its place in the order, change only when the
+user asks: a re-plan neither re-decomposes nor re-homes it, and moves no item into or out
+of it. What is derived from the code and the current rules, its `tests`, `depends_on`,
+`counters` and `objective`, follows them in every run, frozen or not.
+
+A change of the settings' `campaign` answer, from `wrap` to `port` or back, unfreezes every
+module: each is `todo` again, and the next planner run may re-decompose, re-home and
+re-order the modules under the new kind. What has landed stays landed: an item whose home
+the new decomposition changes keeps its code, which moves to the new home before the next
+wave starts.
 
 Freezing a module does not freeze its schedule: its waves that are `todo` may still be
 re-planned, and waves appended to it whenever a consumer needs more of it, as

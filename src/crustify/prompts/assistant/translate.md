@@ -94,8 +94,10 @@ The unit of work is the module, or the wave for a wave of no module. A changed `
 re-plans the modules that are not frozen and the waves that
 are `todo`: spawn planner runs as the binding workflow's Planning section describes,
 under the new answers. A changed `campaign` answer, `wrap` to `port` or back, re-plans
-under the new kind as the same section describes, the frozen modules' objectives
-included. Landed work is never re-planned. A changed `workload` or
+under the new kind as the same section describes: set every module's `status` back to
+`todo` before the first planner run, and once the plan is promoted, move each landed
+item whose home it changed to its new home, its code unchanged, in a commit on the
+working branch before the next wave. Landed work is never re-planned. A changed `workload` or
 `review-workload` answer caps the batches you pack from the next unit of work on, and a
 changed `ship` answer the points at which you ask to ship.
 

@@ -18,8 +18,9 @@ A campaign is planned by one or more planner runs, one after another, each in on
 on its own branch, `crustify/planner/run-<n>`, forked from the working branch's tip and
 checked out in the repository's base dir. Once the run has committed, the working branch
 is fast-forwarded to it, and the next run forks from there. Each run brings the committed
-plan up to date, so a later run checks what the earlier ones decided, and the branch
-history records every planning decision and its revisions.
+plan up to date, so a later run checks what the earlier ones decided, and re-derives under
+the current rules what a rule that has changed since decided, and the branch history
+records every planning decision and its revisions.
 
 A campaign may be planned in several sessions, each for part of its scope: a few modules,
 a few of their waves, or a few named items. Each session's runs add what its scope adds to

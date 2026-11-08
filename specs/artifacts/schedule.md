@@ -155,7 +155,9 @@ its record, apart from the progress fields, and is never revisited, and its item
 scheduled again. An item a batch has landed with its objective, such as one bound ahead of
 its consumer, is not scheduled again with that objective. A frozen module's waves that are
 `todo` are re-planned like any other, within its frozen decomposition, and waves may be
-appended to it, such as those a module added after it calls for.
+appended to it, such as those a module added after it calls for. A change of the
+settings' `campaign` answer unfreezes every module, as `specs/artifacts/modules.md`'s
+Status section describes, and every `todo` wave is re-planned under the new kind.
 
 ## 6. Derived paths
 

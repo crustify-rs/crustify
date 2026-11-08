@@ -31,13 +31,13 @@ and the waves that are `todo`, through further planner runs under the new answer
 work is never re-planned. A changed `workload` or `review-workload` answer re-plans
 nothing: it caps the batches packed from then on.
 
-A changed `campaign` answer, from `wrap` to `port` or back, re-plans the same way under
-the new kind, frozen modules included: the user's change is what lets a frozen record
-change, and only in its `objective`, which each module takes anew, as
-[`../planning/decomposition.md`](../planning/decomposition.md)'s Objectives section
-describes, while its decomposition stays as it is. The `todo` waves are re-planned with
-their items' objectives, and the waves the new objectives call for are appended. What has
-landed stays: in a campaign turned `port`, the bindings that landed are the wrappers its
+A changed `campaign` answer, from `wrap` to `port` or back, unfreezes every module, as
+[`../artifacts/modules.md`](../artifacts/modules.md)'s Status section describes, and
+re-plans the decomposition and the schedule under the new kind: each module takes its
+objective anew, as [`../planning/decomposition.md`](../planning/decomposition.md)'s
+Objectives section describes, its decomposition may change, and every `todo` wave is
+re-planned. An item that has landed keeps its code, which moves to the home the new
+decomposition gives it before the next wave starts. What has landed stays: in a campaign turned `port`, the bindings that landed are the wrappers its
 ports keep, as [`../rust/items/porting.md`](../rust/items/porting.md)'s Symbols section
 describes; in one turned `wrap`, what has been ported stays ported, and the rest is
 wrapped.

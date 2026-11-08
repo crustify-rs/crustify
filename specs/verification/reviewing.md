@@ -227,8 +227,8 @@ changes to the Rust tree, if any.
 A planner run that corrects what an earlier run decided files each correction as a finding
 under `crustify/reviews/planner/`: `modules/` for `modules.json` and
 `schedule.json`, and one sub-directory per tool artifact. Adding what the plan lacks,
-updating it to the current schema and re-planning the waves a change moves are no
-findings.
+updating it to the current schema, re-deriving entries under a rule that has changed and
+re-planning the waves a change moves are no findings.
 
 Each finding is its own `<slug>` directory, named for the finding
 (`split-libavutil-hash`), never for the run, and never reused. Its `report.md` states:

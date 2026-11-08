@@ -110,6 +110,8 @@ Start from what your branch holds. For each artifact you own:
   section describes;
 - if it exists, add what it lacks: a module or link unit the scope now includes, items
   it adds, or the waves a changed setting, such as `scope`, re-plans; and
+- if a rule that decided an artifact's entries has changed since an earlier run decided
+  them, re-derive them under the current rule, as you would update a schema; and
 - check the entries an earlier run decided against the evidence, and correct the defects
   you find and the improvements the evidence supports. Do not rewrite what is right for
   style.
@@ -118,15 +120,14 @@ Whenever anything you add, update or correct changes a module's dependencies, or
 waves of its units, update its `depends_on` or re-plan those waves.
 
 Keep what has started, as the modules schema's Status and the schedule schema's Indices
-and Re-planning sections describe; a frozen module's record changes only when your
-additional instructions say the user asked for it, or, in its `objective` alone, when the
-settings' `campaign` answer has changed from `wrap` to `port` or back: every module then
-takes its objective anew under the new kind, as the decomposition spec's Objectives
-section describes, its decomposition unchanged, and the waves the new objectives call for
-are appended, while what has landed stays. Never change a module's `status`,
-leave every progress field as you found it, and write new waves as `todo`, with no
-batches and a `null` `packed_with`: the orchestrator packs each wave's batches when it
-starts. File each correction as the reviewing spec's Plan corrections
+and Re-planning sections describe: a frozen module's decomposition changes only when your
+additional instructions say the user asked for it, while what is derived from the code
+and the current rules follows them. A module the settings' `campaign` change unfroze is
+`todo`, and its decomposition is yours to re-plan under the new kind; what has landed
+stays. Never change a module's `status`,
+leave every progress field and each library's `decision` as you found them, and write new
+waves as `todo`, with no batches and a `null` `packed_with`: the orchestrator packs each
+wave's batches when it starts. File each correction as the reviewing spec's Plan corrections
 section describes.
 
 ### 2. Module decomposition
