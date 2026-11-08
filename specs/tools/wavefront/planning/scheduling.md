@@ -37,8 +37,8 @@ A row wavefront warns is stale is corrected or deleted.
   wavefront walks an external entity's own dependencies, a function's signature and the
   fields of a struct the closure's code touches, but those are dependencies of the
   external entity, not of the units: the side campaign's own schedule closes over them.
-- Wavefront numbers its waves from 0 in every run, so they are appended after
-  `schedule.json`'s highest index, in wavefront's order, their `depends_on` renumbered,
+- Wavefront numbers its waves from 0 in every run, so the `todo` waves are numbered after
+  the highest index of a started wave, in wavefront's order, their `depends_on` renumbered,
   with their module's `layer` and their `sublayer`. A wave's `items` are those of its
   wavefront batches, each with its `name`, `defined_in` and `kind`, its `used_fields` as
   `field_users`, the `home` its module gives it, its `objective`, and its

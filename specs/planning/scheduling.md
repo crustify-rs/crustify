@@ -102,10 +102,12 @@ stays within what one review can follow. That size follows from:
 The settings' `workload` answer, when it sets one, caps every batch: its types
 (`max-types`), its symbols (`max-syms`) and their lines (`max-loc`).
 
-Consecutive waves may share batches when every dependency chain between their items stays
-within one batch: a batch that holds an item of a later wave also holds every item of the
-earlier waves it depends on that has not landed. Waves that share batches land on the
-first one's integration branch, and are promoted together.
+Consecutive waves of a module, in index order, may share batches when every dependency
+chain between their items stays within one batch: a batch that holds an item of a later
+wave also holds every item of the earlier waves it depends on that has not landed. The
+waves are folded so when they start, and the plan's order on disk stays as planned. Waves
+that share batches land on the first one's integration branch, and are promoted
+together.
 
 An item that has landed is not packed again: an item a [wrap batch](#4-wrap-batches) bound
 ahead of its consumer is dropped from its own wave in a wrap campaign, and keeps only its

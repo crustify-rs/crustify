@@ -24,8 +24,8 @@ records every planning decision and its revisions.
 
 A campaign may be planned in several sessions, each for part of its scope: a few modules,
 a few of their waves, or a few named items. Each session's runs add what its scope adds to
-the same plan: modules and link units with the next free indices, and
-waves after the highest wave index. What is frozen, or has started, is kept as
+the same plan: modules and link units with the next free indices, and the `todo` waves
+numbered after the highest index of a started wave. What is frozen, or has started, is kept as
 [`../artifacts/modules.md`](../artifacts/modules.md) and
 [`../artifacts/schedule.md`](../artifacts/schedule.md) describe. A run that corrects an earlier decision files a report on it, as
 [`../verification/reviewing.md`](../verification/reviewing.md#9-plan-corrections) describes.

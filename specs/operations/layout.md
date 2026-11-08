@@ -37,8 +37,8 @@ relative to the repository's root.
 ## 2. Batch ids
 
 A batch's id is the part of its branch name after `crustify/batches/`:
-`wave-<index>/batch-<index>`. It is permanent, since a wave's index is never reused (see
-`specs/artifacts/schedule.md`), and its entry in `schedule.json` gives the batch's link
+`wave-<index>/batch-<index>`. It is permanent, since a started wave's index is never
+reused or renumbered (see `specs/artifacts/schedule.md`), and its entry in `schedule.json` gives the batch's link
 unit, module, kind and worklist. A run's id is `<role>/run-<n>`, which names its
 artifact dir; a planner run's branch is named from it.
 

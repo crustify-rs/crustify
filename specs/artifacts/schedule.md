@@ -138,19 +138,23 @@ promotion fast-forwards without rewriting them.
 
 ## 4. Indices
 
-A wave's `index` is its permanent id. Each planner run numbers the waves it appends after
-the highest index the schedule holds, so an index is never reused, renumbered or moved,
-and the batch id `wave-<index>/batch-<index>` and every branch named from it keep
-identifying the same work.
+A started wave's `index` is its permanent id: its branch, the batch ids
+`wave-<index>/batch-<index>` and the run dirs are named from it, so it is never reused,
+renumbered or moved, and they keep identifying the same work.
 
-An index is not a position: the waves that are `todo` run in the order of
-`depends_on.scheduled`, and among the waves ready at once, the lowest index runs first. A
-later run may therefore schedule a wave that runs before one an earlier run appended.
+A `todo` wave's index names nothing yet. Each planner run numbers the `todo` waves after
+the highest index of a started wave, from the next integer, in one topological order of
+their `depends_on.scheduled`, with no gaps, renumbering their `depends_on` with them. The
+indices of the `todo` waves are therefore their order: the plan is one total order on
+disk, which the waves follow as they start, as many at once as their dependencies and the
+host allow, and which folding waves into shared batches when they start, as
+`specs/planning/scheduling.md`'s Batches section describes, leaves as it is.
 
 ## 5. Re-planning
 
 Only waves that are `todo` are re-planned: a re-plan may change, split or remove them,
-and the waves that replace them take new indices. A wave that is `wip` or `done` keeps
+and the waves that replace them are numbered with the other `todo` waves, as
+[Indices](#4-indices) describes. A wave that is `wip` or `done` keeps
 its record, apart from the progress fields, and is never revisited, and its items are not
 scheduled again. An item a batch has landed with its objective, such as one bound ahead of
 its consumer, is not scheduled again with that objective. A frozen module's waves that are
