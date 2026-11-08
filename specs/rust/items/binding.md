@@ -45,7 +45,7 @@ Rust consumers use safe APIs. Raw operations are confined to:
 - operations whose caller obligation cannot be represented in Rust types.
 
 A dependency on a module that runs later, cut from a cycle, is reached through the safe
-wrappers a wrap wave adds before its consumer, never through raw bindings. A wrapper over
+wrappers a wrap batch adds before its consumer, never through raw bindings. A wrapper over
 the items of a module that will be ported is written as that module's API: the names,
 ownership and error types its port keeps, so that its consumers do not change when it
 ports. Every unsafe block carries

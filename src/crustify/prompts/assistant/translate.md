@@ -77,24 +77,26 @@ port campaign: the planner runs' branches, tasks, checks and promotion; the Rust
 scaffolding; the side campaigns of the out-of-tree libraries the plan needs, each a wrap
 campaign you run in its own repository, as the dependencies spec describes; each module's `status`, which you set to `frozen` when the modules schema's Status
 section times it; every module's branch and its integration into the working branch;
-every wave, batch, review wave and review batch, from its branch and task to its
-promotion, and its progress in `schedule.json`; and the accounting the Ownership section
-names.
+every wave, from its branch to its promotion; every batch, review batches included, from
+its packing, branch and task to its landing; their progress in `schedule.json`; and the
+accounting the Ownership section names.
 
 ### Brief
 
 The campaign brief lists the modules, the out-of-tree libraries and whether each has a
 wrapper on `crustify-rs` already, the assumptions you made, the backend, billing, model proxy and arguments of every agent, the review policy with its objectives, the sanitizers, and the execution policy:
-whether modules run concurrently or their waves are merged, parallelism, review caps and
-the settings' approval gates.
+whether modules run concurrently or their waves are merged, the batch, review and
+parallelism caps if the settings set any, the ship points and the settings' approval
+gates.
 
 ### Settings changes
 
-The unit of work is the module, or the wave for a wave of no module. A changed
-`scope`, `workload`, `review-workload` or `module-concurrency` answer re-plans the modules
-that are not frozen and the waves that are `todo`: spawn planner runs as the binding
-workflow's Planning section describes, under the new answers. Landed work is never
-re-planned.
+The unit of work is the module, or the wave for a wave of no module. A changed `scope` or
+`module-concurrency` answer re-plans the modules that are not frozen and the waves that
+are `todo`: spawn planner runs as the binding workflow's Planning section describes,
+under the new answers. Landed work is never re-planned. A changed `workload` or
+`review-workload` answer caps the batches you pack from the next unit of work on, and a
+changed `ship` answer the points at which you ask to ship.
 
 ### Workflow
 
@@ -137,13 +139,27 @@ re-planned.
 #### Phase 2: translation
 
 1. **Preflight.** Carry out the setup workflow's Preflight section.
-2. **Waves and batches.** Run the waves the session covers, and their review waves, as
-   the binding workflow's Order, Waves and batches, and Review waves sections describe,
+2. **Waves and batches.** Run the waves the session covers, and their review batches, as
+   the binding workflow's Order, Waves and batches, and Review batches sections describe,
    with the porting workflow's differences in a port campaign: prepare each wave as the
-   versioning spec's Lifecycle section describes, write each task, spawn its agents as the
-   concurrency spec describes, within the settings' `parallelism` when it sets one, record
-   each batch's progress, and promote each wave once it completes. Create each home before its batch launches, as the Rust tree section
-   describes.
+   versioning spec's Lifecycle section describes, pack its batches, write each task, spawn
+   its agents as the concurrency spec describes, within the settings' `parallelism` when
+   it sets one, record each batch's progress, and promote each wave once it completes.
+   Create each home before its batch launches, as the Rust tree section describes.
+
+   Pack each wave's batches when it starts, as the scheduling spec's Batches section
+   describes: judge each batch's size from its items, the agent that runs it, how the
+   campaign's batches have gone so far and the host, within the settings' caps, and share
+   batches between consecutive waves where every dependency chain stays inside one. Before
+   you launch a batch, check what its items depend on against what has landed, and bind
+   what has not first, in a wrap batch of the same wave that lands before it, as the
+   scheduling spec's Wrap batches section describes. When a batch fails, run it again or
+   pack its items anew.
+
+   When review is enabled, pack review batches as the batches they review land, larger
+   than translation batches, as the reviewing spec's Review batches section describes, so
+   that review runs beside the wave rather than after it, and mark the wave's last one,
+   launched once every translation batch has landed, with `wave_gates`.
 
    With concurrent modules, start each module's run on its own branch as soon as the
    binding workflow's Order section allows, as many at once as the concurrency spec
@@ -156,12 +172,13 @@ re-planned.
    Before a wave whose items use entities of an out-of-tree library that its wrapper
    lacks, advance that library's side campaign, as the dependencies spec's Side campaigns
    section describes: spawn a planner run in its repository with additional instructions
-   naming the entities the wave needs, run the waves and review waves that run plans, and
-   promote them there; then move the parent's pin to the wrapper's working-branch tip, and
-   its library's `wrapper.pin` in `dependencies.json` with it, in a commit on the parent's
+   naming the entities the wave needs, run the waves that run plans, and promote them
+   there; then move the parent's pin to the wrapper's working-branch tip, and its
+   library's `wrapper.pin` in `dependencies.json` with it, in a commit on the parent's
    working branch, and start the wave.
-3. **Shipping.** When a module has been integrated and passed its gates, ask the user whether to
-   advance the shipping branch, as the binding workflow's Shipping section describes. A
+3. **Shipping.** At each point the settings' `ship` answer names, once its modules have
+   been integrated and passed their gates, ask the user whether to advance the shipping
+   branch, as the binding workflow's Shipping section describes. A
    parent ships only once each wrapper it pins has shipped the commit it pins: ask for
    those wrappers' shipping too.
 4. **Accounting.** Collect every run's records as soon as it lands or fails, and fill its

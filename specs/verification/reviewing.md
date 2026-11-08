@@ -2,34 +2,40 @@
 
 Review inspects work that has already landed, for a set of objectives, and files a report
 for every defect it finds. In a translation campaign, reviewers inspect what each
-translation wave landed before the next one starts; in an audit, the modules of a crate
+translation batch landed before the waves that build on it start; in an audit, the modules of a crate
 that Crustify did not generate (see [`../workflows/audit.md`](../workflows/audit.md)); and planner runs review the
 plan that earlier runs committed (see [Plan corrections](#9-plan-corrections)).
 
-## 1. Review waves and batches
+## 1. Review batches
 
-TODO: `schedule.json`'s schema leaves review waves out for now, as [`../artifacts/schedule.md`](../artifacts/schedule.md) notes; the review waves below are not scheduled until it holds them again.
+When review is enabled, every translation batch's landing is reviewed before its wave is
+promoted, so that no wave builds on unreviewed work. A review batch is a batch of the wave
+it reviews, in `schedule.json`, that `reviews` some of its landed translation batches, and
+lands on the same integration branch, never checked out, as
+[`../operations/versioning.md`](../operations/versioning.md) names it. The wave is promoted
+once its translation batches and their reviews have landed. An audit's review waves are
+[`../workflows/audit.md`](../workflows/audit.md)'s.
 
-When review is enabled, every translated wave is followed by its review wave, a wave of
-its own in `schedule.json` that `reviews` it, before the next translation wave starts. Its
-batches land on its integration branch, never checked out, as [`../operations/versioning.md`](../operations/versioning.md)
-names it, and once they land, its tip is promoted to the working branch.
+Review batches are packed eagerly, as the batches they review land: one launches as soon as
+the landed batches not yet reviewed fill it, and the last once every translation batch of
+the wave has landed, so that review runs beside the wave's remaining batches rather than
+after them. When a session runs only part of a wave, or part of the scope, its review
+covers what it landed, before what consumes that starts.
 
-A review batch takes the commits of one or more of the wave's translation batches of one
-kind, `type` or `symbol`, within the campaign's review caps (`id: review-workload`), counted
-over the items those batches scheduled: a wave's type batches and its symbol batches are
-reviewed apart, in at most one review batch of each kind where the caps allow. A review
-batch is larger than a translation batch, about 5-10x for types and 3-4x for symbols,
-without overwhelming its reviewer. A campaign may also review every translation batch on
-its own, with that batch's commits.
+A review batch takes the commits of translation batches of one route, `type` or `symbol`,
+counted over their items: types and symbols are reviewed apart. It is larger than a
+translation batch, since its reviewer reads landed code rather than writing it: about
+5-10x a type batch's items and 3-4x a symbol batch's, without overwhelming its reviewer,
+and within the settings' review caps (`id: review-workload`) when they set them. A campaign
+may also review every translation batch on its own, with that batch's commits.
 
 A review batch's `task.json` ([`../artifacts/task.md`](../artifacts/task.md)) holds its worklist,
-its objectives, its review wave branch and its run fields:
+its objectives, its wave branch and its run fields:
 
 ```json
 {"objectives": ["lifecycle", "unsafety", "ub", "equiv", "fix"], "commits": ["3f2a9c1", "8be04d7"],
  "wave": 8, "batch": 0, "link_unit": "<link unit>", "module": "<module name>", "foundational": false,
- "base_branch": "<review wave branch>", "backend": "<backend>", "billing": "<billing>"}
+ "base_branch": "<wave branch>", "backend": "<backend>", "billing": "<billing>"}
 ```
 
 Without `objectives`, a batch runs every objective its reviewer offers that applies.
@@ -46,7 +52,7 @@ A review batch has one route:
 | `paths` | source files and directories of a crate, or named types, trait impls and functions in one | everything they define, or the named parts |
 | `reports` | none: the batch only revisits reports | the code the reports name |
 
-A review batch's entry in `schedule.json` names the batches of the reviewed wave it
+A review batch's entry in `schedule.json` names the batches of its wave it
 `reviews`, and each of those lists the `commits` it landed and the `items` it bound or
 ported, whose `kind` gives their routes: `type` or `symbol`.
 
@@ -201,12 +207,14 @@ Crustify-generated batch, in the reviewed crate's own suite for that kind.
 
 ## 7. Gates
 
-A review wave follows a translated wave, so the gates
-[`testing.md`](testing.md)'s Regressions section gives the wave run in its review batches: Miri in every wave, and
-BSan over everything the module landed when the reviewed wave is the module's last:
-no other translation wave in `schedule.json` belongs to its module and runs after it. Both run on the wave tip before any change, and again
-on the landed tree under `fix`. Without `fix`, each true positive a gate finds is filed as
-a UB report. A BSan report on an earlier wave's items belongs to the last wave's review.
+The gates [`testing.md`](testing.md)'s Regressions section gives a wave run in its last
+review batch, which launches once every translation batch of the wave has landed, and
+whose task's `wave_gates` says so: Miri in
+every wave, and BSan over everything the module landed when the wave is the module's last:
+no other translation wave in `schedule.json` belongs to its module and runs after it. Both
+run on the wave's tip before any change, and again on the landed tree under `fix`. Without
+`fix`, each true positive a gate finds is filed as a UB report. A BSan report on an earlier
+wave's items belongs to the last wave's review.
 
 ## 8. Landing
 

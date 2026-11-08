@@ -1,23 +1,25 @@
 {
   "_comment": [
     "Example `<workdir>/crustify/artifacts/schedule.json`: the order of the campaign's",
-    "modules, and its waves and batches. `modules` lists them by `layer`: src/core.c",
-    "comes first, and its use of src/io.c's widget_stream is cut. Planning appends",
-    "waves after the highest index, and their `index` is their permanent id, not their",
-    "position: `todo` waves run in the order of `depends_on.scheduled`, the lowest",
-    "index first among those ready at once. Each batch's id is",
-    "wave-<index>/batch-<index>, which names its branch and worktree. `status` and",
-    "`commits` record progress as the work launches and lands. A batch's task.json",
-    "carries its kind as `objective`, its items, its batch fields and the run fields.",
-    "Homes follow the coding conventions: src/<link-unit>/ in the campaign's own",
-    "repository; C paths are below c/. An independent illustration: it is not a",
-    "schedule for templates/modules.json. With concurrent modules, the settings' default,",
-    "each wave is one module's; with merged waves, a wave of no module holds the",
-    "batches of every module at its `layer` and `sublayer`.",
-    "src/io.c's `external` record names libz, whose z_stream_s its widget_stream holds:",
-    "libz's side campaign wraps it, and no wave here does."
+    "modules, and its waves with their items and batches. `modules` lists them by `layer`:",
+    "src/core.c comes first, and its use of src/io.c's widget_stream is cut. Planning",
+    "appends waves after the highest index, and their `index` is their permanent id, not",
+    "their position: `todo` waves run in the order of `depends_on.scheduled`, the lowest",
+    "index first among those ready at once. A wave's `items` are planned; its `batches`",
+    "are packed when it starts, and with `status` and `commits` record its progress. Each",
+    "batch's id is wave-<index>/batch-<index>, which names its branch and worktree. A",
+    "batch's task.json carries its kind as `objective`, its items, its batch fields and the",
+    "run fields. Wave 1's first batch binds widget_stream, the cut dependency its",
+    "widget_open needs, ahead of it, homed in src/io.c's file; wave 2 then finds it landed",
+    "and packs only widget_read. Wave 0's batch 2 reviews its batches 0 and 1. Homes follow",
+    "the coding conventions: src/<link-unit>/ in the campaign's own repository; C paths are",
+    "below c/. An independent illustration: it is not a schedule for templates/modules.json.",
+    "With concurrent modules, the settings' default, each wave is one module's; with merged",
+    "waves, a wave of no module holds the items of every module at its `layer` and",
+    "`sublayer`. src/io.c's `external` record names libz, whose z_stream_s its",
+    "widget_stream holds: libz's side campaign wraps it, and no wave here does."
   ],
-  "schema_version": 4,
+  "schema_version": 5,
   "modules": [
     {
       "link_unit": "libwidget",
@@ -110,12 +112,28 @@
         "scheduled": [],
         "cut": []
       },
-      "budgets": {
-        "max-types": 2,
-        "min-fields": 20,
-        "max-syms": 25,
-        "max-loc": 500
-      },
+      "items": [
+        {
+          "name": "widget_handle",
+          "defined_in": "include/widget/core.h",
+          "kind": "type",
+          "field_anchors": [
+            "refcount",
+            "flags"
+          ],
+          "home": "src/libwidget/src/core.rs",
+          "objective": "wrap"
+        },
+        {
+          "name": "widget_opts",
+          "defined_in": "include/widget/core.h",
+          "kind": "type",
+          "field_anchors": [],
+          "home": "src/libwidget/src/core.rs",
+          "objective": "wrap"
+        }
+      ],
+      "packed_with": null,
       "batches": [
         {
           "index": 0,
@@ -160,6 +178,22 @@
             "8be04d7",
             "c51e0aa"
           ]
+        },
+        {
+          "index": 2,
+          "link_unit": "libwidget",
+          "module": "src/core.c",
+          "foundational": false,
+          "kind": "review",
+          "status": "done",
+          "reviews": [
+            0,
+            1
+          ],
+          "commits": [
+            "d4e7b20",
+            "e90c13f"
+          ]
         }
       ]
     },
@@ -179,15 +213,42 @@
           2
         ]
       },
-      "budgets": {
-        "max-types": 2,
-        "min-fields": 20,
-        "max-syms": 25,
-        "max-loc": 500
-      },
+      "items": [
+        {
+          "name": "widget_open",
+          "defined_in": "src/core.c",
+          "kind": "symbol",
+          "field_anchors": [],
+          "home": "src/libwidget/src/core.rs",
+          "objective": "wrap"
+        }
+      ],
+      "packed_with": null,
       "batches": [
         {
           "index": 0,
+          "link_unit": "libwidget",
+          "module": "src/core.c",
+          "foundational": false,
+          "kind": "wrap",
+          "status": "done",
+          "items": [
+            {
+              "name": "widget_stream",
+              "defined_in": "include/widget/io.h",
+              "kind": "type",
+              "field_anchors": [
+                "fd"
+              ],
+              "home": "src/libwidget/src/io.rs"
+            }
+          ],
+          "commits": [
+            "5a1f0c2"
+          ]
+        },
+        {
+          "index": 1,
           "link_unit": "libwidget",
           "module": "src/core.c",
           "foundational": false,
@@ -220,34 +281,28 @@
         ],
         "cut": []
       },
-      "budgets": {
-        "max-types": 2,
-        "min-fields": 20,
-        "max-syms": 25,
-        "max-loc": 500
-      },
-      "batches": [
+      "items": [
         {
-          "index": 0,
-          "link_unit": "libwidget",
-          "module": "src/io.c",
-          "foundational": false,
-          "kind": "wrap",
-          "status": "todo",
-          "items": [
-            {
-              "name": "widget_stream",
-              "defined_in": "include/widget/io.h",
-              "kind": "type",
-              "field_anchors": [
-                "fd"
-              ],
-              "home": "src/libwidget/src/io.rs"
-            }
+          "name": "widget_stream",
+          "defined_in": "include/widget/io.h",
+          "kind": "type",
+          "field_anchors": [
+            "fd"
           ],
-          "commits": []
+          "home": "src/libwidget/src/io.rs",
+          "objective": "wrap"
+        },
+        {
+          "name": "widget_read",
+          "defined_in": "src/io.c",
+          "kind": "symbol",
+          "field_anchors": [],
+          "home": "src/libwidget/src/io.rs",
+          "objective": "wrap"
         }
-      ]
+      ],
+      "packed_with": null,
+      "batches": []
     }
   ]
 }

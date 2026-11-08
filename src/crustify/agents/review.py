@@ -56,6 +56,7 @@ class ReviewAgent(CrustifyAgent):
         paths: list[object] = (),
         reports: list[str] = (),
         objectives: list[str] | None,
+        wave_gates: bool = False,
         git_base: str,
         log_stem: str,
     ) -> None:
@@ -66,6 +67,7 @@ class ReviewAgent(CrustifyAgent):
         self._commits = list(commits)
         self._paths = [dict(m) if isinstance(m, dict) else m for m in paths]
         self._reports = list(reports)
+        self._wave_gates = wave_gates
         available = set(self.available_objectives())
         if objectives is None:
             # Every objective that applies: `revisit` exactly when there are
@@ -119,4 +121,5 @@ class ReviewAgent(CrustifyAgent):
                 if self._paths else
                 {"route": self._route, "commits": self._commits}),
             "reports": ", ".join(self._reports) or "none",
+            "wave_gates": "yes" if self._wave_gates else "no",
         }

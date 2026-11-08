@@ -39,6 +39,9 @@ class ReviewBatch:
     run: RunSettings
     placement: Placement
     instructions: Instructions | None = None
+    #: Whether the batch runs its wave's gates: it is the wave's last review
+    #: batch, launched once every translation batch of the wave has landed.
+    wave_gates: bool = False
 
 
 def _fail(message: str) -> NoReturn:
@@ -127,7 +130,8 @@ def load_batch(path: Path) -> ReviewBatch:
     not here."""
     raw = read_object(path, _fail)
     check_fields(raw, {"base_branch", "billing"} | BATCH_FIELDS,
-                 {"commits", "paths", "reports", "objectives", "instructions"}
+                 {"commits", "paths", "reports", "objectives", "instructions",
+                  "wave_gates"}
                  | RUN_FIELDS | RUN_OPTIONAL, _fail)
     if "commits" in raw and "paths" in raw:
         _fail("a batch carries commits or paths, not both")
@@ -143,6 +147,11 @@ def load_batch(path: Path) -> ReviewBatch:
             _fail("objectives contains duplicates")
         if ("revisit" in objectives) != ("reports" in raw):
             _fail("reports are given exactly when revisit is an objective")
+    wave_gates = raw.get("wave_gates", False)
+    if not isinstance(wave_gates, bool):
+        _fail("wave_gates must be true or false")
+    if wave_gates and "commits" not in raw:
+        _fail("only a batch that reviews commits runs its wave's gates")
     reports = _paths(raw["reports"], "reports") if "reports" in raw else []
     route, commits, paths = "reports", [], []
     if "commits" in raw:
@@ -160,7 +169,8 @@ def load_batch(path: Path) -> ReviewBatch:
                        base_branch=parse_branch(raw, _fail),
                        run=parse_run(raw, _fail),
                        placement=parse_placement(raw, _fail),
-                       instructions=parse_instructions(raw, path, _fail))
+                       instructions=parse_instructions(raw, path, _fail),
+                       wave_gates=wave_gates)
 
 
 def execute(
@@ -189,6 +199,7 @@ def execute(
         paths=batch.paths,
         reports=batch.reports,
         objectives=batch.objectives,
+        wave_gates=batch.wave_gates,
         git_base=base_branch,
         log_stem=_LOG_STEM,
     )
@@ -200,7 +211,8 @@ def execute(
             f"[review dry-run] one {batch.route} agent for "
             f"{batch.placement.batch_id} ({batch.placement.module_label}); "
             f"{len(batch.commits)} commit(s), {len(batch.paths)} path(s), "
-            f"{len(batch.reports)} report(s); objectives "
+            f"{len(batch.reports)} report(s); "
+            f"{'runs' if batch.wave_gates else 'no'} wave gates; objectives "
             f"{', '.join(agent.objectives)}; landing on {base_branch}; "
             f"{batch.run.describe()}; "
             f"{instructions_note(batch.instructions)}; no agent spawned."

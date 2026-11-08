@@ -25,8 +25,7 @@ A row wavefront warns is stale is corrected or deleted.
   on, ordered over the whole closure. The output is written to `crustify/tmp/`, never
   over `schedule.json`.
 - A wrap campaign schedules with `--api-headers-only`.
-- The campaign's `workload` caps are its batch caps, `--max-types`, `--min-fields`,
-  `--max-syms` and `--max-loc`.
+- It schedules without batch caps: the waves' batches are packed when each starts.
 - A unit wavefront warns belongs to no module, and a module it warns claims no unit, are
   gaps in the decomposition, corrected before the schedule is used.
 - Wavefront's `modules` become `schedule.json`'s, each named back to its `link_unit`,
@@ -40,24 +39,31 @@ A row wavefront warns is stale is corrected or deleted.
   external entity, not of the units: the side campaign's own schedule closes over them.
 - Wavefront numbers its waves from 0 in every run, so they are appended after
   `schedule.json`'s highest index, in wavefront's order, their `depends_on` renumbered,
-  with their module's `layer`, their `sublayer` and the caps as their `budgets`. Each
-  wavefront batch becomes a `wrap` batch of its wave's module, each item with its `name`,
-  `defined_in` and `kind`, its `used_fields` as `field_anchors`, and the `home` its module
-  gives it. An item a wave that has started holds is dropped, and a dependency on it is
-  one on that wave.
+  with their module's `layer` and their `sublayer`. A wave's `items` are those of its
+  wavefront batches, each with its `name`, `defined_in` and `kind`, its `used_fields` as
+  `field_anchors`, the `home` its module gives it, and its `objective`. An item a wave
+  that has started holds, or that a batch has landed with that objective, is dropped, and
+  a dependency on it is one on that wave.
 - With merged waves, the waves of the same `layer` and `sublayer` merge into one, which
-  keeps every module's batches, and whose `depends_on` is the union of theirs, less the
+  keeps every module's items, and whose `depends_on` is the union of theirs, less the
   waves merged into it.
 
-## Wrap waves
+## Wrap batches
 
-A wrap batch's items are closed over their wrap dependencies on the public-signature
-graph, `query dag --name <items> --api-headers-only`, less what an earlier wave wrapped or
-ported.
+The units a batch's items depend on are their `depends_on`, `scheduled` and `cut`, in
+the planner run's wavefront schedule, or `query dag --name <items>`. A wrap batch's items
+are closed over their wrap dependencies on the public-signature graph,
+`query dag --name <items> --api-headers-only`, less what has landed.
 
 ## Porting types
 
-`query types --name <T> --field-touchers` lists the functions that touch each field of a
-type, and `--users` every function that mentions it; the users that touch no field are the
-layout users to check in the source. The globals and embedding structs are in
-`t1/globals.csv` and `t1/fields.csv`.
+Wavefront's T2 `layout_uses.csv` records every kind of layout use, and
+`query types --name <T> --layout-users` lists a type's users with the site and kind of
+each use; a test the closure leaves out is no user. A port campaign's schedule, which is
+not `--api-headers-only`, gives each scheduled struct or union its `opaque_after`, whose
+`closure` record names the `modules` of its last layout users over the order of the whole
+closure, those no other user depends on, the type's own module among them when its own
+wave is. Those modules, less the type's own, are the ones whose integration its `port`
+waits for; with none left, it is `port` where the order places it. Whether a user stays C
+is read from the whole list, `--layout-users`. `query types --name <T> --field-touchers`
+lists the functions that touch each field.

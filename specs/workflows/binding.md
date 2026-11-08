@@ -26,9 +26,10 @@ but for its progress; no index reused or renumbered; the `depends_on.scheduled` 
 module's `modules.json` record holds in its `schedule.json` record's `scheduled` or
 `cut`.
 
-A changed `scope`, `workload`, `review-workload` or `module-concurrency` answer re-plans
-the modules that are not frozen and the waves that are `todo`, through further planner
-runs under the new answers. Landed work is never re-planned.
+A changed `scope` or `module-concurrency` answer re-plans the modules that are not frozen
+and the waves that are `todo`, through further planner runs under the new answers. Landed
+work is never re-planned. A changed `workload` or `review-workload` answer re-plans
+nothing: it caps the batches packed from then on.
 
 ## 2. Rust tree
 
@@ -86,6 +87,12 @@ to the working branch. Its integration branch is created first, the wave's base 
 startup is curated: duplicate and overlapping notes merged, and the notes the campaign has
 made stale corrected or removed. The wave's `status` becomes `wip`.
 
+Its batches are then packed from its items, and from those of the waves it shares batches
+with, as [`../planning/scheduling.md`](../planning/scheduling.md)'s Batches section
+describes, and recorded in its `schedule.json` entry. Before a batch whose items depend on
+units that have not landed, a wrap batch binds them, as its Wrap batches section
+describes, and lands first.
+
 Each batch then gets:
 
 - its run dir, holding its `task.json`: its `schedule.json` entry's `kind` as `objective`
@@ -112,10 +119,10 @@ are not run again for the wave. Its `status` follows its run, and once it lands,
 section describes.
 
 A batch that fails keeps its branch and worktree for inspection. It is run again in a new
-run dir, or its failure reported; its worklist is not translated outside an agent unless
+run dir, its items are packed again into new batches, or its failure is reported; its worklist is not translated outside an agent unless
 the user asks for it. A competing landing is never discarded.
 
-Once every batch has landed, the wave is promoted to the branch it forked from, as
+Once every batch has landed, its review batches included, the wave is promoted to the branch it forked from, as
 [`../operations/versioning.md`](../operations/versioning.md)'s Promotion section
 describes, and its progress and accounting are committed on the working branch, as its
 Progress section times them.
@@ -129,19 +136,17 @@ those of [`../verification/testing.md`](../verification/testing.md)'s Regression
 section, and in a port campaign the module's own integration, as
 [`porting.md`](porting.md)'s Builds section describes.
 
-## 5. Review waves
+## 5. Review batches
 
-TODO: `schedule.json`'s schema leaves review waves out for now, as [`../artifacts/schedule.md`](../artifacts/schedule.md) notes; the review waves below are not scheduled until it holds them again.
-
-When review is enabled, every translated wave is followed by its review wave, as
-[`../verification/reviewing.md`](../verification/reviewing.md) describes. It is prepared and promoted as a wave, and
-each of its batches reviews the batches of the reviewed wave its entry `reviews`, or
-reviews each translation batch alone when the settings ask for that.
+When review is enabled, each wave's landed batches are reviewed before it is promoted, by
+review batches of the same wave, packed as the batches they review land, as
+[`../verification/reviewing.md`](../verification/reviewing.md)'s Review batches section
+describes, or one per translation batch when the settings ask for that.
 
 Each review batch's `task.json` holds the `commits` of the batches it reviews, as they sit
-on the working branch, the approved objectives, the batch fields, its review wave branch,
-and the review run fields. A dry run checks the objectives it resolves to before
-it is spawned:
+on the wave branch, the approved objectives, the batch fields, the wave branch as
+`base_branch`, and the review run fields. A dry run checks the objectives it resolves to
+before it is spawned:
 
 ```bash
 crustify spawn-reviewer <batch worktree> <run dir>/task.json
@@ -150,8 +155,9 @@ crustify spawn-reviewer <batch worktree> <run dir>/task.json
 ## 6. Shipping
 
 The shipping branch, `main`, advances only when the user approves it: it is
-fast-forwarded to the working branch's tip, typically once a module has been integrated
-and passed its gates.
+fast-forwarded to the working branch's tip at the points the settings' `ship` answer names,
+each once the modules it names have been integrated and passed their gates: by default,
+after every integrated module.
 
 ## 7. Accounting
 

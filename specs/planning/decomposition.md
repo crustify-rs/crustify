@@ -7,7 +7,7 @@ them are [scheduling](scheduling.md)'s; together they are the campaign's plan, w
 planning artifacts of the tools it uses.
 
 A plan is bounded by the campaign's settings in `crustify/CRUSTIFY.md`: its `campaign`
-(port or wrap), `scope`, `target-config` and `workload` answers. A feature the target is
+(port or wrap), `scope`, `target-config` and `module-concurrency` answers. A feature the target is
 configured without is out of scope. The plan derives from the builds recorded in
 `crustify/artifacts/build.json` and the linker outputs of those builds; planning changes
 neither the build nor the Rust tree.

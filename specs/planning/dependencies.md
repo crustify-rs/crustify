@@ -43,7 +43,7 @@ the parent applies is applied to its side campaigns too.
 
 The side campaign advances at the parent's pace. Before a parent wave whose items use
 entities of the library that the wrapper lacks, as [scheduling](scheduling.md)'s Wrap
-waves section places it, the side campaign plans and runs the waves that wrap them; once
+batches section places it, the side campaign plans and runs the waves that wrap them; once
 those are promoted to its working branch, the parent's pin, its library's `wrapper.pin`
 in `dependencies.json`, moves to that commit, and the parent wave starts. The parent ships
 only once each wrapper it pins has shipped the commit it pins, each with the user's

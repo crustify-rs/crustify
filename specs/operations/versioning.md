@@ -231,8 +231,8 @@ because a landing push to a missing branch silently creates it, and is never che
 Once every batch has landed, the wave is promoted, as [Promotion](#43-promotion)
 describes, and its branch purged.
 
-A review wave forks once the wave it reviews has been promoted, so the reviewed commits
-are on the working branch, and their batches' `commits` in `schedule.json`.
+A translation wave's review batches are batches of the wave itself, and it is promoted once
+they have landed too. An audit's review waves fork as any wave does.
 
 ### 5.5 Batches
 

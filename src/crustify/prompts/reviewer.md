@@ -106,10 +106,10 @@ and give every commit you make that identity, as the identity spec describes.
 ## Worklists and objectives
 
 Your worklist has one route, as the reviewing instructions' Worklists section describes.
-In a Crustify campaign it carries the commits of one or more translation batches of a
-wave: your batch's entry in `crustify/artifacts/schedule.json` names the wave your wave
-`reviews` and the batches of it you review, and each of those lists the `items` it bound
-or ported and the `commits` it landed. In an audit it names paths of the crate. Read what your workset calls and what implements its traits, but
+In a Crustify campaign it carries the commits of one or more translation batches of your
+wave: your batch's entry in `crustify/artifacts/schedule.json` names the batches of it you
+`review`, and each of those lists the `items` it bound or ported and the `commits` it
+landed. In an audit it names paths of the crate. Read what your workset calls and what implements its traits, but
 report only on your workset.
 
 Your objectives are listed in your inputs, and the reviewing instructions' Objectives
@@ -175,15 +175,16 @@ Fixes section describes.
 Validate the tree you land as the testing instructions' Regressions section describes. If
 you patched something, run any regression suites that might be available for it.
 
-In a Crustify campaign, your review wave follows a translated wave, so you own its gates,
-as the reviewing instructions' Gates section describes:
+In a Crustify campaign, when your inputs say you run your wave's gates, your batch is the
+wave's last review batch, launched once every translation batch of the wave has landed,
+so you own its gates, as the reviewing instructions' Gates section describes:
 
 - Miri, in every wave: run its gate on the wave tip before any change.
-- BSan at module end, when the wave you review is your module's last: no other
-  translation wave of your module in `crustify/artifacts/schedule.json` runs after it.
-  Run its gate on the wave tip
-  before any change, and triage its reports on earlier waves' items too. In every other
-  wave, run BSan only on the individual reproducers you emit.
+- BSan at module end, when your wave is your module's last: no other translation wave of
+  your module in `crustify/artifacts/schedule.json` runs after it. Run its gate on the
+  wave tip before any change, and triage its reports on earlier waves' items too.
+
+Otherwise, and in every other wave, run BSan only on the individual reproducers you emit.
 
 If `fix` is enabled, rerun the gates you own on the tree you land: after your fixes, and
 after your rebase under the landing lock those relevant to its integration, as the Landing
@@ -237,6 +238,7 @@ reran and why the others could not have changed.
 - reports to revisit: `{reports}`
 - batch: `{batch_id}`, of module `{module}`, its link unit and name in `modules.json`
 - unchecked-out review integration branch: `{git_base}`
+- your wave's gates: `{wave_gates}`
 
 ---
 

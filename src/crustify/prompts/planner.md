@@ -109,19 +109,20 @@ Start from what your branch holds. For each artifact you own:
   deleted; per-subsystem schedules are converted as the schedule schema's Earlier versions
   section describes;
 - if it exists, add what it lacks: a module or link unit the scope now includes, items
-  it adds, or the waves and batches a changed setting, such as `workload`, re-plans; and
+  it adds, or the waves a changed setting, such as `module-concurrency`, re-plans; and
 - check the entries an earlier run decided against the evidence, and correct the defects
   you find and the improvements the evidence supports. Do not rewrite what is right for
   style.
 
 Whenever anything you add, update or correct changes a module's dependencies, or the
-waves or batches of its units, update its `depends_on` or re-plan those waves.
+waves of its units, update its `depends_on` or re-plan those waves.
 
 Keep what has started, as the modules schema's Status and the schedule schema's Indices
 and Re-planning sections describe; a frozen module's record changes only when your
 additional instructions say the user asked for it. Never change a module's `status`,
-leave every progress field as you found it, and write new waves and batches as `todo`
-with empty `commits`. File each correction as the reviewing spec's Plan corrections
+leave every progress field as you found it, and write new waves as `todo`, with no
+batches and a `null` `packed_with`: the orchestrator packs each wave's batches when it
+starts. File each correction as the reviewing spec's Plan corrections
 section describes.
 
 ### 2. Module decomposition
@@ -139,8 +140,10 @@ reimplementing or binding the target in your commit message.
 ### 3. Planning
 
 Record each module's and link unit's `depends_on`, then record the order of the modules
-and plan the waves and batches of the units your scope adds into `schedule.json`, from
-`templates/schedule.json`, as the scheduling spec describes. Plan no waves that replace raw seams.
+and plan the waves of the units your scope adds, each with its items and their
+objectives, into `schedule.json`, from `templates/schedule.json`, as the scheduling spec
+describes. Plan no batches, and no wrap batches ahead of a cut dependency's consumers:
+both are packed when their wave starts. Plan no waves that replace raw seams.
 
 For each out-of-tree library your waves need, check `github.com/crustify-rs` for its
 wrapper, as the dependencies spec's Reuse section describes, and record in your commit

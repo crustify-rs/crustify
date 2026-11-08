@@ -13,11 +13,12 @@ and in Notes.
 - **translate-agent** — `<backend>`, `<api | subscription>`, proxy `<proxy | none>`, args `<args | none>`
 - **review-agent** — `<backend>`, `<api | subscription>`, proxy `<proxy | none>`, args `<args | none>`; objectives `<objectives>`
 - **plan-agent** — `<backend>`, `<api | subscription>`, proxy `<proxy | none>`, args `<args | none>`; `<n>` runs
-- **workload** — max-types `<n>`, max-syms `<n>`, max-loc `<n>`, parallelism `<n>`
-- **review-workload** — `<caps>`
+- **workload** — `<caps | no cap>`
+- **review-workload** — `<caps | no cap>`
 - **sanitizers** — `<variants>`
 - **target-config** — `<configuration>`, `build.json` version `<n>`
 - **module-concurrency** — `<concurrent | merged>`
+- **ship** — `<after every integrated module | after: modules | once the scope is done>`
 
 ## Legend
 
@@ -291,8 +292,10 @@ entity appears once, under the last objective it ran, so a type wrapped and
 later ported counts as ported and never in both. Name the entities that took
 both paths. Callbacks count with symbols.
 
-Some of it is structural and belongs here every time: whether a review wave
-reused the translation batches or the oracle re-batched it under distinct caps;
-which units a review schedule dropped and why; which modules the Overview
+Some of it is structural and belongs here every time: how each wave's batches
+were packed, and why: their sizes, the caps if any, the waves that shared
+batches, the wrap batches bound ahead of their consumers and the batches packed
+again after a failure; whether review batches took each translation batch alone
+or several, and how large; which modules the Overview
 lists but no table details, and the cost that leaves unaccounted; and any column
 a campaign could not fill, said once rather than left as a field of em-dashes.

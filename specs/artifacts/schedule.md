@@ -5,22 +5,22 @@ order, waves and batches. Layout example: [`templates/schedule.json`](../../temp
 
 The campaign has one schedule, which every planner run extends: the first run creates it,
 and each later one appends the waves its scope adds and re-plans the waves that have not
-started. Waves and batches are computable in advance, so writing them down makes a
-campaign's shape and cost reviewable before it spends anything.
+started. Waves are computable in advance, so writing them down makes a campaign's shape
+reviewable before it spends anything; their batches are not, since they are packed when
+each wave starts, as `specs/planning/scheduling.md`'s Batches section describes.
 
-TODO: review waves, which follow each translated wave when review is enabled, and an
-audit's review waves, are left out of this schema for now.
+TODO: an audit's review waves are left out of this schema for now.
 
 The schedule holds two kinds of field:
 
-- the plan: the order of the modules, the waves, their dependencies, budgets and batches,
-  and each batch's worklist, decided by planning; and
-- the progress: each wave's and batch's `status`, and each batch's `commits`, recorded as
-  the work launches and lands.
+- the plan: the order of the modules, the waves, their dependencies and their items,
+  decided by planning; and
+- the progress: each wave's `status` and `packed_with`, and its `batches`, each with its
+  worklist, `status` and `commits`, recorded as the work launches and lands.
 
 | root field | meaning |
 |---|---|
-| `schema_version` | `4` |
+| `schema_version` | `5` |
 | `modules` | the order of the campaign's modules, one record per module the schedule holds waves of, by `layer` |
 | `waves` | the campaign's waves, in `index` order |
 
@@ -72,14 +72,23 @@ started keep their records, as [Re-planning](#5-re-planning) describes.
 | `sublayer` | its place among its module's waves, from 0, or, for a merged wave, that of each of the waves it holds; `null` when the campaign has no decomposition |
 | `status` | `todo`, `wip` or `done` |
 | `depends_on` | the waves this one depends on: `scheduled` and `cut`, each an array of wave indices |
-| `budgets` | the batch limits the wave was packed under, the campaign's `workload` caps |
-| `batches` | the wave's batches, which execute in parallel |
+| `items` | the wave's items, each a planned item below |
+| `packed_with` | the index of the earlier wave whose batches hold this wave's items, when the two share batches; `null` otherwise |
+| `batches` | the wave's batches, which execute in parallel; empty until the wave starts |
+
+A planned item is a batch item, as `specs/artifacts/task.md` describes its `items`, with
+the objective it is translated with:
+
+| field | meaning |
+|---|---|
+| `name`, `defined_in`, `kind`, `field_anchors`, `home` | as on a batch item |
+| `objective` | `wrap` or `port` |
 
 `depends_on.scheduled` lists the waves that complete before this one: its module's
 previous wave, and the waves that hold its items' dependencies. `depends_on.cut` lists the
 waves that hold its items' cut dependencies, which run after it; it reaches what they hold
-through the safe wrappers a wrap wave before it adds, as `specs/planning/scheduling.md`'s
-Wrap waves section describes. Their union is every wave this one depends on, and
+through the safe wrappers a wrap batch before it adds, as `specs/planning/scheduling.md`'s
+Wrap batches section describes. Their union is every wave this one depends on, and
 `scheduled` alone is acyclic across the schedule.
 
 With concurrent modules, the settings' default, every wave belongs to one module; with
@@ -88,7 +97,8 @@ each batch one module's, as `specs/planning/scheduling.md` describes.
 
 A wave is `todo` until its first batch launches, `wip` while any of its batches is
 running or has failed, and `done` once every batch has landed and the wave has been
-promoted.
+promoted. A wave `packed_with` another has no batches of its own: its `status` follows
+that wave's, and it lands on that wave's integration branch.
 
 ## 3. waves[*].batches[*]
 
@@ -96,17 +106,24 @@ promoted.
 |---|---|
 | `index` | the batch's id within its wave, from zero |
 | `link_unit`, `module`, `foundational` | the module whose units it holds, as for its wave; `null`, `null` and `false` when the campaign has no decomposition |
-| `kind` | `wrap` |
+| `kind` | `wrap`, `port` or `review` |
 | `status` | `todo`, `wip`, `done` or `failed` |
-| `items` | the batch's worklist, as `specs/artifacts/task.md` describes its `items` |
+| `items` | a `wrap` or `port` batch's worklist, as `specs/artifacts/task.md` describes its `items` |
+| `reviews` | a `review` batch's worklist: the indices of the batches of its wave it reviews |
 | `commits` | the commits the batch landed, in order; empty until it lands |
 
-TODO (porting): `port` batches, and waves that hold batches of either kind.
+The batches are packed when the wave starts, and added as it runs: a batch that fails may
+be packed again into new batches, which take the next free indices, and review batches are
+added as the batches they review land, as `specs/verification/reviewing.md` describes. A
+batch's items are those of its wave, of the waves `packed_with` it, or, in a wrap batch
+that binds what its consumers need ahead of them, items of other modules, which keep
+their homes there, as `specs/planning/scheduling.md`'s Wrap batches section describes.
+Its `link_unit`, `module` and `foundational` are always its wave's.
 
 A batch is `todo` until its agent launches, `wip` while an agent runs it, `done` once it
 has landed every item of its worklist, and `failed` when its last agent ended without
-landing. An item's status is its batch's: a scheduled item is translated once its batch is
-`done`.
+landing. An item's status is that of the batch that holds it: a planned item is translated
+once a batch holding it with its objective is `done`.
 
 A batch's `commits` are its landing's commits as they sit on its wave branch, which a
 promotion fast-forwards without rewriting them.
@@ -127,12 +144,10 @@ later run may therefore schedule a wave that runs before one an earlier run appe
 Only waves that are `todo` are re-planned: a re-plan may change, split or remove them,
 and the waves that replace them take new indices. A wave that is `wip` or `done` keeps
 its record, apart from the progress fields, and is never revisited, and its items are not
-scheduled again. A frozen module's waves that are `todo` are re-planned like any other,
-within its frozen decomposition, and waves may be appended to it, such as those a module
-added after it calls for.
-
-Each wave's batches are packed from the units it schedules, under the campaign's
-`workload` caps.
+scheduled again. An item a batch has landed with its objective, such as one bound ahead of
+its consumer, is not scheduled again with that objective. A frozen module's waves that are
+`todo` are re-planned like any other, within its frozen decomposition, and waves may be
+appended to it, such as those a module added after it calls for.
 
 ## 6. Derived paths
 
@@ -141,6 +156,12 @@ index the wave branch, as `specs/operations/versioning.md` spells them. Its arti
 agents that ran it, each holding a `task.json` that names the batch's wave and index.
 
 ## 7. Earlier versions
+
+Schema-v4 schedules planned each wave's batches, packed under the `workload` caps that
+each wave recorded as its `budgets`, and had no `items` or `packed_with` on a wave. A
+campaign on v4 is converted by its next planner run: each wave's `items` are the items of
+its batches, each with its batch's `kind` as `objective`; a `todo` wave's batches are
+dropped, and a started wave keeps its own; and every `budgets` is dropped.
 
 Schema-v3 schedules had no `modules`, the order of the modules being `modules.json`'s
 `depends_on`, no `sublayer`, and could hold review waves. A campaign on v3 is converted by

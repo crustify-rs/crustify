@@ -8,10 +8,11 @@ command. One task is one
 agent's entire worklist and how that agent runs, and each command rejects a task whose
 objective belongs to another.
 
-A planner plans a binder's or translator's task as one batch entry of
-`specs/artifacts/schedule.md`. When the batch launches, that entry is written as
-`task.json`: its `kind` as `objective`, its `items`, the [batch fields](#2-batch-fields)
-that place it in the schedule, and the [run fields](#1-run-fields).
+A binder's or translator's task is one batch entry of `specs/artifacts/schedule.md`,
+packed from its wave's items when the wave starts. When the batch launches, that entry is
+written as `task.json`: its `kind` as `objective`, its `items`, the
+[batch fields](#2-batch-fields) that place it in the schedule, and the
+[run fields](#1-run-fields).
 
 `task.json` sits in the artifact dir of the agent's run, `crustify/artifacts/<role>/run-<n>/`.
 The spawn command writes the run's `session_id` into it as soon as the CLI has one, which
@@ -57,7 +58,7 @@ field accepted.
 
 | field | meaning |
 |---|---|
-| `base_branch` | the unchecked-out integration branch the agent lands on: its wave branch, or its review wave branch; a `refs/heads/` prefix is accepted |
+| `base_branch` | the unchecked-out integration branch the agent lands on: its wave branch, or in an audit its review wave branch; a `refs/heads/` prefix is accepted |
 | `backend` | the provider CLI the agent runs on: `claude`, Claude Code, or `codex` |
 | `billing` | how the provider CLI authenticates: `subscription`, its own logged-in account, or `api`, an API key from the environment |
 | `model_proxy` | optional: the gateway the CLI's requests go through, with its own key, such as `openrouter`; it needs `api` billing, and its rates price the run |
@@ -135,9 +136,10 @@ landed; in an audit, modules of the crate.
 | root field | meaning |
 |---|---|
 | `objectives` | the review objectives to run; optional, every one the reviewer offers that applies when absent |
-| `commits` | distinct commit ids, as they sit on the reviewed wave's branch; route `commits`: the `commits` of the batches its schedule entry `reviews`, whose `items` there list the C items they bound or ported |
+| `commits` | distinct commit ids, as they sit on its wave's branch; route `commits`: the `commits` of the batches its schedule entry `reviews`, whose `items` there list the C items they bound or ported |
 | `paths` | repo-relative source files and directories; route `paths`. An entry may instead be `{"path", "types", "trait_impls", "functions"}`, naming the parts of a module too large to review whole: types, each with its fields and inherent impls; trait impls, each `<trait> for <type>` as its impl header spells it; and free functions |
 | `reports` | repo-relative report dirs, `crustify/reviews/<batch id>/<kind>/<slug>`, to revisit |
+| `wave_gates` | optional, `false` when absent: `true` on the wave's last review batch, launched once every translation batch of the wave has landed, which runs the wave's gates, as `specs/verification/reviewing.md`'s Gates section describes; only on a batch with `commits` |
 
 The batch and run fields are required, as on a translation task; the second example
 leaves them out. An audit's batch has a `null` `link_unit` and `module`, and a `false`
@@ -146,7 +148,7 @@ A batch carries `commits` or `paths`, not both, and needs one of them or `report
 with only `reports` has route `reports`. A module path appears once, and a module object
 names one or more of `types`, `trait_impls` and `functions`, each a distinct list. `reports` is given exactly when `revisit` is among the
 objectives, and an absent `objectives` includes `revisit` exactly when `reports` is given.
-The optional `instructions` is the only other root field accepted.
+The optional `wave_gates` and `instructions` are the only other root fields accepted.
 
 The reviewer's prompt offers `unsafety`, `contracts`, `ub`, `equiv`, `internal`,
 `conventions`, `misc`, `coverage`, `revisit`, `disclose` and `fix`, with `conventions`

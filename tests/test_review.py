@@ -72,6 +72,14 @@ class ReviewBatchTests(unittest.TestCase):
         batch = self.load({"objectives": ["ub", "fix"], "commits": [_COMMIT]})
         self.assertEqual(batch.objectives, ["ub", "fix"])
 
+    def test_wave_gates_are_optional_and_need_commits(self) -> None:
+        self.assertFalse(self.load({"commits": [_COMMIT]}).wave_gates)
+        self.assertTrue(self.load({"commits": [_COMMIT], "wave_gates": True}).wave_gates)
+        with self.assertRaisesRegex(SystemExit, "true or false"):
+            self.load({"commits": [_COMMIT], "wave_gates": "yes"})
+        with self.assertRaisesRegex(SystemExit, "reviews commits"):
+            self.load({"paths": ["src/lib.rs"], "wave_gates": True})
+
     def test_a_translator_objective_is_not_a_review_field(self) -> None:
         with self.assertRaisesRegex(SystemExit, "unknown task field"):
             self.load({"objective": "review", "commits": [_COMMIT]})
