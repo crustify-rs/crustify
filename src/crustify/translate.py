@@ -10,13 +10,13 @@ from typing import Callable, NoReturn
 
 _OBJECTIVES = frozenset({"wrap", "port"})
 _KINDS = frozenset({"type", "symbol", "callback"})
-_ITEM_FIELDS = frozenset({"name", "defined_in", "kind", "field_anchors", "home"})
+_ITEM_FIELDS = frozenset({"name", "defined_in", "kind", "field_users", "home"})
 #: The fields an item may carry beside those: its step, and what a step follows.
 _ITEM_OPTIONAL = frozenset({"step", "of"})
 #: An item's steps: its translation, and the deferred steps of a port campaign
 #: (specs/planning/scheduling.md, Deferred items). ``of`` names the library
 #: entity a ``std`` step moves onto the standard library.
-_STEPS = frozenset({"translate", "layout", "memory", "retire", "std"})
+_STEPS = frozenset({"translate", "layout", "memory", "std"})
 _STEPS_WITH_OF = frozenset({"std"})
 _FIELD_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
@@ -281,7 +281,7 @@ def parse_items(items: object, fail: Callable[[str], NoReturn]
         name = item["name"]
         defined_in = item["defined_in"]
         kind = item["kind"]
-        anchors = item["field_anchors"]
+        anchors = item["field_users"]
         home = item["home"]
         if not isinstance(name, str) or not name:
             fail(f"{label}.name must be a non-empty string")
@@ -289,14 +289,14 @@ def parse_items(items: object, fail: Callable[[str], NoReturn]
             fail(
                 f"{label}.kind must be one of: callback, symbol, type")
         if not isinstance(anchors, list):
-            fail(f"{label}.field_anchors must be an array")
+            fail(f"{label}.field_users must be an array")
         if any(not isinstance(anchor, str) or not _FIELD_NAME.fullmatch(anchor)
                for anchor in anchors):
-            fail(f"{label}.field_anchors must contain C field identifiers")
+            fail(f"{label}.field_users must contain C field identifiers")
         if len(set(anchors)) != len(anchors):
-            fail(f"{label}.field_anchors contains duplicates")
+            fail(f"{label}.field_users contains duplicates")
         if kind != "type" and anchors:
-            fail(f"{label}.field_anchors must be empty for kind {kind!r}")
+            fail(f"{label}.field_users must be empty for kind {kind!r}")
 
         # The authored Rust file this item belongs in, decided by the
         # orchestrator and carried in the worklist. An agent resolves no
@@ -329,7 +329,7 @@ def parse_items(items: object, fail: Callable[[str], NoReturn]
             "name": name,
             "defined_in": defined_in,
             "kind": kind,
-            "field_anchors": list(anchors),
+            "field_users": list(anchors),
             "home": home,
             "step": step,
             "of": None if of is None else dict(of),
@@ -353,7 +353,7 @@ def load_batch(path: Path) -> Batch:
                  if objective == "review" else ""))
     route, items = parse_items(raw["items"], _fail)
     if objective == "wrap" and any(item["step"] != "translate" for item in items):
-        _fail("a deferred step (layout, memory, retire, std) "
+        _fail("a deferred step (layout, memory, std) "
               "is only carried by a port batch")
     return Batch(objective=objective, route=route, items=items,
                  base_branch=parse_branch(raw, _fail),

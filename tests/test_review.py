@@ -25,7 +25,7 @@ def _reset_run() -> None:
     config.MODEL_PROXY = None
     config.PROVIDER_ARGS = []
 _ITEM = {"name": "T", "defined_in": "include/t.h", "kind": "type",
-         "field_anchors": [], "home": "crustify/rust/demo/src/t.rs"}
+         "field_users": [], "home": "crustify/rust/demo/src/t.rs"}
 
 
 class _Checkouts:

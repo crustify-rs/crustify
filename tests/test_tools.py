@@ -234,7 +234,7 @@ class PromptArgumentTests(unittest.TestCase):
         agent = BindAgent(
             self.repo, route="type",
             items=[{"name": "T", "defined_in": "a.h", "kind": "type",
-                    "field_anchors": [], "home": "crustify/rust/x/src/a.rs"}],
+                    "field_users": [], "home": "crustify/rust/x/src/a.rs"}],
             git_base="wave-0", log_stem="x")
         self._check(agent)
 
@@ -242,7 +242,7 @@ class PromptArgumentTests(unittest.TestCase):
         agent = TranslateAgent(
             self.repo, route="type",
             items=[{"name": "T", "defined_in": "a.h", "kind": "type",
-                    "field_anchors": [], "home": "crustify/rust/x/src/a.rs"}],
+                    "field_users": [], "home": "crustify/rust/x/src/a.rs"}],
             git_base="wave-0",
             log_stem="x")
         self._check(agent)
@@ -258,7 +258,7 @@ class PromptArgumentTests(unittest.TestCase):
         agent = BindAgent(
             self.repo, route="type",
             items=[{"name": "T", "defined_in": "a.h", "kind": "type",
-                    "field_anchors": [], "home": "crustify/rust/x/src/a.rs"}],
+                    "field_users": [], "home": "crustify/rust/x/src/a.rs"}],
             git_base="crustify/waves/wave-3",
             log_stem="x")
         agent.placement = translate.Placement(3, 1, "lib", "src/core.c")
@@ -330,7 +330,7 @@ class PromptCacheTests(unittest.TestCase):
         import os
         def item(name):
             return [{"name": name, "defined_in": "a.h", "kind": "type",
-                     "field_anchors": [], "home": "src/a.rs"}]
+                     "field_users": [], "home": "src/a.rs"}]
         with tempfile.TemporaryDirectory() as a, tempfile.TemporaryDirectory() as b:
             for cls in (BindAgent, TranslateAgent):
                 with self.subTest(role=cls.role):

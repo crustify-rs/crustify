@@ -221,11 +221,6 @@ its C layout, or its storage in C's allocator, for good.
 
 ### 5.2 Symbols
 
-A ported function's or global's export is removed by a `retire` step, after the
-integration of its last referrers, the remaining C that calls it, takes its address or
-accesses it, with the raw binding that reaches it, as the
-[conventions](../rust/conventions.md)' Exports section describes.
-
 A function that reaches an out-of-tree library's entity through the library's wrapper,
 because remaining C shares the value or state the entity works on, moves onto the
 entity's standard-library equivalent in a `std` step, after the integration of the last

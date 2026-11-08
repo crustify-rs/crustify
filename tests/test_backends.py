@@ -164,7 +164,7 @@ class ProviderRoutingTests(unittest.TestCase):
                     "name": "example",
                     "defined_in": "example.h",
                     "kind": "symbol",
-                    "field_anchors": [],
+                    "field_users": [],
                 }],
                 git_base="wave-0",
                 log_stem="batch",

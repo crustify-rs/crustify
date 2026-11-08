@@ -44,7 +44,7 @@ class BatchValidationTests(unittest.TestCase):
              fields: list[str] | None = None,
              home: str = "crustify/rust/demo/src/lib.rs") -> dict:
         return {"name": name, "defined_in": defined_in, "kind": kind,
-                "field_anchors": fields or [], "home": home}
+                "field_users": fields or [], "home": home}
 
     def test_thin_symbol_and_callback_batch(self) -> None:
         batch = self.load({
@@ -121,12 +121,12 @@ class BatchValidationTests(unittest.TestCase):
         self.assertEqual((run.backend, run.billing, run.args),
                          ("claude", "subscription", ("--model", "claude-opus-5")))
 
-    def test_type_field_anchors_are_preserved(self) -> None:
+    def test_type_field_users_are_preserved(self) -> None:
         batch = self.load({
             "objective": "port",
             "items": [self.item("Frame", kind="type", fields=["data", "size"])],
         })
-        self.assertEqual(batch.items[0]["field_anchors"], ["data", "size"])
+        self.assertEqual(batch.items[0]["field_users"], ["data", "size"])
 
     def test_rejects_mixed_routes(self) -> None:
         with self.assertRaisesRegex(SystemExit, "mixed agent routes"):
@@ -142,7 +142,7 @@ class BatchValidationTests(unittest.TestCase):
         with self.assertRaisesRegex(SystemExit, "duplicate item"):
             self.load({"objective": "wrap", "items": [item, item]})
 
-    def test_rejects_invalid_or_misrouted_field_anchors(self) -> None:
+    def test_rejects_invalid_or_misrouted_field_users(self) -> None:
         with self.assertRaisesRegex(SystemExit, "C field identifiers"):
             self.load({
                 "objective": "wrap",
@@ -162,11 +162,14 @@ class BatchValidationTests(unittest.TestCase):
     def test_deferred_steps_of_a_port_batch(self) -> None:
         memcpy = {"name": "memcpy", "defined_in": "/usr/include/string.h"}
         batch = self.load({"objective": "port", "items": [
-            {**self.item(), "step": "retire"},
+            {**self.item("Frame", kind="type"), "step": "memory"},
+        ]})
+        self.assertEqual(batch.items[0]["step"], "memory")
+        batch = self.load({"objective": "port", "items": [
             {**self.item("copy_into"), "step": "std", "of": memcpy},
         ]})
-        self.assertEqual([i["step"] for i in batch.items], ["retire", "std"])
-        self.assertEqual(batch.items[1]["of"], memcpy)
+        self.assertEqual(batch.items[0]["step"], "std")
+        self.assertEqual(batch.items[0]["of"], memcpy)
         # One function moved onto std for two entities is two items.
         strlen = {"name": "strlen", "defined_in": "/usr/include/string.h"}
         batch = self.load({"objective": "port", "items": [
@@ -182,7 +185,7 @@ class BatchValidationTests(unittest.TestCase):
             self.load({"objective": "port", "items": [{**self.item(), "step": "std"}]})
         with self.assertRaisesRegex(SystemExit, "only carried by a std step"):
             self.load({"objective": "port", "items": [
-                {**self.item(), "step": "retire",
+                {**self.item("Frame", kind="type"), "step": "layout",
                  "of": {"name": "x", "defined_in": "x.h"}}]})
         with self.assertRaisesRegex(SystemExit, "only carried by a port batch"):
             self.load({"objective": "wrap", "items": [
@@ -229,7 +232,7 @@ class GitHarnessTests(unittest.TestCase):
                 "name": "Frame",
                 "defined_in": "include/frame.h",
                 "kind": "type",
-                "field_anchors": ["data"],
+                "field_users": ["data"],
                 "home": "crustify/rust/demo/src/lib.rs",
             }],
         }))

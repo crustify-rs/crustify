@@ -55,8 +55,6 @@ integrations that free it have landed:
   describes, its C layout gone with its last C user, and its safe API unchanged;
 - `memory`: the type's storage moves from C's allocator to Rust's, as
   [Lifecycle](#3-lifecycle) describes: its owners allocate and drop it natively;
-- `retire`: a ported function's or global's export, which no remaining C calls any more, is
-  removed with the raw binding and the allowlist entry that reach it; and
 - `std`: a function moves onto the standard-library equivalent of an out-of-tree
   library's entity, which no remaining C shares any more, as
   [`../../planning/dependencies.md`](../../planning/dependencies.md)'s Standard-library

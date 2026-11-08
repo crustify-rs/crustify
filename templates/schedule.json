@@ -18,7 +18,7 @@
     "waves, a wave of no module holds the items of every module at its `layer` and",
     "`sublayer`. src/io.c's `external` record names libz, whose z_stream_s its",
     "widget_stream holds: libz's side campaign wraps it, and no wave here does.",
-    "Each planned item's `step` is `translate` in this wrap campaign; in a port campaign a deferred step (`layout`, `memory`, `retire`, `std`) is a `port` item whose `after` names the modules whose integration frees it."
+    "Each planned item's `step` is `translate` in this wrap campaign; in a port campaign a deferred step (`layout`, `memory`, `std`) is a `port` item whose `after` names the modules whose integration frees it."
   ],
   "schema_version": 6,
   "modules": [
@@ -118,7 +118,7 @@
           "name": "widget_handle",
           "defined_in": "include/widget/core.h",
           "kind": "type",
-          "field_anchors": [
+          "field_users": [
             "refcount",
             "flags"
           ],
@@ -132,7 +132,7 @@
           "name": "widget_opts",
           "defined_in": "include/widget/core.h",
           "kind": "type",
-          "field_anchors": [],
+          "field_users": [],
           "home": "src/libwidget/src/core.rs",
           "step": "translate",
           "of": null,
@@ -154,7 +154,7 @@
               "name": "widget_handle",
               "defined_in": "include/widget/core.h",
               "kind": "type",
-              "field_anchors": [
+              "field_users": [
                 "refcount",
                 "flags"
               ],
@@ -177,7 +177,7 @@
               "name": "widget_opts",
               "defined_in": "include/widget/core.h",
               "kind": "type",
-              "field_anchors": [],
+              "field_users": [],
               "home": "src/libwidget/src/core.rs"
             }
           ],
@@ -225,7 +225,7 @@
           "name": "widget_open",
           "defined_in": "src/core.c",
           "kind": "symbol",
-          "field_anchors": [],
+          "field_users": [],
           "home": "src/libwidget/src/core.rs",
           "step": "translate",
           "of": null,
@@ -247,7 +247,7 @@
               "name": "widget_stream",
               "defined_in": "include/widget/io.h",
               "kind": "type",
-              "field_anchors": [
+              "field_users": [
                 "fd"
               ],
               "home": "src/libwidget/src/io.rs"
@@ -269,7 +269,7 @@
               "name": "widget_open",
               "defined_in": "src/core.c",
               "kind": "symbol",
-              "field_anchors": [],
+              "field_users": [],
               "home": "src/libwidget/src/core.rs"
             }
           ],
@@ -296,7 +296,7 @@
           "name": "widget_stream",
           "defined_in": "include/widget/io.h",
           "kind": "type",
-          "field_anchors": [
+          "field_users": [
             "fd"
           ],
           "home": "src/libwidget/src/io.rs",
@@ -309,7 +309,7 @@
           "name": "widget_read",
           "defined_in": "src/io.c",
           "kind": "symbol",
-          "field_anchors": [],
+          "field_users": [],
           "home": "src/libwidget/src/io.rs",
           "step": "translate",
           "of": null,

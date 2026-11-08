@@ -41,7 +41,7 @@ A row wavefront warns is stale is corrected or deleted.
   `schedule.json`'s highest index, in wavefront's order, their `depends_on` renumbered,
   with their module's `layer` and their `sublayer`. A wave's `items` are those of its
   wavefront batches, each with its `name`, `defined_in` and `kind`, its `used_fields` as
-  `field_anchors`, the `home` its module gives it, its `objective`, and its `step`,
+  `field_users`, the `home` its module gives it, its `objective`, and its `step`,
   `translate`, with the deferred steps its release points place, as
   [Deferred items](#deferred-items) describes. An item a wave
   that has started holds, or that a batch has landed with that objective, is dropped, and
@@ -61,8 +61,11 @@ are closed over their wrap dependencies on the public-signature graph,
 
 A port campaign's schedule, which is not `--api-headers-only`, gives each scheduled item
 its release points, which place its deferred steps: a struct's or union's `opaque_after`
-its `layout` step, and its `memory_unmanaged_after` its `memory` step; a function's or
-global's `unreferenced_after` its `retire` step. A module's C leaves at its integration,
+its `layout` step, and its `memory_unmanaged_after` its `memory` step. A function's or
+global's `unreferenced_after` names the integration whose module is the last of its
+referrers, at which its export is removed, as the porting workflow's Builds section
+describes; at an integration, the exports it frees are those whose `unreferenced_after`
+`closure.modules` it completes. A module's C leaves at its integration,
 so a step's `after` is its release point's `closure.modules`, less the item's own module;
 with none left, the step is not deferred. The users behind each point are a query away:
 `query types --name <T> --layout-users` lists a type's layout users with the site and kind

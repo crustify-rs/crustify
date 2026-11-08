@@ -81,7 +81,7 @@ the objective it is translated with and what frees a deferred step:
 
 | field | meaning |
 |---|---|
-| `name`, `defined_in`, `kind`, `field_anchors`, `home` | as on a batch item |
+| `name`, `defined_in`, `kind`, `field_users`, `home` | as on a batch item |
 | `step`, `of` | as on a batch item: `translate` for the item's wrap or port, or one of the deferred steps of `specs/planning/scheduling.md`'s Deferred items section, and the library entity a `std` step follows; `of` is `null` on every other step |
 | `objective` | `wrap` or `port`; `port` for every deferred step |
 | `after` | on a deferred step, the modules whose integration frees it, each by `link_unit`, `module` and `foundational`; `null` on a `translate` step |
@@ -162,9 +162,10 @@ agents that ran it, each holding a `task.json` that names the batch's wave and i
 
 ## 7. Earlier versions
 
-Schema-v5 items had no `step`, `of` or `after`: each item was its translation, and a
-type's port after its last layout users a second `port` item of its module. A campaign on
-v5 is converted by its next planner run: each item's `step` is `translate`, but for such a
+Schema-v5 items had no `step`, `of` or `after`, and named their `field_users`
+`field_anchors`: each item was its translation, and a type's port after its last layout
+users a second `port` item of its module. A campaign on v5 is converted by its next planner
+run: each item's `field_anchors` become its `field_users`, and its `step` is `translate`, but for such a
 second `port` item, which becomes a `layout` step whose `after` names the modules of its
 type's last layout users, and the deferred steps the current scheduling calls for are
 planned.
