@@ -31,6 +31,17 @@ and the waves that are `todo`, through further planner runs under the new answer
 work is never re-planned. A changed `workload` or `review-workload` answer re-plans
 nothing: it caps the batches packed from then on.
 
+A changed `campaign` answer, from `wrap` to `port` or back, re-plans the same way under
+the new kind, frozen modules included: the user's change is what lets a frozen record
+change, and only in its `objective`, which each module takes anew, as
+[`../planning/decomposition.md`](../planning/decomposition.md)'s Objectives section
+describes, while its decomposition stays as it is. The `todo` waves are re-planned with
+their items' objectives, and the waves the new objectives call for are appended. What has
+landed stays: in a campaign turned `port`, the bindings that landed are the wrappers its
+ports keep, as [`../rust/items/porting.md`](../rust/items/porting.md)'s Symbols section
+describes; in one turned `wrap`, what has been ported stays ported, and the rest is
+wrapped.
+
 ## 2. Rust tree
 
 Once the plan is complete, the Rust tree is scaffolded on the working branch, as
@@ -40,9 +51,10 @@ Once the plan is complete, the Rust tree is scaffolded on the working branch, as
   shared package fields, its lints and its pinned nightly, and its `src/lib.rs` with a
   module per link unit;
 - `rust-toolchain.toml` and `rustfmt.toml`, as [`../rust/toolchain.md`](../rust/toolchain.md) describes;
-- one `-sys` crate per link unit, laid out as [`../rust/bindgen.md`](../rust/bindgen.md) describes,
-  with its bindgen input over the C under `c/`, the allowlists of which the batches fill as
-  they bind items, and its bindings generated from them; and
+- the raw bindings, one module of the safe crate per link unit, laid out as
+  [`../rust/bindgen.md`](../rust/bindgen.md) describes, each with its bindgen input over the
+  C under `c/`, the allowlists of which the batches fill as they bind items, and its
+  bindings generated from them; and
 - the integration test suites the conventions' Testing section places.
 
 The wrappers of out-of-tree libraries are repositories of their own, cloned beside the
@@ -157,7 +169,10 @@ crustify spawn-reviewer <batch worktree> <run dir>/task.json
 The shipping branch, `main`, advances only when the user approves it: it is
 fast-forwarded to the working branch's tip at the points the settings' `ship` answer names,
 each once the modules it names have been integrated and passed their gates: by default,
-after every integrated module.
+after every integrated module. A `ship` answer left until after planning is decided once
+the plan is complete, before the first wave starts, from ship points proposed with the
+boundary each would leave: the in-tree items still C that the Rust before it reaches
+through wrappers, and the exports the C after it still calls.
 
 ## 7. Accounting
 

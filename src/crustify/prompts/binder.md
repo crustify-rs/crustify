@@ -124,11 +124,11 @@ Use filled anchors as context: they are completed work, not yours to revisit.
 
 When a raw binding is missing:
 
-1. extend only the affected `-sys` crate's agent-owned allowlist;
+1. extend only the affected link unit's agent-owned allowlist;
 2. add only required FFI items;
 3. add a minimal shim only for a real bindgen limitation;
 4. regenerate bindings;
-5. build and test the affected `-sys` crate.
+5. build and test the safe crate against the regenerated bindings.
 
 Before rebuilding C, check for the orchestrator's reusable build and runner. Reuse it only
 when the C revision, the version in `crustify/artifacts/build.json`, the compiler and the
@@ -181,8 +181,8 @@ reran and why the others could not have changed.
 - `rust/conventions.md`: follow it throughout your workflow wherever it applies: where your
   items are homed, how they are named and laid out, and where their tests are placed.
 - `rust/toolchain.md`: follow it in everything you write.
-- `rust/bindgen.md`: follow it whenever your worklist adds to a crate's allowlists, shims or
-  external types.
+- `rust/bindgen.md`: follow it whenever your worklist adds to a link unit's allowlists, shims
+  or external types.
 - `rust/items/binding.md`: generate your worklist's bindings as it describes, following the
   Type route or the Symbol route for your route.
 - `operations/accounting.md`: you fill your batch's landing cells, in your last commit; the

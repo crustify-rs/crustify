@@ -93,7 +93,9 @@ Unanswered optional questions use their defaults.
     are translated, and the C still left is reached only through the wrappers on its
     boundary.** (`id: ship`)
     - Answer: `<after every integrated module | after: <named modules> | once the scope
-      is done>`
+      is done | decide after planning>`
+    - `decide after planning`: once the plan is complete, I propose ship points from it,
+      with the boundary each would leave, and record your choice here.
     - By default: after every integrated module.
 
 ## Commits

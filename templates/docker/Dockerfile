@@ -267,7 +267,7 @@ RUN mkdir -p /opt/bsan-shim \
        > /opt/bsan-shim/cargo-bsan \
     && chmod +x /opt/bsan-shim/cargo-bsan
 
-# bindgen for the `-sys` crates. It dlopens libclang at run time and clang-sys
+# bindgen for the raw bindings. It dlopens libclang at run time and clang-sys
 # looks for the unversioned soname, so the search has to be pinned: this system
 # carries libclang 18 (the base) AND libclang 23 (installed above for MSan's
 # compiler-rt), and an unpinned bindgen may bind either. 18 is the base image's

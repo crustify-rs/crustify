@@ -94,7 +94,9 @@ gates.
 The unit of work is the module, or the wave for a wave of no module. A changed `scope` or
 `module-concurrency` answer re-plans the modules that are not frozen and the waves that
 are `todo`: spawn planner runs as the binding workflow's Planning section describes,
-under the new answers. Landed work is never re-planned. A changed `workload` or
+under the new answers. A changed `campaign` answer, `wrap` to `port` or back, re-plans
+under the new kind as the same section describes, the frozen modules' objectives
+included. Landed work is never re-planned. A changed `workload` or
 `review-workload` answer caps the batches you pack from the next unit of work on, and a
 changed `ship` answer the points at which you ask to ship.
 
@@ -117,13 +119,19 @@ changed `ship` answer the points at which you ask to ship.
    gives, and report what breaks them rather than promote it. Otherwise promote it as the
    versioning spec's Lifecycle section describes, collect its records and fill its usage cells;
    start the next run only after that. After the last run, check that the plan is
-   complete as the Planning section defines it.
+   complete as the Planning section defines it. If the settings' `ship` answer is
+   `decide after planning`, propose ship points from the plan now, as the binding
+   workflow's Shipping section describes, and record the user's choice as the answer.
 3. **Rust tree.** Scaffold the Rust tree as the binding workflow's Rust tree section
    describes, and commit it on the working branch.
 4. **Side campaigns.** For each out-of-tree library the plan needs, as the planners'
-   commits name them:
+   commits name them, put its `rust_equivalent` records and their notes to the user, with
+   your recommendation, and record the user's choice as its `decision` in
+   `dependencies.json`, as the dependencies spec's Wrappers section describes. For a
+   library the user adopts a crate for, add the crate to the workspace and stop there. For
+   each library the user chooses a wrapper for:
    - establish its wrapper as the dependencies spec's Wrappers and Reuse sections
-     describe: clone `crustify-rs/<source>-bindings` beside `<repo>` when it exists, or
+     describe: clone `crustify-rs/<source>-crustify` beside `<repo>` when it exists, or
      initialize a new one there, with its `c/` as the Sources section describes, and
      create it on `crustify-rs` only once the user approves;
    - write its settings as the parent's, but for `campaign: wrap`, its source at the
@@ -196,7 +204,8 @@ changed `ship` answer the points at which you ask to ship.
 - `rust/conventions.md`: follow it wherever it applies: when you scaffold crates, modules and
   test suites, and when you home each batch's items.
 - `rust/toolchain.md`: follow it when you scaffold the workspace.
-- `rust/bindgen.md`: follow it when you scaffold the `-sys` crates and when you publish them.
+- `rust/bindgen.md`: follow it when you scaffold the raw bindings and when you publish the
+  safe crate.
 - `rust/items/binding.md` and `rust/items/porting.md`: how binders and translators do their
   work, for reference: use them to brief the user, to write additional instructions, and to
   judge what the agents report.

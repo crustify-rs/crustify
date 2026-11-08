@@ -22,13 +22,25 @@ library as a whole, once. How a campaign reaches these libraries is
 | `resolved` | what the target's build found: `path`, the file it linked; `version`, the release, as the build system reports it or the library's version header gives it; and `package`, the system package that installed it, or `null` for a library built from source |
 | `source` | the side campaign's `c/`: `repository`, the library's upstream repository, and `tag`, the release `resolved.version` names; and `patches`, the distribution patches to that release, named by the package that carries them, or `null` when there are none |
 | `linked_from` | `side-campaign` when the target links the side campaign's per-variant install, `system` when it keeps linking the system's copy, as libc does |
-| `wrapper` | `repository`, the wrapper's `crustify-rs/<source>-bindings`, shared by the libraries one source builds, and `pin`, the commit of its working branch the campaign's workspace pins, or `null` until it pins one |
-| `rust_equivalent` | what Rust already provides for it: `ported` and `bindings`, below |
+| `decision` | how the campaign reaches the library, as the user chose it once the plan was complete: `wrapper` for a side campaign, the adopted crate's name, or `null` until the user decides |
+| `wrapper` | `repository`, the wrapper's `crustify-rs/<source>-crustify`, shared by the libraries one source builds, and `pin`, the commit of its working branch the campaign's workspace pins, or `null` until it pins one; `null` for an adopted crate |
+| `rust_equivalent` | what Rust already provides for it: `std`, `ported` and `bindings`, below |
 
 The assessment fields, `resolved`, `source` and `rust_equivalent`, are the plan's; the
-`wrapper.pin` is progress, which moves as the side campaign advances.
+`decision` is the user's, and the `wrapper.pin` is progress, which moves as the side
+campaign advances.
 
 ## 2. libraries[*].rust_equivalent
+
+`std` lists the entities the campaign consumes from the library that the Rust standard
+library provides with full feature parity, as `specs/planning/dependencies.md`'s
+Standard-library equivalents section describes, each once:
+
+| `std[*]` field | meaning |
+|---|---|
+| `entity` | the library's entity, by its name and the header that declares it, as the dependency records' `to` names it |
+| `library` | the standard-library paths that provide it, such as `std::fs::metadata` |
+| `notes` | what differs in its behaviour; empty when nothing does |
 
 `ported` lists the crates that reimplement the library in Rust, and `bindings` the crates
 that put a safe Rust API over the C library itself. Each is in descending order of feature

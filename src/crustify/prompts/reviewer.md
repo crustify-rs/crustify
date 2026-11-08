@@ -218,7 +218,7 @@ reran and why the others could not have changed.
 - `rust/conventions.md`: if you are reviewing a Crustify-generated batch, judge the Rust
   against it and follow it in every change you make; otherwise, ignore it.
 - `rust/toolchain.md`: follow it in everything you write.
-- `rust/bindgen.md`: review the batches' changes to the `-sys` crates against it.
+- `rust/bindgen.md`: review the batches' changes to the raw bindings against it.
 - `rust/items/binding.md` and `rust/items/porting.md`: your workset's bindings and ported
   items are judged against them.
 - `verification/testing.md`: including the gates and regressions a review batch owns.

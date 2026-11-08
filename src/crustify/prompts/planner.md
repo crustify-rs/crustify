@@ -119,7 +119,11 @@ waves of its units, update its `depends_on` or re-plan those waves.
 
 Keep what has started, as the modules schema's Status and the schedule schema's Indices
 and Re-planning sections describe; a frozen module's record changes only when your
-additional instructions say the user asked for it. Never change a module's `status`,
+additional instructions say the user asked for it, or, in its `objective` alone, when the
+settings' `campaign` answer has changed from `wrap` to `port` or back: every module then
+takes its objective anew under the new kind, as the decomposition spec's Objectives
+section describes, its decomposition unchanged, and the waves the new objectives call for
+are appended, while what has landed stays. Never change a module's `status`,
 leave every progress field as you found it, and write new waves as `todo`, with no
 batches and a `null` `packed_with`: the orchestrator packs each wave's batches when it
 starts. File each correction as the reviewing spec's Plan corrections
@@ -131,10 +135,13 @@ Emit `crustify/artifacts/modules.json` and `crustify/artifacts/dependencies.json
 their templates, as the decomposition spec and their schemas describe, from the
 declarations, definitions and uses in the source.
 
-To fill each `rust_equivalent`, a module's or a library's, search the standard library's
-documentation and crates.io, and read each candidate's API against everything the
-campaign consumes from it: judge its feature parity on both counts, whether it covers
-everything and whether it behaves the same. Name the crates you leave out for
+To fill each `rust_equivalent`, a module's, a link unit's or a library's, search the
+standard library's documentation and crates.io, and read each candidate's API against
+everything the campaign consumes from it: judge its feature parity on both counts, whether
+it covers everything and whether it behaves the same, and argue each record in its notes,
+since the user chooses from them. A library's `std` records list each entity the campaign
+consumes that the standard library provides with full parity, as the dependencies spec's
+Standard-library equivalents section describes. Name the crates you leave out for
 reimplementing or binding the target in your commit message.
 
 ### 3. Planning

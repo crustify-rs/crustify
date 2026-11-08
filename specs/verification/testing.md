@@ -40,7 +40,7 @@ commands run from it, its `version` raised whenever a command changes. They are:
 
 A Rust- or bindgen-only change reuses a matching variant: same C revision, `build.json`
 version, compiler and instrumentation. A change to the compiled target needs a private
-build, which the `-sys` crates link when `CRUSTIFY_BUILD_DIR` names it in place of a
+build, which the raw bindings link when `CRUSTIFY_BUILD_DIR` names it in place of a
 variant, and the shared variants are rebuilt once that change lands.
 
 ### 1.1 Coverage
@@ -65,8 +65,8 @@ alike, and count the code under test only:
   everything nested in it, and the crate root enables `#![feature(coverage_attribute)]`.
   The attributes are added in a scratch copy of the measured tree under `crustify/tmp/`,
   which is measured in its place, so that the measured crates are not changed. Integration
-  test crates, examples, benches, the crate root's build script and the `-sys` crates are
-  left out of the report by path. Test code that is not an item, such as a `#[cfg(test)]`
+  test crates, examples, benches, the crate root's build script and the generated raw
+  bindings under `ffi/` are left out of the report by path. Test code that is not an item, such as a `#[cfg(test)]`
   block inside a library function, stays instrumented, and is reported with the figures.
 - **Objects.** C coverage is read from the objects the tests load: the variant's shared
   libraries, or the object files a crate links statically, every TU compiled into them
@@ -153,10 +153,11 @@ independently owned inputs, and compare:
 They use multi-call sequences and compare after each step; single calls are only a
 baseline.
 
-TODO (porting): how a `port` batch's equivalence tests reach the C reference while its
-module's waves run, and how they are retired at integration, as
-[`../workflows/porting.md`](../workflows/porting.md)'s Principles and Builds sections describe.
-The Rust feature switch this section assumed no longer exists.
+While a module's waves run, the variants still build its C, so a `port` batch's
+equivalence tests reach the C reference through the raw bindings, while the ported Rust
+runs under its own names. At the module's integration its C leaves the build, and its raw
+bindings would reach its own exports: its equivalence tests are retired with it, as
+[`../workflows/porting.md`](../workflows/porting.md)'s Principles section describes.
 
 A confirmed C defect is not copied into Rust. The divergence is documented, equivalence
 tests are retained for the unaffected behaviour, and the corrected-behaviour regression is
@@ -194,20 +195,18 @@ cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
 ```
 
-Every build of those gates runs in the `-sys` crates' campaign mode, as
+Every build of those gates runs in the raw bindings' campaign mode, as
 [`../rust/bindgen.md`](../rust/bindgen.md)'s Build modes section describes, so that each fails when the
-committed bindings do not match their input. A batch that changed a `-sys` crate also
-packages every `-sys` crate together, each built alone in shipped mode against an install of
-the `plain` variant, staged under `crustify/tmp/`, since a build tree has no `pkg-config`
-files a dependent could use:
+committed bindings do not match their input. A batch that changed the raw bindings, or a
+landing that changes `c/`, also packages the safe crate, built alone in bundled mode from
+the C it packages:
 
 ```bash
-CRUSTIFY_BUILD_VARIANT= <LIB>_DIR=<staged prefix> ... \
-    cargo package -p <link-unit>-sys ... --config 'patch.crates-io.<crate>.path="<path>"' ...
+CRUSTIFY_BUILD_VARIANT= cargo package --config 'patch.crates-io.<crate>.path="<path>"' ...
 ```
 
-Until the out-of-tree wrappers and the `-sys` crates are published, each crate a package
-depends on is patched to its local source, so that the package builds alone.
+Until the out-of-tree wrappers are published, each crate the package depends on is patched
+to its local source, so that the package builds alone.
 
 Every FFI, UB, and equivalence test runs against the matching reusable sanitized C library
 or a private sanitized replacement, and under every available sanitizer.
@@ -244,8 +243,19 @@ batch's change and the rebased-in changes touch and how they could interact. A g
 neither side's changes could affect keeps the result it had, and a rebase that conflicts
 makes the resolved tree new work of the batch's own.
 
-TODO (porting): the gates of a `port` batch, which changes no C, and those of a module's
-integration, which links its Rust in place of its TU, removes the C tests gated with it and
-runs the target's test suite over the hybrid, as
-[`../workflows/porting.md`](../workflows/porting.md)'s Builds section describes; and how a
-module's C tests are ported into the Rust suites.
+A `port` batch changes no C: its gates are those above, run against the variants with its
+module's export feature off, so that the ported Rust is tested beside the C it replaces.
+
+A module's integration removes its translation unit and the C tests tied to it from `c/`,
+rebuilds the variants from the C that remains and turns the module's export feature on, as
+[`../workflows/porting.md`](../workflows/porting.md)'s Builds section describes. Its gates
+are those above, in campaign mode over the rebuilt variants, and the target's remaining C
+tests, which link the remaining C and the safe crate's Rust static library, so that the C
+reaches the ported module through its exports. A remaining C test is tied to no
+integrated module: it checks the remaining C's behaviour, with the ported Rust under it.
+A C test tied to a module asserts the C contract the port may change, so it leaves with
+the module.
+
+The tests the port batches write for a module's items mirror the regression cases of the
+C tests tied to it: their inputs, edge cases and call sequences, with the assertions
+adapted to the safe Rust contract, so that what the C suites established outlives them.

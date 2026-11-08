@@ -20,13 +20,13 @@ section names it, is laid out as:
 ├── Cargo.toml          the safe crate, and the workspace
 ├── src/                the safe crate's modules, as the conventions lay them out
 ├── tests/              the safe crate's integration test suites
-├── <link-unit>-sys/    one raw bindings crate per link unit
-├── c/                  the C codebase, the C root
+├── ffi/                the raw bindings' generator input and generated bindings, one dir per link unit
+├── c/                  the C codebase, the C root, which the safe crate bundles
 └── crustify/           the campaign: its settings, artifacts and analysis state
 ```
 
 The wrappers of the libraries it uses from outside its tree are repositories of their
-own, cloned beside it as `../<source>-bindings`, as [`../planning/dependencies.md`](../planning/dependencies.md)
+own, cloned beside it as `../<source>-crustify`, as [`../planning/dependencies.md`](../planning/dependencies.md)
 describes.
 
 Every path into the C that the plan records, in `modules.json`, `schedule.json`, the

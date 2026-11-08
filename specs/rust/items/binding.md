@@ -56,7 +56,7 @@ the safety comment [`../toolchain.md`](../toolchain.md)'s Unsafe code section sp
 ## 4. Type route
 
 An enum takes no type route: it has no fields, layout or lifecycle to publish, so its
-generated `-sys` definition is used directly, as a constant macro's is. A port reimplements
+generated raw binding is used directly, as a constant macro's is. A port reimplements
 it as a Rust enum.
 
 ### 4.1 Surface
@@ -165,7 +165,7 @@ contract can express its caller obligation. Arguments and returns use typed wrap
 raw pointers are reconstructed only at the FFI call, in a small documented unsafe block.
 
 Unless justified (e.g. the avoid a defect), a `static inline` function a header defines is bound as an exported one is: it is
-allowlisted, and called through the binding its `-sys` crate generates for it, as
+allowlisted, and called through the raw binding generated for it, as
 [`../bindgen.md`](../bindgen.md)'s Generation section describes, never reimplemented in
 Rust. A reimplementation is a port, as [`porting.md`](porting.md) describes, and is
 annotated `Replaces`, as the [conventions](../conventions.md)' Anchors section describes.

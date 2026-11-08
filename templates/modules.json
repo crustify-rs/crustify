@@ -1,5 +1,5 @@
 {
-  "_comment": "Example `<workdir>/crustify/artifacts/modules.json` (REPO-ROOT tier), emitted by the planner. A module is one translation unit with the headers it defines its items in, named by the TU's path; a header that implements what no TU does is a header module, named by its own path, with a null `translation_unit`. Every file is an entry whose `items` lists are empty when the module owns the file whole, `included` when it owns only the entities named, and `excluded` when it owns all others: here the shared include/openssl/crypto.h is split item by item among the modules that implement what it declares, and crypto/o_str.c, which mixes string lifecycle routines with other code, is split into a foundational module and another that share its name. `tests` lists the test files gated with a module, those that use its internals; a test file is listed by every module it is gated with, and its `items` select test functions. Each link unit's and module's `index` is its permanent number, not its position; dependency records name a module by its `name` and `foundational`, which tell apart the two modules of the split crypto/o_str.c. `depends_on` holds every dependency, in-tree modules and out-of-tree libraries, with its edge counts and what is consumed; statem and rec_layer_s3 depend on each other, as their `incoming_edges` show. The order of the modules, and the dependencies it cuts, are in `schedule.json`. `status` is `todo` while the plan may change and `frozen` once final. `objective` records translation intent, and its `rust_equivalent` what the standard library provides in the module's place and the crates that could replace it, each with its feature parity; an out-of-tree record names the library and counts what the module consumes, and dependencies.json records the library itself. The waves are in `schedule.json`. The Rust tree mirrors this decomposition; there is no second placement document. Every path is below the C root, the repository's c/.",
+  "_comment": "Example `<workdir>/crustify/artifacts/modules.json` (REPO-ROOT tier), emitted by the planner. A module is one translation unit with the headers it defines its items in, named by the TU's path; a header that implements what no TU does is a header module, named by its own path, with a null `translation_unit`. Every file is an entry whose `items` lists are empty when the module owns the file whole, `included` when it owns only the entities named, and `excluded` when it owns all others: here the shared include/openssl/crypto.h is split item by item among the modules that implement what it declares, and crypto/o_str.c, which mixes string lifecycle routines with other code, is split into a foundational module and another that share its name. `tests` lists the test files tied to a module, those whose subject it is: whose assertions check its results or effects, or that use its internals; a test file is listed by every module it is tied to, and its `items` select test functions. Each link unit's and module's `index` is its permanent number, not its position; dependency records name a module by its `name` and `foundational`, which tell apart the two modules of the split crypto/o_str.c. `depends_on` holds every dependency, in-tree modules and out-of-tree libraries, with its edge counts and what is consumed; statem and rec_layer_s3 depend on each other, as their `incoming_edges` show. The order of the modules, and the dependencies it cuts, are in `schedule.json`. `status` is `todo` while the plan may change and `frozen` once final. `objective` is `port` in this port campaign, but for the foundational modules, which are `wrap` in every campaign; a module's `rust_equivalent`, and each link unit's, record the closest the standard library comes to it and the crates that could replace it outright, each with its feature parity; an out-of-tree record names the library and counts what the module consumes, and dependencies.json records the library itself. The waves are in `schedule.json`. The Rust tree mirrors this decomposition; there is no second placement document. Every path is below the C root, the repository's c/.",
   "version": "1f053298e30c0a9b5d0f3c1e7a4b8d2f6c9e0a11",
   "link_units": [
     {
@@ -8,6 +8,18 @@
       "kind": "library",
       "linkage": "shared",
       "depends_on": [],
+      "rust_equivalent": {
+        "std": {
+          "library": [
+            "alloc::alloc",
+            "alloc::ffi::CString",
+            "core::sync::atomic"
+          ],
+          "feature_parity": "partial",
+          "notes": "memory, strings and atomics only: no cryptographic primitive, encoding or I/O abstraction"
+        },
+        "crates": []
+      },
       "modules": [
         {
           "index": 0,
@@ -216,7 +228,7 @@
           ],
           "tests": [],
           "objective": {
-            "objective": "wrap",
+            "objective": "port",
             "rust_equivalent": {
               "std": null,
               "crates": [
@@ -270,7 +282,7 @@
           "api_headers": [],
           "tests": [],
           "objective": {
-            "objective": "wrap",
+            "objective": "port",
             "rust_equivalent": {
               "std": {
                 "library": [
@@ -383,7 +395,7 @@
             }
           ],
           "objective": {
-            "objective": "wrap",
+            "objective": "port",
             "rust_equivalent": {
               "std": null,
               "crates": []
@@ -421,6 +433,16 @@
       "depends_on": [
         "libcrypto"
       ],
+      "rust_equivalent": {
+        "std": {
+          "library": [
+            "std::net"
+          ],
+          "feature_parity": "partial",
+          "notes": "TCP sockets only: no TLS or DTLS protocol"
+        },
+        "crates": []
+      },
       "modules": [
         {
           "index": 0,
@@ -614,6 +636,10 @@
       "kind": "executable",
       "linkage": null,
       "depends_on": [],
+      "rust_equivalent": {
+        "std": null,
+        "crates": []
+      },
       "modules": []
     }
   ]

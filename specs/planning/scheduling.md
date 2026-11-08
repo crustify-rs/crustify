@@ -32,9 +32,8 @@ their records, as `schedule.md`'s Re-planning section describes. A cut dependenc
 reached through raw bindings: what a module uses of one is wrapped before it, as
 [Wrap batches](#4-wrap-batches) describes.
 
-The plan holds only the link units and modules the campaign's scope includes, without
-those that a previous campaign completed. The foundational modules depend on no other, so
-they run first.
+The plan holds only the link units and modules the campaign's scope includes.
+The foundational modules depend on no other, so they run first.
 
 ## 2. Waves and batches
 
@@ -89,7 +88,7 @@ port campaign:
 
 An enum is a set of constants, with no fields, layout users or lifecycle for a binding to
 publish, so nothing wraps it: a wrap campaign schedules none for it and uses its
-generated `-sys` definition directly, as
+generated raw binding directly, as
 [`../rust/items/binding.md`](../rust/items/binding.md)'s Type route section describes, and a port campaign
 ports it once.
 
@@ -188,7 +187,7 @@ fields declared with it, macro expansions included.
 
 Three kinds of C are not layout users, as [`../workflows/porting.md`](../workflows/porting.md)'s
 Principles section describes: the type's own module, which switches to Rust in one
-integration; the tests, which are gated with the modules whose internals they use; and C
+integration; the tests, which are tied to the modules whose subject they are; and C
 outside the target, so that a definition in an installed header is no user either. A type
 is then scheduled by its remaining users:
 

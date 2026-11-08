@@ -169,8 +169,8 @@ committed at that unit's base, `git show <its base>:crustify/CRUSTIFY.md`. Commi
 on the working branch, between waves, whenever you apply a change, so its history records
 the settings every unit ran under:
 
-- the source and the campaign's kind are fixed for the campaign: if they changed, keep
-  their previous answers and report the change;
+- the source is fixed for the campaign, and its kind changes only as the Campaign section
+  allows: any other change keeps the previous answer, and is reported;
 - a newly selected sanitizer or instrument gets its build variant prepared before the unit
   starts;
 - every other change takes effect from the unit's first spawn, except where the Campaign
@@ -186,9 +186,7 @@ Every agent you spawn runs from its role's fixed prompt. When the campaign chang
 direction, or the user asks for something an agent's role does not cover, customize that
 agent's task: write the instructions to `instructions.md` in its artifact dir, beside its
 `task.json`, and name the file in the task's `instructions` field (see
-`specs/artifacts/task.md`). The agent's prompt carries them in its
-`## Additional instructions` section, and the agent follows them over the rest of its
-prompt where the two conflict.
+`specs/artifacts/task.md`).
 
 Keep them within the conventions, the layout and the branch flow the documents above
 describe, as far as the request allows. Depart from those only where the user asked for
@@ -221,39 +219,34 @@ Whatever the campaign's kind, you own:
   that part needed. You number each run dir in its agent's launch order before you spawn
   it. A batch's worktree is purged as soon as it lands; a failed batch's stays until you
   have inspected it;
+
 - the concurrency of the agents you spawn and of the builds you run, as the concurrency
   spec above describes: decide how many agents run at once when each wave starts, from the
   host's resources and every workload on it, other campaigns' and side campaigns' agents
-  included, and revise it as batches land or fail. Never exceed the settings'
-  `parallelism` when they set one. Launch a wave's first agent of each role alone, and the
-  rest once its first response has come back, so that they read the prompt prefix it
-  cached rather than each writing it. To give one unit of work priority, suspend another's
-  agents with their whole process trees and resume them once it finishes, and note the
-  suspension in the dashboard;
+  included, and revise it as batches land or fail;
+
 - the landing locks of the integration branches, as the versioning spec's Landing lock
   section describes: while a wave runs, check now and then that each lock's holder, as its
   `.holder` file records it, belongs to an agent that is still making progress, its
   transcript and run dir still changing or a gate or model request running. End an agent
-  that has stalled, which releases its lock, and run its batch again. Never remove a lock
-  or its holder file while its agent lives;
+  that has stalled, which releases its lock, and run its batch again.
+  
 - the working branch, which you commit to only between waves, and the shipping branch,
   which you fast-forward to the working branch only when the user approves it. Ask for
   that approval at a milestone, such as a module that has landed and passed its gates;
   never advance the shipping branch on your own;
+
 - the progress fields of `schedule.json`, each wave's and batch's `status` and each batch's
   `commits`, which you record as the work launches and lands, deriving each batch's
   commits from its branch as the landing document describes. No agent writes
   `schedule.json`;
-- the shared agent memory directory, which you, and every agent you spawn, read at startup.
-  Before launching each wave or review wave, curate it: merge duplicate or overlapping
-  notes, and correct or delete those the campaign has made stale;
+
 - the accounting document's Records and Cost and time sections, for every agent you spawn
   and for your own sessions, and its usage and campaign cells. The agents fill their own
   landing cells: do not rerun their suites or scans to fill a cell.
 
-You never do an agent's work yourself unless the user asks you to. When an agent fails,
-respawn it or report the failure; never discard a competing landing. The agents run the
-gates of their own work: do not rerun them for a wave.
+When an agent fails, respawn it or report the failure; never discard a competing landing.
+The agents run the gates of their own work: do not rerun them for a wave.
 
 ---
 

@@ -12,17 +12,19 @@ inside it.
 
 | campaign | repository | the C, under `c/` |
 |---|---|---|
-| wrap | `<repo>-bindings` | a submodule of the source, pinned at the campaign's revision, which the campaign never changes |
-| port | `<repo>-rs` | a submodule of the campaign's fork of the source, `<repo>-fork`, on its `main` branch, which integrations trim as their modules leave C |
+| wrap | `<repo>-crustify` | a submodule of the source, pinned at the campaign's revision, which the campaign never changes |
+| port | `<repo>-crustify` | a submodule of the campaign's fork of the source, `<repo>-fork`, on its `main` branch, which integrations trim as their modules leave C |
 
-`<repo>` is the source repository's name: a port of libgit2 is `libgit2-rs`, with its fork
-`libgit2-fork`. Both keep the C's history where it belongs, so that it can be read in the
+`<repo>` is the source repository's name: a campaign on libgit2 is `libgit2-crustify`,
+and a port's fork `libgit2-fork`. A wrap and a port campaign share the name, since wrapping a
+codebase is a step towards replacing its implementation: a port continues a wrap campaign
+in its repository. Both keep the C's history where it belongs, so that it can be read in the
 submodule and an upstream release taken in by rebasing the fork's `main` onto it. The fork
 mirrors the source's own `main` as `upstream/main`. The repositories are created under the
 `crustify-rs` organization; the campaign's tree is [`layout.md`](layout.md)'s.
 
 A library the target uses from outside its tree is wrapped in a wrap campaign of its own,
-in `<source>-bindings`, named after the source it is built from, as
+in `<source>-crustify`, named after the source it is built from, as
 [`../planning/dependencies.md`](../planning/dependencies.md) describes.
 
 An audit reviews an existing Rust crate in its own repository, and creates none.
@@ -172,9 +174,9 @@ other way around: the module's commits keep their ids, which its batches' `commi
 record, and the working branch still moves only by fast-forward.
 
 1. The working branch's tip is merged into the module's branch. The files every module
-   adds to, the dashboard's rows, the `-sys` crates' allowlists, `src/lib.rs`'s module
+   adds to, the dashboard's rows, the raw bindings' allowlists, `src/lib.rs`'s module
    declarations and the safe crate's export features, conflict additively: each conflict
-   keeps both sides. Any other conflict is a defect of the integration, resolved without
+   keeps both sides, and the generated bindings are regenerated from the merged input. Any other conflict is a defect of the integration, resolved without
    discarding either side.
 2. The merge's tree passes the gates of
    [`../verification/testing.md`](../verification/testing.md)'s Regressions section, and in

@@ -63,15 +63,16 @@ its own. Each split is recorded with the file entries' `items` lists, which stay
 a file a module owns whole. Macros are not homed: they are not translated, and a binding
 that needs one reaches it as [`../rust/items/binding.md`](../rust/items/binding.md)'s Macros section describes.
 
-A module also lists its tests: the test files gated with it, those that use its
-internals: the fields or the layout of the types it owns, and its static functions and
-static globals. A test's uses are what its own code does, macro expansions included.
-Calling a module's other functions, the `static inline` functions its headers define
-included, reading its other globals, or using its enums, their constants and values alike,
-is API use, not internals: a test that only does that is not gated with the module, and
-keeps running after the module's integration, through its exports. A test file that uses
-the internals of several modules is listed by each of them. A test file whose tests divide between modules is split with its entries'
-`items` lists, by test function.
+A module also lists its tests: the test files tied to it, those whose subject it is. A
+test's subject is each module whose internals it uses, the fields or the layout of the
+types it owns and its static functions and static globals, and each module whose own
+results or effects its assertions check. A test's uses are what its own code does, macro
+expansions included. A module the test only calls to set up or tear down its fixtures, or
+whose enums it only uses, their constants and values alike, is no subject of it: the test
+is not tied to that module, and keeps running after the module's integration, through its
+exports. A test file whose subject is several modules is listed by each of them. A test
+file whose tests divide between modules is split with its entries' `items` lists, by test
+function.
 
 ## 4. Dependencies
 
@@ -88,24 +89,22 @@ cycles included, split as [scheduling](scheduling.md)'s Order section describes.
 
 ## 5. Objectives
 
-A module's `rust_equivalent` records what the Rust standard library provides in place of
-the module as a whole, and the established crates that could replace it outright, each
-with its feature parity, in descending order of it, and each checked for its semantics,
-platform support, performance and licensing.
+Each module carries one objective, which the settings' `campaign` answer sets:
 
-Each module carries one objective, which follows from its `rust_equivalent` rather than
-from a judgement of what the module is:
+- in a port campaign, every module is `port`: it is reimplemented in safe Rust. The
+  foundational modules are the exception, `wrap` in every campaign, as
+  [Foundational modules](#6-foundational-modules) describes; and
+- in a wrap campaign, every module is `wrap`: its C is kept behind a safe Rust API.
 
-- `wrap` when the standard library or a crate has `full` feature parity with it: the C is
-  kept behind a safe Rust API, so that its Rust consumers stay interoperable with the
-  remaining C during an incremental translation, until the module is replaced by that
-  equivalent; and
-- `port` otherwise, when the best equivalent is `partial` or there is none: the module is
-  reimplemented in safe Rust, using its partial equivalents where they serve.
+A TU is not split for its objective.
 
-The foundational modules are `wrap` whatever their equivalents, as
-[Foundational modules](#6-foundational-modules) describes. In a wrap campaign every module
-is `wrap`. A TU is not split for its objective.
+A module's `rust_equivalent`, and a link unit's, record what Rust already provides in its
+place, taken as a whole: the closest the Rust standard library comes to it, and the
+established crates that could replace it outright, in descending order of feature parity.
+Each carries its feature parity and notes on what is missing or differs, and each crate is
+checked for its semantics, platform support, performance and licensing. A port builds on
+them where they serve: a standard-library operation that is equivalent is used directly, as
+[`../rust/items/porting.md`](../rust/items/porting.md)'s Symbols section describes.
 
 ## 6. Foundational modules
 

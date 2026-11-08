@@ -60,6 +60,7 @@ order.
 | `kind` | `library` or `executable` |
 | `linkage` | `shared` or `static` for a library; `null` for an executable |
 | `depends_on` | the link units it depends on, by `name` |
+| `rust_equivalent` | what Rust already provides in the link unit's place, taken as a whole: `std` and `crates`, as a module's are recorded in [rust_equivalent.std](#61-rust_equivalentstd) and [rust_equivalent.crates](#62-rust_equivalentcrates) |
 | `modules` | the link unit's covered modules, in `index` order |
 
 ## 4. link_units[*].modules[*]
@@ -82,7 +83,7 @@ number within the link unit, which orders and numbers the modules a run adds.
 | `translation_unit` | the module's TU, as a [file entry](#5-file-entries); `null` for a header module |
 | `internal_headers` | the headers the build does not install that the module defines items in, as file entries |
 | `api_headers` | the headers the build installs that the module defines or declares items in, as file entries |
-| `tests` | the test files gated with the module, those that use its internals, as file entries whose `items` select test functions; see [File entries](#5-file-entries) |
+| `tests` | the test files tied to the module, those whose subject it is, as file entries whose `items` select test functions; see [File entries](#5-file-entries) |
 | `objective` | the translation intent recorded for this module |
 | `counters` | what the module contains |
 
@@ -115,8 +116,8 @@ The owner counts, homes and translates an entity; every other module reaches it 
 an ordinary dependency record.
 
 Test files are not owned: a test file is listed in the `tests` of every module it is
-gated with, as `specs/workflows/porting.md`'s Principles section describes, and its entry's
-`items` name the test functions gated with that module, empty when the whole file is.
+tied to, as `specs/planning/decomposition.md`'s Bundling section describes, and its entry's
+`items` name the test functions tied to that module, empty when the whole file is.
 
 ## 6. link_units[*].modules[*].objective
 
@@ -125,20 +126,20 @@ gated with, as `specs/workflows/porting.md`'s Principles section describes, and 
 | `objective` | `wrap` to preserve the C implementation behind a safe Rust API, or `port` to reimplement it in safe Rust |
 | `rust_equivalent` | what Rust already provides in its place: `std` and `crates`, below |
 
-A module carries one objective, which follows from its `rust_equivalent` as
-`specs/planning/decomposition.md`'s Objectives section describes: `wrap` when `std` or a crate has `full` feature parity with
-it, `port` otherwise, and `wrap` for every foundational module. A TU is not split for its
-objective.
+A module carries one objective, which the settings' `campaign` answer sets, as
+`specs/planning/decomposition.md`'s Objectives section describes: `port` in a port
+campaign and `wrap` in a wrap campaign, and `wrap` for every foundational module in either.
+A TU is not split for its objective.
 
 ### 6.1 rust_equivalent.std
 
-What the Rust standard library (`core`, `alloc` and `std`) provides in place of the
-module, taken as a whole: every item it owns. `null` when the standard library provides
-none of it.
+The closest the Rust standard library (`core`, `alloc` and `std`) comes to providing the
+module in its place, taken as a whole: every item it owns. `null` when the standard
+library provides none of it.
 
 | field | meaning |
 |---|---|
-| `library` | the standard-library paths that provide it, modules or types such as `alloc::vec::Vec` or `core::str` |
+| `library` | the standard-library paths that come closest to providing it, modules or types such as `alloc::vec::Vec` or `core::str` |
 | `feature_parity` | `full` when replacing the module with them gains exactly the module's functionality, `partial` otherwise |
 | `notes` | for `partial`, what is missing or differs; empty for `full` |
 
@@ -159,9 +160,9 @@ before it is listed.
 
 A crate that reimplements or binds the target itself, the repository or one of its link
 units, is not listed, nor is one of its components: replacing the target is what the
-campaign does, so such a crate is no equivalent of a module but an alternative to the
-campaign. A general-purpose crate that also serves such a reimplementation is listed on
-its own merits.
+campaign does, so such a crate is no equivalent of a module or a link unit but an
+alternative to the campaign. A general-purpose crate that also serves such a
+reimplementation is listed on its own merits.
 
 ## 7. link_units[*].modules[*].counters
 

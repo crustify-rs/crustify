@@ -19,8 +19,8 @@ commit of its own.
 
 Every crate uses Rust edition 2024, with the workspace's `rust-version` set to the pinned
 stable release. The shared package fields (`edition`, `rust-version`, `license`,
-`repository`) are declared once, in `[workspace.package]`, and inherited. Every crate but
-the generated `-sys` crates inherits the workspace's lints with `[lints] workspace = true`.
+`repository`) are declared once, in `[workspace.package]`, and inherited. Every crate
+inherits the workspace's lints with `[lints] workspace = true`.
 
 ## 3. Lints
 
@@ -56,11 +56,12 @@ once the exception is no longer needed.
 
 ### 3.3 Generated code
 
-The `-sys` crates' bindgen output follows C's names and shapes, so those crates do not
-inherit the workspace's lints: their `lib.rs` allows `nonstandard_style`, `missing_docs`,
-`clippy::all` and `clippy::pedantic` over the generated module, and the formatter skips
-it. Their hand-written parts, such as `build.rs` and macro shims, follow the rest of this
-spec.
+The raw bindings' bindgen output follows C's names and shapes, so it is exempt from the
+workspace's lints: `src/ffi.rs` allows every lint and lint group the workspace sets over
+each generated module, under one `#[expect(clippy::allow_attributes, reason = "…")]`
+naming the generated code, and the formatter skips the generated modules. The
+hand-written parts of the raw bindings, such as `build.rs`, `src/ffi.rs` itself and the
+macro shims, follow the rest of this spec.
 
 ## 4. Formatting
 

@@ -10,9 +10,16 @@ ported is [`../rust/items/porting.md`](../rust/items/porting.md).
 
 A port produces a Rust library for Rust-native applications. Its public API is the safe
 Rust one; the installed C headers and the C ABI they describe are not kept for C
-applications outside the target. A ported module's C-facing surface is only what the
-target's own unported C still consumes, its `extern "C"` exports, and it shrinks as that C
-is ported.
+applications outside the target. The crate bundles the C that remains, as
+[`../rust/bindgen.md`](../rust/bindgen.md) describes, so that a consumer has the whole
+library and reaches what is not ported yet through its raw bindings.
+
+A ported module's C-facing surface is only what the target's own remaining C still
+consumes, its translation units, tests and executables alike: its `extern "C"` exports,
+under their bare C names, through which that C calls the Rust that replaced the module. The
+remaining C depends on the Rust, never the Rust on a C copy of a ported module, so that
+each function has one implementation and each global one copy. The surface shrinks as that
+C is ported.
 
 A type, public or internal, therefore keeps its C layout, and its `wrap`, only while
 unported C of the target accesses that layout. The target's tests do not count, as
@@ -21,16 +28,22 @@ definition in an installed header: the C consumers it would serve are outside th
 
 ### 1.2 Tests follow their modules
 
-Each module carries the test files that use its internals, and they are ported and gated
-with it: a module's C tests are built and run while the module is C, and disabled once it
-is Rust, when their Rust ports run in their place. A test's access to a module's internals
-is a use within that module, so it never keeps a type wrapped. A test that only calls a
-module's functions is not gated with it: once the module is integrated, it runs through the
-module's exports, as part of the integration regression gate.
+Each module carries the C tests tied to it, those whose subject it is, as
+[`../planning/decomposition.md`](../planning/decomposition.md)'s Bundling section describes.
+They assert the C contract, which a safe Rust implementation may change, so they run while
+the module is C and leave with it at its integration. The tests its port batches write
+mirror their regression cases, as
+[`../verification/testing.md`](../verification/testing.md)'s Regressions section describes. A
+test's access to a module's internals is a use within that module, so it never keeps a type
+wrapped.
 
-A test that exercises the internals of several modules is gated with each of them: it runs
-while all of them are C, and its port runs once all of them are Rust. In between, each
-ported module's own tests cover it.
+A C test that only calls a module, to set up or tear down its fixtures, is not tied to it:
+once the module is integrated, the test reaches it through its exports, so that it checks
+its own subject with the ported Rust under it, as part of the integration regression gate.
+
+A test whose subject is several modules is tied to each of them: it runs while all of them
+are C, and leaves with the first of them to be integrated. Each ported module's own tests
+cover it from then on.
 
 ### 1.3 One language per module
 
@@ -51,7 +64,9 @@ module is ported, the header declares it, and the Rust module exports it under i
 name.
 
 The module's equivalence tests, which need the C, are retired with it; the behaviour they
-established is kept by the module's unit tests and ported tests.
+established is kept by the module's unit tests and ported tests. The raw bindings of its
+functions and globals then reach its exports, so that a consumer's raw calls keep working,
+and an allowlist entry goes with the export it reaches.
 
 A ported module's items therefore reach the rest of its module natively from the start:
 an edge within a module needs neither a `wrap` binding nor an export, only the edges that
@@ -83,14 +98,26 @@ run through it.
 Once the module's last wave has landed, it is integrated in one step, with concurrent
 modules as part of its branch's integration into the working branch, as
 [`../operations/versioning.md`](../operations/versioning.md)'s Integration section
-describes: its export feature is
-turned on, its Rust is linked into the target in place of its TU, through the target's
-actual build system, the TU and the C tests gated with it are removed, and the target's
-test suite runs over the hybrid as the integration regression gate. The C side of the step
-is a commit on the fork's `main`, as [`../operations/versioning.md`](../operations/versioning.md)'s
-Repositories section describes, and the campaign's commit records the submodule at it: integrations
-run one at a time, so the two repositories move together. The shared variants are rebuilt once the integration
-lands.
+describes: its export feature is turned on, its TU and the C tests tied to it are removed
+from `c/`, and the remaining C reaches the module through its exports. The C side of the
+step is a commit on the fork's `main`, as
+[`../operations/versioning.md`](../operations/versioning.md)'s Repositories section
+describes, and the campaign's commit records the submodule at it: integrations run one at a
+time, so the two repositories move together. The shared variants are rebuilt from the C
+that remains once the integration lands.
+
+From then on, the C that remains is linked in two ways, and no process holds a module both
+as C and as Rust, nor its Rust twice:
+
+- a Rust consumer, the campaign's own tests included, links the safe crate and the C that
+  remains, which the crate bundles, statically or as shared libraries, as the raw bindings'
+  Build modes describe; and
+- the target's remaining C consumers, its C tests and executables, link the C that remains
+  and the safe crate's Rust static library, built in campaign mode so that it carries no C
+  of its own, through the target's actual build system.
+
+The C tests that remain run over that second link as the integration regression gate, as
+the testing spec's Regressions section describes.
 
 ## 4. Scope
 

@@ -32,7 +32,7 @@ shared and exclusive borrowed handles are `FooRef<'a>` and `FooMut<'a>`.
 ### 1.3 Shims
 
 A callable macro shim is `crustify_<NAME>`. Constant macros remain generated constants in
-the `-sys` crate.
+the raw bindings.
 
 ### 1.4 Exports
 
@@ -40,7 +40,10 @@ Each ported module has one `mod ffi_export { use super::*; ... }` raw ABI gatewa
 Rust file, whose exports use `#[unsafe(no_mangle)] extern "C"` under the bare C names: the
 module's externally visible functions and globals, and the `static inline` functions its
 headers define. Static functions and static globals are not exported: nothing outside
-their TU reaches them.
+their TU reaches them. The exports serve the target's remaining C, its tests and
+executables included, which reaches the module through them once it is integrated; an
+export is removed once no remaining C calls it. An export whose C callers read `errno`
+after the call sets it as the C function did, since the Rust behind it never does.
 
 ### 1.5 Export features
 
@@ -57,11 +60,13 @@ out, all relative to the repository's root:
 - `Cargo.toml` - the safe crate's manifest, which also declares the workspace.
 - `src/lib.rs` - the safe crate's root, with one `cfg`-gated module per link unit.
 - `src/<link-unit>/` - one sub-dir per link unit.
-- `<link-unit>-sys/` - raw bindings package, one per link unit, a workspace member, laid out as
-  [`bindgen.md`](bindgen.md) describes.
+- `src/ffi.rs` and `ffi/<link-unit>/` - the raw bindings, one public module per link unit,
+  laid out as [`bindgen.md`](bindgen.md) describes.
 
-The safe crate's name is chosen when the repository is created, from what crates.io leaves
-free; the source's own bindings, such as `git2` for libgit2, usually hold the obvious one.
+The safe crate is named after its repository, `<repo>-crustify`, as
+[`../operations/versioning.md`](../operations/versioning.md)'s Repositories section names it:
+a name crates.io leaves free, which tells it apart from the source's own Rust bindings,
+such as `git2` for libgit2.
 
 Within a link unit's sub-dir, the tree follows the module decomposition in `modules.json`
 exactly, and preserves the C layout as far as the idiomatic organization of a Rust tree
