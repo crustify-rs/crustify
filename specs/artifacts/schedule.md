@@ -82,7 +82,7 @@ the objective it is translated with and what frees a deferred step:
 | field | meaning |
 |---|---|
 | `name`, `defined_in`, `kind`, `field_anchors`, `home` | as on a batch item |
-| `step`, `of` | as on a batch item: `translate` for the item's wrap or port, or one of the deferred steps of `specs/planning/scheduling.md`'s Deferred items section, and what a `correct` or `std` step follows; `of` is `null` when the step carries none |
+| `step`, `of` | as on a batch item: `translate` for the item's wrap or port, or one of the deferred steps of `specs/planning/scheduling.md`'s Deferred items section, and the library entity a `std` step follows; `of` is `null` on every other step |
 | `objective` | `wrap` or `port`; `port` for every deferred step |
 | `after` | on a deferred step, the modules whose integration frees it, each by `link_unit`, `module` and `foundational`; `null` on a `translate` step |
 

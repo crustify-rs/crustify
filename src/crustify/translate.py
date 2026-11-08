@@ -14,11 +14,10 @@ _ITEM_FIELDS = frozenset({"name", "defined_in", "kind", "field_anchors", "home"}
 #: The fields an item may carry beside those: its step, and what a step follows.
 _ITEM_OPTIONAL = frozenset({"step", "of"})
 #: An item's steps: its translation, and the deferred steps of a port campaign
-#: (specs/planning/scheduling.md, Deferred items). ``of`` names the type a
-#: ``correct`` step follows, or the library entity a ``std`` step moves onto
-#: the standard library.
-_STEPS = frozenset({"translate", "layout", "memory", "correct", "unwrap", "retire", "std"})
-_STEPS_WITH_OF = frozenset({"correct", "std"})
+#: (specs/planning/scheduling.md, Deferred items). ``of`` names the library
+#: entity a ``std`` step moves onto the standard library.
+_STEPS = frozenset({"translate", "layout", "memory", "retire", "std"})
+_STEPS_WITH_OF = frozenset({"std"})
 _FIELD_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 #: The fields every task carries beside its worklist: how its agent runs.
@@ -318,7 +317,7 @@ def parse_items(items: object, fail: Callable[[str], NoReturn]
                 fail(f"{label}.of must name what its {step} step follows, "
                      "as {name, defined_in}")
         elif of is not None:
-            fail(f"{label}.of is only carried by a correct or std step")
+            fail(f"{label}.of is only carried by a std step")
 
         identity = (name, defined_in, step,
                     None if of is None else (of["name"], of["defined_in"]))
@@ -354,7 +353,7 @@ def load_batch(path: Path) -> Batch:
                  if objective == "review" else ""))
     route, items = parse_items(raw["items"], _fail)
     if objective == "wrap" and any(item["step"] != "translate" for item in items):
-        _fail("a deferred step (layout, memory, correct, unwrap, retire, std) "
+        _fail("a deferred step (layout, memory, retire, std) "
               "is only carried by a port batch")
     return Batch(objective=objective, route=route, items=items,
                  base_branch=parse_branch(raw, _fail),

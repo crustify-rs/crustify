@@ -205,14 +205,13 @@ A type is scheduled in steps:
    safe API. A consumer ported earlier that needs it has it wrapped ahead, as
    [Wrap batches](#4-wrap-batches) describes;
 2. `layout`, after the integration of its last layout users: the type takes a Rust-native
-   layout;
+   layout; and
 3. `memory`, after the integration of its last memory users: its storage moves from C's
-   allocator, which its owners allocate and free through until then, to Rust's;
-4. `correct`, after each `layout` or `memory` step, one for each consumer that landed
-   against the type's earlier form: the consumer moves onto the form the step gives it.
-   A consumer that lands later uses that form from the start; and
-5. `unwrap`, after its last `correct` step: the earlier form, which nothing uses any more,
-   is removed.
+   allocator, which its owners allocate and free through until then, to Rust's.
+
+Its safe API does not change between the steps: it exposes no representation, so that a
+step changes the type, its lifecycle and the code inside the crate that reaches its C form,
+and none of its consumers.
 
 A step that has no users to wait for is not deferred: a type none of whose memory users
 remains has its storage in Rust's allocator from its translation on. A user that stays C,

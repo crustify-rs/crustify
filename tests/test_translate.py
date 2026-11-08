@@ -160,27 +160,27 @@ class BatchValidationTests(unittest.TestCase):
         self.assertIsNone(batch.items[0]["of"])
 
     def test_deferred_steps_of_a_port_batch(self) -> None:
-        frame = {"name": "Frame", "defined_in": "include/frame.h"}
+        memcpy = {"name": "memcpy", "defined_in": "/usr/include/string.h"}
         batch = self.load({"objective": "port", "items": [
-            {**self.item("Frame", kind="type"), "step": "layout"},
-            {**self.item("Packet", kind="type"), "step": "correct", "of": frame},
+            {**self.item(), "step": "retire"},
+            {**self.item("copy_into"), "step": "std", "of": memcpy},
         ]})
-        self.assertEqual([i["step"] for i in batch.items], ["layout", "correct"])
-        self.assertEqual(batch.items[1]["of"], frame)
-        # A consumer corrected after two steps of different types is two items.
-        other = {"name": "Stream", "defined_in": "include/stream.h"}
+        self.assertEqual([i["step"] for i in batch.items], ["retire", "std"])
+        self.assertEqual(batch.items[1]["of"], memcpy)
+        # One function moved onto std for two entities is two items.
+        strlen = {"name": "strlen", "defined_in": "/usr/include/string.h"}
         batch = self.load({"objective": "port", "items": [
-            {**self.item(), "step": "correct", "of": frame},
-            {**self.item(), "step": "correct", "of": other},
+            {**self.item(), "step": "std", "of": memcpy},
+            {**self.item(), "step": "std", "of": strlen},
         ]})
         self.assertEqual(len(batch.items), 2)
 
     def test_rejects_invalid_deferred_steps(self) -> None:
         with self.assertRaisesRegex(SystemExit, "step must be one of"):
-            self.load({"objective": "port", "items": [{**self.item(), "step": "nativize"}]})
+            self.load({"objective": "port", "items": [{**self.item(), "step": "correct"}]})
         with self.assertRaisesRegex(SystemExit, "of must name"):
             self.load({"objective": "port", "items": [{**self.item(), "step": "std"}]})
-        with self.assertRaisesRegex(SystemExit, "only carried by a correct or std"):
+        with self.assertRaisesRegex(SystemExit, "only carried by a std step"):
             self.load({"objective": "port", "items": [
                 {**self.item(), "step": "retire",
                  "of": {"name": "x", "defined_in": "x.h"}}]})

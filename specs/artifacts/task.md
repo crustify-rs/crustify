@@ -185,8 +185,8 @@ Every field but `step` and `of` is required on every item, and no other field is
 | `kind` | `type`, `symbol` or `callback` |
 | `field_anchors` | C field identifiers assigned to this item; empty unless `kind` is `type` |
 | `home` | `.rs` path, relative to the repository's root, the item is authored into |
-| `step` | what the batch does to the item: `translate`, its wrap or port, when absent; in a `port` batch, one of the deferred steps `layout`, `memory`, `correct`, `unwrap`, `retire` or `std`, as `specs/planning/scheduling.md`'s Deferred items section describes |
-| `of` | on a `correct` step, the type whose step it follows, and on a `std` step, the out-of-tree library's entity it moves onto the standard library, each as `{name, defined_in}`; absent otherwise |
+| `step` | what the batch does to the item: `translate`, its wrap or port, when absent; in a `port` batch, one of the deferred steps `layout`, `memory`, `retire` or `std`, as `specs/planning/scheduling.md`'s Deferred items section describes |
+| `of` | on a `std` step, the out-of-tree library's entity it moves onto the standard library, as `{name, defined_in}`; absent otherwise |
 
 `(name, defined_in, step, of)` identifies an item and must be unique within the batch.
 `field_anchors` must not repeat a name.

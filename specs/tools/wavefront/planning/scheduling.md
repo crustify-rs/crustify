@@ -74,6 +74,4 @@ functions that touch each field.
 The layout users are read from T2's `layout_uses.csv`, which the tables extracted before
 it lack, and the memory users from the lifecycle roles of the ownership store and T2's
 `arg_casts.csv`: without the store's raw roles, `memory_unmanaged_after` is `null`, and
-the planner establishes the roles first, as `docs/type-lifecycle.md` describes. A type's
-`correct` steps follow from its consumers in the planner run's schedule, the items that
-depend on it, `query dag --name <T>`, whose translation lands before its step.
+the planner establishes the roles first, as `docs/type-lifecycle.md` describes.

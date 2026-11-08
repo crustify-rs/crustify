@@ -18,7 +18,7 @@
     "waves, a wave of no module holds the items of every module at its `layer` and",
     "`sublayer`. src/io.c's `external` record names libz, whose z_stream_s its",
     "widget_stream holds: libz's side campaign wraps it, and no wave here does.",
-    "Each planned item's `step` is `translate` in this wrap campaign; in a port campaign a deferred step (`layout`, `memory`, `correct`, `unwrap`, `retire`, `std`) is a `port` item whose `after` names the modules whose integration frees it."
+    "Each planned item's `step` is `translate` in this wrap campaign; in a port campaign a deferred step (`layout`, `memory`, `retire`, `std`) is a `port` item whose `after` names the modules whose integration frees it."
   ],
   "schema_version": 6,
   "modules": [
