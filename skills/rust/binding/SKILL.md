@@ -141,9 +141,14 @@ A union is not bound as a type of its own: the types its members hold are bound,
 union is presented where it is used, a field accessor or a function's signature, as a
 tagged Rust enum, with a variant for each member, each over its member's safe type. One
 tagged enum stands in for the union at every use. Its tag is the discriminator the
-analysis establishes as selecting the active member, a sibling field or a parameter:
-reading the union reads the discriminator to choose the variant, and writing it writes
-both.
+analysis establishes as selecting the active member: a sibling field, a parameter, or a
+predicate over sibling fields, such as a length that is zero only while an inline member
+is active. Reading the union evaluates the discriminator to choose the variant, and
+writing it writes both.
+
+A union whose active member nothing beside it selects, its tag held by what refers to it,
+such as the sign of the index that reaches it, is presented by an `unsafe` accessor for
+each member, whose caller contract states which member must be active.
 
 ### 2.6 Enums
 

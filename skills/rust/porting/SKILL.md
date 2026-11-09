@@ -76,7 +76,8 @@ A union's safe API is the tagged Rust enum [`binding`](../binding/SKILL.md)'s Un
 section presents it as, from its port. Its storage keeps the C union, with its
 discriminator beside it, while C uses its layout, and is ported as a struct's is, with the
 same later stages: its `port/layout` makes the tagged enum its storage, the discriminator
-folded into the enum's tag.
+folded into the enum's tag. A union whose tag what refers to it holds becomes a tagged
+enum too, once no other C uses its layout, its referrers' tags folded into it.
 
 ### 2.3 Enums
 
