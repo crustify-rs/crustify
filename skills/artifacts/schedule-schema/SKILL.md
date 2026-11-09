@@ -173,31 +173,3 @@ Status section describes, and every `todo` wave is re-planned under the new kind
 A batch's id, `wave-<index>/batch-<index>`, names its branch and worktree, and its wave
 index the wave branch, as `versioning` spells them. Its artifact dirs are those of the
 agents that ran it, each holding a `task.json` that names the batch's wave and index.
-
-## 7. Earlier versions
-
-Schema-v5 items had no release points, and named their `field_users` `field_anchors`; a
-type's port after its last layout users was a second `port` item of its module. A campaign
-on v5 is converted by its next planner run: each item's `field_anchors` become its
-`field_users`, it gains its entity's release points, such a second `port` item becomes a
-`port/layout` item, and the later stages the current scheduling calls for are planned.
-
-Schema-v4 schedules planned each wave's batches, packed under the `workload` caps that
-each wave recorded as its `budgets`, and had no `items` or `packed_with` on a wave. A
-campaign on v4 is converted by its next planner run: each wave's `items` are the items of
-its batches, each with its batch's `kind` as `objective`; a `todo` wave's batches are
-dropped, and a started wave keeps its own; and every `budgets` is dropped.
-
-Schema-v3 schedules had no `modules`, the order of the modules being `modules.json`'s
-`depends_on`, no `sublayer`, and could hold review waves. A campaign on v3 is converted by
-its next planner run: `modules` is written from its order, each wave's `sublayer` numbered
-among its module's waves in index order, and its review waves kept as they are until
-review waves return to this schema.
-
-Schema-v2 schedules were one `crustify/artifacts/<link-unit>/<subsystem>/schedule.json`
-per subsystem, whose wave indices counted within the subsystem and whose batches carried
-an `objective` in place of `kind`. Schema-v1 was one campaign-wide schedule nesting
-`link_units` → `subsystems` → `waves`. A campaign on either is converted by its next
-planner run: its waves are numbered in the order they ran or were to run, every v2
-`objective` becomes the batch's `kind`, and every wave's `subsystem` becomes the `module`
-its units are re-decomposed into, as `decomposition` describes.

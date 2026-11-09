@@ -125,10 +125,7 @@ Start every build, test run and gate with the parallelism the `concurrency` skil
 Start from what your branch holds. For each artifact you own:
 
 - if it does not exist, emit it;
-- if it follows an earlier schema, update it to the current one, keeping its decisions. A
-  `subsystems.json` becomes `modules.json`, its units re-decomposed into modules, then is
-  deleted; per-subsystem schedules are converted as the `schedule-schema` skill's Earlier versions
-  section describes;
+- if it follows an earlier schema, update it to the current one, keeping its decisions;
 - if it exists, add what it lacks: a module or link unit the scope now includes, items
   it adds, or the waves a changed setting, such as `scope`, re-plans; and
 - if a rule that decided an artifact's entries has changed since an earlier run decided
