@@ -13,7 +13,17 @@ and give every commit you make that identity, as Identity above describes.
 
 ---
 
-## Worklists and objectives
+## Workflow
+
+The `reviewing` skill describes what each objective looks for, what makes a
+finding, and how it is filed and fixed.
+
+Set the parallelism of every build, test run and gate you start when you start it, from
+the jobs already running on the host, as the `concurrency` skill describes: give it
+through the command's environment, never by editing a committed command, and take the
+whole host only when nothing else runs on it.
+
+### 1. Workset and objectives
 
 Your worklist has one route, as the `reviewing` skill's Worklists section describes.
 In a Crustify campaign it carries the commits of one or more translation batches of your
@@ -28,9 +38,19 @@ contributes. Review only for the objectives listed in your inputs, and skip what
 instructions say about the others. `fix` decides whether you patch what you find, and
 `disclose` whether you draft a disclosure notice for each finding.
 
-## Artifact dirs
+### 2. Analysis
 
-`<reviews-dir>` is your reviews dir, `crustify/reviews/<batch id>/`, with your batch id from your inputs. File each
+Analyze your workset in the Rust code and the C code it binds or ports. Use the hints given
+in the `binding` skill's Item analysis. Look for the findings of each objective listed
+in your inputs. Try to break every contract you review, and rerun every report you
+revisit. Judge your workset's raw bindings against the `bindgen` skill, its bindings
+against the `binding` skill and its ports against the `porting` skill, and, in a
+Crustify-generated batch only, its Rust against the `conventions` skill.
+
+### 3. Evidence
+
+`<reviews-dir>` is your reviews dir, `crustify/reviews/<batch id>/`, with your batch id from your inputs, as
+the `layout` skill's Reviews section describes. File each
 finding in the sub-directory of its objective, as the `reviewing` skill's Reports
 section lists them. A tool's skill may define sub-directories of its own for findings on
 the tool's output.
@@ -40,41 +60,21 @@ is not filed in your reviews dir. Emit its reproducer and report on a dedicated 
 worktree of that tool's local checkout. If `fix` is enabled, add the patch there too. If
 `fix` is not enabled, do not.
 
----
-
-## Workflow
-
-The `reviewing` skill describes what each objective looks for, what makes a
-finding, and how it is filed and fixed.
-
-Set the parallelism of every build, test run and gate you start when you start it, from
-the jobs already running on the host, as the `concurrency` skill describes: give it
-through the command's environment, never by editing a committed command, and take the
-whole host only when nothing else runs on it.
-
-### 1. Analysis
-
-Analyze your workset in the Rust code and the C code it binds or ports. Use the hints given
-in the `binding` skill's Item analysis. Look for the findings of each objective listed
-in your inputs. Try to break every contract you review, and rerun every report you
-revisit.
-
-### 2. Evidence
-
 File every finding in its own `<slug>` directory, with its report and, where the Reproducers
 section asks for one, its reproducer. Prove every `ub` and `equiv` candidate, and every
 contract you claim can be broken, with a reproducer before you file it, and check that an
 `equiv` divergence is not deliberate. If `disclose` is listed, draft each finding's
 `disclosure.md`.
 
-### 3. Fixes
+### 4. Fixes
 
 If `fix` is not enabled, skip this step, except for coverage gaps when `coverage` is listed
 and for the gates in the Regressions step that follows: change nothing in the Rust tree outside
 `crustify/reviews/` but the tests that fill the coverage gaps.
 
 If `fix` is enabled, patch every finding of your objectives as the `reviewing` skill's
-Fixes section describes, and turn each reproducer into the regression test it names.
+Fixes section describes, and turn each reproducer into the regression test it names. In a
+Crustify-generated batch, every change you make follows the `conventions` skill.
 
 If `coverage` is listed, whether or not `fix` is, add the tests that fill the coverage gaps
 you found to the codebase's test suites. Classify and place every test you add as the
@@ -101,10 +101,12 @@ after your rebase under the landing lock those relevant to its integration, as t
 step describes.
 If `fix` is not enabled, file each true positive a gate finds as a UB report.
 
-### 4. Landing
+### 5. Landing
 
 Make two commits, first the `crustify/reviews/` changes, then the Rust tree changes, if you
-made any, with your batch's dashboard rows in the last, and land them on your integration branch as the `versioning` skill's Landing section describes.
+made any, with your batch's dashboard rows in the last, and land them on your integration
+branch as the `versioning` skill's Landing section describes. Fill your batch's landing cells in it, as the `accounting` skill's Landing cells section
+describes; its usage cells and the campaign cells are the orchestrator's.
 
 Land under the integration branch's landing lock, as the `versioning` skill's Landing lock
 section describes. Find your CLI's pid by walking up your shell's parent processes, and
@@ -117,18 +119,6 @@ After the rebase, do not rerun every gate by default. Reason about which gates a
 to catch a regression of the integration, from what your change and the rebased-in changes
 touch and how they could interact, and rerun those; say in your final message which you
 reran and why the others could not have changed.
-
----
-
-## Skills
-
-- `conventions`: only when you review a Crustify-generated batch: judge its Rust against
-  it, and follow it in every change you make; otherwise ignore it.
-- `bindgen`, `binding` and `porting`: what your workset's raw bindings, bindings and ports
-  are judged against.
-- `layout`: its Reviews section, for your reviews dir.
-- `accounting`: your review batch's landing cells are yours; the usage and campaign cells
-  are not.
 
 ---
 

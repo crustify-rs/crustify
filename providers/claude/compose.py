@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Compose Crustify's roles for Claude Code, from `agents/` and the campaign's settings.
+"""Compose Crustify's agents for Claude Code, from `agents/` and the campaign's settings.
+
+Claude Code lists the plugin's skills to every agent, so the prompts are composed by the
+generic provider without its skill index.
 
     compose.py build                  write the agents under providers/claude/agents/: the
                                       stages and the assistant, each after Claude Code's own
@@ -10,6 +13,7 @@
 
 Standard library only: it runs as a hook, under whatever Python the host has.
 """
+import importlib.util
 import json
 import os
 import re
@@ -17,7 +21,10 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-ROLES = ROOT / "agents"
+_spec = importlib.util.spec_from_file_location(
+    "crustify_generic_compose", ROOT / "providers" / "generic" / "compose.py")
+generic = importlib.util.module_from_spec(_spec)  # the neutral composer
+_spec.loader.exec_module(generic)
 AGENTS = Path(__file__).resolve().parent / "agents"
 SYSTEM_PROMPT = Path(__file__).resolve().parent / "system-prompt.md"
 SETTINGS = Path("crustify") / "CRUSTIFY.md"
@@ -56,36 +63,8 @@ def _claude_system_prompt() -> str:
     return re.sub(r"^<!--.*?-->\s*", "", text, flags=re.S).strip() + "\n\n---\n\n"
 
 
-def skill_index() -> str:
-    """Every skill's name and description, by group in the manifest's order."""
-    groups = json.loads((ROOT / ".claude-plugin" / "plugin.json").read_text())["skills"]
-    lines = []
-    for group in groups:
-        for skill in sorted((ROOT / group).glob("*/SKILL.md")):
-            front = skill.read_text().split("---", 2)[1]
-            name = re.search(r"^name: (.+)$", front, re.M).group(1).strip()
-            description = json.loads(re.search(r"^description: (.+)$", front, re.M).group(1))
-            lines.append(f"- `{name}` ({Path(group).name}): {description}")
-    return "\n".join(lines)
-
-
-def _role(name: str) -> str:
-    text = (ROLES / f"{name}.md").read_text()
-    return text.replace("<!-- SKILL INDEX -->", skill_index()) if name == "common" else text
-
-
-def _answer(text: str, question: str) -> str | None:
-    m = re.search(r"\(`id: " + re.escape(question) + r"`\)(?:.|\n)*?- Answer: `([^`]*)`", text)
-    return m.group(1).strip() if m else None
-
-
 def assistant_prompt(kind: str, root: str) -> str:
-    campaign = _role(f"assistant/{kind}")
-    part, _, skills = campaign.partition("<!-- SKILLS -->")
-    text = (_role("common") + _role("assistant/assistant")
-            .replace("<!-- CAMPAIGN -->", part.strip())
-            .replace("<!-- CAMPAIGN SKILLS -->", skills.strip()))
-    return text.replace("{crustify_root}", root)
+    return generic.prompt("assistant", kind, root, index=False)
 
 
 def find_campaign(start: Path) -> Path | None:
@@ -112,7 +91,7 @@ def _agent(name: str, description: str, body: str) -> None:
 def build() -> None:
     AGENTS.mkdir(exist_ok=True)
     for stage, description in STAGES.items():
-        _agent(stage, description, _role("common") + _role(stage))
+        _agent(stage, description, generic.prompt(stage, root="{crustify_root}", index=False))
     for kind, what in (("translate", "a C-to-Rust port or wrap campaign"),
                        ("audit", "an audit of an existing Rust crate")):
         _agent(f"assistant-{kind}",

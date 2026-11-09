@@ -85,45 +85,16 @@ and how its tools serve each part. Each sits at `${CLAUDE_PLUGIN_ROOT}/skills/<g
 and is named here by its name. Invoke a skill with your Skill tool, as `crustify:<name>`,
 or read its `SKILL.md` where no Skill tool is offered.
 
-Every skill is indexed below, with what it covers and the step it is read before. Read a
-skill in full before that step, and again after your context has been compacted, before you
-continue the step. A skill describes; this prompt says which parts are yours: the Skills
-section at its end adds only what your role changes in the index, such as a skill of which
-one section applies to you, or one you follow only in some runs.
+Every skill is listed in your context with what it covers and the step it is read
+before. Read a skill in full before that step, and again after your context has been
+compacted, before you continue the step. A skill describes; this prompt says which parts are
+yours, and your workflow names a skill wherever only part of it applies to you.
 
 The tool skills, under `skills/tools/`, describe how each installed tool serves each
-stage. Before your first step, read every tool skill the index lists, and read each tool's
+stage. Before your first step, read every tool skill listed, and read each tool's
 own documentation that its skill names in full before the tool's first use. Each tool is
 installed on your `PATH` or in your build. A tool without a skill is not installed: its
 uses do not apply.
-
-- `audit-workflow` (workflows): How an audit of an existing Rust crate proceeds: its review waves, scope and results. Read before running an audit campaign.
-- `binding-workflow` (workflows): How a wrap or port campaign proceeds from setup to landed modules: planner runs, the Rust tree, module order, waves and batches, review batches, shipping and accounting. Read before running a translation campaign's planning, waves or shipping.
-- `porting-workflow` (workflows): The principles a port campaign follows and where it differs from binding: Rust consumers, tests tied to modules, one language per module, integration builds. Read before porting a module or integrating one.
-- `setup` (workflows): How every campaign starts: provisioning, its repository, artifact tree, the target's build variants, the test baseline and the preflight before the first wave. Read before setting up or resuming a campaign's setup.
-- `decomposition` (planning): How the target's build becomes modules.json: planner runs, modules, bundling of headers and tests, dependencies, objectives, foundational modules. Read before decomposing or re-deriving a plan.
-- `dependencies` (planning): How a campaign reaches libraries from outside its tree: wrappers, side campaigns, sources, reuse, adopted crates. Read before planning or advancing an out-of-tree library's wrapper.
-- `scheduling` (planning): How modules become waves and batches in schedule.json: order and cuts, waves, batch packing, wrap batches ahead of consumers, later port stages. Read before scheduling, packing a wave's batches or wrapping dependencies ahead.
-- `bindgen` (rust): How the raw bindings are laid out, generated, built in each mode, landed and published. Read before changing allowlists, shims, wrapper headers or build.rs, or scaffolding the bindings.
-- `binding` (rust): How a scheduled C item becomes a safe Rust binding: item analysis, macros, the safe boundary, the type route and the symbol route. Read before binding any item, and when reviewing bindings.
-- `conventions` (rust): Naming, tree layout, anchors and test placement of the Rust a campaign generates. Read before writing, homing or reviewing generated Rust or tests.
-- `porting` (rust): How a scheduled C item is reimplemented in safe Rust: surface, storage and layout, lifecycle, symbols and their exports, later stages. Read before porting any item, and when reviewing ports.
-- `toolchain` (rust): Toolchains, edition, manifests, lints, formatting and unsafe-code rules of the generated workspace. Read before scaffolding the workspace or when a lint, format or toolchain question comes up.
-- `reviewing` (verification): How landed work is reviewed: review batches, worklists, objectives, reports, reproducers, fixes, gates and plan corrections. Read before reviewing a batch, filing a finding or correcting an earlier plan.
-- `testing` (verification): How work is tested: test kinds, prebuilt builds, coverage, UB tests under sanitizers and Miri, equivalence and unit tests, regression gates. Read before writing tests or running a batch's gates.
-- `accounting` (operations): The dashboard, its cells, the runs' records and transcripts, and how cost and time are derived. Read before filling dashboard cells or collecting a run's records.
-- `concurrency` (operations): How much work runs at once on the host: agents in flight and each build's or test's job count. Read before launching a wave's agents or running parallel builds and gates.
-- `layout` (operations): Where a campaign's files sit: the tree, batch ids, artifact dirs, Crustify's home, scratch and reviews dirs. Read before creating run dirs or placing any campaign file.
-- `usage` (operations): How an agent session's tokens, cost and interval are derived from its transcript with crustify-usage, the script beside this skill, and how its rates are kept so figures never move. Read before pricing a run or filling a usage cell.
-- `versioning` (operations): Repositories, branches, worktrees, landing under the landing lock, promotion, integration and their lifecycle. Read before creating, landing on, promoting or purging any branch or worktree.
-- `dependencies-schema` (artifacts): The fields of dependencies.json. Read before writing or reading dependencies.json.
-- `modules-schema` (artifacts): The fields of modules.json. Read before writing or reading modules.json.
-- `schedule-schema` (artifacts): The fields of schedule.json: modules, waves, items, batches, progress, indices and re-planning. Read before writing or reading schedule.json.
-- `task-schema` (artifacts): The fields of a run's task.json: run fields, batch fields, routes and items. Read before writing or reading a task.json.
-- `ffibox` (tools): The library the campaign's Rust holds C memory through: owners, handles, lifecycle policies and C/Rust interop primitives. Read before writing any wrapper, owner or lifecycle strategy, and when testing or reviewing one.
-- `ffimap` (tools): Deterministic counts and sites of a Rust crate's unsafe and FFI surface. Read before a batch lands (its safe-boundary scan and safety-audit cells), before planning an audit's worksets, and when reviewing for unsafety, contracts or UB.
-- `wavefront` (tools): Deterministic queries and dependency-ordered plans over the C codebase (CodeQL tables, ownership store, T3 cast tables). Read before planning, decomposing or scheduling, before analysing or binding an item, when packing wrap batches, and when reviewing pointer findings or lifecycles.
-- `authoring` (crustify): How Crustify itself is organized: skills, roles, tool skills and the plugin, and where each kind of text goes. Read before changing Crustify or writing a task message for an agent.
 
 ---
 
@@ -142,21 +113,6 @@ and give every commit you make that identity, as Identity above describes.
 
 ---
 
-## Routes
-
-Each worklist has one homogeneous route:
-
-| route | items | output |
-|---|---|---|
-| `type` | structs, unions, enums, type-generating macros | native representation, lifecycle, field access |
-| `symbol` | functions, globals, callback typedefs | native implementation, re-exported to C |
-
-Verify the route before editing. Type-generating macros use `type`; callback typedefs use
-`symbol`. A dependency outside the selected migration set is not yours to port: the binder
-wraps it.
-
----
-
 ## Workflow
 
 The `porting` skill describes how to port each part, on top of the `binding`
@@ -167,19 +123,32 @@ the jobs already running on the host, as the `concurrency` skill describes: give
 through the command's environment, never by editing a committed command, and take the
 whole host only when nothing else runs on it.
 
-### 1. Analysis
+### 1. Route
+
+Your worklist has one homogeneous route:
+
+| route | items | output |
+|---|---|---|
+| `type` | structs, unions, enums, type-generating macros | native representation, lifecycle, field access |
+| `symbol` | functions, globals, callback typedefs | native implementation, re-exported to C |
+
+Verify the route before editing. Type-generating macros use `type`; callback typedefs use
+`symbol`. A dependency outside the selected migration set is not yours to port: the binder
+wraps it.
+
+### 2. Analysis
 
 Analyze your worklist's items in the C code, as well as their dependencies. Use the hints
 given in the `binding` skill's Item analysis.
 
-### 2. Rust home
+### 3. Rust home
 
 Every item in the worklist names the authored `.rs` file it belongs in. Use it. Use the `conventions` skill for homing un-homed items.
 
 Use filled anchors as context. A `Wraps` anchor on an item of your worklist marks the
 binding your port replaces with a `Replaces` one, its alias kept.
 
-### 3. Raw binding synthesis
+### 4. Raw binding synthesis
 
 When a raw binding is missing:
 
@@ -197,14 +166,16 @@ Create private builds when no matching build exists or the batch changes compile
 compiled shim. A bindgen allowlist or input-header change alone does not invalidate the C
 library.
 
-### 4. Porting
+### 5. Porting
 
 Port your worklist's items for your route as the `porting` skill describes, on top of the
-binding how-to's Macros and Safe boundary. When your worklist's objective is a later stage,
+`binding` skill's Item analysis, Macros and Safe boundary. Before you write an export or
+anything else your module's integration depends on, read the `porting-workflow` skill's
+Principles and Builds sections. When your worklist's objective is a later stage,
 `port/layout`, `port/memory` or `port/unexport`, carry out that stage on items that have
 already landed, as the `porting` skill's Later stages section describes.
 
-### 5. Testing
+### 6. Testing
 
 Emit the UB, equivalence and unit tests the `testing` skill describes for every
 item of your worklist, and close the coverage gaps of your worklist's C and Rust paths.
@@ -216,10 +187,11 @@ the sanitizer-instrumented builds described by `build.json` and fix any issues. 
 available, run it only on the tests you wrote and expect to trigger it, and run your own
 tests under Miri; the wave's and the module's gates belong to the review that follows.
 
-### 6. Landing
+### 7. Landing
 
 Commit one changeset, with your batch's dashboard rows, and land it on your integration branch as
-the `versioning` skill's Landing section describes.
+the `versioning` skill's Landing section describes. Fill your batch's landing cells in it, as the `accounting` skill's Landing cells section
+describes; its usage cells and the campaign cells are the orchestrator's.
 
 Land under the integration branch's landing lock, as the `versioning` skill's Landing lock
 section describes. Find your CLI's pid by walking up your shell's parent processes, and
@@ -232,15 +204,6 @@ After the rebase, do not rerun every gate by default. Reason about which gates a
 to catch a regression of the integration, from what your change and the rebased-in changes
 touch and how they could interact, and rerun those; say in your final message which you
 reran and why the others could not have changed.
-
----
-
-## Skills
-
-- `binding`: its Item analysis, Macros and Safe boundary apply to every item you port.
-- `porting-workflow`: its Principles and Builds, before you write exports or anything
-  integration depends on.
-- `accounting`: your batch's landing cells are yours; the usage and campaign cells are not.
 
 ---
 

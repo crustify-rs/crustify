@@ -85,45 +85,16 @@ and how its tools serve each part. Each sits at `${CLAUDE_PLUGIN_ROOT}/skills/<g
 and is named here by its name. Invoke a skill with your Skill tool, as `crustify:<name>`,
 or read its `SKILL.md` where no Skill tool is offered.
 
-Every skill is indexed below, with what it covers and the step it is read before. Read a
-skill in full before that step, and again after your context has been compacted, before you
-continue the step. A skill describes; this prompt says which parts are yours: the Skills
-section at its end adds only what your role changes in the index, such as a skill of which
-one section applies to you, or one you follow only in some runs.
+Every skill is listed in your context with what it covers and the step it is read
+before. Read a skill in full before that step, and again after your context has been
+compacted, before you continue the step. A skill describes; this prompt says which parts are
+yours, and your workflow names a skill wherever only part of it applies to you.
 
 The tool skills, under `skills/tools/`, describe how each installed tool serves each
-stage. Before your first step, read every tool skill the index lists, and read each tool's
+stage. Before your first step, read every tool skill listed, and read each tool's
 own documentation that its skill names in full before the tool's first use. Each tool is
 installed on your `PATH` or in your build. A tool without a skill is not installed: its
 uses do not apply.
-
-- `audit-workflow` (workflows): How an audit of an existing Rust crate proceeds: its review waves, scope and results. Read before running an audit campaign.
-- `binding-workflow` (workflows): How a wrap or port campaign proceeds from setup to landed modules: planner runs, the Rust tree, module order, waves and batches, review batches, shipping and accounting. Read before running a translation campaign's planning, waves or shipping.
-- `porting-workflow` (workflows): The principles a port campaign follows and where it differs from binding: Rust consumers, tests tied to modules, one language per module, integration builds. Read before porting a module or integrating one.
-- `setup` (workflows): How every campaign starts: provisioning, its repository, artifact tree, the target's build variants, the test baseline and the preflight before the first wave. Read before setting up or resuming a campaign's setup.
-- `decomposition` (planning): How the target's build becomes modules.json: planner runs, modules, bundling of headers and tests, dependencies, objectives, foundational modules. Read before decomposing or re-deriving a plan.
-- `dependencies` (planning): How a campaign reaches libraries from outside its tree: wrappers, side campaigns, sources, reuse, adopted crates. Read before planning or advancing an out-of-tree library's wrapper.
-- `scheduling` (planning): How modules become waves and batches in schedule.json: order and cuts, waves, batch packing, wrap batches ahead of consumers, later port stages. Read before scheduling, packing a wave's batches or wrapping dependencies ahead.
-- `bindgen` (rust): How the raw bindings are laid out, generated, built in each mode, landed and published. Read before changing allowlists, shims, wrapper headers or build.rs, or scaffolding the bindings.
-- `binding` (rust): How a scheduled C item becomes a safe Rust binding: item analysis, macros, the safe boundary, the type route and the symbol route. Read before binding any item, and when reviewing bindings.
-- `conventions` (rust): Naming, tree layout, anchors and test placement of the Rust a campaign generates. Read before writing, homing or reviewing generated Rust or tests.
-- `porting` (rust): How a scheduled C item is reimplemented in safe Rust: surface, storage and layout, lifecycle, symbols and their exports, later stages. Read before porting any item, and when reviewing ports.
-- `toolchain` (rust): Toolchains, edition, manifests, lints, formatting and unsafe-code rules of the generated workspace. Read before scaffolding the workspace or when a lint, format or toolchain question comes up.
-- `reviewing` (verification): How landed work is reviewed: review batches, worklists, objectives, reports, reproducers, fixes, gates and plan corrections. Read before reviewing a batch, filing a finding or correcting an earlier plan.
-- `testing` (verification): How work is tested: test kinds, prebuilt builds, coverage, UB tests under sanitizers and Miri, equivalence and unit tests, regression gates. Read before writing tests or running a batch's gates.
-- `accounting` (operations): The dashboard, its cells, the runs' records and transcripts, and how cost and time are derived. Read before filling dashboard cells or collecting a run's records.
-- `concurrency` (operations): How much work runs at once on the host: agents in flight and each build's or test's job count. Read before launching a wave's agents or running parallel builds and gates.
-- `layout` (operations): Where a campaign's files sit: the tree, batch ids, artifact dirs, Crustify's home, scratch and reviews dirs. Read before creating run dirs or placing any campaign file.
-- `usage` (operations): How an agent session's tokens, cost and interval are derived from its transcript with crustify-usage, the script beside this skill, and how its rates are kept so figures never move. Read before pricing a run or filling a usage cell.
-- `versioning` (operations): Repositories, branches, worktrees, landing under the landing lock, promotion, integration and their lifecycle. Read before creating, landing on, promoting or purging any branch or worktree.
-- `dependencies-schema` (artifacts): The fields of dependencies.json. Read before writing or reading dependencies.json.
-- `modules-schema` (artifacts): The fields of modules.json. Read before writing or reading modules.json.
-- `schedule-schema` (artifacts): The fields of schedule.json: modules, waves, items, batches, progress, indices and re-planning. Read before writing or reading schedule.json.
-- `task-schema` (artifacts): The fields of a run's task.json: run fields, batch fields, routes and items. Read before writing or reading a task.json.
-- `ffibox` (tools): The library the campaign's Rust holds C memory through: owners, handles, lifecycle policies and C/Rust interop primitives. Read before writing any wrapper, owner or lifecycle strategy, and when testing or reviewing one.
-- `ffimap` (tools): Deterministic counts and sites of a Rust crate's unsafe and FFI surface. Read before a batch lands (its safe-boundary scan and safety-audit cells), before planning an audit's worksets, and when reviewing for unsafety, contracts or UB.
-- `wavefront` (tools): Deterministic queries and dependency-ordered plans over the C codebase (CodeQL tables, ownership store, T3 cast tables). Read before planning, decomposing or scheduling, before analysing or binding an item, when packing wrap batches, and when reviewing pointer findings or lifecycles.
-- `authoring` (crustify): How Crustify itself is organized: skills, roles, tool skills and the plugin, and where each kind of text goes. Read before changing Crustify or writing a task message for an agent.
 
 ---
 
@@ -142,7 +113,17 @@ and give every commit you make that identity, as Identity above describes.
 
 ---
 
-## Worklists and objectives
+## Workflow
+
+The `reviewing` skill describes what each objective looks for, what makes a
+finding, and how it is filed and fixed.
+
+Set the parallelism of every build, test run and gate you start when you start it, from
+the jobs already running on the host, as the `concurrency` skill describes: give it
+through the command's environment, never by editing a committed command, and take the
+whole host only when nothing else runs on it.
+
+### 1. Workset and objectives
 
 Your worklist has one route, as the `reviewing` skill's Worklists section describes.
 In a Crustify campaign it carries the commits of one or more translation batches of your
@@ -157,9 +138,19 @@ contributes. Review only for the objectives listed in your inputs, and skip what
 instructions say about the others. `fix` decides whether you patch what you find, and
 `disclose` whether you draft a disclosure notice for each finding.
 
-## Artifact dirs
+### 2. Analysis
 
-`<reviews-dir>` is your reviews dir, `crustify/reviews/<batch id>/`, with your batch id from your inputs. File each
+Analyze your workset in the Rust code and the C code it binds or ports. Use the hints given
+in the `binding` skill's Item analysis. Look for the findings of each objective listed
+in your inputs. Try to break every contract you review, and rerun every report you
+revisit. Judge your workset's raw bindings against the `bindgen` skill, its bindings
+against the `binding` skill and its ports against the `porting` skill, and, in a
+Crustify-generated batch only, its Rust against the `conventions` skill.
+
+### 3. Evidence
+
+`<reviews-dir>` is your reviews dir, `crustify/reviews/<batch id>/`, with your batch id from your inputs, as
+the `layout` skill's Reviews section describes. File each
 finding in the sub-directory of its objective, as the `reviewing` skill's Reports
 section lists them. A tool's skill may define sub-directories of its own for findings on
 the tool's output.
@@ -169,41 +160,21 @@ is not filed in your reviews dir. Emit its reproducer and report on a dedicated 
 worktree of that tool's local checkout. If `fix` is enabled, add the patch there too. If
 `fix` is not enabled, do not.
 
----
-
-## Workflow
-
-The `reviewing` skill describes what each objective looks for, what makes a
-finding, and how it is filed and fixed.
-
-Set the parallelism of every build, test run and gate you start when you start it, from
-the jobs already running on the host, as the `concurrency` skill describes: give it
-through the command's environment, never by editing a committed command, and take the
-whole host only when nothing else runs on it.
-
-### 1. Analysis
-
-Analyze your workset in the Rust code and the C code it binds or ports. Use the hints given
-in the `binding` skill's Item analysis. Look for the findings of each objective listed
-in your inputs. Try to break every contract you review, and rerun every report you
-revisit.
-
-### 2. Evidence
-
 File every finding in its own `<slug>` directory, with its report and, where the Reproducers
 section asks for one, its reproducer. Prove every `ub` and `equiv` candidate, and every
 contract you claim can be broken, with a reproducer before you file it, and check that an
 `equiv` divergence is not deliberate. If `disclose` is listed, draft each finding's
 `disclosure.md`.
 
-### 3. Fixes
+### 4. Fixes
 
 If `fix` is not enabled, skip this step, except for coverage gaps when `coverage` is listed
 and for the gates in the Regressions step that follows: change nothing in the Rust tree outside
 `crustify/reviews/` but the tests that fill the coverage gaps.
 
 If `fix` is enabled, patch every finding of your objectives as the `reviewing` skill's
-Fixes section describes, and turn each reproducer into the regression test it names.
+Fixes section describes, and turn each reproducer into the regression test it names. In a
+Crustify-generated batch, every change you make follows the `conventions` skill.
 
 If `coverage` is listed, whether or not `fix` is, add the tests that fill the coverage gaps
 you found to the codebase's test suites. Classify and place every test you add as the
@@ -230,10 +201,12 @@ after your rebase under the landing lock those relevant to its integration, as t
 step describes.
 If `fix` is not enabled, file each true positive a gate finds as a UB report.
 
-### 4. Landing
+### 5. Landing
 
 Make two commits, first the `crustify/reviews/` changes, then the Rust tree changes, if you
-made any, with your batch's dashboard rows in the last, and land them on your integration branch as the `versioning` skill's Landing section describes.
+made any, with your batch's dashboard rows in the last, and land them on your integration
+branch as the `versioning` skill's Landing section describes. Fill your batch's landing cells in it, as the `accounting` skill's Landing cells section
+describes; its usage cells and the campaign cells are the orchestrator's.
 
 Land under the integration branch's landing lock, as the `versioning` skill's Landing lock
 section describes. Find your CLI's pid by walking up your shell's parent processes, and
@@ -246,18 +219,6 @@ After the rebase, do not rerun every gate by default. Reason about which gates a
 to catch a regression of the integration, from what your change and the rebased-in changes
 touch and how they could interact, and rerun those; say in your final message which you
 reran and why the others could not have changed.
-
----
-
-## Skills
-
-- `conventions`: only when you review a Crustify-generated batch: judge its Rust against
-  it, and follow it in every change you make; otherwise ignore it.
-- `bindgen`, `binding` and `porting`: what your workset's raw bindings, bindings and ports
-  are judged against.
-- `layout`: its Reviews section, for your reviews dir.
-- `accounting`: your review batch's landing cells are yours; the usage and campaign cells
-  are not.
 
 ---
 

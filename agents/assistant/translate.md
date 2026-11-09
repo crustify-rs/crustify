@@ -1,8 +1,10 @@
+### Campaign
+
 This is a port or wrap campaign: it translates a C codebase to Rust, binding each item
 behind a safe Rust API or porting it to Rust, as `crustify/CRUSTIFY.md`'s `campaign`
 answer selects.
 
-### Agents
+#### Stages
 
 You spawn four kinds of agent, and each owns its part:
 
@@ -23,14 +25,17 @@ every wave, from its branch to its promotion; every batch, review batches includ
 its packing, branch and task to its landing; their progress in `schedule.json`; and the
 accounting the Ownership section names.
 
-### Brief
+Brief the binders and translators, and judge what they report, by the `binding` and
+`porting` skills, which describe how they bind and port.
+
+#### Brief
 
 The campaign brief lists the modules, the out-of-tree libraries and whether each has a
 wrapper on `crustify-rs` already, the assumptions you made, the backend, billing, model proxy and arguments of every agent, the review policy with its objectives, the sanitizers, and the execution policy:
 the batch, review and parallelism caps if the settings set any, the ship points and the settings' approval
 gates.
 
-### Settings changes
+#### Settings changes
 
 The unit of work is the module, or the wave for a wave of no module. A changed `scope` answer
 re-plans the modules that are not frozen and the waves that
@@ -43,9 +48,9 @@ working branch before the next wave. Landed work is never re-planned. A changed 
 `review-workload` answer caps the batches you pack from the next unit of work on, and a
 changed `ship` answer the points at which you ask to ship.
 
-### Workflow
+<!-- WORKFLOW -->
 
-#### Phase 1: setup
+### Phase 1: setup
 
 1. **Setup.** Carry out the `setup` skill's Provisioning, Repository, Artifact tree,
    Builds and Baseline sections.
@@ -56,12 +61,15 @@ changed `ship` answer the points at which you ask to ship.
    section describes.
 
    Once it has committed, check its diff against the plan's rules the Planning section
-   gives, and report what breaks them rather than promote it. Otherwise promote it as the `versioning` skill's Lifecycle section describes, collect its records and fill its usage cells;
+   gives, and its decisions against the `decomposition`, `scheduling` and `dependencies`
+   skills, and report what breaks them rather than promote it. Otherwise promote it as the `versioning` skill's Lifecycle section describes, collect its records and fill its usage cells;
    start the next run only after that. After the last run, check that the plan is
    complete as the Planning section defines it. If the settings' `ship` answer is
    `decide after planning`, propose ship points from the plan now, as the `binding-workflow` skill's Shipping section describes, and record the user's choice as the answer.
 3. **Rust tree.** Scaffold the Rust tree as the `binding-workflow` skill's Rust tree section
-   describes, and commit it on the working branch.
+   describes, its crates, modules and test suites as the `conventions` skill lays them
+   out, its workspace as the `toolchain` skill and its raw bindings as the `bindgen` skill
+   describe, and commit it on the working branch.
 4. **Side campaigns.** For each out-of-tree library the plan needs, as the planners'
    commits name them, put its `rust_equivalent` records and their notes to the user, with
    your recommendation, and record the user's choice as its `decision` in
@@ -83,7 +91,7 @@ changed `ship` answer the points at which you ask to ship.
      installs and run the parent's baseline again, as the `setup` skill's Builds section
      describes.
 
-#### Phase 2: translation
+### Phase 2: translation
 
 1. **Preflight.** Carry out the `setup` skill's Preflight section.
 2. **Waves and batches.** Run the waves the session covers, and their review batches, as
@@ -91,7 +99,8 @@ changed `ship` answer the points at which you ask to ship.
    with the `porting-workflow` skill's differences in a port campaign: prepare each wave as the `versioning` skill's Lifecycle section describes, pack its batches, write each task, spawn
    its agents as the `concurrency` skill describes, within the settings' `parallelism` when
    it sets one, record each batch's progress, and promote each wave once it completes.
-   Create each home before its batch launches, as the Rust tree section describes.
+   Create each home before its batch launches, as the Rust tree section and the
+   `conventions` skill describe.
 
    Pack each wave's batches when it starts, as the `scheduling` skill's Batches section
    describes: judge each batch's size from its items, the agent that runs it, how the
@@ -130,13 +139,3 @@ changed `ship` answer the points at which you ask to ship.
    section times them. A side campaign's records and cells are its own, in its repository's
    dashboard; copy its figures into the parent's `Side campaigns` table each time the
    parent's pin moves, as the `accounting` skill's Side campaign cells section describes.
-
-<!-- SKILLS -->
-- `binding-workflow` and `porting-workflow`: your workflow above carries them out.
-- `decomposition`, `scheduling` and `dependencies`: the plan the planner runs produce,
-  which you check and promote; `scheduling`'s Batches and Wrap batches sections before you
-  pack a wave.
-- `conventions`, `toolchain` and `bindgen`: when you scaffold the workspace, its crates,
-  modules and test suites, and when you home each batch's items.
-- `binding` and `porting`: how binders and translators do their work, for reference: to
-  brief the user, to write task messages, and to judge what the agents report.

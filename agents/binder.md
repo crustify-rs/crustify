@@ -13,20 +13,6 @@ and give every commit you make that identity, as Identity above describes.
 
 ---
 
-## Routes
-
-Each worklist has one homogeneous route:
-
-| route | items | output |
-|---|---|---|
-| `type` | structs, unions, enums, type-generating macros | representation, lifecycle, field accessors |
-| `symbol` | functions, globals, callback typedefs | safe wrapper |
-
-Verify the route before editing. Type-generating macros use `type`; callback typedefs use
-`symbol`.
-
----
-
 ## Workflow
 
 The `binding` skill describes how to produce each part.
@@ -36,18 +22,30 @@ the jobs already running on the host, as the `concurrency` skill describes: give
 through the command's environment, never by editing a committed command, and take the
 whole host only when nothing else runs on it.
 
-### 1. Analysis
+### 1. Route
+
+Your worklist has one homogeneous route:
+
+| route | items | output |
+|---|---|---|
+| `type` | structs, unions, enums, type-generating macros | representation, lifecycle, field accessors |
+| `symbol` | functions, globals, callback typedefs | safe wrapper |
+
+Verify the route before editing. Type-generating macros use `type`; callback typedefs use
+`symbol`.
+
+### 2. Analysis
 
 Analyze your workset's items in the C code, as well as their dependencies.
 Use the hints the `binding` skill's Item analysis gives.
 
-### 2. Rust home
+### 3. Rust home
 
 Every item in the worklist names the authored `.rs` file it belongs in. Use it. Use the `conventions` skill for homing un-homed items.
 
 Use filled anchors as context: they are completed work, not yours to revisit.
 
-### 3. Raw binding synthesis
+### 4. Raw binding synthesis
 
 When a raw binding is missing:
 
@@ -65,14 +63,15 @@ Create private builds when no matching build exists or the batch changes compile
 compiled shim. A bindgen allowlist or input-header change alone does not invalidate the C
 library.
 
-### 4. Safe binding synthesis
+### 5. Safe binding synthesis
 
-Emit your worklist's Rust for your route as the `binding` skill describes.
+Emit your worklist's Rust as the `binding` skill describes, following its Type route or
+Symbol route, as your route.
 
 When `modules.json` marks your batch's module `foundational`, bind its items with a
 lifecycle role as its Lifecycle strategies section describes.
 
-### 5. Testing
+### 6. Testing
 
 Emit the UB, equivalence and unit tests the `testing` skill describes for every
 item of your worklist, and close the coverage gaps of your worklist's C and Rust paths.
@@ -84,10 +83,11 @@ the sanitizer-instrumented builds described by `build.json` and fix any issues. 
 available, run it only on the tests you wrote and expect to trigger it, and run your own
 tests under Miri; the wave's and the module's gates belong to the review that follows.
 
-### 6. Landing
+### 7. Landing
 
 Commit one changeset, with your batch's dashboard rows, and land it on your integration branch as
-the `versioning` skill's Landing section describes.
+the `versioning` skill's Landing section describes. Fill your batch's landing cells in it, as the `accounting` skill's Landing cells section
+describes; its usage cells and the campaign cells are the orchestrator's.
 
 Land under the integration branch's landing lock, as the `versioning` skill's Landing lock
 section describes. Find your CLI's pid by walking up your shell's parent processes, and
@@ -100,13 +100,6 @@ After the rebase, do not rerun every gate by default. Reason about which gates a
 to catch a regression of the integration, from what your change and the rebased-in changes
 touch and how they could interact, and rerun those; say in your final message which you
 reran and why the others could not have changed.
-
----
-
-## Skills
-
-- `binding`: follow its Type route or Symbol route, as your batch's route.
-- `accounting`: your batch's landing cells are yours; the usage and campaign cells are not.
 
 ---
 

@@ -184,6 +184,15 @@ follows before the step they serve.
 Each agent's authoritative procedure is its file under [`agents/`](agents/): the
 assistant, and the planner, binder, translator and reviewer stages.
 
+Each agent's file holds its Role, its Workflow and its Inputs. On a host without a provider
+of its own, [`providers/generic/compose.py`](providers/generic/compose.py) prints an
+agent's whole prompt, with the index of every skill:
+
+```bash
+python3 providers/generic/compose.py binder
+python3 providers/generic/compose.py assistant audit
+```
+
 ### Claude Code
 
 Crustify's checkout is a Claude Code plugin, through its provider under

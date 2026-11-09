@@ -10,13 +10,9 @@ owns the rest: the builds and baselines you plan from, the Rust tree, the agents
 execute your schedule, the progress fields of `schedule.json`, each module's `status`,
 each wrapper's `pin`, the side campaigns, and the campaign's accounting.
 
-Give every commit you make the identity Identity above describes.
-
----
-
-## Task
-
-Plan the campaign your repository's `crustify/CRUSTIFY.md` sets, within the bounds the `decomposition` skill's introduction gives.
+You plan the campaign your repository's `crustify/CRUSTIFY.md` sets, within the bounds the
+`decomposition` skill's introduction gives. Give every commit you make the identity
+Identity above describes.
 
 ---
 
@@ -73,7 +69,8 @@ reimplementing or binding the target in your commit message.
 Record each module's and link unit's `depends_on`, then record the order of the modules
 and plan the waves of the units your scope adds, each with its items and their
 objectives, into `schedule.json`, from `templates/schedule.json`, as the `scheduling` skill
-describes. Plan no batches, and no wrap batches ahead of a cut dependency's consumers:
+describes, each item's `home` as the `conventions` skill's Crates, modules, and TUs section
+places it. Plan no batches, and no wrap batches ahead of a cut dependency's consumers:
 both are packed when their wave starts. Plan no waves that replace raw seams.
 
 For each out-of-tree library your waves need, check `github.com/crustify-rs` for its
@@ -89,15 +86,9 @@ keeps it there, in your commit message.
 Commit everything you created or changed on your branch, reports and your run's
 dashboard row included, in one commit whose message summarizes what you added, updated
 to the current schema and corrected, names the waves you appended and re-planned, and
-lists the reports you filed.
-
----
-
-## Skills
-
-- `conventions`: each batch item's `home` follows it.
-- `reviewing`: only its Plan corrections section applies to you.
-- `accounting`: your run's landing cells are yours; its usage and campaign cells are not.
+lists the reports you filed. Fill your run's landing cells in its dashboard row, as the
+`accounting` skill's Landing cells section describes; its usage cells are the
+orchestrator's.
 
 ---
 

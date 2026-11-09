@@ -76,23 +76,33 @@ purge every level of the `layout` skill's Lifecycle section"), and adds only wha
 skills leave to it: the commands it runs, the judgements it makes, the cases it must not
 handle itself.
 
-Every agent's prompt opens with `agents/common.md`: the identity every commit takes, how
-skills and tool skills are read, and the index of every skill, which a provider generates
-at its `<!-- SKILL INDEX -->` marker from the skills' names and descriptions, so that every
-agent sees every skill and each description is written once. Its own text follows, and
-closes with two sections: `## Skills`, what its role changes in the index, such as a skill
-of which only one section applies to it or one it follows only in some runs, never a
-step the description already names; and `## Inputs`, what its task message names, which also says that the
-instructions a task message adds take precedence where they conflict with the rest. An
-agent's file names no value of one run: an integration branch or a batch id is "the one
+Every agent's prompt opens with `agents/common.md`: the identity every commit takes, and
+how skills and tool skills are read. Every agent sees every skill, with its description:
+its host lists them, or, for a host that does not, the provider fills the index of every
+skill at common's `<!-- SKILL INDEX -->` marker from the skills' names and descriptions, so
+that each description is written once.
+
+The agent's own file follows, in three sections, every agent alike:
+
+- `## Role`: who the agent is, its place among the agents, what it owns and what it leaves
+  to others;
+- `## Workflow`: its steps, each naming the skills it follows. A skill the description
+  already sends the agent to before a step needs no mention; a step names a skill where
+  only part of it applies to the agent, or where the agent follows it only in some runs;
+  and
+- `## Inputs`: what its task message names, which also says that the instructions a task
+  message adds take precedence where they conflict with the rest.
+
+An agent's file names no value of one run: an integration branch or a batch id is "the one
 your task message names". `{crustify_root}` stands for the path of Crustify's checkout,
 which a provider fills.
 
 The assistant has one file for every kind of campaign, `agents/assistant/assistant.md`, with a
-`<!-- CAMPAIGN -->` marker and a `<!-- CAMPAIGN SKILLS -->` marker, which take the campaign
-kind's file, `agents/assistant/translate.md` for a port or wrap campaign or
-`agents/assistant/audit.md` for an audit: what the assistant owns in that kind of campaign
-and its steps, and, after its `<!-- SKILLS -->` marker, the skills only that kind follows.
+`<!-- CAMPAIGN ROLE -->` marker at the end of its Role and a `<!-- CAMPAIGN WORKFLOW -->`
+marker as its Workflow, which take the campaign kind's file,
+`agents/assistant/translate.md` for a port or wrap campaign or `agents/assistant/audit.md`
+for an audit: its `### Campaign` section, what the assistant owns in that kind of campaign,
+and, after its `<!-- WORKFLOW -->` marker, its steps.
 
 ### 1.3 Tool skills
 
@@ -143,6 +153,12 @@ A provider serves the layers to one agent host, in that host's format, and holds
 the layers do not: every file it carries is generated from them, wires them in, or carries
 what its host needs of its own.
 
+The generic provider, `providers/generic/`, composes each agent's prompt for any host:
+`compose.py <agent> [<kind>]` prints `agents/common.md`, with the skill index filled, and
+the agent's file, the assistant's with its campaign kind's. A host without a provider of
+its own takes that prompt as its agent's instructions, and reads each skill's `SKILL.md`
+by its path. The other providers compose through it.
+
 The Claude Code provider, `providers/claude/`, makes Crustify's checkout a plugin, whose
 manifest is `.claude-plugin/plugin.json`:
 
@@ -150,7 +166,8 @@ manifest is `.claude-plugin/plugin.json`:
 - `agents/`, one plugin agent per stage, `crustify:<stage>`, and one assistant per campaign
   kind, `crustify:assistant-translate` and `crustify:assistant-audit`. A plugin agent's
   body replaces Claude Code's own system prompt, so each body opens with that prompt,
-  `system-prompt.md`, followed by `agents/common.md` and the agent's file. Each agent's
+  `system-prompt.md`, followed by the generic provider's prompt without the skill index,
+  since Claude Code lists the plugin's skills to every agent. Each agent's
   frontmatter gives the description the assistant routes a run by;
 - `system-prompt.md`, Claude Code's own system prompt, captured from a real request by
   `dump-system-prompt.py`, less its one project's `# Memory` section, and dumped again
