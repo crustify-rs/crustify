@@ -33,6 +33,9 @@ Once no C uses it, the enum is fully nativized: a closed enum becomes a Rust enu
 variant for each of its constants, by its `port/unexport`, as
 [Later stages](#5-later-stages) describes, or by its port when no remaining C uses it by
 then.
+<!-- TODO: wavefront computes `unreferenced_after` only for functions and globals, and
+schedules enums only `--with-enums`: it has yet to count an enum's referrers and tell a
+closed enum from a flags one, so no enum's `port/unexport` is planned yet. -->
 
 ## 2. Storage and layout
 
