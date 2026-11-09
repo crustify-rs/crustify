@@ -160,38 +160,49 @@ GPT-6.1-Sol some of the wrapping.
 The campaign results and code are available at
 [crustify-rs/ffmpeg-bindings](https://github.com/crustify-rs/ffmpeg-bindings).
 
-## Specifications
+## Skills and agents
 
-Crustify comes with a set of specifications, under [`specs/`](specs/), for how each step
-of a port, wrap or audit campaign is done: from the campaign's layout and the
-decomposition of the codebase, through its scheduling, to the safety and soundness of the
-bindings and ports it generates. They describe the work rather than who does it, and
-every agent's prompt includes the ones it follows.
+Crustify's specifications are skills, under [`skills/`](skills/), one per part of a port,
+wrap or audit campaign: from the campaign's layout and the decomposition of the codebase,
+through its scheduling, to the safety and soundness of the bindings and ports it
+generates. They describe the work rather than who does it, and each agent reads the ones it
+follows before the step they serve.
 
-- [`specs/workflows/`](specs/workflows/): how each kind of campaign proceeds: its shared
+- [`skills/workflows/`](skills/workflows/): how each kind of campaign proceeds: its shared
   setup, and the binding, porting and audit workflows
-- [`specs/planning/`](specs/planning/): how the codebase is decomposed into modules, one
+- [`skills/planning/`](skills/planning/): how the codebase is decomposed into modules, one
   per translation unit, with their objectives and dependencies; how the modules are
   ordered and scheduled into waves and batches; and how the libraries the target uses
   from outside its tree are wrapped, and their wrappers reused across campaigns
-- [`specs/rust/`](specs/rust/): the generated Rust: its conventions and tree layout, the
-  toolchains, edition, lints and formatting it is held to, the `-sys` crates, and under
-  [`items/`](specs/rust/items/) how an item is wrapped or ported
-- [`specs/verification/`](specs/verification/): how the work is tested, and how landed
+- [`skills/rust/`](skills/rust/): the generated Rust: its conventions and tree layout, the
+  toolchains, edition, lints and formatting it is held to, the raw bindings, and how an
+  item is wrapped or ported
+- [`skills/verification/`](skills/verification/): how the work is tested, and how landed
   work and plans are reviewed
-- [`specs/operations/`](specs/operations/): a campaign's repositories, branches and
+- [`skills/operations/`](skills/operations/): a campaign's repositories, branches and
   worktrees, and how batches land and work is promoted and shipped; the repository's tree
   and artifact directories; how its work shares the host; and the dashboard, the session
   records and rates, and how cost is derived
-- [`specs/artifacts/`](specs/artifacts/): the fields of `modules.json`, `dependencies.json`, the campaign's
-  `schedule.json`, and `task.json`
-- [`specs/prompting.md`](specs/prompting.md): how the agents' prompts, specs and tool specs
-  are composed
+- [`skills/artifacts/`](skills/artifacts/): the fields of `modules.json`,
+  `dependencies.json`, the campaign's `schedule.json`, and `task.json`
+- [`skills/tools/`](skills/tools/): how wavefront, ffimap and ffibox serve each stage
+- [`skills/crustify/`](skills/crustify/): how Crustify itself is organized
 - [`templates/`](templates/README.md): an example of each artifact, the settings and
   dashboard templates, and the Dockerfile
 
-Each agent's authoritative procedure is its prompt, under
-[`src/crustify/prompts/`](src/crustify/prompts/).
+Each agent's authoritative procedure is its file under [`agents/`](agents/): the
+assistant, and the planner, binder, translator and reviewer stages.
+
+### Claude Code
+
+Crustify's checkout is a Claude Code plugin, through its adapter under
+[`adapters/claude/`](adapters/claude/): the skills, one agent per stage, and hooks that
+make a session opened in a campaign's repository Crustify's assistant. To try it from a
+checkout:
+
+```bash
+claude --plugin-dir <crustify checkout>
+```
 
 ## Maintainers
 

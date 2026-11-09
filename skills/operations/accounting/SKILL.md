@@ -1,0 +1,114 @@
+---
+name: accounting
+description: "The dashboard, its cells, session records and transcripts, and how cost and time are derived. Read before filling dashboard cells or collecting a run's records."
+---
+
+# Accounting
+
+What a campaign records about its own work: the dashboard, the session records and
+transcripts its figures come from, and how cost and time are derived from them.
+
+## 1. The dashboard
+
+The dashboard, `crustify/artifacts/dashboard.md` unless the settings name another, is the
+campaign's record of what each planner run, batch, wave and module did and cost. It is
+filled from `templates/translate/dashboard.template.md`, an audit's from
+`templates/audit/dashboard.template.md`, and keeps the template's format exactly.
+
+It is tracked in the campaign's tree, so every agent's worktree holds a copy, and it is
+filled as the work lands rather than at the end. Each figure is measured once, where it is
+produced: no suite or scan is rerun only to record one.
+
+## 2. Cells
+
+The dashboard's cells fall into three kinds, by when their figures can be known.
+
+### 2.1 Landing cells
+
+The cells measured on the tree a landing commits:
+
+- for a batch, under the kind of each of its items: its rows in the kind's `Batches`, tests
+  and `Batches: safety audit` tables, and for a review batch in
+  `Batches — review: PoC + reports`, each placed in module, wave and batch order under
+  its `pass`; those tables' `Σ` rows; and the `Coverage stats` table and the Overview's LoC
+  line;
+- for a planner run, its row in `Planning`, but for its usage cells.
+
+They are filled in the landing's last commit, and measured against the integration branch
+tip it was rebased onto: coverage as [`testing`](../../verification/testing/SKILL.md)'s Coverage section measures
+it, and the safety audit columns as the changes in the dashboard's Safety audit metrics. A
+rebase that conflicts in the dashboard keeps every row both sides added, and the landing's
+cells, `Σ` rows included, are measured again where the gates its rebase reruns cover them;
+the others stand as measured on the batch's base.
+
+### 2.2 Usage cells
+
+The cells known only once an agent has ended, from its usage: its cost, tokens and wall,
+the per-unit costs derived from them, and their `Σ` cells. A batch's are filled on the
+working branch once its row is there, once its module is integrated, as
+[`versioning`](../versioning/SKILL.md) describes. A planner run's are filled once the run is
+promoted. A batch run more than once costs the sum of its runs.
+
+### 2.3 Campaign cells
+
+The cells that span agents: the `Module stats` table, the Overview's branch line and
+test baseline, and the `Settings` lines. A module's row and the branch line are filled
+when the module is integrated, the baseline once it is recorded, and the `Settings` lines,
+with a Notes entry, whenever a settings change is applied.
+
+### 2.4 Side campaign cells
+
+A side campaign keeps its own dashboard, in its own repository, and its figures are
+measured there. The parent's `Side campaigns` table copies them, one row per wrapper, as
+they stand at the commit the parent pins, and the `side campaigns` row of `Module stats`
+sums the rows, so that the parent's `Σ campaign` covers what its side campaigns cost. A
+wrapper's row is filled each time the parent's pin moves, and its `shipped at` cell when
+the wrapper ships the commit the parent pins. A side campaign that serves several parents
+appears in each, with the figures as of each one's pin.
+
+An audit's dashboard follows the same kinds over its own tables.
+
+## 3. Records
+
+Every agent's session leaves its `<role>.session.json` in its directory in crustify's
+home, `sessions/<session id>/`, as [`layout`](../layout/SKILL.md) describes: which agent it was,
+its backend, billing, model proxy and the arguments its CLI was given, its session id, and
+its exit status and interval. A spawned agent's run is tied to its session by the
+`session_id` the spawn command writes into its `task.json`. The session's transcript,
+which its CLI keeps by session id, is the agent's full log and the source of its
+accounting.
+
+A transcript is copied into crustify's home, as `transcripts/<session id>.jsonl`, as soon
+as its batch lands or fails, because the CLIs move and prune their own files. Its usage is
+derived from the copy, as its session record says the session ran:
+
+```bash
+crustify usage <session id> ~/.crustify/transcripts/<session id>.jsonl
+```
+
+`crustify usage` prices every request the transcript records, at the rates of the model
+proxy, or of the backend's own service without one, and reports the session's tokens,
+cost and interval as JSON. The transcript names the model of each request, but not the
+service that billed it. A session priced for the first time is priced at the rates fetched
+then, which are kept in crustify's home as `rates/<timestamp>.json` whenever they differ
+from the latest kept, and its session record names that snapshot as its `rates`; every
+later pricing of it uses the same snapshot, unless `--rates` names another, so its figures
+never move. Its usage is not kept: the dashboard holds its figures, and `crustify usage`
+gives them again.
+
+The assistant's sessions leave `assistant-<timestamp>.session.json` in their directories in
+crustify's home. At the start of each session, the transcripts of the sessions before it
+are collected the same way. A resumed session keeps its id while its transcript grows, so
+it leaves several session records with one id: its transcript is copied again after each
+run, replacing the earlier copy. The session records, transcripts and rates stay in
+crustify's home.
+
+## 4. Cost and time
+
+A run's cost and tokens are its usage's `total.cost_usd` and `total.tokens`, from
+`crustify usage` on its transcript. The computed cost is used, never a provider-reported
+dollar total; under subscription billing it is the API-equivalent cost.
+
+An agent's wall time is its usage's interval. A wave's runs from its first batch's
+launch through its final review and regression gates, a review wave's in an audit through
+its landing, and a module's from its first launch through its final gate.
