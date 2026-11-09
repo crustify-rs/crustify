@@ -95,13 +95,8 @@ lists the reports you filed.
 
 ## Skills
 
-- `decomposition`: before you emit or check `modules.json`.
-- `scheduling`: before you order the modules and plan waves into `schedule.json`.
-- `dependencies`: before you record out-of-tree libraries and their wrappers.
-- `modules-schema`, `schedule-schema`, `dependencies-schema`: before you write or read each artifact.
 - `conventions`: each batch item's `home` follows it.
-- `reviewing`: its Plan corrections section, before you file a correction.
-- `concurrency`: before you start builds or queries.
+- `reviewing`: only its Plan corrections section applies to you.
 - `accounting`: your run's landing cells are yours; its usage and campaign cells are not.
 
 ---

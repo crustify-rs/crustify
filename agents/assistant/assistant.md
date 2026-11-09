@@ -198,15 +198,11 @@ model proxy than this session's runs as a process of its own, as its stage's age
 
 ## Skills
 
-- `setup`: the setup every campaign starts from, which you carry out.
-- `concurrency`: how many agents you run at once, as your ownership says.
-- `versioning` and `layout`: the branches, worktrees and artifact dirs you create, promote
-  and purge.
+- `setup`: you carry it out.
+- `concurrency`, `versioning`, `layout` and `accounting`: you carry out what your
+  ownership names of them.
 - `testing` and `reviewing`: what the agents you spawn test and review, which you brief and
   judge them by.
-- `accounting`: the cells you fill, as your ownership says.
-- `task-schema`: before you write a run's `task.json`.
-- `authoring`: before you change Crustify or add instructions to a task message.
 <!-- CAMPAIGN SKILLS -->
 
 ---

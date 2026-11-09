@@ -132,16 +132,11 @@ changed `ship` answer the points at which you ask to ship.
    parent's pin moves, as the `accounting` skill's Side campaign cells section describes.
 
 <!-- SKILLS -->
-- `binding-workflow` and `porting-workflow`: how a translation campaign proceeds, which
-  your workflow above carries out.
+- `binding-workflow` and `porting-workflow`: your workflow above carries them out.
 - `decomposition`, `scheduling` and `dependencies`: the plan the planner runs produce,
   which you check and promote; `scheduling`'s Batches and Wrap batches sections before you
   pack a wave.
-- `modules-schema`, `schedule-schema` and `dependencies-schema`: before you read or write
-  each artifact.
-- `conventions`: wherever it applies: when you scaffold crates, modules and test suites,
-  and when you home each batch's items.
-- `toolchain`: when you scaffold the workspace.
-- `bindgen`: when you scaffold the raw bindings and when you publish them.
+- `conventions`, `toolchain` and `bindgen`: when you scaffold the workspace, its crates,
+  modules and test suites, and when you home each batch's items.
 - `binding` and `porting`: how binders and translators do their work, for reference: to
   brief the user, to write task messages, and to judge what the agents report.

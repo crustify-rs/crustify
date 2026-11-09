@@ -56,8 +56,22 @@ def _claude_system_prompt() -> str:
     return re.sub(r"^<!--.*?-->\s*", "", text, flags=re.S).strip() + "\n\n---\n\n"
 
 
+def skill_index() -> str:
+    """Every skill's name and description, by group in the manifest's order."""
+    groups = json.loads((ROOT / ".claude-plugin" / "plugin.json").read_text())["skills"]
+    lines = []
+    for group in groups:
+        for skill in sorted((ROOT / group).glob("*/SKILL.md")):
+            front = skill.read_text().split("---", 2)[1]
+            name = re.search(r"^name: (.+)$", front, re.M).group(1).strip()
+            description = json.loads(re.search(r"^description: (.+)$", front, re.M).group(1))
+            lines.append(f"- `{name}` ({Path(group).name}): {description}")
+    return "\n".join(lines)
+
+
 def _role(name: str) -> str:
-    return (ROLES / f"{name}.md").read_text()
+    text = (ROLES / f"{name}.md").read_text()
+    return text.replace("<!-- SKILL INDEX -->", skill_index()) if name == "common" else text
 
 
 def _answer(text: str, question: str) -> str | None:

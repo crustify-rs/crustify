@@ -48,4 +48,4 @@ The unit of work is the review wave.
    describes.
 
 <!-- SKILLS -->
-- `audit-workflow`: how an audit proceeds, which your workflow above carries out.
+- `audit-workflow`: your workflow above carries it out.

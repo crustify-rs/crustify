@@ -105,15 +105,8 @@ reran and why the others could not have changed.
 
 ## Skills
 
-- `conventions`: before you home, name or lay out your items and their tests, and throughout.
-- `toolchain`: in everything you write.
-- `bindgen`: before you add to a link unit's allowlists, shims or external types.
-- `binding`: before your analysis, and while you bind; follow its Type route or Symbol route for your route.
-- `testing`: before you write tests, and before you run your gates.
-- `versioning`: before you land: its Landing section and its Landing lock.
-- `concurrency`: before you start builds, tests or gates.
-- `accounting`: before your last commit: you fill your batch's landing cells; the usage and campaign cells are not yours.
-- `task-schema`: when you read your `task.json`.
+- `binding`: follow its Type route or Symbol route, as your batch's route.
+- `accounting`: your batch's landing cells are yours; the usage and campaign cells are not.
 
 ---
 

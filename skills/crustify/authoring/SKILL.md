@@ -18,7 +18,7 @@ Crustify is text in three layers, with one more per run:
 |---|---|---|---|
 | skills | `skills/<group>/<name>/SKILL.md` | descriptive, third person | what Crustify's artifacts are and how its work is done: workflows, how-tos, conventions, schemas |
 | tool skills | `skills/tools/<tool>/SKILL.md` | descriptive, third person | what each tool is, and how it serves each stage |
-| agents | `agents/<agent>.md`, with `agents/common.md`, and the assistant's under `agents/assistant/` | instructive, second person | an agent's identity, inputs, what it owns, its steps and its skill index |
+| agents | `agents/<agent>.md`, with `agents/common.md`, and the assistant's under `agents/assistant/` | instructive, second person | an agent's identity, inputs, what it owns, its steps and what its role changes in the skill index |
 | task messages | `task.md` beside a run's `task.json` | instructive | what one run is given: its inputs, and what it needs beyond its role |
 
 Each artifact's schema, the meaning of its fields, is a skill under `skills/artifacts/`,
@@ -76,10 +76,13 @@ purge every level of the `layout` skill's Lifecycle section"), and adds only wha
 skills leave to it: the commands it runs, the judgements it makes, the cases it must not
 handle itself.
 
-Every agent's prompt opens with `agents/common.md`: the identity every commit takes, and
-how skills and tool skills are read. Its own text follows, and closes with two sections:
-`## Skills`, its skill index, which names each skill it follows with the step it is read
-before; and `## Inputs`, what its task message names, which also says that the
+Every agent's prompt opens with `agents/common.md`: the identity every commit takes, how
+skills and tool skills are read, and the index of every skill, which a provider generates
+at its `<!-- SKILL INDEX -->` marker from the skills' names and descriptions, so that every
+agent sees every skill and each description is written once. Its own text follows, and
+closes with two sections: `## Skills`, what its role changes in the index, such as a skill
+of which only one section applies to it or one it follows only in some runs, never a
+step the description already names; and `## Inputs`, what its task message names, which also says that the
 instructions a task message adds take precedence where they conflict with the rest. An
 agent's file names no value of one run: an integration branch or a batch id is "the one
 your task message names". `{crustify_root}` stands for the path of Crustify's checkout,

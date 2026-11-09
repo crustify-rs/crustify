@@ -122,17 +122,13 @@ reran and why the others could not have changed.
 
 ## Skills
 
-- `reviewing`: before you start: the worklists, the objectives, and how findings are filed and fixed.
-- `conventions`: if you review a Crustify-generated batch, judge the Rust against it and follow it in every change you make; otherwise, ignore it.
-- `toolchain`: in everything you write.
-- `bindgen`: review the batches' changes to the raw bindings against it.
-- `binding` and `porting`: your workset's bindings and ported items are judged against them.
-- `testing`: before you write tests, and before you run gates, including the gates a review batch owns.
-- `layout`: your reviews dir.
-- `versioning`: before you land: its Landing section and its Landing lock.
-- `concurrency`: before you start builds, tests or gates.
-- `accounting`: before your last commit: you fill your review batch's landing cells; the usage and campaign cells are not yours.
-- `task-schema`: when you read your `task.json`.
+- `conventions`: only when you review a Crustify-generated batch: judge its Rust against
+  it, and follow it in every change you make; otherwise ignore it.
+- `bindgen`, `binding` and `porting`: what your workset's raw bindings, bindings and ports
+  are judged against.
+- `layout`: its Reviews section, for your reviews dir.
+- `accounting`: your review batch's landing cells are yours; the usage and campaign cells
+  are not.
 
 ---
 

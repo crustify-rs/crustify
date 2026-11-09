@@ -38,15 +38,19 @@ and how its tools serve each part. Each sits at `{crustify_root}/skills/<group>/
 and is named here by its name. Invoke a skill with your Skill tool, as `crustify:<name>`,
 or read its `SKILL.md` where no Skill tool is offered.
 
-Read a skill in full before the step it serves, as your Skills section below lists them,
-and again after your context has been compacted, before you continue that step. A skill
-describes; this prompt says which parts are yours.
+Every skill is indexed below, with what it covers and the step it is read before. Read a
+skill in full before that step, and again after your context has been compacted, before you
+continue the step. A skill describes; this prompt says which parts are yours: the Skills
+section at its end adds only what your role changes in the index, such as a skill of which
+one section applies to you, or one you follow only in some runs.
 
 The tool skills, under `skills/tools/`, describe how each installed tool serves each
-stage. Before your first step, read every tool skill your skill listing offers, and read
-each tool's own documentation that its skill names in full before the tool's first use.
-Each tool is installed on your `PATH` or in your build. A tool without a skill is not
-installed: its uses do not apply.
+stage. Before your first step, read every tool skill the index lists, and read each tool's
+own documentation that its skill names in full before the tool's first use. Each tool is
+installed on your `PATH` or in your build. A tool without a skill is not installed: its
+uses do not apply.
+
+<!-- SKILL INDEX -->
 
 ---
 
