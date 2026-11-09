@@ -121,13 +121,17 @@ workspace's `clippy::doc_markdown` lint requires of a path in a doc comment.
 | kind | item |
 |---|---|
 | `fn` | a function |
-| `ty` | a named type: a struct, a union, an enum or a callback typedef |
+| `st` | a struct |
+| `un` | a union |
+| `enm` | an enum, or one of its constants |
+| `ty` | a callback typedef |
 | `fld` | a member of a struct or union |
-| `var` | a global |
+| `glb` | a global |
 
 A path is made of names only: the names the source resolves the item by, outermost first,
-separated by `.`, as the source language scopes them. A function, a type or a global is its
-own name; a member is its struct's or union's path followed by the member's name, and a
+separated by `.`, as the source language scopes them. A function, a type, an enum's
+constant or a global is its own name, since C scopes a constant as it does its enum; a
+member is its struct's or union's path followed by the member's name, and a
 member of a member continues the path, as `fld::AVOption.default_val.i64`. An element
 without a name adds no step to the paths of what it holds:
 
@@ -142,7 +146,8 @@ An element without a name has no annotation of its own. The Rust item that stand
 it is annotated with the named member that holds it, or, when it is held by no name, with
 each member it stands in for. A type declared inside another is named as its language
 scopes it: a C struct tag has file scope, so a struct declared inside another is still
-`ty::<tag>`.
+`st::<tag>`. An enum without a name has no annotation of its own, and its constants keep
+theirs.
 
 The alias is the bare `<path>`, without the backticks, so that a consumer who searches the
 documentation for the source's name finds every item that stands in for it. The kind is
@@ -162,6 +167,8 @@ not necessarily the item that makes the FFI call:
   annotated need not be the one making the unsafe call.
 - a type: the layout newtype that defines the FFI type, handwritten or minted by
   `define_ctype!`.
+- an enum: the newtype that ports it, and each of its constants: the associated constant
+  that stands in for it.
 - a member: each of its accessors, the getter and the setter alike.
 
 ### 3.2 Several stand-ins

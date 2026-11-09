@@ -25,7 +25,8 @@ remaining C: the two are not linked, beyond the Rust type's annotation, as the
 associated constant for each of its constants, never a Rust enum: C may pass any value of
 that integer, which the newtype holds and a Rust enum may not. Its values cross the
 boundary unchanged, and an enum whose constants C combines as flags also implements the
-bitwise operators.
+bitwise operators. An enum without a name has no type to port: its constants become
+constants of its integer type.
 
 ## 2. Storage and layout
 
