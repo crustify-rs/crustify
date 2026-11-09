@@ -80,29 +80,18 @@ makes that enum its storage too.
 
 ### 2.3 Enums
 
-A ported enum is defined anew in Rust, and its header keeps the C definition for the
-remaining C: the two are not linked, beyond the Rust type's annotation, as the
-[conventions](../conventions/SKILL.md)' Anchors section describes.
+A ported enum takes the safe type [`binding`](../binding/SKILL.md)'s Enums section gives
+it, and its header keeps the C definition for the remaining C: the two are not linked,
+beyond the Rust type's annotation, as the [conventions](../conventions/SKILL.md)' Anchors
+section describes, and the enum is not exported.
 
-A closed enum is a Rust enum from its port, with a variant for each of its constants.
-While remaining C uses it, its constants or values of its type, it keeps an integer form
-for C: it is `#[repr]` over the enum's integer type, as bindgen gives it, each constant's
-value its variant's discriminant, and its values cross the boundary as that integer. A
-value from C is converted fallibly where it enters Rust, since C may pass one the enum does
-not name, which a Rust enum may not hold, and such a value is handled there as the C
-handled it.
-
-An enum whose constants C combines as flags is a `#[repr(transparent)]` newtype over its
-integer type, with an associated constant for each of its constants and the bitwise
-operators, since a combination is no variant. An enum without a name has no type to port:
-its constants become constants of its integer type. Neither has a later stage.
-
-A closed enum's later stage, `port/layout`, removes its integer form, its C layout, once no
-remaining C uses it: its `repr`, its discriminants and its conversions. A closed enum that
-no remaining C uses by its port has no integer form.
-<!-- TODO: wavefront computes `opaque_after` only for structs and unions, and schedules
-enums only `--with-enums`: it has yet to count an enum's layout users and tell a closed
-enum from a flags one, so no enum's `port/layout` is planned yet. -->
+A closed enum keeps its integer form, which binding's Enums section describes, only while
+remaining C uses it, its constants or values of its type. Its later stage, `port/layout`,
+removes that form, its C layout: its `repr`, its discriminants and its conversions. A
+closed enum that no remaining C uses by its port has no integer form, and a flags enum or
+an enum without a name has no later stage.
+<!-- TODO: no enum's `port/layout` is planned until wavefront schedules enums, as its
+skill's TODO says. -->
 
 ---
 
@@ -136,23 +125,16 @@ rustc's) would inline the export back into its C callers. -->
 
 ### 3.4 Macros
 
-A macro is ported to a Rust form of its own. A macro a TU defines has no C side to keep: it
+A macro takes the Rust form [`binding`](../binding/SKILL.md)'s Macros section gives it,
+which reaches the Rust items its expansion uses once they are ported. A macro a TU defines
 goes with its TU. A macro a header defines, internal or public API that another module's C
-may expand, also stays in its header for the remaining C, and its C and Rust forms are not
-linked, beyond the Rust form's annotation:
-
-- On the C side, the macro keeps expanding where remaining C invokes it, until its header
-  goes with the last C file that includes it, as
-  [`porting-workflow`](../../workflows/porting-workflow/SKILL.md)'s Principles section
-  describes: a type generator keeps minting the instances its remaining invocations
-  define, and what an expansion calls or accesses is reached as any remaining C reaches
-  it, a function or global Rust owns through its export, a type through its C layout. An
-  expansion site is a use by the function that holds it, so it holds back the later stages
-  of what it reaches, as [`scheduling`](../../planning/scheduling/SKILL.md)'s Later stages
-  section counts its users.
-- On the Rust side, the macro is ported natively: a type generator as one generic type,
-  its instances aliases of it; a constant macro as a `const`; a symbol alias through the
-  Rust that stands in for the symbol it names; and a macro that implements logic as a
-  function, `#[inline]`, `const` or generic as it needs, or as a `macro_rules!` only where
-  a function cannot express it: control flow that leaves its caller, token pasting or
-  stringification, an argument used as a place, or one evaluated lazily or more than once.
+may expand, also stays in its header for the remaining C, unexported, and its C and Rust
+forms are not linked, beyond the Rust form's annotation. It keeps expanding where remaining C
+invokes it, until its header goes with the last C file that includes it, as
+[`porting-workflow`](../../workflows/porting-workflow/SKILL.md)'s Principles section
+describes: a type generator keeps minting the instances its remaining invocations define,
+and what an expansion calls or accesses is reached as any remaining C reaches it, a
+function or global Rust owns through its export, a type through its C layout. An
+expansion site is a use by the function that holds it, so it holds back the later stages
+of what it reaches, as [`scheduling`](../../planning/scheduling/SKILL.md)'s Later stages
+section counts its users.

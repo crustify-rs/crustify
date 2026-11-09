@@ -59,16 +59,18 @@ that belongs to another TU, in the rare case one does, is homed with that TU.
 
 A shared header, one that carries no single TU's name, is split item by item:
 
-- a type goes to the TU that implements its lifecycle and its functionality;
+- a type goes to the TU that implements its lifecycle and its functionality, an enum to
+  the TU whose functions produce or consume its values;
 - a global goes to the TU that implements its logic; and
-- a `static inline` function goes to the module whose logic it implements, as the
-  functions it calls and the types it accesses show.
+- a `static inline` function or a macro goes to the module whose logic it implements, as
+  the functions it calls and the types it accesses show.
 
 A header that implements what no TU does, and so has no TU to go to, is a header module of
 its own. Each split is recorded with the file entries' `items` lists, which stay empty for
-a file a module owns whole. Macros are not homed: they are not translated, and a binding
-that needs one reaches it as [`binding`](../../rust/binding/SKILL.md)'s Macros section
-describes.
+a file a module owns whole. A macro is an entity of the module that owns the file defining
+it when it is API: a constant, a symbol alias, a type generator or logic. Include guards,
+configuration and feature-test macros and attribute macros are not: they are neither
+homed nor translated.
 
 A module also lists its tests: the test files tied to it, those whose subject it is. A
 test's subject is each module whose internals it uses, the fields or the layout of the

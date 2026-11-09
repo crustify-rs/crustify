@@ -35,8 +35,7 @@ shared and exclusive borrowed handles are `FooRef<'a>` and `FooMut<'a>`.
 
 ### 1.3 Shims
 
-A callable macro shim is `crustify_<NAME>`. Constant macros remain generated constants in
-the raw bindings.
+A callable macro shim is `crustify_<NAME>`.
 
 ### 1.4 Exports
 
@@ -127,6 +126,7 @@ workspace's `clippy::doc_markdown` lint requires of a path in a doc comment.
 | `cbk` | a callback typedef |
 | `fld` | a member of a struct or union |
 | `glb` | a global |
+| `mac` | a macro |
 
 A path is made of names only: the names the source resolves the item by, outermost first,
 separated by `.`, as the source language scopes them. A function, a type, an enum's
@@ -167,8 +167,10 @@ not necessarily the item that makes the FFI call:
   annotated need not be the one making the unsafe call.
 - a type: the layout newtype that defines the FFI type, handwritten or minted by
   `define_ctype!`.
-- an enum: the newtype that ports it, and each of its constants: the associated constant
-  that stands in for it.
+- an enum: the Rust enum or newtype that stands in for it, and each of its constants: the
+  variant or the constant that stands in for it.
+- a macro: the generic, `const`, function or `macro_rules!` that stands in for it; a type
+  generator's instances keep their own kinds, on the aliases.
 - a member: each of its accessors, the getter and the setter alike.
 
 ### 3.2 Several stand-ins

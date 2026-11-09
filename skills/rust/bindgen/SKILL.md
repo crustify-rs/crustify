@@ -57,8 +57,9 @@ campaign:
 - the output is formatted by bindgen's own formatter (`prettyplease`), never by the
   toolchain's `rustfmt`, whose output differs between toolchains, so that a nightly build
   regenerates the bytes a stable one committed;
-- enums are generated as constants (`Consts`), without the enum name as a prefix, and
-  used directly, as [`binding`](../binding/SKILL.md)'s Type route section describes;
+- enums are generated as constants (`Consts`), without the enum name as a prefix, which
+  the safe types that bind them convert, as [`binding`](../binding/SKILL.md)'s Enums
+  section describes;
 - `Default` is derived, and layout tests are generated;
 - C comments are kept as doc comments, and the generated modules' doctests are off, since
   they hold C;
@@ -153,8 +154,9 @@ lack extends its own link unit's input, and nothing else:
 
 1. its link unit's `allowlist.txt` gains only the FFI items its items need, and
    `wrapper.h` an internal header only when one of them is declared there;
-2. a shim is added to `shims.h` and `shims.c` only for what bindgen cannot bind, such as a
-   function-like macro, as `crustify_<NAME>`;
+2. a shim is added to `shims.h` and `shims.c` only for a macro whose expansion depends on
+   the build's configuration, as `crustify_<NAME>`, as
+   [`binding`](../binding/SKILL.md)'s Macros section describes;
 3. the bindings are regenerated, in campaign mode with `CRUSTIFY_BINDINGS_UPDATE` set; and
 4. the safe crate is built and tested against them.
 

@@ -1,6 +1,6 @@
 ---
 name: binding
-description: "How a scheduled C item becomes a safe Rust binding: the safe boundary, the type route with enums, and the symbol route with macros. Read before binding any item, and when reviewing bindings."
+description: "How a scheduled C item becomes a safe Rust binding: the safe boundary, the type route for structs, unions and enums, and the symbol route for functions, globals, callbacks and macros. Read before binding any item, and when reviewing bindings."
 ---
 
 # Generating safe bindings
@@ -38,9 +38,6 @@ bindings.
 ---
 
 ## 2. Type route
-
-An enum takes no type route: it has no fields, layout or lifecycle to publish, so nothing
-wraps it, and its generated raw binding is used directly, as a constant macro's is.
 
 ### 2.1 Surface
 
@@ -137,6 +134,26 @@ only for an unavailable higher-layer dependency.
 An inline function-pointer helper without an ownership-compatible wrapper gets one,
 emitted with the type.
 
+### 2.5 Enums
+
+An enum is bound to a safe Rust type over the constants bindgen generates for it:
+
+- a closed enum is a Rust enum, with a variant for each of its constants;
+- an enum whose constants C combines as flags is a `#[repr(transparent)]` newtype over its
+  integer type, with an associated constant for each of its constants and the bitwise
+  operators, since a combination is no variant; and
+- an enum without a name has no type to bind: its constants become constants of its
+  integer type.
+
+Beneath a closed enum's safe type sits its integer form, the interop layer C needs: a
+`#[repr]` over the enum's integer type, as bindgen gives it, each constant's value its
+variant's discriminant, and the conversions through which its values cross the boundary
+as that integer. A value from C is converted fallibly where it enters Rust, since C may
+pass one the enum does not name, which a Rust enum may not hold: such a value takes the
+path the C gives an invalid value, or an error of the safe API where it gives none. A
+binding keeps the integer form for good, since C implements what produces and consumes
+the enum's values.
+
 ---
 
 ## 3. Symbol route
@@ -200,13 +217,21 @@ An inline function pointer is wrapped when no ownership-compatible callable wrap
 
 ### 3.4 Macros
 
-A C macro is never published as an independent Rust API.
+A C macro is bound to a Rust form of its own:
 
-- A symbol alias is bound by calling the underlying symbol's safe wrapper.
-- A function-like macro is bound through an existing shim, or the smallest shim it needs,
-  which is then bound and wrapped.
-- A constant macro is used through its generated binding.
-- A type-generating macro follows the type route.
+- a type-generating macro, to one generic type, through the type route, its instances
+  aliases of it;
+- a constant macro, to a `const`, defined from its generated binding;
+- a symbol alias, through the safe wrapper of the symbol it names; and
+- a macro that implements logic, to a function, `#[inline]`, or `const` where its body
+  computes on its arguments alone, which reimplements the body and reaches C only for the
+  symbols its expansion uses, through their safe wrappers, and for the fields it accesses,
+  through their accessors. A `macro_rules!` takes its place only where a function cannot
+  express it: control flow that leaves its caller, token pasting or stringification, an
+  argument used as a place, or one evaluated lazily or more than once.
+
+A macro whose expansion depends on the build's configuration, which the Rust does not see,
+is the exception: it is reached through a shim, `crustify_<NAME>`, bound and wrapped.
 
 ### 3.5 Lifecycle strategies
 

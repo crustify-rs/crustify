@@ -71,14 +71,14 @@ Typed lifecycle primitives stay in the schedule as free symbols, as
 [`binding`](../../rust/binding/SKILL.md)'s Type route section describes.
 
 In a wrap campaign every item is `wrap`. In a port campaign, the items of the foundational
-modules are `wrap`, and those of every other module `port`: a symbol, a callback or an
-enum where the order places it, a struct or a union `wrap` there while another module's C
+modules are `wrap`, and those of every other module `port`: a symbol, a callback, an enum
+or a macro where the order places it, a struct or a union `wrap` there while another module's C
 uses its layout, and each followed by the later stages
 [Later stages](#5-later-stages) describes, each a planned item of its own.
 
-Nothing wraps an enum, as [`binding`](../../rust/binding/SKILL.md)'s Type route section
-describes: a wrap campaign schedules none for it, and a port campaign ports it once, as
-[`porting`](../../rust/porting/SKILL.md)'s Enums section describes.
+Enums and macros are items as any other entity is, bound or ported as
+[`binding`](../../rust/binding/SKILL.md)'s Enums and Macros sections, and
+[`porting`](../../rust/porting/SKILL.md)'s, describe.
 
 ## 3. Batches
 

@@ -116,7 +116,8 @@ Every file a module lists is an entry:
 With both lists empty, the module owns every entity the file defines or declares. With
 `included`, it owns only those; with `excluded`, every other one. A file entry sets one
 list at most. A typedef follows the type it names, so naming a struct or its typedef
-selects both. Macros are neither owned nor listed: they are not translated.
+selects both. A macro is owned as any entity is when it is API, as
+[`decomposition`](../../planning/decomposition/SKILL.md)'s Bundling section describes.
 
 Every entity is owned by exactly one module, and every translation unit is listed by
 exactly one module, apart from a foundational split, whose two modules list it with the
@@ -208,9 +209,8 @@ once across the decomposition.
 The blocks overlap: a function defined in a translation unit and declared in an API
 header counts in both, once as a definition and once as published. Never add them.
 
-Enums are not counted, here or in a dependency record: no batch wraps an enum, as
-`binding`'s Type route section describes, so the plan neither counts
-them as a module's work nor orders a module by them.
+Enums and macros are not counted yet, here or in a dependency record.
+<!-- TODO: count them once wavefront schedules them, as its skill's TODO says. -->
 
 ## 8. link_units[*].modules[*].depends_on
 
@@ -246,7 +246,7 @@ as `dependencies-schema` describes, not in each record that imports it.
 A record's `counters` carries the same item kinds a module's own does — `structs`,
 `functions`, `global_variables`, `unions`, `callbacks` — counting what this module
 consumes, not what the destination contains. A module that uses only another's enums has
-no record of it, and its edges count no enum. It has no `files` or `loc`: those
+no record of it yet, and its edges count no enum. It has no `files` or `loc`: those
 describe a module's own files, and a consumer imports entities, not files.
 
 The in-tree graph may contain cycles, and these records keep them: a record whose

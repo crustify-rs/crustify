@@ -87,6 +87,13 @@ listing the header with them as `included`, never by listing a header that only 
 them, which wavefront refuses. A unit two modules claim is refused too, so every entity is
 owned by exactly one module. Macros are listed by none. The configuration is verified
 against the CLI.
+<!-- TODO: enums and macros are items of a plan, as `decomposition` and `scheduling`
+describe, but wavefront schedules enums only `--with-enums` and macros only
+`--with-macros`, every macro of the closure's files then, and lists no macro as owned. It
+has yet to own and schedule both by default, the macros that are API only (no include
+guards, configuration, feature-test or attribute macros), count them in the modules'
+records, compute a closed enum's `opaque_after` from its layout users, and tell a closed
+enum from a flags one. -->
 
 A module's dependency records are counted from a schedule of the whole closure, without
 `schedule_seeds` and without `--with-enums`: the module's record in its `modules` gives each in-tree record's
