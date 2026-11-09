@@ -19,12 +19,13 @@ primitive, not only those the public API publishes.
 ### 1.1 Enums
 
 A ported enum is defined anew in Rust, and its header keeps the C definition for the
-remaining C: the two are not linked, beyond the Rust enum's annotation, as the
-[conventions](../conventions/SKILL.md)' Anchors section describes. Its values cross the
-boundary as the C integers they are. An export that receives one converts it from its
-integer fallibly, since C may pass a value the enum does not name, and an enum whose
-constants C combines as flags is ported as a newtype over its integer, with an associated
-constant for each, rather than as a Rust enum.
+remaining C: the two are not linked, beyond the Rust type's annotation, as the
+[conventions](../conventions/SKILL.md)' Anchors section describes. The Rust type is a
+`#[repr(transparent)]` newtype over the enum's integer type, as bindgen gives it, with an
+associated constant for each of its constants, never a Rust enum: C may pass any value of
+that integer, which the newtype holds and a Rust enum may not. Its values cross the
+boundary unchanged, and an enum whose constants C combines as flags also implements the
+bitwise operators.
 
 ## 2. Storage and layout
 
