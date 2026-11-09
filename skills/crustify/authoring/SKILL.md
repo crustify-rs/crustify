@@ -172,10 +172,9 @@ manifest is `.claude-plugin/plugin.json`:
 - `system-prompt.md`, Claude Code's own system prompt, captured from a real request by
   `dump-system-prompt.py`, less its one project's `# Memory` section, and dumped again
   when Claude Code is upgraded;
-- `hooks.json`: a `SessionStart` hook which tells a session in a campaign's repository
-  that is not the assistant how to start it, and a `SubagentStop` hook which copies each
-  stage agent's transcript into Crustify's home; and
-- `compose.py`, which generates the agents (`compose.py build`) and runs the hooks.
+- `hooks.json`: a `SubagentStop` hook, `transcripts.py`, which copies each stage agent's
+  transcript into Crustify's home; and
+- `compose.py`, which generates the agents (`compose.py build`).
 
 The generated files are committed, and regenerated whenever `agents/` or
 `system-prompt.md` changes.

@@ -1,21 +1,16 @@
 #!/usr/bin/env python3
-"""Compose Crustify's agents for Claude Code, from `agents/` and the campaign's settings.
+"""Compose Crustify's agents for Claude Code, from `agents/`.
 
 Claude Code lists the plugin's skills to every agent, so the prompts are composed by the
 generic provider without its skill index.
 
-    compose.py build                  write the agents under providers/claude/agents/: the
-                                      stages and the assistant, each after Claude Code's own
-                                      system prompt
-    compose.py assistant [--cwd DIR]  print the assistant's prompt for the campaign at DIR
-    compose.py session-start          the SessionStart hook: in a campaign's repository, tell
-                                      a session that is not the assistant how to start it
+    compose.py build    write the agents under providers/claude/agents/: the stages and the
+                        assistant, each after Claude Code's own system prompt
 
-Standard library only: it runs as a hook, under whatever Python the host has.
+Standard library only: it runs under whatever Python the host has.
 """
 import importlib.util
 import json
-import os
 import re
 import sys
 from pathlib import Path
@@ -27,8 +22,6 @@ generic = importlib.util.module_from_spec(_spec)  # the neutral composer
 _spec.loader.exec_module(generic)
 AGENTS = Path(__file__).resolve().parent / "agents"
 SYSTEM_PROMPT = Path(__file__).resolve().parent / "system-prompt.md"
-SETTINGS = Path("crustify") / "CRUSTIFY.md"
-KINDS = {"port": "translate", "wrap": "translate", "audit": "audit"}
 
 #: Each stage's agent: its description is the rule the assistant routes a run by.
 STAGES = {
@@ -49,37 +42,10 @@ STAGES = {
 }
 
 
-#: What the SessionStart hook injects in a campaign's repository when the session is not
-#: already Crustify's assistant: how to start it.
-HEADER = """This session's repository, `{repo}`, holds a Crustify campaign ({campaign}), and this
-session is not Crustify's assistant. The assistant starts with
-`claude --agent crustify:assistant-{kind}`; `{{"agent": "crustify:assistant-{kind}"}}` in the
-repository's `.claude/settings.json` makes every session opened there start as it."""
-
-
 def _claude_system_prompt() -> str:
     """Claude Code's own system prompt, which a plugin agent's body replaces."""
     text = SYSTEM_PROMPT.read_text()
     return re.sub(r"^<!--.*?-->\s*", "", text, flags=re.S).strip() + "\n\n---\n\n"
-
-
-def assistant_prompt(kind: str, root: str) -> str:
-    return generic.prompt("assistant", kind, root, index=False)
-
-
-def find_campaign(start: Path) -> Path | None:
-    for d in (start, *start.parents):
-        if (d / SETTINGS).is_file():
-            return d
-        if (d / ".git").exists():
-            return None
-    return None
-
-
-def campaign_kind(repo: Path | None) -> str:
-    if repo is None:
-        return "translate"
-    return KINDS.get(_answer((repo / SETTINGS).read_text(), "campaign") or "", "translate")
 
 
 def _agent(name: str, description: str, body: str) -> None:
@@ -97,28 +63,12 @@ def build() -> None:
         _agent(f"assistant-{kind}",
                f"Crustify's assistant in {what}: plans and orchestrates the campaign with "
                f"the user. Runs as the main agent of a session in the campaign's repository.",
-               assistant_prompt(kind, "{crustify_root}"))
+               generic.prompt("assistant", kind, "{crustify_root}", index=False))
 
 
 def main(argv: list[str]) -> int:
-    cmd = argv[0] if argv else ""
-    if cmd == "build":
+    if argv == ["build"]:
         build()
-        return 0
-    if cmd == "assistant":
-        cwd = Path(argv[argv.index("--cwd") + 1]) if "--cwd" in argv else Path.cwd()
-        repo = find_campaign(cwd.resolve())
-        print(assistant_prompt(campaign_kind(repo), str(ROOT)))
-        return 0
-    if cmd == "session-start":
-        event = json.load(sys.stdin) if not sys.stdin.isatty() else {}
-        repo = find_campaign(Path(event.get("cwd") or os.getcwd()).resolve())
-        if repo is None or str(event.get("agent_type", "")).startswith("crustify:assistant"):
-            return 0
-        answer = _answer((repo / SETTINGS).read_text(), "campaign") or "not configured yet"
-        prompt = HEADER.format(repo=repo, campaign=answer, kind=campaign_kind(repo))
-        print(json.dumps({"hookSpecificOutput": {"hookEventName": "SessionStart",
-                                                 "additionalContext": prompt}}))
         return 0
     print(__doc__, file=sys.stderr)
     return 2

@@ -91,9 +91,10 @@ crustify/templates/audit/CRUSTIFY.template.md       # audit
 ```
 
 The settings live in the campaign's repository as `crustify/CRUSTIFY.md`, which the
-assistant rereads before each module, so you can edit it while a campaign runs. The
-repository's `.claude/settings.json` selects the assistant, so every later session opened
-there starts as it, and `claude --resume` continues an earlier one. Ask the assistant to
+assistant rereads before each module, so you can edit it while a campaign runs. A session
+starts as the assistant only when `--agent` selects it; to make every session opened in the
+repository start as it, set `{"agent": "crustify:assistant-translate"}` in its
+`.claude/settings.json`. `claude --resume` continues an earlier session. Ask the assistant to
 start the campaign to run it end to end, or pass that as the session's first prompt, with
 `-p`, to run it headless.
 
