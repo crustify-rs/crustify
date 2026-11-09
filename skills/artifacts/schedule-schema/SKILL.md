@@ -51,7 +51,7 @@ A dependency record names the module depended on, by `link_unit`, `module` and
 |---|---|
 | `unique_edges` | the distinct units of that module they use: one binding each, when the dependency is cut |
 | `total_edges` | every unit edge from this module's units to that module's |
-| `items` | on a cut record: each edge it cuts, as `from` (this module's unit), `to` (the other module's unit), each `{name, defined_in}`, and the `kind` of `to` |
+| `items` | on a cut record: each edge it cuts, as `from` (this module's unit), `to` (the other module's unit), each `{name, defined_in}`, and the `kind` of `to`, as an item's |
 
 An out-of-tree record names the library its units use, by its `library`, a
 `libraries[*].name` of `dependencies.json`, and counts what they use of it, with the
@@ -88,8 +88,9 @@ the objective it is translated with and its entity's release points:
 |---|---|
 | `name`, `defined_in`, `kind`, `field_users`, `home` | as on a batch item |
 | `objective` | `wrap` or `port`, or one of the later stages of `scheduling`'s Later stages section: `port/layout` or `port/memory` for a struct or a union, `port/layout` for a closed enum, `port/unexport` for a function or a global |
-| `opaque_after`, `memory_unmanaged_after` | on a struct or a union, the release points after which none of its layout users, and none of its memory users, is left, as the scheduling spec's Later stages section defines them, and `opaque_after` on a closed enum too; `null` on any other item |
-| `unreferenced_after` | on a function or a global, the release point after which none of its referrers is left; `null` on any other item |
+| `opaque_after` | on a struct, a union or an enum, the release point after which none of its layout users is left, as the scheduling spec's Later stages section defines them; `null` on any other item |
+| `memory_unmanaged_after` | on a struct or a union, the release point after which none of its memory users is left; `null` on any other item |
+| `unreferenced_after` | on a function, a global or a macro, the release point after which none of its referrers is left; `null` on any other item |
 
 A release point has two records, `closure` over every user and `scheduled` over those the
 schedule holds, each naming the last users, their waves and their `modules`, as the

@@ -48,7 +48,7 @@
                   "name": "widget_stream",
                   "defined_in": "include/widget/io.h"
                 },
-                "kind": "type"
+                "kind": "struct"
               }
             ]
           }
@@ -90,7 +90,7 @@
                   "name": "z_stream_s",
                   "defined_in": "/usr/include/zlib.h"
                 },
-                "kind": "type"
+                "kind": "struct"
               }
             ]
           }
@@ -115,7 +115,7 @@
         {
           "name": "widget_handle",
           "defined_in": "include/widget/core.h",
-          "kind": "type",
+          "kind": "struct",
           "field_users": [
             "refcount",
             "flags"
@@ -129,7 +129,7 @@
         {
           "name": "widget_opts",
           "defined_in": "include/widget/core.h",
-          "kind": "type",
+          "kind": "struct",
           "field_users": [],
           "home": "src/libwidget/src/core.rs",
           "objective": "wrap",
@@ -151,7 +151,7 @@
             {
               "name": "widget_handle",
               "defined_in": "include/widget/core.h",
-              "kind": "type",
+              "kind": "struct",
               "field_users": [
                 "refcount",
                 "flags"
@@ -174,7 +174,7 @@
             {
               "name": "widget_opts",
               "defined_in": "include/widget/core.h",
-              "kind": "type",
+              "kind": "struct",
               "field_users": [],
               "home": "src/libwidget/src/core.rs"
             }
@@ -222,7 +222,7 @@
         {
           "name": "widget_open",
           "defined_in": "src/core.c",
-          "kind": "symbol",
+          "kind": "function",
           "field_users": [],
           "home": "src/libwidget/src/core.rs",
           "objective": "wrap",
@@ -244,7 +244,7 @@
             {
               "name": "widget_stream",
               "defined_in": "include/widget/io.h",
-              "kind": "type",
+              "kind": "struct",
               "field_users": [
                 "fd"
               ],
@@ -266,7 +266,7 @@
             {
               "name": "widget_open",
               "defined_in": "src/core.c",
-              "kind": "symbol",
+              "kind": "function",
               "field_users": [],
               "home": "src/libwidget/src/core.rs"
             }
@@ -293,7 +293,7 @@
         {
           "name": "widget_stream",
           "defined_in": "include/widget/io.h",
-          "kind": "type",
+          "kind": "struct",
           "field_users": [
             "fd"
           ],
@@ -306,7 +306,7 @@
         {
           "name": "widget_read",
           "defined_in": "src/io.c",
-          "kind": "symbol",
+          "kind": "function",
           "field_users": [],
           "home": "src/libwidget/src/io.rs",
           "objective": "wrap",

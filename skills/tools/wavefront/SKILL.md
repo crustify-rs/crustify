@@ -79,8 +79,9 @@ re-planned, and the `depends_on` in `modules.json` when the configuration moves 
 
 The configuration's `modules` are authored from `modules.json`: each module's record
 lists its `translation_unit`, `internal_headers` and `api_headers` entries, each with the
-entities its `items` lists select, as `{"name", "kind"}` items. A struct tag and a
-function or global may share a name in one file, so an item names the kind it means. A
+entities its `items` lists select, as `{"name", "kind"}` items, each kind what the entity
+is in C, as a planned item's. A struct tag and a function or global may share a name in
+one file, so an item names the kind it means. A
 module claims the units its files are home to, the file that defines them or, with none,
 their declaration: a shared header's types and `static inline` functions are claimed by
 listing the header with them as `included`, never by listing a header that only declares
@@ -88,15 +89,13 @@ them, which wavefront refuses. A unit two modules claim is refused too, so every
 owned by exactly one module. Macros are listed by none. The configuration is verified
 against the CLI.
 <!-- TODO: enums and macros are items of a plan, as `decomposition` and `scheduling`
-describe, but wavefront schedules enums only `--with-enums` and macros only
-`--with-macros`, every macro of the closure's files then, and lists no macro as owned. It
-has yet to own and schedule both by default, the macros that are API only (no include
-guards, configuration, feature-test or attribute macros), count them in the modules'
-records, compute a closed enum's `opaque_after` from its layout users, and tell a closed
-enum from a flags one. -->
+describe, and wavefront schedules both, but every macro of the closure's files, and it
+lists no header macro as owned. It has yet to own the macros that are API, and only those
+(no include guards, configuration, feature-test or attribute macros), count enums and
+macros in the modules' records, and tell a closed enum from a flags one. -->
 
 A module's dependency records are counted from a schedule of the whole closure, without
-`schedule_seeds` and without `--with-enums`: the module's record in its `modules` gives each in-tree record's
+`schedule_seeds`: the module's record in its `modules` gives each in-tree record's
 `outgoing_edges` as its `total_edges`, and the other module's record its
 `incoming_edges`; the items' `depends_on` give the `counters`, and their `external`
 references the out-of-tree records.
@@ -153,8 +152,8 @@ A row wavefront warns is stale is corrected or deleted.
 - Wavefront numbers its waves from 0 in every run, so the `todo` waves are numbered after
   the highest index of a started wave, in wavefront's order, their `depends_on` renumbered,
   with their module's `layer` and their `sublayer`. A wave's `items` are those of its
-  wavefront batches, each with its `name`, `defined_in` and `kind`, its `used_fields` as
-  `field_users`, the `home` its module gives it, its `objective`, and its
+  wavefront batches, each with its `name`, `defined_in` and `kind`, a macro's
+  `type_generator_for` deciding its route, its `used_fields` as `field_users`, the `home` its module gives it, its `objective`, and its
   `opaque_after`, `memory_unmanaged_after` and `unreferenced_after`, with the later stages
   they place, as [Scheduling › Later stages](#scheduling--later-stages) describes. An item a wave
   that has started holds, or that a batch has landed with that objective, is dropped, and
@@ -171,16 +170,17 @@ are closed over their wrap dependencies on the public-signature graph,
 
 A port campaign's schedule, which is not `--api-headers-only`, gives each scheduled item
 its release points, which `schedule.json`'s items carry as wavefront records them and which
-place its later stages: a struct's or union's `opaque_after` its `port/layout`, its
-`memory_unmanaged_after` its `port/memory`, and a function's or global's
-`unreferenced_after` its `port/unexport`. A module's C leaves at its integration, so a
+place its later stages: a struct's, union's or closed enum's `opaque_after` its
+`port/layout`, a struct's or union's `memory_unmanaged_after` its `port/memory`, and a
+function's or global's `unreferenced_after` its `port/unexport`. A module's C leaves at its integration, so a
 stage's wave waits for the last waves of the modules its point's `closure.modules` names,
 less the item's own; with none left, the stage is not planned. The users behind each point
-are a query away: `query types --name <T> --layout-users` lists a type's layout users with
-the site and kind of each use, `query types --name <T> --raw-sites` its memory users, and
-`query symbols --name <F> --callers` a function's or global's referrers. Whether a user
-stays C is read from those whole lists. `query types --name <T> --field-touchers` lists the
-functions that touch each field.
+are a query away: `query structs --name <T> --layout-users` lists a struct's layout users
+with the site and kind of each use, as `query unions` and `query enums` do theirs,
+`query structs --name <T> --raw-sites` its memory users, and
+`query functions --name <F> --callers` a function's, global's or macro's referrers.
+Whether a user stays C is read from those whole lists.
+`query structs --name <T> --field-touchers` lists the functions that touch each field.
 
 The layout users are read from T2's `layout_uses.csv`, which the tables extracted before
 it lack, and the memory users from the lifecycle roles of the ownership store and T2's
@@ -233,9 +233,9 @@ describes, and submitted through the CLI's `--update`.
 #### Lifecycle (`lifecycle`)
 
 Lifecycles submitted to wavefront that are incomplete: a releaser, disposer, cloner or
-constructor that the findings of the batches that bound or ported `type` items, or items
-of the foundational modules, missed. They are checked against the lifecycle primitives
-`docs/type-lifecycle.md` identifies.
+constructor that the findings of the batches that bound or ported items of the type
+route, or items of the foundational modules, missed. They are checked against the
+lifecycle primitives `docs/type-lifecycle.md` identifies.
 
 #### The submitted findings
 

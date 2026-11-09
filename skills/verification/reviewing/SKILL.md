@@ -51,7 +51,8 @@ A review batch has one route:
 
 A review batch's entry in `schedule.json` names the batches of its wave it
 `reviews`, and each of those lists the `commits` it landed and the `items` it bound or
-ported, whose `kind` gives their routes: `type` or `symbol`.
+ported, whose `kind` gives their routes, `type` or `symbol`, as
+[`task-schema`](../../artifacts/task-schema/SKILL.md)'s Routes section describes.
 
 A module named with `types`, `trait_impls` or `functions` limits the workset to those: a
 type with its fields and its inherent impls, wherever they are; a trait impl, named

@@ -71,9 +71,9 @@ Typed lifecycle primitives stay in the schedule as free symbols, as
 [`binding`](../../rust/binding/SKILL.md)'s Type route section describes.
 
 In a wrap campaign every item is `wrap`. In a port campaign, the items of the foundational
-modules are `wrap`, and those of every other module `port`: a symbol, a callback, an enum
-or a macro where the order places it, a struct or a union `wrap` there while another module's C
-uses its layout, and each followed by the later stages
+modules are `wrap`, and those of every other module `port`: a function, a global, a
+typedef, an enum or a macro where the order places it, a struct or a union `wrap` there
+while another module's C uses its layout, and each followed by the later stages
 [Later stages](#5-later-stages) describes, each a planned item of its own.
 
 Enums and macros are items as any other entity is, bound or ported as
@@ -85,7 +85,8 @@ Enums and macros are items as any other entity is, bound or ported as
 A wave's batches are packed when it starts, from the state of the campaign at that
 moment, and packed again as its batches land or fail. Each batch holds items of one
 objective and one route, as [`task-schema`](../../artifacts/task-schema/SKILL.md)'s Routes
-section describes: types, or symbols and callbacks.
+section describes: structs, unions, enums and the macros that generate types, or
+functions, globals, typedefs and the other macros.
 
 A batch is sized so that its agent carries every item through its analysis, its tests and
 its gates within one session, without its context running out, and so that what it lands

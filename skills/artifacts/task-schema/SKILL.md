@@ -36,7 +36,7 @@ its own.
     {
       "name": "AVFrame",
       "defined_in": "libavutil/frame.h",
-      "kind": "type",
+      "kind": "struct",
       "field_users": ["data", "linesize"],
       "home": "src/libavutil/libavutil/frame.rs"
     }
@@ -171,13 +171,13 @@ Every field is required on every item, and no other field is accepted.
 |---|---|
 | `name` | C entity name, non-empty |
 | `defined_in` | path of its definition below the C root |
-| `kind` | `type`, `symbol` or `callback` |
-| `field_users` | the C fields of the type its consumers use, whose accessors the batch writes; empty unless `kind` is `type` |
+| `kind` | what the C entity is: `struct`, `union`, `enum`, `function`, `global`, `macro`, or `typedef`, a callback's function-pointer typedef |
+| `field_users` | the members of a struct, a union or an enum its consumers use: a struct's or a union's fields, whose accessors the batch writes, or an enum's constants; empty on any other kind |
 | `home` | `.rs` path, relative to the repository's root, the item is authored into |
 
 `(name, defined_in)` identifies an item and must be unique within the batch. A
-`port/layout` or `port/memory` batch holds only types, and a `port/unexport` batch only
-functions and globals.
+`port/layout` batch holds only structs, unions and enums, a `port/memory` batch only
+structs and unions, and a `port/unexport` batch only functions and globals.
 `field_users` must not repeat a name.
 
 `home` is the sole placement input: no other artifact decides where an item goes, so the
@@ -190,8 +190,12 @@ batch mixing routes is rejected.
 
 | kind | route |
 |---|---|
-| `type` | `type` |
-| `symbol`, `callback` | `symbol` |
+| `struct`, `union`, `enum`, and a `macro` that generates types | `type` |
+| `function`, `global`, `typedef`, and any other `macro` | `symbol` |
+
+A macro generates types when its record in the planning tools lists the instance types it
+mints: its instances share the one generic the type route writes for it, as
+[`binding`](../../rust/binding/SKILL.md)'s Macros section describes.
 
 A batch of a foundational module routes like any other. Its `module` and `foundational`
 name the module, which `modules.json` marks `foundational`, and its items with a lifecycle
