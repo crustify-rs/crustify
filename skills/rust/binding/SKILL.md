@@ -1,6 +1,6 @@
 ---
 name: binding
-description: "How a scheduled C item becomes a safe Rust binding: the safe boundary, the type route for structs, unions and enums, and the symbol route for functions, globals, callbacks and macros. Read before binding any item, and when reviewing bindings."
+description: "How a scheduled C item becomes a safe Rust binding: the safe boundary, the type route for structs, unions as tagged enums, and enums, and the symbol route for functions, globals, callbacks and macros. Read before binding any item, and when reviewing bindings."
 ---
 
 # Generating safe bindings
@@ -119,7 +119,8 @@ Each kind of field is expressed as follows:
 - Statically known owned and borrowed cases have distinct wrapper forms, with a shared
   trait where useful.
 - A runtime ownership flag has separately checked owned and borrowed operations.
-- A union and its discriminator become a tagged Rust enum when the mapping is valid.
+- A union field and its discriminator are one accessor of a tagged Rust enum, as
+  [Unions](#25-unions) describes.
 - Scalar and array variants have separate typed forms.
 - A type-erased field takes a generic element type when it is known, and the discovered
   untyped lifetime strategy otherwise.
@@ -134,7 +135,17 @@ only for an unavailable higher-layer dependency.
 An inline function-pointer helper without an ownership-compatible wrapper gets one,
 emitted with the type.
 
-### 2.5 Enums
+### 2.5 Unions
+
+A union is not bound as a type of its own: the types its members hold are bound, and the
+union is presented where it is used, a field accessor or a function's signature, as a
+tagged Rust enum, with a variant for each member, each over its member's safe type. One
+tagged enum stands in for the union at every use. Its tag is the discriminator the
+analysis establishes as selecting the active member, a sibling field or a parameter:
+reading the union reads the discriminator to choose the variant, and writing it writes
+both.
+
+### 2.6 Enums
 
 An enum is bound to a safe Rust type over the constants bindgen generates for it:
 

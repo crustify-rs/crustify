@@ -72,11 +72,11 @@ Its later stages:
 
 ### 2.2 Unions
 
-A union is ported as a struct is, with the same later stages. Where the analysis
-establishes the discriminator that selects its active member, its safe API presents it as a
-tagged Rust enum from its port, a variant for each member, as
-[`binding`](../binding/SKILL.md)'s Field accessors section maps it, and its `port/layout`
-makes that enum its storage too.
+A union's safe API is the tagged Rust enum [`binding`](../binding/SKILL.md)'s Unions
+section presents it as, from its port. Its storage keeps the C union, with its
+discriminator beside it, while C uses its layout, and is ported as a struct's is, with the
+same later stages: its `port/layout` makes the tagged enum its storage, the discriminator
+folded into the enum's tag.
 
 ### 2.3 Enums
 

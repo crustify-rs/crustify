@@ -167,6 +167,7 @@ not necessarily the item that makes the FFI call:
   annotated need not be the one making the unsafe call.
 - a type: the layout newtype that defines the FFI type, handwritten or minted by
   `define_ctype!`.
+- a union: the tagged enum that stands in for it at every use.
 - an enum: the Rust enum or newtype that stands in for it, and each of its constants: the
   variant or the constant that stands in for it.
 - a macro: the generic, `const`, function or `macro_rules!` that stands in for it; a type
