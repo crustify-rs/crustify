@@ -195,21 +195,11 @@ assistant, and the planner, binder, translator and reviewer stages.
 
 ### Claude Code
 
-Crustify's checkout is a Claude Code plugin, through its adapter under
-[`adapters/claude/`](adapters/claude/): the skills, one agent per stage, and hooks that
-make a session opened in a campaign's repository Crustify's assistant. To try it from a
-checkout:
+Crustify's checkout is a Claude Code plugin, through its provider under
+[`providers/claude/`](providers/claude/): the skills, one agent per stage, and the
+assistant as an agent per campaign kind. To try it from a checkout, in a campaign's
+repository:
 
 ```bash
-claude --plugin-dir <crustify checkout>
+claude --plugin-dir <crustify checkout> --agent crustify:assistant-translate
 ```
-
-## Maintainers
-
-- Marius Momeu ([marius.momeu@berkeley.edu](mailto:marius.momeu@berkeley.edu))
-
-## Acknowledgements
-
-This material is based upon work supported by the Defense Advanced Research
-Projects Agency (DARPA) Translating All C To Rust (TRACTOR) program under
-Agreement No. HR00112590134.

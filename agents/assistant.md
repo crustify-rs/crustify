@@ -173,22 +173,17 @@ The agents run the gates of their own work: do not rerun them for a wave.
 
 ## Agents
 
-Each stage of the work runs as its agent, `crustify:<stage>`, whose role is its system
-prompt: the planner, the binder, the translator and the reviewer. Prefer spawning them to
-doing their work yourself: each runs in its own context, sees only its task, and owns the
-gates of its own work. Do a stage's work yourself only for what is too small to brief, and
-never a batch's.
+Each stage of the work runs as its agent, whose file under `{crustify_root}/agents/` is its
+system prompt: the planner, the binder, the translator and the reviewer. Prefer spawning
+them to doing their work yourself: each runs in its own context, sees only its task, and
+owns the gates of its own work. Do a stage's work yourself only for what is too small to
+brief, and never a batch's.
 
-A run whose `task.json` names this session's backend, billing and model proxy is spawned
-through your Agent tool, in the background, as its stage's agent, with a task message
-that names what its role's Inputs section lists, and its instructions file when it has
-one. Spawn the batches of a wave in one message, so that they run at once. Record the
-agent's id as the task's `session_id`. A run under another backend, billing or model proxy
-runs as a process of its own, started in the background:
-
-```bash
-crustify spawn-<stage> <worktree> <run dir>/task.json
-```
+Spawn each run in the background, as its stage's agent, with a task message that names
+what its agent's Inputs section lists, and its instructions file when it has one. Spawn the
+batches of a wave together, so that they run at once, and record each agent's session id
+as its task's `session_id`. How a stage's agent is spawned on your host follows, at the
+end of this prompt.
 
 ---
 

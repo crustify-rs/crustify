@@ -4,7 +4,7 @@
       {
         "matcher": "startup|resume|clear|compact",
         "hooks": [
-          {"type": "command", "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/adapters/claude/compose.py\" session-start"}
+          {"type": "command", "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/providers/claude/compose.py\" session-start"}
         ]
       }
     ],
@@ -12,7 +12,7 @@
       {
         "matcher": "crustify:.*",
         "hooks": [
-          {"type": "command", "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/adapters/claude/transcripts.py\""}
+          {"type": "command", "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/providers/claude/transcripts.py\""}
         ]
       }
     ]

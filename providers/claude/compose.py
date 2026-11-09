@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Compose Crustify's roles for Claude Code, from `agents/` and the campaign's settings.
 
-    compose.py build                  write the stage agents under adapters/claude/agents/
-                                      and the assistant's skills under adapters/claude/skills/
+    compose.py build                  write the agents under providers/claude/agents/: the
+                                      stages and the assistant, each after Claude Code's own
+                                      system prompt
     compose.py assistant [--cwd DIR]  print the assistant's prompt for the campaign at DIR
-    compose.py session-start          the SessionStart hook: inject the assistant's prompt
-                                      when the session's directory holds a campaign
+    compose.py session-start          the SessionStart hook: in a campaign's repository, tell
+                                      a session that is not the assistant how to start it
 
 Standard library only: it runs as a hook, under whatever Python the host has.
 """
@@ -18,7 +19,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 ROLES = ROOT / "agents"
 AGENTS = Path(__file__).resolve().parent / "agents"
-SKILLS = Path(__file__).resolve().parent / "skills"
+SYSTEM_PROMPT = Path(__file__).resolve().parent / "system-prompt.md"
+ADDENDUM = Path(__file__).resolve().parent / "assistant.md"
 SETTINGS = Path("crustify") / "CRUSTIFY.md"
 KINDS = {"port": "translate", "wrap": "translate", "audit": "audit"}
 
@@ -41,18 +43,18 @@ STAGES = {
 }
 
 
-#: What the SessionStart hook injects: a hook's context is capped at a few KB, past which
-#: the host shows the model only a preview, so the hook points at the role rather than
-#: carrying it. It runs again after every compaction, and so does the read.
-HEADER = """# Crustify
+#: What the SessionStart hook injects in a campaign's repository when the session is not
+#: already Crustify's assistant: how to start it.
+HEADER = """This session's repository, `{repo}`, holds a Crustify campaign ({campaign}), and this
+session is not Crustify's assistant. The assistant starts with
+`claude --agent crustify:assistant-{kind}`; `{{"agent": "crustify:assistant-{kind}"}}` in the
+repository's `.claude/settings.json` makes every session opened there start as it."""
 
-This session's repository, `{repo}`, holds a Crustify campaign ({campaign}), and you are
-Crustify's assistant in it. Before you reply or act, read your role in full by invoking
-the `crustify:assistant-{kind}` skill: it says who you are here, what you own and how you
-work.
-Read it again whenever this message appears after your context has been compacted,
-before you continue.
-"""
+
+def _claude_system_prompt() -> str:
+    """Claude Code's own system prompt, which a plugin agent's body replaces."""
+    text = SYSTEM_PROMPT.read_text()
+    return re.sub(r"^<!--.*?-->\s*", "", text, flags=re.S).strip() + "\n\n---\n\n"
 
 
 def _role(name: str) -> str:
@@ -88,21 +90,22 @@ def campaign_kind(repo: Path | None) -> str:
     return KINDS.get(_answer((repo / SETTINGS).read_text(), "campaign") or "", "translate")
 
 
+def _agent(name: str, description: str, body: str) -> None:
+    front = f"---\nname: {name}\ndescription: {json.dumps(description)}\n---\n\n"
+    (AGENTS / f"{name}.md").write_text(front + _claude_system_prompt()
+                                       + body.replace("{crustify_root}", "${CLAUDE_PLUGIN_ROOT}"))
+
+
 def build() -> None:
     AGENTS.mkdir(exist_ok=True)
     for stage, description in STAGES.items():
-        body = (_role("common") + _role(stage)).replace("{crustify_root}", "${CLAUDE_PLUGIN_ROOT}")
-        front = f"---\nname: {stage}\ndescription: {json.dumps(description)}\n---\n\n"
-        (AGENTS / f"{stage}.md").write_text(front + body)
+        _agent(stage, description, _role("common") + _role(stage))
     for kind, what in (("translate", "a C-to-Rust port or wrap campaign"),
                        ("audit", "an audit of an existing Rust crate")):
-        d = SKILLS / f"assistant-{kind}"
-        d.mkdir(parents=True, exist_ok=True)
-        description = (f"Crustify's assistant role in {what}: who you are, what you own and "
-                       f"how you run the campaign. Read when this session's repository holds "
-                       f"such a campaign, or when the user asks to start, set up or run one.")
-        front = f"---\nname: assistant-{kind}\ndescription: {json.dumps(description)}\n---\n\n"
-        (d / "SKILL.md").write_text(front + assistant_prompt(kind, "${CLAUDE_PLUGIN_ROOT}"))
+        _agent(f"assistant-{kind}",
+               f"Crustify's assistant in {what}: plans and orchestrates the campaign with "
+               f"the user. Runs as the main agent of a session in the campaign's repository.",
+               assistant_prompt(kind, "{crustify_root}") + "\n---\n\n" + ADDENDUM.read_text())
 
 
 def main(argv: list[str]) -> int:
@@ -118,7 +121,7 @@ def main(argv: list[str]) -> int:
     if cmd == "session-start":
         event = json.load(sys.stdin) if not sys.stdin.isatty() else {}
         repo = find_campaign(Path(event.get("cwd") or os.getcwd()).resolve())
-        if repo is None:
+        if repo is None or str(event.get("agent_type", "")).startswith("crustify:assistant"):
             return 0
         answer = _answer((repo / SETTINGS).read_text(), "campaign") or "not configured yet"
         prompt = HEADER.format(repo=repo, campaign=answer, kind=campaign_kind(repo))

@@ -15,14 +15,15 @@
     "./skills/operations",
     "./skills/artifacts",
     "./skills/tools",
-    "./skills/crustify",
-    "./adapters/claude/skills"
+    "./skills/crustify"
   ],
   "agents": [
-    "./adapters/claude/agents/planner.md",
-    "./adapters/claude/agents/binder.md",
-    "./adapters/claude/agents/translator.md",
-    "./adapters/claude/agents/reviewer.md"
+    "./providers/claude/agents/assistant-translate.md",
+    "./providers/claude/agents/assistant-audit.md",
+    "./providers/claude/agents/planner.md",
+    "./providers/claude/agents/binder.md",
+    "./providers/claude/agents/translator.md",
+    "./providers/claude/agents/reviewer.md"
   ],
-  "hooks": "./adapters/claude/hooks.json"
+  "hooks": "./providers/claude/hooks.json"
 }

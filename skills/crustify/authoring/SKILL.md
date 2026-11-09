@@ -5,7 +5,7 @@ description: "How Crustify itself is organized: skills, roles, tool skills and t
 
 # Authoring
 
-How Crustify is organized: its skills, its agents and the adapters that serve them to an
+How Crustify is organized: its skills, its agents and the providers that serve them to an
 agent host, and where each kind of text lives. The aim is that every rule is written once,
 in the one place its kind belongs, so that changing it changes every agent that follows it,
 and no two copies drift apart.
@@ -26,9 +26,9 @@ and an example of each is given under `templates/`, which the schema cites. The 
 dashboard and `.gitignore` templates there are what a campaign copies to start. Examples
 hold illustrations, not rules.
 
-The layers are plain Markdown, so that any agent reads them as files. An adapter, under
-`adapters/<host>/`, serves them to one agent host in its own format, as
-[Adapters](#4-adapters) describes; the layers name no host.
+The layers are plain Markdown, so that any agent reads them as files. A provider, under
+`providers/<host>/`, serves them to one agent host in its own format, as
+[Providers](#4-providers) describes; the layers name no host.
 
 ### 1.1 Skills
 
@@ -79,7 +79,7 @@ before; `## Inputs`, what its task message names; and `## Additional instruction
 says that a run's instructions file takes precedence where it conflicts with the rest. An
 agent's file names no value of one run: an integration branch or a batch id is "the one
 your task message names". `{crustify_root}` stands for the path of Crustify's checkout,
-which an adapter fills.
+which a provider fills.
 
 The assistant has one file for every kind of campaign, `agents/assistant.md`, with a
 `<!-- CAMPAIGN -->` marker and a `<!-- CAMPAIGN SKILLS -->` marker, which take the campaign
@@ -114,7 +114,7 @@ its skill.
 | what every agent holds | `agents/common.md` |
 | what the assistant does in one kind of campaign | `agents/assistant-<kind>.md` |
 | what a tool is, and how it serves each stage | its tool skill |
-| how one host is served the layers | its adapter under `adapters/<host>/` |
+| how one host is served the layers | its provider under `providers/<host>/` |
 | what one run needs beyond its role | that task's `instructions.md` |
 
 A rule that two agents share goes in a skill both read, not in both agents. A rule that
@@ -126,30 +126,34 @@ text that restates it elsewhere is removed rather than kept in step.
 A stage's agent runs with its file as its system prompt and its task as its first message:
 the task message names what its `## Inputs` section lists and its instructions file, if
 any. Its file is the same for every run of the stage, so that runs at once share their
-whole system prompt in the provider's cache.
+whole system prompt in the provider's cache. The assistant runs the same way, as the main
+agent of a session in a campaign's repository, with its file and its campaign kind's as
+its system prompt.
 
-The assistant is served its file as an agent host allows: as a skill it reads at the start
-of every session in a campaign's repository, and again after every compaction.
+## 4. Providers
 
-## 4. Adapters
+A provider serves the layers to one agent host, in that host's format, and holds nothing
+the layers do not: every file it carries is generated from them, wires them in, or carries
+what its host needs of its own.
 
-An adapter serves the layers to one agent host, in that host's format, and holds nothing
-the layers do not: every file it carries is generated from them or wires them in.
-
-The Claude Code adapter, `adapters/claude/`, makes Crustify's checkout a plugin, whose
+The Claude Code provider, `providers/claude/`, makes Crustify's checkout a plugin, whose
 manifest is `.claude-plugin/plugin.json`:
 
 - the skills, by their group directories, invoked as `crustify:<name>`;
-- `agents/<stage>.md`, one plugin agent per stage, `crustify:<stage>`: its frontmatter
-  names it and gives the description the assistant routes a run by, and its body is
-  `agents/common.md` and the stage's file;
-- `skills/assistant-<kind>/`, the assistant's file composed for each campaign kind, as a
-  skill;
-- `hooks.json`: a `SessionStart` hook which, in a campaign's repository, tells the session
-  to read the assistant's skill for the campaign's kind, at startup and after every
-  compaction, and a `SubagentStop` hook which copies each stage agent's transcript into
-  Crustify's home; and
-- `compose.py`, which generates the agents and the assistant's skills from `agents/`
-  (`compose.py build`), and runs the hooks.
+- `agents/`, one plugin agent per stage, `crustify:<stage>`, and one assistant per campaign
+  kind, `crustify:assistant-translate` and `crustify:assistant-audit`. A plugin agent's
+  body replaces Claude Code's own system prompt, so each body opens with that prompt,
+  `system-prompt.md`, followed by `agents/common.md` and the agent's file; the assistant's
+  ends with `assistant.md`, what it does on Claude Code: how it spawns each stage's agent,
+  and the repository's `.claude/settings.json`, which selects it for every session there.
+  Each agent's frontmatter gives the description the assistant routes a run by;
+- `system-prompt.md`, Claude Code's own system prompt, captured from a real request by
+  `dump-system-prompt.py`, less its one project's `# Memory` section, and dumped again
+  when Claude Code is upgraded;
+- `hooks.json`: a `SessionStart` hook which tells a session in a campaign's repository
+  that is not the assistant how to start it, and a `SubagentStop` hook which copies each
+  stage agent's transcript into Crustify's home; and
+- `compose.py`, which generates the agents (`compose.py build`) and runs the hooks.
 
-The generated files are committed, and regenerated whenever `agents/` changes.
+The generated files are committed, and regenerated whenever `agents/`, `system-prompt.md`
+or `assistant.md` changes.
