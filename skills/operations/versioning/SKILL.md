@@ -226,8 +226,8 @@ purged; its end state is the working branch's commit its last run integrates int
 ### 5.4 Waves
 
 A wave's integration branch is forked from its module's branch's tip before any of its
-batches launch; that commit is the wave's base. The branch exists before the first landing,
-because a landing push to a missing branch silently creates it, and is never checked out.
+batches launch, so that it exists before the first landing, as [Branches](#2-branches)
+requires; that commit is the wave's base.
 Once every batch has landed, the wave is promoted, as [Promotion](#43-promotion)
 describes, and its branch purged.
 

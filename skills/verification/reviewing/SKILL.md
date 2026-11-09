@@ -16,8 +16,8 @@ plan that earlier runs committed (see [Plan corrections](#9-plan-corrections)).
 When review is enabled, every translation batch's landing is reviewed before its wave is
 promoted, so that no wave builds on unreviewed work. A review batch is a batch of the wave
 it reviews, in `schedule.json`, that `reviews` some of its landed translation batches, and
-lands on the same integration branch, never checked out, as
-[`versioning`](../../operations/versioning/SKILL.md) names it. The wave is promoted
+lands on the same integration branch, as [`versioning`](../../operations/versioning/SKILL.md)
+names it. The wave is promoted
 once its translation batches and their reviews have landed. An audit's review waves are
 [`audit-workflow`](../../workflows/audit-workflow/SKILL.md)'s.
 
@@ -34,16 +34,9 @@ translation batch, since its reviewer reads landed code rather than writing it: 
 and within the settings' review caps (`id: review-workload`) when they set them. A campaign
 may also review every translation batch on its own, with that batch's commits.
 
-A review batch's `task.json` ([`task-schema`](../../artifacts/task-schema/SKILL.md)) holds its worklist,
-its objectives, its wave branch and its run fields:
-
-```json
-{"objectives": ["lifecycle", "unsafety", "ub", "equiv", "fix"], "commits": ["3f2a9c1", "8be04d7"],
- "wave": 8, "batch": 0, "link_unit": "<link unit>", "module": "<module name>", "foundational": false,
- "base_branch": "<wave branch>", "backend": "<backend>", "billing": "<billing>"}
-```
-
-Without `objectives`, a batch runs every objective that applies: those this skill's
+A review batch's `task.json` holds its worklist, its objectives, its wave branch and its
+run fields, as [`task-schema`](../../artifacts/task-schema/SKILL.md)'s Review batches section
+describes. Without `objectives`, a batch runs every objective that applies: those this skill's
 Objectives section and the tool skills describe.
 
 ## 2. Worklists

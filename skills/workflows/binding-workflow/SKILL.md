@@ -72,12 +72,9 @@ of the directories on its path, before its first wave, and each item's home, as
 ## 3. Order
 
 The modules run as [`scheduling`](../../planning/scheduling/SKILL.md)'s Waves and
-batches section describes: a module's run starts once the waves of other modules that its
-waves depend on have been integrated, on a branch of its own, and its waves that are
-`todo` run one at a time, in the order of their `depends_on.scheduled`. The runs of
-modules that do not depend on each other run at once, as many as
-[`concurrency`](../../operations/concurrency/SKILL.md) describes, and among the
-runs ready at once, the one whose first wave has the lowest index starts first.
+batches section describes, each run on a branch of its own, its `todo` waves in the order
+of their `depends_on.scheduled`; among the runs ready at once, the one whose first wave
+has the lowest index starts first.
 
 A session may run every wave left, or the waves of the part of the scope it was given.
 
@@ -130,13 +127,9 @@ Once every batch has landed, its review batches included, the wave is promoted t
 describes, and its progress and accounting are committed on the working branch, as its
 Progress section times them.
 
-Once the last wave of a module's run has been promoted, the module is integrated into the working branch, as
-[`versioning`](../../operations/versioning/SKILL.md)'s Integration section
-describes: the working branch merged into its branch, its additive conflicts resolved,
-the merge's gates passed, and the working branch fast-forwarded to it. Its gates are
-those of [`testing`](../../verification/testing/SKILL.md)'s Regressions
-section, and in a port campaign the module's own integration, as
-[`porting-workflow`](../porting-workflow/SKILL.md)'s Builds section describes.
+Once the last wave of a module's run has been promoted, the module is integrated into the
+working branch, as [`versioning`](../../operations/versioning/SKILL.md)'s Integration section
+describes.
 
 ## 5. Review batches
 

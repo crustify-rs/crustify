@@ -258,10 +258,8 @@ rebuilds the variants from the C that remains and turns the module's export feat
 [`porting-workflow`](../../workflows/porting-workflow/SKILL.md)'s Builds section describes. Its gates
 are those above, in campaign mode over the rebuilt variants, and the target's remaining C
 tests, which link the remaining C and the safe crate's Rust static library, so that the C
-reaches the ported module through its exports. A remaining C test is tied to no
-integrated module: it checks the remaining C's behaviour, with the ported Rust under it.
-A C test tied to a module asserts the C contract the port may change, so it leaves with
-the module.
+reaches the ported module through its exports; the C tests tied to the module leave with
+it, as the porting workflow's Tests follow their modules section describes.
 
 The tests the port batches write for a module's items mirror the regression cases of the
 C tests tied to it: their inputs, edge cases and call sequences, with the assertions

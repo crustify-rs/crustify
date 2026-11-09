@@ -109,10 +109,8 @@ repository.
 
 ## 7. Reviews
 
-A review batch files its findings under its reviews dir, `crustify/reviews/<batch id>/`,
-such as `crustify/reviews/wave-3/batch-1/`, in the repository the review lands in: one `<slug>` directory per finding, holding its report
-and, when it has one, its reproducer, under the sub-directory of the finding's kind.
-
-A planner run that amends an earlier plan files its findings the same way under
-`crustify/reviews/planner/`: `modules/` for `modules.json` and `schedule.json`, and
-one sub-directory per tool artifact it amends.
+A review batch's findings sit under its reviews dir, `crustify/reviews/<batch id>/`, such
+as `crustify/reviews/wave-3/batch-1/`, in the repository the review lands in, and a planner
+run's plan corrections under `crustify/reviews/planner/`, as
+[`reviewing`](../../verification/reviewing/SKILL.md)'s Reports and Plan corrections sections
+lay them out.
