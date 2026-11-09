@@ -43,7 +43,7 @@ objective anew, as [`decomposition`](../../planning/decomposition/SKILL.md)'s
 Objectives section describes, its decomposition may change, and every `todo` wave is
 re-planned. An item that has landed keeps its code, which moves to the home the new
 decomposition gives it before the next wave starts. What has landed stays: in a campaign turned `port`, the bindings that landed are the wrappers its
-ports keep, as [`porting`](../../rust/porting/SKILL.md)'s Symbols section
+ports keep, as [`porting`](../../rust/porting/SKILL.md)'s FFI boundary section
 describes; in one turned `wrap`, what has been ported stays ported, and the rest is
 wrapped.
 

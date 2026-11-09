@@ -110,7 +110,7 @@ established crates that could replace it outright, in descending order of featur
 Each carries its feature parity and notes on what is missing or differs, and each crate is
 checked for its semantics, platform support, performance and licensing. A port builds on
 them where they serve: a standard-library operation that is equivalent is used directly, as
-[`porting`](../../rust/porting/SKILL.md)'s Symbols section describes.
+[`porting`](../../rust/porting/SKILL.md)'s FFI boundary section describes.
 
 ## 6. Foundational modules
 

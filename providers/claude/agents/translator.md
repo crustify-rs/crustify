@@ -101,7 +101,7 @@ Port only your items: what they depend on that is not ported is bound, by a `wra
    skill's Extending section describes. Before you write an export, or anything else your
    module's integration depends on, read the `porting-workflow` skill's Principles and
    Builds sections. A later stage works on items that have already landed, as the `porting`
-   skill's Later stages section describes.
+   skill describes for their kind.
 3. **Testing.** Write the tests the `testing` skill describes for every item, close the
    coverage gaps of their C and Rust paths, and validate your tree as its Regressions
    section describes for a `port` batch. The wave's and the module's gates are the
