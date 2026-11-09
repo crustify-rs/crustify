@@ -61,7 +61,10 @@ A shared header, one that carries no single TU's name, is split item by item:
 
 - a type goes to the TU that implements its lifecycle and its functionality, an enum to
   the TU whose functions produce or consume its values;
-- a global goes to the TU that implements its logic; and
+- a global goes to the TU that implements its logic;
+- a function pointer a typedef declares goes to the TU whose functions call it or take it,
+  one written inline with the item whose declaration holds it, and a typedef of its own to
+  the TU whose functions use it; and
 - a `static inline` function or a macro goes to the module whose logic it implements, as
   the functions it calls and the types it accesses show.
 

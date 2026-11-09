@@ -25,7 +25,7 @@ and in Notes.
   the wave and batch indices
 - `objective` — `wrap` or `port`, or a later stage, `port/layout`, `port/memory` or `port/unexport`; `pass` — `first` for a translation batch, `review` for a
   review batch; `Σ first` / `Σ review` total each pass apart
-- `types` / `symbols` / `fields` — the batch's scheduled units (callbacks count as
+- `types` / `symbols` / `fields` — the batch's scheduled units (function pointers count as
   symbols) and its types' assigned field accessors; a review row counts what it reviewed
 - `$` / `tokens` / `wall` — the agent's computed cost (API-equivalent under
   subscription), its tokens in millions as `crustify-usage` reports them, and its elapsed
@@ -289,7 +289,7 @@ gateways and scaffolding with no C counterpart.
 The four unit counts are de-duplicated over ENTITIES, not scheduled units: an
 entity appears once, under the last objective it ran, so a type wrapped and
 later ported counts as ported and never in both. Name the entities that took
-both paths. Callbacks count with symbols.
+both paths. Function pointers count with symbols.
 
 Some of it is structural and belongs here every time: how each wave's batches
 were packed, and why: their sizes, the caps if any, the waves that shared

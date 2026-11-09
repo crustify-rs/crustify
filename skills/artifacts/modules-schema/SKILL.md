@@ -193,7 +193,7 @@ once across the decomposition.
 | `functions` | function definitions |
 | `global_variables` | file- and program-scope variables |
 | `unions` | union definitions |
-| `callbacks` | function-pointer types the module defines |
+| `function_pointers` | function pointers the module defines, declared by a typedef or written inline |
 
 | `api` field | meaning |
 |---|---|
@@ -204,13 +204,14 @@ once across the decomposition.
 | `functions` | functions the API headers declare, prototypes and `static inline` alike |
 | `global_variables` | variables the API headers declare |
 | `unions` | unions the API headers define |
-| `callbacks` | function-pointer types the API headers define |
+| `function_pointers` | function pointers the API headers define, declared by a typedef or written inline |
 
 The blocks overlap: a function defined in a translation unit and declared in an API
 header counts in both, once as a definition and once as published. Never add them.
 
-Enums and macros are not counted yet, here or in a dependency record.
-<!-- TODO: count them once wavefront schedules them, as its skill's TODO says. -->
+Enums, macros and typedefs of their own are not counted yet, here or in a dependency
+record.
+<!-- TODO: count them, as the wavefront skill's TODO says. -->
 
 ## 8. link_units[*].modules[*].depends_on
 
@@ -244,7 +245,7 @@ its wrapper and the crates that port or bind it, is recorded once, in `dependenc
 as `dependencies-schema` describes, not in each record that imports it.
 
 A record's `counters` carries the same item kinds a module's own does — `structs`,
-`functions`, `global_variables`, `unions`, `callbacks` — counting what this module
+`functions`, `global_variables`, `unions`, `function_pointers` — counting what this module
 consumes, not what the destination contains. A module that uses only another's enums has
 no record of it yet, and its edges count no enum. It has no `files` or `loc`: those
 describe a module's own files, and a consumer imports entities, not files.

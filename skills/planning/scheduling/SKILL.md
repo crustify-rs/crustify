@@ -72,9 +72,9 @@ Typed lifecycle primitives stay in the schedule as free symbols, as
 
 In a wrap campaign every item is `wrap`. In a port campaign, the items of the foundational
 modules are `wrap`, and those of every other module `port`: a function, a global, a
-typedef, an enum or a macro where the order places it, a struct or a union `wrap` there
-while another module's C uses its layout, and each followed by the later stages
-[Later stages](#5-later-stages) describes, each a planned item of its own.
+function pointer, a typedef, an enum or a macro where the order places it, a struct or a
+union `wrap` there while another module's C uses its layout, and each followed by the
+later stages [Later stages](#5-later-stages) describes, each a planned item of its own.
 
 Enums and macros are items as any other entity is, bound or ported as
 [`binding`](../../rust/binding/SKILL.md)'s Enums and Macros sections, and
@@ -85,8 +85,8 @@ Enums and macros are items as any other entity is, bound or ported as
 A wave's batches are packed when it starts, from the state of the campaign at that
 moment, and packed again as its batches land or fail. Each batch holds items of one
 objective and one route, as [`task-schema`](../../artifacts/task-schema/SKILL.md)'s Routes
-section describes: structs, unions, enums and the macros that generate types, or
-functions, globals, typedefs and the other macros.
+section describes: structs, unions, enums, typedefs and the macros that generate types,
+or functions, globals, function pointers and the other macros.
 
 A batch is sized so that its agent carries every item through its analysis, its tests and
 its gates within one session, without its context running out, and so that what it lands
@@ -94,8 +94,8 @@ stays within what one review can follow. That size follows from:
 
 - the items: a type's fields, its pointer fields above all, each of whose accessors
   follows from the analysis; a symbol's lines, its pointer parameters and returns, its
-  callbacks and the type-erased values it hands on; and, in a foundational module, the
-  lifecycle roles its items' strategies implement;
+  function pointers and the type-erased values it hands on; and, in a foundational
+  module, the lifecycle roles its items' strategies implement;
 - the agent: its model, its context window and its effort;
 - the campaign so far: which of the batches before it landed in one run, and which failed
   or ran out of context; and

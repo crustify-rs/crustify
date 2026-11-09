@@ -153,7 +153,8 @@ A row wavefront warns is stale is corrected or deleted.
   the highest index of a started wave, in wavefront's order, their `depends_on` renumbered,
   with their module's `layer` and their `sublayer`. A wave's `items` are those of its
   wavefront batches, each with its `name`, `defined_in` and `kind`, a macro's
-  `type_generator_for` deciding its route, its `used_fields` as `field_users`, the `home` its module gives it, its `objective`, and its
+  `type_generator_for` deciding its route, its `used_fields` as `field_users`, its
+  `typedefs`, the `home` its module gives it, its `objective`, and its
   `opaque_after`, `memory_unmanaged_after` and `unreferenced_after`, with the later stages
   they place, as [Scheduling › Later stages](#scheduling--later-stages) describes. An item a wave
   that has started holds, or that a batch has landed with that objective, is dropped, and
@@ -213,6 +214,17 @@ of a generator in `type_generators.csv` share one generic, with per-instance ali
 
 A type's lifecycle primitives are identified as `docs/type-lifecycle.md` describes, and
 submitted through the CLI's `--update`.
+
+### Binding › Symbol route › Function pointers
+
+A function pointer's record is `query function_pointers --name <name>`: one a typedef
+declares is named by it, and one written inline by its signature, as
+`int (*)(ctx *, void *)`, homed in the file that writes it. Its record's `used_by` names
+its users; the sites of an inline one, each with the field, parameter, return, global,
+local or cast that holds it, are the rows of T2's `function_pointer_uses.csv` that name
+its signature and file.
+<!-- TODO: wavefront gives a function pointer no release point, as `porting`'s Function
+pointers section needs to plan the stage that removes its C form. -->
 
 ### Binding › Symbol route › Lifecycle strategies
 

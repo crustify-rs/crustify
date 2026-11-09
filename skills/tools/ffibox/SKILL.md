@@ -25,6 +25,16 @@ adds to, and states only what ffibox adds there.
 A type that stays interoperable with C is bound through ffibox's primitives wherever they
 apply, as its documentation describes.
 
+### Binding › Symbol route › Function pointers
+
+A Rust closure reaches C through `callback::CClosure`, where C keeps it for the call that
+receives it, and `callback::CPayload`, where C keeps it until it releases its context: each
+gives the trampoline, typed as the C declaration names it, and the context, and its
+trampoline is the panic barrier, `callback::barrier`, which also guards an export's body.
+<!-- TODO: both are on ffibox's `feat/bidirectional` branch, not yet released; and ffibox
+has no primitive yet for a C function with its context that Rust calls, nor for the
+callable type that holds either, which a binding hand-writes until it does. -->
+
 ### Binding › Symbol route › Lifecycle strategies
 
 `CBox` and `CArc` own only `CCell` layout types: a single C struct is a `CBox<Foo, P>`

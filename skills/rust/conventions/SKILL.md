@@ -31,7 +31,14 @@ ownership contracts, each safe variant has a distinct, descriptive name.
 ### 1.2 Types
 
 A wrapped C type is the layout-compatible newtype `Foo`, named by the rules above; its
-shared and exclusive borrowed handles are `FooRef<'a>` and `FooMut<'a>`.
+shared and exclusive borrowed handles are `FooRef<'a>` and `FooMut<'a>`. A typedef that
+names a type under another name, which its item lists among its `typedefs`, is a
+`pub type` alias of the type's Rust form.
+
+A function pointer a typedef declares is named after its typedef. One written inline is
+named after the site that declares it, its holder's name followed by its own and `Fn`: a
+field's `<Struct><Field>Fn`, a parameter's `<Function><Param>Fn`, a return's
+`<Function>ReturnFn` and a global's `<Global>Fn`.
 
 ### 1.3 Shims
 
@@ -123,17 +130,20 @@ workspace's `clippy::doc_markdown` lint requires of a path in a doc comment.
 | `st` | a struct |
 | `un` | a union |
 | `enm` | an enum, or one of its constants |
-| `cbk` | a callback typedef |
+| `fnp` | a function pointer |
+| `tdf` | a typedef: one of its own, or one an item lists among its `typedefs` |
 | `fld` | a member of a struct or union |
 | `glb` | a global |
 | `mac` | a macro |
 
 A path is made of names only: the names the source resolves the item by, outermost first,
 separated by `.`, as the source language scopes them. A function, a type, an enum's
-constant or a global is its own name, since C scopes a constant as it does its enum; a
-member is its struct's or union's path followed by the member's name, and a
-member of a member continues the path, as `fld::AVOption.default_val.i64`. An element
-without a name adds no step to the paths of what it holds:
+constant, a global, a typedef or a function pointer a typedef declares is its own name,
+since C scopes a constant as it does its enum. A member is its struct's or union's path
+followed by the member's name, and a member of a member continues the path, as
+`fld::AVOption.default_val.i64`. A function pointer written inline is its declaring site's
+path: a member's, `<function>.<param>` for a parameter, `<function>.return` for a return,
+or a global's name. An element without a name adds no step to the paths of what it holds:
 
 - an anonymous struct or union held by a named member is reached through that member, so
   its members are `fld::<path>.<member>.<inner>`;
@@ -172,6 +182,9 @@ not necessarily the item that makes the FFI call:
   variant or the constant that stands in for it.
 - a macro: the generic, `const`, function or `macro_rules!` that stands in for it; a type
   generator's instances keep their own kinds, on the aliases.
+- a function pointer: the callable type that stands in for it, or the trait, for a struct
+  of function pointers.
+- a typedef: the alias that stands in for it.
 - a member: each of its accessors, the getter and the setter alike.
 
 ### 3.2 Several stand-ins

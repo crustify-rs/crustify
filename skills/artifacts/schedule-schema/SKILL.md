@@ -86,7 +86,7 @@ the objective it is translated with and its entity's release points:
 
 | field | meaning |
 |---|---|
-| `name`, `defined_in`, `kind`, `field_users`, `home` | as on a batch item |
+| `name`, `defined_in`, `kind`, `field_users`, `typedefs`, `home` | as on a batch item |
 | `objective` | `wrap` or `port`, or one of the later stages of `scheduling`'s Later stages section: `port/layout` or `port/memory` for a struct or a union, `port/layout` for a closed enum, `port/unexport` for a function or a global |
 | `opaque_after` | on a struct, a union or an enum, the release point after which none of its layout users is left, as the scheduling spec's Later stages section defines them; `null` on any other item |
 | `memory_unmanaged_after` | on a struct or a union, the release point after which none of its memory users is left; `null` on any other item |

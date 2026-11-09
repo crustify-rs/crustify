@@ -1,6 +1,6 @@
 ---
 name: binding
-description: "How a scheduled C item becomes a safe Rust binding: the safe boundary, the type route for structs, unions as tagged enums, and enums, and the symbol route for functions, globals, callbacks and macros. Read before binding any item, and when reviewing bindings."
+description: "How a scheduled C item becomes a safe Rust binding: the safe boundary, the type route for structs, unions as tagged enums, and enums, and the symbol route for functions, globals, function pointers and macros. Read before binding any item, and when reviewing bindings."
 ---
 
 # Generating safe bindings
@@ -127,10 +127,10 @@ Each kind of field is expressed as follows:
 - `Send` and `Sync` are implemented only with a specific synchronization or immutability
   proof.
 
-Translated dependent types and callbacks are used through their safe wrappers, and strings,
-arrays and erased owners through real release strategies. A lower-layer temporary raw
-reference this wrapper makes obsolete (a cut SCC) is replaced; a documented raw gap remains
-only for an unavailable higher-layer dependency.
+Translated dependent types and function pointers are used through their safe wrappers,
+and strings, arrays and erased owners through real release strategies. A lower-layer
+temporary raw reference this wrapper makes obsolete (a cut SCC) is replaced; a documented
+raw gap remains only for an unavailable higher-layer dependency.
 
 An inline function-pointer helper without an ownership-compatible wrapper gets one,
 emitted with the type.
@@ -222,14 +222,53 @@ from every C access:
 A lock counts only if every access takes it and it rejects same-thread re-entry. While C
 consumers reference the symbol, its C layout and synchronization protocol are kept.
 
-### 3.3 Callbacks
+### 3.3 Function pointers
 
-A callback is bound from its typedef and all of its call sites as a callable handle with
-safe argument and result wrappers. When call sites use different ownership distributions,
-each distribution has its own distinctly named safe wrapper over the shared C
-function-pointer type.
+A function pointer is bound from its declaration and every site that calls it or supplies
+it, a function assigned to it or passed as it. One a typedef declares is named after its
+typedef; one written inline is named after the site that declares it, the field,
+parameter, return or global, as the [conventions](../conventions/SKILL.md)' Naming
+section describes, so that two inline pointers of one signature in one file are two items
+when their sites differ.
+<!-- TODO: wavefront keys an inline function pointer by its signature and home file, so
+the sites of one signature in one file are one item; it has yet to key them by declaring
+site, a local's or a cast's folded into the site whose value it carries. -->
 
-An inline function pointer is wrapped when no ownership-compatible callable wrapper exists.
+It is bound to a safe callable type that holds either of its implementations:
+
+- a Rust closure, which C reaches through a trampoline of the C signature and the context
+  C passes back to it; and
+- a C function, with its context, which Rust calls: made only inside the crate, through an
+  `unsafe` constructor whose contract states what the C that supplies it guarantees, the
+  function's validity and its context's lifetime and threads, and safe to call, its
+  arguments and result converted as a function's binding converts them.
+
+A function pointer that crosses the boundary gets both, whichever direction its uses take
+today, since a port turns the C that calls or supplies it into Rust, as
+[`porting`](../porting/SKILL.md)'s Function pointers section describes, and its safe API
+does not change then. Its consumers see only the safe form, its closures taking and
+returning safe types: a closure borrowed for the call, `impl FnMut(…)`, where C keeps it
+for the call that receives it; an owned closure, released with its context, where C keeps
+it until it releases it; and a trait, for a struct of function pointers a library calls
+into, which Rust types and the C implementation implement alike. A function pointer read
+from C, such as a field's getter returns, is the callable type, never the raw pointer.
+How long C keeps it is a finding of the analysis.
+
+Its trampoline is a panic barrier, which maps a panic to the C's error convention, and it
+refuses a re-entrant call, which would alias an `FnMut` closure, unless the analysis shows
+that C re-enters it, which takes an `Fn` closure instead. A function pointer C calls from
+another thread takes a `Send` closure, and a `Sync` one when C may call it from several at
+once. Three cases shape the type further:
+
+- one without a context parameter carries no captured state: its Rust implementation is a
+  closure without captures, each closure type its own trampoline, or a plain function;
+- one C reads as absent when null, where it uses a default or calls nothing, is an
+  `Option` of the callable type; and
+- one C compares with a known function, such as its default implementation, keeps in its C
+  variant the pointer it was made from, so that the comparison still holds.
+
+When its sites hand ownership across differently, each distribution has its own distinctly
+named callable type over the one C function-pointer type.
 
 ### 3.4 Macros
 

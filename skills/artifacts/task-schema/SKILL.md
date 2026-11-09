@@ -38,6 +38,7 @@ its own.
       "defined_in": "libavutil/frame.h",
       "kind": "struct",
       "field_users": ["data", "linesize"],
+      "typedefs": [],
       "home": "src/libavutil/libavutil/frame.rs"
     }
   ]
@@ -169,16 +170,17 @@ Every field is required on every item, and no other field is accepted.
 
 | field | meaning |
 |---|---|
-| `name` | C entity name, non-empty |
+| `name` | C entity name, non-empty: a function pointer written inline is named by its signature |
 | `defined_in` | path of its definition below the C root |
-| `kind` | what the C entity is: `struct`, `union`, `enum`, `function`, `global`, `macro`, or `typedef`, a callback's function-pointer typedef |
+| `kind` | what the C entity is: `struct`, `union`, `enum`, `function`, `global`, `macro`, `function_pointer`, declared by a typedef or written inline, or `typedef`, one that names no struct, union, enum or function pointer |
 | `field_users` | the members of a struct, a union or an enum its consumers use: a struct's or a union's fields, whose accessors the batch writes, or an enum's constants; empty on any other kind |
+| `typedefs` | the typedefs that name a struct, a union, an enum or a function pointer besides its `name`, which the batch binds with it; empty on any other kind |
 | `home` | `.rs` path, relative to the repository's root, the item is authored into |
 
 `(name, defined_in)` identifies an item and must be unique within the batch. A
 `port/layout` batch holds only structs, unions and enums, a `port/memory` batch only
 structs and unions, and a `port/unexport` batch only functions and globals.
-`field_users` must not repeat a name.
+`field_users` and `typedefs` must not repeat a name.
 
 `home` is the sole placement input: no other artifact decides where an item goes, so the
 Rust tree a wave's batches name is not restructured while the wave runs.
@@ -190,8 +192,9 @@ batch mixing routes is rejected.
 
 | kind | route |
 |---|---|
-| `struct`, `union`, `enum`, and a `macro` that generates types | `type` |
-| `function`, `global`, `typedef`, and any other `macro` | `symbol` |
+| `struct`, `union`, `enum`, `typedef`, and a `macro` that generates types | `type` |
+| `function`, `global`, `function_pointer`, and any other `macro` | `symbol` |
+<!-- TODO: neither `binding` nor `porting` has an arm for a typedef of its own yet. -->
 
 A macro generates types when its record in the planning tools lists the instance types it
 mints: its instances share the one generic the type route writes for it, as

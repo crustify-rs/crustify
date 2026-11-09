@@ -1,6 +1,6 @@
 ---
 name: porting
-description: "How a scheduled C item is reimplemented in safe Rust: the FFI boundary and its exports, the type route for structs, unions and enums, the symbol route for functions, globals, static inline functions and macros, each with its later stages. Read before porting any item, and when reviewing ports."
+description: "How a scheduled C item is reimplemented in safe Rust: the FFI boundary and its exports, the type route for structs, unions and enums, the symbol route for functions, globals, function pointers, static inline functions and macros, each with its later stages. Read before porting any item, and when reviewing ports."
 ---
 
 # Porting
@@ -114,7 +114,21 @@ A global that remaining C accesses is exported, and keeps its C layout and its
 synchronization protocol while it is, as `binding`'s Globals section describes. Its later
 stage, `port/unexport`, removes the export, as a function's does.
 
-### 3.3 Static inline functions
+### 3.3 Function pointers
+
+A ported function pointer keeps the safe callable type [`binding`](../binding/SKILL.md)'s
+Function pointers section gives it, which is its API from its port: its Rust consumers, and
+the ported code that calls it, use that type alone. While remaining C calls a function
+pointer of its type or supplies one, its C form stays beneath it: the function-pointer type
+of its raw binding, the trampolines through which a Rust closure reaches the C that calls
+it, and the `unsafe` constructor through which a C function reaches Rust, passed to an
+export, whose gateway builds the C variant from the function and the context it receives,
+or stored where C wrote it. A function pointer no remaining C calls or supplies by its port
+is native in its implementation too: its closure or trait alone.
+<!-- TODO: wavefront gives a function pointer no release point, so no later stage removes
+its C form once its last C caller and supplier are integrated. -->
+
+### 3.4 Static inline functions
 
 A `static inline` function a header defines is internal API of the module the
 decomposition gives it, and is ported as its other functions are. Its C callers expand its
@@ -124,7 +138,7 @@ calls the Rust module's export, under the function's bare name, where it inlined
 <!-- TODO: cross-language LTO (`-Clinker-plugin-lto`, with a clang whose LLVM matches
 rustc's) would inline the export back into its C callers. -->
 
-### 3.4 Macros
+### 3.5 Macros
 
 A macro takes the Rust form [`binding`](../binding/SKILL.md)'s Macros section gives it,
 which reaches the Rust items its expansion uses once they are ported. A macro a TU defines
