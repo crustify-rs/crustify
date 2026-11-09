@@ -1,12 +1,12 @@
 ---
 name: conventions
-description: "Naming, tree layout, anchors and test placement of the Rust a campaign generates. Read before writing, homing or reviewing generated Rust or tests."
+description: "Naming, enums and macros, tree layout, anchors and test placement of the Rust a campaign generates. Read before writing, homing or reviewing generated Rust or tests."
 ---
 
 # Crustify coding conventions
 
 These are the shared, mechanical contracts of the code a campaign generates: how it is
-named, where it sits, how it records what it translated and where its tests go. The
+named, how it reaches C enums and macros, where it sits, how it records what it translated and where its tests go. The
 toolchain, edition, lints and formatting it is held to are [`toolchain`](../toolchain/SKILL.md)'s.
 
 ## 1. Naming
@@ -33,12 +33,7 @@ ownership contracts, each safe variant has a distinct, descriptive name.
 A wrapped C type is the layout-compatible newtype `Foo`, named by the rules above; its
 shared and exclusive borrowed handles are `FooRef<'a>` and `FooMut<'a>`.
 
-### 1.3 Shims
-
-A callable macro shim is `crustify_<NAME>`. Constant macros remain generated constants in
-the raw bindings.
-
-### 1.4 Exports
+### 1.3 Exports
 
 Each ported module has one `mod ffi_export { use super::*; ... }` raw ABI gateway in its
 Rust file, whose exports use `#[unsafe(no_mangle)] extern "C"` under the bare C names: the
@@ -51,14 +46,33 @@ after the integration that removes the last C that calls it, takes its address o
 accesses it. An export whose C callers read `errno`
 after the call sets it as the C function did, since the Rust behind it never does.
 
-### 1.5 Export features
+### 1.4 Export features
 
 Each module's `ffi_export` is compiled only under the safe crate's Cargo feature
 `ffi-export-<tu>`, with `<tu>` its translation unit's path below the C root, every character
 that is not an ASCII letter or digit replaced by `-`. The feature is off until the module is
 integrated, so that its exports never collide with the C they replace.
 
-## 2. Crates, modules, and TUs
+## 2. Enums and macros
+
+### 2.1 Enums
+
+A C enum is a set of constants, with no fields, layout or lifecycle to publish, so nothing
+wraps it: its constants are generated into the raw bindings, as
+[`bindgen`](../bindgen/SKILL.md)'s Generation section describes, and used from there
+directly. A port reimplements it once, as a Rust enum.
+
+### 2.2 Macros
+
+A C macro is not translated, and never published as a Rust API of its own:
+
+- a symbol alias is reached through the Rust that stands in for the symbol it names;
+- a function-like macro is reached through an existing shim, or the smallest shim it needs,
+  `crustify_<NAME>`, which is then bound and wrapped;
+- a constant macro is used through its generated constant in the raw bindings; and
+- a type-generating macro's types follow [`binding`](../binding/SKILL.md)'s Type route.
+
+## 3. Crates, modules, and TUs
 
 The Rust tree is the repository's own, as [`layout`](../../operations/layout/SKILL.md)'s Tree section lays it
 out, all relative to the repository's root:
@@ -94,7 +108,7 @@ Rust way and keeps the C path recognizable. A batch names the `.rs` file each of
 belongs in, as `src/<link-unit>/…/<file>.rs`. Entities sharing a
 definition site co-home. A home may be shared across waves.
 
-## 3. Anchors
+## 4. Anchors
 
 The Rust item that stands in for each C item is annotated, and those annotations are the
 only record that an item was translated.
@@ -148,7 +162,7 @@ The alias is the bare `<path>`, without the backticks, so that a consumer who se
 documentation for the source's name finds every item that stands in for it. The kind is
 the anchor's alone: a label in the alias would no longer match that search.
 
-### 3.1 What is annotated
+### 4.1 What is annotated
 
 The annotation goes on the public item a consumer uses in place of the C item, which is
 not necessarily the item that makes the FFI call:
@@ -164,7 +178,7 @@ not necessarily the item that makes the FFI call:
   `define_ctype!`.
 - a member: each of its accessors, the getter and the setter alike.
 
-### 3.2 Several stand-ins
+### 4.2 Several stand-ins
 
 One C item may have several annotated Rust items, each carrying the same anchor and
 alias: the ownership variants one C function is split into when one signature cannot
@@ -174,7 +188,7 @@ annotation is duplicated. Existing annotations are completed work unless the cur
 objective deliberately promotes their item: a port of an item a binding wraps replaces its
 `Wraps` anchor with a `Replaces` one, and keeps its alias.
 
-## 4. Testing
+## 5. Testing
 
 Tests are placed by what they target. Tests of the public interface are Cargo integration
 tests of the safe crate, under `tests/`, so crate privacy enforces

@@ -1,45 +1,17 @@
 ---
 name: binding
-description: "How a scheduled C item becomes a safe Rust binding: item analysis, macros, the safe boundary, the type route and the symbol route. Read before binding any item, and when reviewing bindings."
+description: "How a scheduled C item becomes a safe Rust binding: the safe boundary, the type route and the symbol route. Read before binding any item, and when reviewing bindings."
 ---
 
 # Generating safe bindings
 
 How a scheduled C item becomes a safe Rust binding.
-A binding keeps the C implementation and puts a safe Rust API in front of it.
+A binding keeps the C implementation and puts a safe Rust API in front of it, shaped by the
+item's analysis, as [`analysis`](../analysis/SKILL.md) describes. Its enums and macros
+are handled as [`conventions`](../conventions/SKILL.md)' Enums and macros section
+describes.
 
-## 1. Item analysis
-
-Each item is analysed from its source declarations and definitions, its dependency closure,
-its callers, its field touchers and its existing Rust consumers. For every pointer field,
-argument and return, every code path that stores, transfers, clones, retains or frees it is
-inspected.
-
-The analysis establishes:
-
-- ownership and transfer direction;
-- shared or mutable access;
-- nullability;
-- scalar, array, or other cardinality;
-- type erasure and known element types;
-- borrow and keepalive relationships; and
-- construction, clone, and destruction paths.
-
-Observed behaviour overrides names and comments. A distinction the analysis establishes is
-preserved in Rust rather than flattened into a copy of an ambiguous C signature, and the
-findings shape every binding that follows.
-
-## 2. Macros
-
-A C macro is never published as an independent Rust API.
-
-- A symbol alias is bound by calling the underlying symbol's safe wrapper.
-- A function-like macro is bound through an existing shim, or the smallest shim it needs,
-  which is then bound and wrapped.
-- A constant macro is used through its generated binding.
-- A type-generating macro follows the type route.
-
-## 3. Safe boundary
+## 1. Safe boundary
 
 Any ABI or layout C still observes is preserved, and imported entities remain C-owned.
 
@@ -61,19 +33,15 @@ standard library wherever it provides it and the state the entity works on stays
 or crosses to C only as values the boundary converts: `errno` set from an `io::Error` by
 an export gateway, a `struct stat` filled from an `fs::Metadata`. It is reached through the
 library's bindings wherever that state is shared with C: a lock, a handle or an allocation
-the remaining C uses too. The agent doing the work judges which, from the code it
-translates; no plan records it. An entity it needs through a wrapper that lacks it is
-reported, never reached through raw bindings.
+the remaining C uses too. The code being translated decides which; no plan records it. An
+entity needed through a wrapper that lacks it is reported, never reached through raw
+bindings.
 
 ---
 
-## 4. Type route
+## 2. Type route
 
-An enum takes no type route: it has no fields, layout or lifecycle to publish, so its
-generated raw binding is used directly, as a constant macro's is. A port reimplements
-it as a Rust enum.
-
-### 4.1 Surface
+### 2.1 Surface
 
 A binding's surface is the fields and lifecycle primitives the public API publishes: in a
 wrap batch that precedes its consumers, the fields those consumers access and the
@@ -82,7 +50,7 @@ opaque.
 Releasers, field disposers, cloners, constructors, casts and pointer-field semantics are
 identified before a representation is chosen.
 
-### 4.2 Safe layout
+### 2.2 Safe layout
 
 A type is bound as a safe layout over the raw type and its handles. The canonical wrapped
 surface has three types, named as the conventions describe:
@@ -104,7 +72,7 @@ A synthetic type generator is bound as:
 - an alias of a dominant concrete instance to the generator with its element wrapper; and
 - specializations only for behaviour that differs from the generic surface.
 
-### 4.3 Lifecycle
+### 2.3 Lifecycle
 
 Every ownership variant the analysis supports has a representation.
 
@@ -132,7 +100,7 @@ unsafe blocks.
 Lifecycle routines are also scheduled as free symbols, although the type route emits them
 as it binds their types; the symbol route skips those a type batch already emitted.
 
-### 4.4 Field accessors
+### 2.4 Field accessors
 
 Each accessor follows from the ownership, mutability, nullability, cardinality and lifetime
 findings, and every pointer-derived result is tied to the state that keeps it alive.
@@ -170,9 +138,9 @@ emitted with the type.
 
 ---
 
-## 5. Symbol route
+## 3. Symbol route
 
-### 5.1 Functions
+### 3.1 Functions
 
 A function is bound as a `pub fn`; it is a `pub unsafe fn` only when no safe type-level
 contract can express its caller obligation. Arguments and returns use typed wrappers, and
@@ -205,7 +173,7 @@ Lifecycle primitives for typed, type-erased or string handles may be scheduled a
 although a previous run already emitted the release, clone or construct strategy that calls
 them; they get no second wrapper.
 
-### 5.2 Globals
+### 3.2 Globals
 
 A global is bound as a `'static` borrow, never as an owner. Its access discipline follows
 from every C access:
@@ -220,7 +188,7 @@ from every C access:
 A lock counts only if every access takes it and it rejects same-thread re-entry. While C
 consumers reference the symbol, its C layout and synchronization protocol are kept.
 
-### 5.3 Callbacks
+### 3.3 Callbacks
 
 A callback is bound from its typedef and all of its call sites as a callable handle with
 safe argument and result wrappers. When call sites use different ownership distributions,
@@ -229,7 +197,7 @@ function-pointer type.
 
 An inline function pointer is wrapped when no ownership-compatible callable wrapper exists.
 
-### 5.4 Lifecycle strategies
+### 3.4 Lifecycle strategies
 
 The foundational modules hold the allocator or constructor, releaser, disposer and
 cloner routines of type-erased `void` and string handles, each with the lifecycle role

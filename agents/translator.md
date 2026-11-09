@@ -14,13 +14,12 @@ Port only your items: what they depend on that is not ported is bound, by a `wra
 
 1. **Analysis.** Check that your items select one route, as the `task-schema` skill's
    Routes section describes, and analyse each item and what it depends on in the C, as
-   the `binding` skill's Item analysis describes.
+   the `analysis` skill describes.
 2. **Porting.** Port each item into the `home` it names, as the `porting` skill describes
-   for your route, on top of the `binding` skill's Item analysis, Macros and Safe boundary,
-   extending the raw bindings where one is missing, as the `bindgen` skill's Extending
-   section describes. Before you write an export, or anything else your module's
-   integration depends on, read the `porting-workflow` skill's Principles and Builds
-   sections. A later stage works on items that have already landed, as the `porting`
+   for your route, extending the raw bindings where one is missing, as the `bindgen`
+   skill's Extending section describes. Before you write an export, or anything else your
+   module's integration depends on, read the `porting-workflow` skill's Principles and
+   Builds sections. A later stage works on items that have already landed, as the `porting`
    skill's Later stages section describes.
 3. **Testing.** Write the tests the `testing` skill describes for every item, close the
    coverage gaps of their C and Rust paths, and validate your tree as its Regressions

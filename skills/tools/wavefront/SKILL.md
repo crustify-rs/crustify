@@ -190,7 +190,7 @@ worktree once it is forked.
 
 ## Binding and porting
 
-### Binding › Item analysis
+### Analysis
 
 The configuration, `crustify/wavefront/configs/wavefront-config.json`,
 answers the queries an item's analysis needs, and the analysis's findings are submitted

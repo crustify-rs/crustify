@@ -5,9 +5,11 @@ description: "How a scheduled C item is reimplemented in safe Rust: surface, sto
 
 # Porting
 
-How a scheduled C item is reimplemented in safe Rust. A port builds on the binding how-to:
-item analysis, macros and the safe boundary apply unchanged, and a ported item keeps C
-interoperability and observable behaviour for as long as C consumes it.
+How a scheduled C item is reimplemented in safe Rust. A port starts from the item's
+analysis, as [`analysis`](../analysis/SKILL.md) describes, reaches enums and macros as
+[`conventions`](../conventions/SKILL.md)' Enums and macros section describes, and keeps
+[`binding`](../binding/SKILL.md)'s Safe boundary; a ported item keeps C interoperability
+and observable behaviour for as long as C consumes it.
 
 ## 1. Surface
 
@@ -37,8 +39,7 @@ before needed it, the port keeps that wrapper's safe API and replaces only what 
 it, so that its consumers do not change, as do the later stages of the types it serves,
 which [Later stages](#5-later-stages) describes. A standard-library operation is used
 directly when it is equivalent and no C-interoperability requirement remains, an
-out-of-tree library's entity included, as the binding how-to's Safe boundary section
-describes.
+out-of-tree library's entity included, as `binding`'s Safe boundary section describes.
 
 While C consumers remain, the symbol is re-exported to C as the conventions describe:
 
@@ -67,5 +68,5 @@ integrations that free it have landed:
 A stage changes the item and the code inside the crate that reaches its C form, its seams
 and export gateways, never the safe API its consumers use, and keeps the item's tests
 passing. A stage that moves state out of C, a lock or a handle a type held in its C layout,
-or memory C's allocator held, moves its uses onto the standard library where the binding
-how-to's Safe boundary section lets it.
+or memory C's allocator held, moves its uses onto the standard library where `binding`'s
+Safe boundary section lets it.

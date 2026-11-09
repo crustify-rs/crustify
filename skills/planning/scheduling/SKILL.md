@@ -76,11 +76,8 @@ enum where the order places it, a struct or a union `wrap` there while another m
 uses its layout, and each followed by the later stages
 [Later stages](#5-later-stages) describes, each a planned item of its own.
 
-An enum is a set of constants, with no fields, layout users or lifecycle for a binding to
-publish, so nothing wraps it: a wrap campaign schedules none for it and uses its
-generated raw binding directly, as
-[`binding`](../../rust/binding/SKILL.md)'s Type route section describes, and a port campaign
-ports it once.
+Nothing wraps an enum, as [`conventions`](../../rust/conventions/SKILL.md)' Enums section
+describes: a wrap campaign schedules none for it, and a port campaign ports it once.
 
 ## 3. Batches
 
