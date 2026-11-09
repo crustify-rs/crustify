@@ -182,8 +182,9 @@ A struct's or a union's layout users are the target's C that depends on its layo
 Its memory users are the target's C that hands its storage to C's allocator: code that
 allocates it with an allocator of untyped memory, or frees or disposes of it with a
 releaser of untyped memory. Its own constructors, destructors and cloners are no memory
-users: the C that calls them reaches them as any other function. An enum has neither kind
-of user: using its constants or values of its type is no use of a layout.
+users: the C that calls them reaches them as any other function. A closed enum's layout
+users are the C that uses its constants or values of its type, which depend on its integer
+form, and it has no memory users.
 
 Each kind is found in every function that mentions the type, its globals and the struct
 fields declared with it, macro expansions included. Three kinds of C are no users, as
@@ -198,8 +199,9 @@ memory users.
 
 A type is scheduled in stages:
 
-1. `port` where the order places it when no layout user of another module remains, and
-   `wrap` otherwise, so that the type keeps its C layout behind its safe API. A consumer
+1. `port` where the order places it, a struct or a union only when no layout user of
+   another module remains, and `wrap` otherwise, so that it keeps its C layout behind its
+   safe API. A consumer
    ported earlier that needs it has it wrapped ahead, as [Wrap batches](#4-wrap-batches)
    describes;
 2. `port/layout`, after its `opaque_after`: the type takes a Rust-native layout; and
@@ -215,7 +217,7 @@ Its safe API does not change between the stages: it exposes no representation, s
 stage changes the type, its lifecycle and the code inside the crate that reaches its C form,
 and none of its consumers.
 
-### 5.2 Functions, globals and enums
+### 5.2 Functions and globals
 
 A ported function's or global's export, through which the remaining C reaches it, is
 removed with the raw binding that reaches it by a `port/unexport` item, after its
@@ -223,9 +225,3 @@ removed with the raw binding that reaches it by a `port/unexport` item, after it
 takes its address or accesses it, as the [conventions](../../rust/conventions/SKILL.md)' Exports
 section describes. A function or global that remaining C never references has no export,
 and no `port/unexport`.
-
-A ported closed enum's referrers are the remaining C that uses its constants or values of
-its type. Its `port/unexport`, after its `unreferenced_after`, removes the integer form it
-keeps for them, as [`porting`](../../rust/porting/SKILL.md)'s Enums section describes. A
-closed enum that remaining C never uses has no `port/unexport`, and a flags enum or an
-enum without a name has none at all.

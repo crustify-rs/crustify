@@ -97,12 +97,12 @@ integer type, with an associated constant for each of its constants and the bitw
 operators, since a combination is no variant. An enum without a name has no type to port:
 its constants become constants of its integer type. Neither has a later stage.
 
-A closed enum's later stage, `port/unexport`, removes its integer form once no remaining C
-uses it: its `repr`, its discriminants and its conversions. A closed enum that no remaining
-C uses by its port has no integer form.
-<!-- TODO: wavefront computes `unreferenced_after` only for functions and globals, and
-schedules enums only `--with-enums`: it has yet to count an enum's referrers and tell a
-closed enum from a flags one, so no enum's `port/unexport` is planned yet. -->
+A closed enum's later stage, `port/layout`, removes its integer form, its C layout, once no
+remaining C uses it: its `repr`, its discriminants and its conversions. A closed enum that
+no remaining C uses by its port has no integer form.
+<!-- TODO: wavefront computes `opaque_after` only for structs and unions, and schedules
+enums only `--with-enums`: it has yet to count an enum's layout users and tell a closed
+enum from a flags one, so no enum's `port/layout` is planned yet. -->
 
 ---
 
