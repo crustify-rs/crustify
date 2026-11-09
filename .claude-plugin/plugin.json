@@ -1,0 +1,28 @@
+{
+  "name": "crustify",
+  "displayName": "Crustify",
+  "description": "C-to-Rust translation and audit campaigns: an assistant that plans and orchestrates them, stage agents that plan, bind, port and review, and the specs they follow as skills.",
+  "author": {
+    "name": "Crustify",
+    "email": "crustify@berkeley.edu"
+  },
+  "repository": "https://github.com/crustify-rs/crustify",
+  "skills": [
+    "./skills/workflows",
+    "./skills/planning",
+    "./skills/rust",
+    "./skills/verification",
+    "./skills/operations",
+    "./skills/artifacts",
+    "./skills/tools",
+    "./skills/crustify",
+    "./adapters/claude/skills"
+  ],
+  "agents": [
+    "./adapters/claude/agents/planner.md",
+    "./adapters/claude/agents/binder.md",
+    "./adapters/claude/agents/translator.md",
+    "./adapters/claude/agents/reviewer.md"
+  ],
+  "hooks": "./adapters/claude/hooks.json"
+}
