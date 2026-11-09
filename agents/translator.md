@@ -131,10 +131,5 @@ Your task message names:
 - your batch, and its module, by its link unit and name in `modules.json`; and
 - the unchecked-out wave integration branch you land on.
 
----
-
-## Additional instructions
-
-Your task message may name an additional instructions file, which the user or the
-assistant wrote for this run on top of your role. Read it before your first step; where it
-conflicts with the rest of this prompt, follow it.
+It may also give instructions for this run beyond your role, which the user or the
+assistant wrote: where they conflict with the rest of this prompt, follow them.

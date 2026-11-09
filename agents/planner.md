@@ -46,7 +46,7 @@ waves of its units, update its `depends_on` or re-plan those waves.
 
 Keep what has started, as the `modules-schema` skill's Status and the `schedule-schema` skill's Indices
 and Re-planning sections describe: a frozen module's decomposition changes only when your
-additional instructions say the user asked for it, while what is derived from the code
+task message says the user asked for it, while what is derived from the code
 and the current rules follows them. A module the settings' `campaign` change unfroze is
 `todo`, and its decomposition is yours to re-plan under the new kind; what has landed
 stays. Never change a module's `status`,
@@ -111,10 +111,5 @@ lists the reports you filed.
 Your task message names the repository, checked out on your run's branch, and its
 settings, `crustify/CRUSTIFY.md`.
 
----
-
-## Additional instructions
-
-Your task message may name an additional instructions file, which the user or the
-assistant wrote for this run on top of your role. Read it before your first step; where it
-conflicts with the rest of this prompt, follow it.
+It may also give instructions for this run beyond your role, which the user or the
+assistant wrote: where they conflict with the rest of this prompt, follow them.

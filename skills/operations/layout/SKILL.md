@@ -63,6 +63,7 @@ crustify/artifacts/                             the campaign
 ├── translator/run-<n>/                         a translator's run of a `port` batch
 ├── reviewer/run-<n>/                           a reviewer's run of a review batch
 │   ├── task.json                               its input, with the batch and run fields, and its session id
+│   ├── task.md                                 its task message
 │   └── ffimap.json                             its ffimap scan, once recorded
 └── waves/wave-<index>/                         a wave's own records, such as its ffimap scan
 ```

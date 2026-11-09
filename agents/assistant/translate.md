@@ -111,12 +111,12 @@ changed `ship` answer the points at which you ask to ship.
    time, as the `versioning` skill's Integration section describes. No agent's gates cover
    the merge's tree, so you merge it, resolve its additive conflicts, and run its gates
    yourself; hand any other conflict, or a gate that fails, to an agent of the module's
-   batch kind, with additional instructions to resolve it in the module's worktree.
+   batch kind, whose task message asks it to resolve them in the module's worktree.
 
    Before each wave starts, judge which entities of out-of-tree libraries its items need
    through the libraries' wrappers rather than the standard library, as the `dependencies` skill's Side campaigns section describes. For each library whose wrapper lacks some of
-   them, advance its side campaign: spawn a planner run in its repository with additional
-   instructions naming the entities the wave needs, run the waves that run plans, and
+   them, advance its side campaign: spawn a planner run in its repository whose task message
+   names the entities the wave needs, run the waves that run plans, and
    promote them there; then move the parent's pin to the wrapper's working-branch tip, and its
    library's `wrapper.pin` in `dependencies.json` with it, in a commit on the parent's
    working branch, and start the wave.
@@ -144,4 +144,4 @@ changed `ship` answer the points at which you ask to ship.
 - `toolchain`: when you scaffold the workspace.
 - `bindgen`: when you scaffold the raw bindings and when you publish them.
 - `binding` and `porting`: how binders and translators do their work, for reference: to
-  brief the user, to write additional instructions, and to judge what the agents report.
+  brief the user, to write task messages, and to judge what the agents report.

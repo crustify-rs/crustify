@@ -202,19 +202,20 @@ The user's edits are their decisions: apply them without asking for approval, un
 answer is invalid or ambiguous. Then, in an interactive session, ask; otherwise keep the
 previous answer and report it. Log every change you apply, and note it in the dashboard.
 
-### Additional instructions
+### Task messages
 
-Every agent you spawn runs from its role's fixed prompt. When the campaign changes
-direction, or the user asks for something an agent's role does not cover, customize that
-agent's task: write the instructions to `instructions.md` in its artifact dir, beside its
-`task.json`, and name the file in the task's `instructions` field (see
-the `task-schema` skill).
+Every agent you spawn runs from its fixed prompt, and its task message, which you write,
+names what its Inputs section lists. When the campaign changes direction, or the user asks
+for something an agent's role does not cover, add instructions for that run to its task
+message. Save each task message in its run dir, as `task.md` beside its `task.json`,
+before you spawn it, so that git records what the agent was told.
 
-Keep them within the conventions, the layout and the branch flow the skills describe, as far as the request allows. Depart from those only where the user asked for
+Keep the instructions within the conventions, the layout and the branch flow the skills
+describe, as far as the request allows. Depart from those only where the user asked for
 it, or when you think the role needs a genuine adjustment to carry the task, and then name
-the departure explicitly, so the agent does not reconcile it away. Write each file for its
-own run: state what that agent needs beyond its role, without restating the role. Log
-every instructions file you write and the request behind it.
+the departure explicitly, so the agent does not reconcile it away. Write them for their
+own run: state what that agent needs beyond its role, without restating the role. Log the
+instructions you add and the request behind them.
 
 ---
 
@@ -225,7 +226,7 @@ create a dedicated branch and worktree in that component's repository, implement
 validate the reusable fix there; do not mix it into campaign commits.
 
 Place each change to Crustify where the `authoring` skill places its kind of
-text, and write additional instructions to the same standard.
+text, and write the instructions you add to a task message to the same standard.
 
 ---
 
@@ -279,7 +280,7 @@ owns the gates of its own work. Do a stage's work yourself only for what is too 
 brief, and never a batch's.
 
 Spawn each run in the background, as its stage's agent, with a task message that names
-what its agent's Inputs section lists, and its instructions file when it has one. Spawn the
+what its agent's Inputs section lists, as Task messages above describes. Spawn the
 batches of a wave together, so that they run at once, and record each agent's session id
 as its task's `session_id`. A run whose `task.json` names another backend, billing or
 model proxy than this session's runs as a process of its own, as its stage's agent.
@@ -401,12 +402,12 @@ changed `ship` answer the points at which you ask to ship.
    time, as the `versioning` skill's Integration section describes. No agent's gates cover
    the merge's tree, so you merge it, resolve its additive conflicts, and run its gates
    yourself; hand any other conflict, or a gate that fails, to an agent of the module's
-   batch kind, with additional instructions to resolve it in the module's worktree.
+   batch kind, whose task message asks it to resolve them in the module's worktree.
 
    Before each wave starts, judge which entities of out-of-tree libraries its items need
    through the libraries' wrappers rather than the standard library, as the `dependencies` skill's Side campaigns section describes. For each library whose wrapper lacks some of
-   them, advance its side campaign: spawn a planner run in its repository with additional
-   instructions naming the entities the wave needs, run the waves that run plans, and
+   them, advance its side campaign: spawn a planner run in its repository whose task message
+   names the entities the wave needs, run the waves that run plans, and
    promote them there; then move the parent's pin to the wrapper's working-branch tip, and its
    library's `wrapper.pin` in `dependencies.json` with it, in a commit on the parent's
    working branch, and start the wave.
@@ -435,7 +436,7 @@ changed `ship` answer the points at which you ask to ship.
   judge them by.
 - `accounting`: the cells you fill, as your ownership says.
 - `task-schema`: before you write a run's `task.json`.
-- `authoring`: before you change Crustify or write additional instructions.
+- `authoring`: before you change Crustify or add instructions to a task message.
 - `binding-workflow` and `porting-workflow`: how a translation campaign proceeds, which
   your workflow above carries out.
 - `decomposition`, `scheduling` and `dependencies`: the plan the planner runs produce,
@@ -448,7 +449,7 @@ changed `ship` answer the points at which you ask to ship.
 - `toolchain`: when you scaffold the workspace.
 - `bindgen`: when you scaffold the raw bindings and when you publish them.
 - `binding` and `porting`: how binders and translators do their work, for reference: to
-  brief the user, to write additional instructions, and to judge what the agents report.
+  brief the user, to write task messages, and to judge what the agents report.
 
 ---
 

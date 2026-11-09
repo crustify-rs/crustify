@@ -1,6 +1,6 @@
 ---
 name: authoring
-description: "How Crustify itself is organized: skills, roles, tool skills and the plugin, and where each kind of text goes. Read before changing Crustify or writing additional instructions for an agent."
+description: "How Crustify itself is organized: skills, roles, tool skills and the plugin, and where each kind of text goes. Read before changing Crustify or writing a task message for an agent."
 ---
 
 # Authoring
@@ -19,7 +19,7 @@ Crustify is text in three layers, with one more per run:
 | skills | `skills/<group>/<name>/SKILL.md` | descriptive, third person | what Crustify's artifacts are and how its work is done: workflows, how-tos, conventions, schemas |
 | tool skills | `skills/tools/<tool>/SKILL.md` | descriptive, third person | what each tool is, and how it serves each stage |
 | agents | `agents/<agent>.md`, with `agents/common.md`, and the assistant's under `agents/assistant/` | instructive, second person | an agent's identity, inputs, what it owns, its steps and its skill index |
-| additional instructions | `instructions.md` beside a task's `task.json` | instructive | what one run needs beyond its role |
+| task messages | `task.md` beside a run's `task.json` | instructive | what one run is given: its inputs, and what it needs beyond its role |
 
 Each artifact's schema, the meaning of its fields, is a skill under `skills/artifacts/`,
 and an example of each is given under `templates/`, which the schema cites. The settings,
@@ -77,10 +77,10 @@ skills leave to it: the commands it runs, the judgements it makes, the cases it 
 handle itself.
 
 Every agent's prompt opens with `agents/common.md`: the identity every commit takes, and
-how skills and tool skills are read. Its own text follows, and closes with three sections:
+how skills and tool skills are read. Its own text follows, and closes with two sections:
 `## Skills`, its skill index, which names each skill it follows with the step it is read
-before; `## Inputs`, what its task message names; and `## Additional instructions`, which
-says that a run's instructions file takes precedence where it conflicts with the rest. An
+before; and `## Inputs`, what its task message names, which also says that the
+instructions a task message adds take precedence where they conflict with the rest. An
 agent's file names no value of one run: an integration branch or a batch id is "the one
 your task message names". `{crustify_root}` stands for the path of Crustify's checkout,
 which a provider fills.
@@ -119,7 +119,7 @@ its skill.
 | what the assistant does in one kind of campaign | `agents/assistant/<kind>.md` |
 | what a tool is, and how it serves each stage | its tool skill |
 | how one host is served the layers | its provider under `providers/<host>/` |
-| what one run needs beyond its role | that task's `instructions.md` |
+| what one run needs beyond its role | its task message, `task.md` |
 
 A rule that two agents share goes in a skill both read, not in both agents. A rule that
 names a tool goes in the tool's skill. A change to a rule is made where the rule lives;
@@ -128,8 +128,8 @@ text that restates it elsewhere is removed rather than kept in step.
 ## 3. Runs
 
 A stage's agent runs with its file as its system prompt and its task as its first message:
-the task message names what its `## Inputs` section lists and its instructions file, if
-any. Its file is the same for every run of the stage, so that runs at once share their
+the task message names what its `## Inputs` section lists and the instructions its run
+needs beyond its role, if any. Its file is the same for every run of the stage, so that runs at once share their
 whole system prompt in the provider's cache. The assistant runs the same way, as the main
 agent of a session in a campaign's repository, with its file and its campaign kind's as
 its system prompt.

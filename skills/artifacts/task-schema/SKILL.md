@@ -51,10 +51,8 @@ its own.
 | `items` | non-empty worklist; every item routes to the same agent |
 | `wave`, `batch`, `link_unit`, `module`, `foundational` | the [batch fields](#2-batch-fields) |
 | `base_branch`, `backend`, `billing`, `model_proxy`, `args` | the [run fields](#1-run-fields) |
-| `instructions` | optional [additional instructions](#3-additional-instructions) |
 
-All but `model_proxy` and `args` are required, and `instructions` is the only other root
-field accepted.
+All but `model_proxy` and `args` are required, and no other root field is accepted.
 
 ## 1. Run fields
 
@@ -88,20 +86,13 @@ branch, worktree and reviews dir as `versioning` and `layout` spell them, and le
 back to the batch's entry in `schedule.json`. A binder, translator or reviewer task
 carries all four; a planner task carries none.
 
-## 3. Additional instructions
+## 3. Task message
 
-Every task may carry `instructions`, the path of a Markdown file, relative to the task's
-own directory, that customizes the agent's task on top of its role:
-
-```json
-{"backend": "claude", "billing": "subscription",
- "instructions": "instructions.md"}
-```
-
-The agent's `## Additional instructions` section states that the instructions take
-precedence over the rest of its prompt where the two conflict; its task message names the
-file. The file usually sits in the batch's directory beside `task.json`,
-so git records what the agent was told along with the task.
+An agent's task message names what its Inputs section lists, its `task.json` among them,
+and the instructions its run needs beyond its role, if any, which take precedence over
+the rest of its prompt where the two conflict. It is kept in the run's artifact dir, as
+`task.md` beside `task.json`, so that git records what the agent was told along with the
+task.
 
 The settings a campaign ran under are recorded twice: per batch in its `task.json`, and per
 campaign in the history of `crustify/CRUSTIFY.md`.
@@ -149,7 +140,7 @@ A batch carries `commits` or `paths`, not both, and needs one of them or `report
 with only `reports` has route `reports`. A module path appears once, and a module object
 names one or more of `types`, `trait_impls` and `functions`, each a distinct list. `reports` is given exactly when `revisit` is among the
 objectives, and an absent `objectives` includes `revisit` exactly when `reports` is given.
-The optional `wave_gates` and `instructions` are the only other root fields accepted.
+The optional `wave_gates` is the only other root field accepted.
 
 The reviewer's prompt offers `unsafety`, `contracts`, `ub`, `equiv`, `internal`,
 `conventions`, `misc`, `coverage`, `revisit`, `disclose` and `fix`, with `conventions`
@@ -170,9 +161,8 @@ schema, corrects what earlier runs decided, and re-plans the waves its changes m
 | root field | meaning |
 |---|---|
 | `backend`, `billing`, `model_proxy`, `args` | the [run fields](#1-run-fields) |
-| `instructions` | optional [additional instructions](#3-additional-instructions) |
 
-Both run fields are required, and `instructions` is the only other root field accepted. It is written as
+Both run fields are required, and no other root field is accepted. It is written as
 `task.json` in the run's artifact dir, `crustify/artifacts/planner/run-<n>/`.
 
 ## 6. items[*]
