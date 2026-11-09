@@ -62,6 +62,14 @@ and no other layout user. Tests and the C consumers outside the target do not co
 describes, so neither a test's field access nor a definition in an installed header keeps
 the layout in C.
 
+A struct's port fixes its lifecycle API with its layout: the owners, handles, constructors,
+drop and clone its consumers use from then on. Each lifecycle routine behind them is ported
+where the order places it, as a function of its own, so that a routine whose call graph is
+not ported yet does not bring it forward: until then, the owner's policy calls the C
+routine through its raw binding, as a binding's does. Its storage stays in C's allocator
+while any C allocates or frees it raw, a lifecycle routine of its own module still in C
+included, so that what Rust allocates is never freed by C's releaser, nor the reverse.
+
 Its later stages:
 
 - `port/layout`: the struct takes a Rust-native layout, its C layout gone with its last C
@@ -107,6 +115,12 @@ A function that remaining C calls or takes the address of is exported, as
 [FFI boundary](#1-ffi-boundary) describes. Its later stage, `port/unexport`, removes the
 export, with the raw binding and the allowlist entry that reach it, once no remaining C
 references it.
+
+A lifecycle routine's port reimplements it behind the policy its type's port wrote, which
+it repoints at the Rust routine, and writes no API of its own, as `binding`'s Lifecycle
+section has the symbol route skip what a type batch emitted. The last of its type's own
+module's memory users to be ported moves its storage to Rust's allocator, unless C of other
+modules still allocates or frees it raw, which leaves that move to its `port/memory`.
 
 ### 3.2 Globals
 

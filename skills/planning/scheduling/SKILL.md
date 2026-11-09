@@ -182,8 +182,10 @@ A struct's or a union's layout users are the target's C that depends on its layo
 
 Its memory users are the target's C that hands its storage to C's allocator: code that
 allocates it with an allocator of untyped memory, or frees or disposes of it with a
-releaser of untyped memory. Its own constructors, destructors and cloners are no memory
-users: the C that calls them reaches them as any other function. A closed enum's layout
+releaser of untyped memory. The C that calls its constructors, destructors and cloners is
+no memory user, since it reaches them as any other function, but a routine that allocates
+or frees it raw is one, as any other C is, its own lifecycle routines included. A closed
+enum's layout
 users are the C that uses its constants or values of its type, which depend on its integer
 form, and it has no memory users.
 
@@ -209,7 +211,10 @@ A type is scheduled in stages:
 3. `port/memory`, after its `memory_unmanaged_after`: its storage moves from C's
    allocator, which its owners allocate and free through until then, to Rust's.
 
-A stage with no users to wait for is not planned: its change is part of the type's `port`.
+A stage with no users to wait for is not planned: its change is part of the type's `port`,
+or, for `port/memory`, of the port of the last of its own module's memory users, a
+lifecycle routine its type's port left in C, as [`porting`](../../rust/porting/SKILL.md)'s
+Structs section describes.
 A user that stays C, in a foundational module, in a module the scope leaves out or in a
 struct that embeds the type and stays C, keeps the stage it holds back from being planned
 at all: the type keeps its C layout, or its storage in C's allocator, for good.
