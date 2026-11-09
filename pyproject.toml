@@ -5,12 +5,12 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "crustify"
 version = "0.1.0"
-description = "Multi-agent C-to-Rust translation pipeline"
+description = "Pricing of Crustify's agent sessions from their transcripts"
 requires-python = ">=3.13"
 dependencies = []
 
 [project.scripts]
-crustify = "crustify.cli:main"
+crustify-usage = "crustify.usage:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

@@ -1,4 +1,4 @@
-"""`crustify usage`: tokens and cost of agent sessions, as JSON.
+"""`crustify-usage`: tokens and cost of agent sessions, as JSON.
 
 Each input is a session's transcript, the file its CLI kept: a Claude Code
 session transcript or a Codex rollout, told apart by its contents. Every
@@ -78,8 +78,7 @@ def report(paths: list[Path], *, backend: str | None = None,
 
 def session_record(session_id: str, home: Path | None = None) -> Path | None:
     """The newest record crustify keeps of the session ``session_id``, in
-    its directory in crustify's home: a spawned agent's one, or the last of
-    an assistant session's, which a resume adds to."""
+    its directory in crustify's home."""
     from crustify.layout import crustify_home
     sessions = (home or crustify_home()) / "sessions"
     hits = []
@@ -93,21 +92,29 @@ def session_record(session_id: str, home: Path | None = None) -> Path | None:
     return max(hits, key=lambda p: (p.parent.name, p.name)) if hits else None
 
 
+def _write(path: Path, record: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_text(json.dumps(record, indent=1) + "\n")
+    tmp.replace(path)
+
+
 def price_session(session_id: str, transcript: Path, *,
                   snapshot: str | None = None, backend: str | None = None,
                   model_proxy: str | None = None,
                   rates: Path | None = None, home: Path | None = None) -> dict:
-    """The report of one session, from its transcript, run as its session
-    record says, priced at the rate snapshot the record names.
+    """The report of one session, from its transcript, priced at the rate
+    snapshot its record names.
 
     A session priced for the first time is priced at the rates fetched now,
-    and its record names the snapshot they match; ``snapshot`` prices it at
-    another kept one, which its record then names. A session crustify keeps
-    no record of, such as one of an earlier version's, takes its backend
-    and model proxy from the arguments, and is priced as ``snapshot`` says,
-    with nothing recorded."""
+    with the backend and model proxy the arguments give, and a record of it
+    is kept in crustify's home, ``sessions/<session id>/usage.session.json``,
+    naming them and the snapshot the rates match, so that every later pricing
+    gives the same figures. ``snapshot`` prices it at another kept snapshot,
+    which its record then names."""
     from crustify.core.models import PROXIES
     from crustify.core.usage import transcript_session
+    from crustify.layout import crustify_home
 
     named = transcript_session(transcript)
     if named is not None and named != session_id:
@@ -120,13 +127,63 @@ def price_session(session_id: str, transcript: Path, *,
         record.setdefault("backend", record["cli"])
         if record.get("provider") in PROXIES:
             record.setdefault("model_proxy", record["provider"])
-    doc = report([transcript], backend=backend or record.get("backend"),
-                 model_proxy=model_proxy or record.get("model_proxy"),
+    backend = backend or record.get("backend")
+    model_proxy = model_proxy or record.get("model_proxy")
+    doc = report([transcript], backend=backend, model_proxy=model_proxy,
                  snapshot=snapshot or record.get("rates"), rates=rates)
-    if path is not None and doc["rates"] and doc["rates"] != record.get("rates"):
-        kept = json.loads(path.read_text())
-        kept["rates"] = doc["rates"]
-        tmp = path.with_name(path.name + ".tmp")
-        tmp.write_text(json.dumps(kept, indent=1) + "\n")
-        tmp.replace(path)
+    if path is None:
+        path = (home or crustify_home()) / "sessions" / session_id / "usage.session.json"
+        record = {"session_id": session_id, "backend": backend, "model_proxy": model_proxy}
+    if doc["rates"] and doc["rates"] != record.get("rates"):
+        kept_record = json.loads(path.read_text()) if path.is_file() else record
+        kept_record["rates"] = doc["rates"]
+        _write(path, kept_record)
     return {"session_id": session_id, **doc}
+
+
+DESCRIPTION = (
+    "Report the tokens and cost of one agent session as JSON, from the transcript "
+    "its CLI kept: a Claude Code session transcript or a Codex rollout, recognized "
+    "by its contents, and priced request by request. A session is priced at the "
+    "rate snapshot its record in crustify's home names; one priced for the first "
+    "time, at the rates fetched now, kept as a dated snapshot when they changed, "
+    "with a record that names it.")
+
+
+def main(argv: list[str] | None = None) -> None:
+    import argparse
+    import sys
+    parser = argparse.ArgumentParser(prog="crustify-usage", description=DESCRIPTION)
+    parser.add_argument("session_id", metavar="SESSION_ID",
+                        help="The session's id, as its task.json names it.")
+    parser.add_argument("transcript", type=Path, metavar="TRANSCRIPT_JSONL",
+                        help="Path to the session's transcript.")
+    parser.add_argument("-o", "--output", type=Path, default=None, metavar="FILE",
+                        help="Write the JSON there instead of to standard output.")
+    parser.add_argument("--rates", default=None, metavar="SNAPSHOT",
+                        help="Price at this kept rate snapshot instead of the one the "
+                             "session's record names: its timestamp, its file, or "
+                             "`latest`. The record then names it.")
+    parser.add_argument("--backend", default=None, choices=["claude", "codex"],
+                        help="The CLI that ran the session, for one priced the first "
+                             "time. Default: read off the transcript.")
+    parser.add_argument("--model-proxy", default=None, metavar="PROXY",
+                        help="The model proxy the session ran through, for one priced "
+                             "the first time, whose rates price it.")
+    args = parser.parse_args(argv)
+    if not args.transcript.is_file():
+        raise SystemExit(f"no file at {args.transcript}")
+    try:
+        doc = price_session(args.session_id, args.transcript, snapshot=args.rates,
+                            backend=args.backend, model_proxy=args.model_proxy)
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from exc
+    text = json.dumps(doc, indent=1) + "\n"
+    if args.output is None:
+        sys.stdout.write(text)
+    else:
+        args.output.write_text(text)
+
+
+if __name__ == "__main__":
+    main()

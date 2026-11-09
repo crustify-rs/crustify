@@ -5,13 +5,10 @@ description: "The fields of a run's task.json: run fields, batch fields, routes 
 
 # task.json schema
 
-Field meaning for `task.json`, the one input of a spawned agent: `crustify spawn-binder
-<workdir> <run dir>/task.json` for a `wrap` batch, `crustify spawn-translator` with the
-same arguments for a `port` batch, `crustify spawn-reviewer` for a review batch, and
-`crustify spawn-planner <workdir> <run dir>/task.json` for a planner run. The path names the file itself; a missing file fails the
-command. One task is one
-agent's entire worklist and how that agent runs, and each command rejects a task whose
-objective belongs to another.
+Field meaning for `task.json`, the one input of a spawned agent, in its run dir: a binder's
+for a `wrap` batch, a translator's for a `port` batch or a later stage, a reviewer's for a
+review batch, and a planner's for a planner run. One task is one agent's entire worklist
+and how that agent runs, and its objective names the agent it belongs to.
 
 A binder's or translator's task is one batch entry of `schedule-schema`,
 packed from its wave's items when the wave starts. When the batch launches, that entry is
@@ -20,9 +17,9 @@ written as `task.json`: its `kind` as `objective`, its `items`, the
 [run fields](#1-run-fields).
 
 `task.json` sits in the artifact dir of the agent's run, `crustify/artifacts/<role>/run-<n>/`.
-The spawn command writes the run's `session_id` into it as soon as the CLI has one, which
-ties the run to its session's records in crustify's home, and refuses a task that already
-holds one. A batch that is run again gets a new run dir and task, so every attempt keeps
+Its `session_id` is recorded in it as soon as the run's session has one, which ties the run
+to its transcript and its records in crustify's home; a task that already holds one is not
+run again. A batch that is run again gets a new run dir and task, so every attempt keeps
 its own.
 
 ```json
@@ -67,7 +64,7 @@ field accepted.
 | `backend` | the provider CLI the agent runs on: `claude`, Claude Code, or `codex` |
 | `billing` | how the provider CLI authenticates: `subscription`, its own logged-in account, or `api`, an API key from the environment |
 | `model_proxy` | optional: the gateway the CLI's requests go through, with its own key, such as `openrouter`; it needs `api` billing, and its rates price the run |
-| `session_id` | the session the run became, written by the spawn command, never by the task's author |
+| `session_id` | the session the run became, recorded once it starts, never before |
 | `args` | optional: arguments passed to the provider CLI unchanged, after Crustify's own, in the CLI's own syntax, such as `["--model", "opus", "--effort", "high"]` |
 
 Without `args` naming one, the CLI runs its own default model; Codex through a model proxy
@@ -101,10 +98,9 @@ own directory, that customizes the agent's task on top of its role:
  "instructions": "instructions.md"}
 ```
 
-The role's prompt has an `## Additional instructions` section, which states that the
-instructions take precedence over the rest of the prompt where the two conflict; the
-file's text fills it, and the section stays empty when the task names no file. An unreadable or empty file fails the command; a dry run reports
-the file it would use. The file usually sits in the batch's directory beside `task.json`,
+The agent's `## Additional instructions` section states that the instructions take
+precedence over the rest of its prompt where the two conflict; its task message names the
+file. The file usually sits in the batch's directory beside `task.json`,
 so git records what the agent was told along with the task.
 
 The settings a campaign ran under are recorded twice: per batch in its `task.json`, and per

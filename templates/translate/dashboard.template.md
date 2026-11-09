@@ -28,7 +28,7 @@ and in Notes.
 - `types` / `symbols` / `fields` — the batch's scheduled units (callbacks count as
   symbols) and its types' assigned field accessors; a review row counts what it reviewed
 - `$` / `tokens` / `wall` — the agent's computed cost (API-equivalent under
-  subscription), its tokens in millions as `crustify usage` reports them, and its elapsed
+  subscription), its tokens in millions as `crustify-usage` reports them, and its elapsed
   time, C rebuild included; `$/<unit>` divides `$` by the row's units
 - `+LoC` — the landing's Rust insertions/deletions; `loc` — its `.rs` insertions
 - `cov (C/Rust)` — line coverage after the landing, all test workloads in one run: C over

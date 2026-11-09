@@ -43,9 +43,8 @@ its objectives, its wave branch and its run fields:
  "base_branch": "<wave branch>", "backend": "<backend>", "billing": "<billing>"}
 ```
 
-Without `objectives`, a batch runs every objective its reviewer offers that applies.
-`crustify spawn-reviewer --help` describes them, and a dry run lists those a batch
-resolves to and rejects any the reviewer's prompt and tool specs do not offer.
+Without `objectives`, a batch runs every objective its reviewer offers that applies: those
+this skill's Objectives section and the tool skills describe.
 
 ## 2. Worklists
 

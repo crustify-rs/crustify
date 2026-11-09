@@ -67,9 +67,9 @@ def _answer(text: str, question: str) -> str | None:
 
 
 def assistant_prompt(kind: str, root: str) -> str:
-    campaign = _role(f"assistant-{kind}")
+    campaign = _role(f"assistant/{kind}")
     part, _, skills = campaign.partition("<!-- SKILLS -->")
-    text = (_role("common") + _role("assistant")
+    text = (_role("common") + _role("assistant/assistant")
             .replace("<!-- CAMPAIGN -->", part.strip())
             .replace("<!-- CAMPAIGN SKILLS -->", skills.strip()))
     return text.replace("{crustify_root}", root)

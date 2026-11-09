@@ -18,7 +18,7 @@ Crustify is text in three layers, with one more per run:
 |---|---|---|---|
 | skills | `skills/<group>/<name>/SKILL.md` | descriptive, third person | what Crustify's artifacts are and how its work is done: workflows, how-tos, conventions, schemas |
 | tool skills | `skills/tools/<tool>/SKILL.md` | descriptive, third person | what each tool is, and how it serves each stage |
-| agents | `agents/<agent>.md`, with `agents/common.md` and the assistant's `agents/assistant-<kind>.md` | instructive, second person | an agent's identity, inputs, what it owns, its steps and its skill index |
+| agents | `agents/<agent>.md`, with `agents/common.md`, and the assistant's under `agents/assistant/` | instructive, second person | an agent's identity, inputs, what it owns, its steps and its skill index |
 | additional instructions | `instructions.md` beside a task's `task.json` | instructive | what one run needs beyond its role |
 
 Each artifact's schema, the meaning of its fields, is a skill under `skills/artifacts/`,
@@ -81,10 +81,10 @@ agent's file names no value of one run: an integration branch or a batch id is "
 your task message names". `{crustify_root}` stands for the path of Crustify's checkout,
 which a provider fills.
 
-The assistant has one file for every kind of campaign, `agents/assistant.md`, with a
+The assistant has one file for every kind of campaign, `agents/assistant/assistant.md`, with a
 `<!-- CAMPAIGN -->` marker and a `<!-- CAMPAIGN SKILLS -->` marker, which take the campaign
-kind's file, `agents/assistant-translate.md` for a port or wrap campaign or
-`agents/assistant-audit.md` for an audit: what the assistant owns in that kind of campaign
+kind's file, `agents/assistant/translate.md` for a port or wrap campaign or
+`agents/assistant/audit.md` for an audit: what the assistant owns in that kind of campaign
 and its steps, and, after its `<!-- SKILLS -->` marker, the skills only that kind follows.
 
 ### 1.3 Tool skills
@@ -112,7 +112,7 @@ its skill.
 | a convention every agent follows | `conventions` |
 | what one agent does, in which steps, and which steps it owns | that agent's file under `agents/` |
 | what every agent holds | `agents/common.md` |
-| what the assistant does in one kind of campaign | `agents/assistant-<kind>.md` |
+| what the assistant does in one kind of campaign | `agents/assistant/<kind>.md` |
 | what a tool is, and how it serves each stage | its tool skill |
 | how one host is served the layers | its provider under `providers/<host>/` |
 | what one run needs beyond its role | that task's `instructions.md` |

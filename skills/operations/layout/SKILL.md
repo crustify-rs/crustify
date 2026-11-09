@@ -72,7 +72,7 @@ again gets a new run dir, and every attempt keeps its records. A run's `task.jso
 its batch, and a batch's runs are those whose `task.json` names it. The run dir holds
 what the campaign keeps of the run: its input, with the backend, billing, model proxy and
 arguments it ran under and the session it became, and the artifacts its agent produced.
-Its session record and transcript are in crustify's home.
+Its transcript and pricing record are in crustify's home.
 
 The settings each module or wave ran under are not copied anywhere: they are
 `crustify/CRUSTIFY.md` as committed at its base, in the working branch's history.
@@ -91,21 +91,14 @@ Crustify keeps what belongs to its user rather than to a campaign in its home,
 ```text
 ~/.crustify/
 ├── providers/<backend>/              a CLI's config home under API-key billing
-├── sessions/<session id>/            one agent's session
-│   ├── <role>.session.json           a spawned agent's session record
-│   ├── index.json                    the assistant's: where it runs and its repository, for `--resume`
-│   ├── workdir                       the assistant's repository, when it opened outside it
-│   └── assistant-<timestamp>.session.json  the assistant's session records, one per run
-├── rates/<timestamp>.json            the rates `crustify usage` fetched, kept whenever they changed
+├── sessions/<session id>/
+│   └── usage.session.json            how a session was priced: its backend, model proxy and rate snapshot
+├── rates/<timestamp>.json            the rates `crustify-usage` fetched, kept whenever they changed
 └── transcripts/<session id>.jsonl    the agents' transcripts, copied from the CLIs' homes
 ```
 
-An assistant session's records live in its directory there from its first turn, so a
-session can open before its repository is established: it opens on the repository when the
-directory it starts in holds `crustify/CRUSTIFY.md`, and that file is written once the
-repository is established otherwise. An assistant session's directory is named by
-crustify's id for it, which is its CLI's own session id under Claude Code; a spawned
-agent's, by its CLI's session id, which its `task.json` records.
+A session's directory is named by its CLI's session id, which its run's `task.json`
+records, or, for an agent its host runs inside another session, by the agent's id.
 
 ## 6. Scratch
 

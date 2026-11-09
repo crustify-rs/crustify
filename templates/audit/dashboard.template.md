@@ -49,7 +49,7 @@ Modules the reviewers were given. The per-batch split is in the table below.
 
 ## Review batches
 
-One row per reviewer. `wall` is `ended_at − started_at` from `crustify usage` on its
+One row per reviewer. `wall` is `ended_at − started_at` from `crustify-usage` on its
 transcript, so it includes whatever it spent building the C library. `$` is that usage's
 `cost_usd`; under subscription billing it is an API-equivalent comparison value, not a
 charged amount.

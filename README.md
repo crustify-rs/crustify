@@ -24,9 +24,9 @@ come up. You can change course mid-campaign by editing its settings file.
 
 ## Installation
 
-Crustify runs on 64-bit Linux and translates targets built there, against glibc. It requires
-Python 3.13 and a Claude Code or Codex CLI. Clone the components side
-by side and install the Python packages. `ffibox` is a Rust crate that the generated
+Crustify runs on 64-bit Linux and translates targets built there, against glibc. It is a
+Claude Code plugin, and requires Claude Code and Python 3.13. Clone the components side by
+side and install the tools' Python packages. `ffibox` is a Rust crate that the generated
 wrappers depend on, so you only clone it.
 
 ```bash
@@ -35,8 +35,11 @@ git clone https://github.com/crustify-rs/wavefront.git
 git clone https://github.com/crustify-rs/ffibox.git
 git clone https://github.com/crustify-rs/ffimap.git
 
-python -m pip install -e crustify -e wavefront -e ffimap
+python -m pip install -e wavefront -e ffimap
 ```
+
+Then add Crustify to Claude Code, for one session with `--plugin-dir crustify`, or for
+every session by installing it from its checkout as a plugin.
 
 ### Docker
 
@@ -60,7 +63,8 @@ docker run -d --init --name crustify-libgit2 \
     -v crustify-libgit2-work:/work \
     crustify
 
-docker exec -it crustify-libgit2 crustify /target --backend claude --billing api
+docker exec -it -w /target crustify-libgit2 \
+    claude --plugin-dir /opt/crustify --agent crustify:assistant-translate
 ```
 
 [`templates/docker/README.md`](templates/docker/README.md) documents the mounts, build arguments and
@@ -68,45 +72,33 @@ environment variables.
 
 ## Usage
 
-Open Crustify on a repository:
+Open Crustify's assistant in the directory a campaign is to work in:
 
 ```bash
-crustify /path/to/repo
+claude --plugin-dir /path/to/crustify --agent crustify:assistant-translate   # port or wrap
+claude --plugin-dir /path/to/crustify --agent crustify:assistant-audit       # audit
 ```
 
-Crustify loads its workflow and waits for your instructions. Tell it what you want in
-plain language: wrap the public API, audit the crate, port the parser. Questions it
-needs answered, such as the revision to start from, the models to use and how much
-autonomy it has, are asked live, and Crustify presents a campaign brief for your
-approval before it changes the repository.
+The assistant waits for your instructions. Tell it what you want in plain language: wrap
+the public API, audit the crate, port the parser. Questions it needs answered, such as the
+revision to start from, the models to use and how much autonomy it has, are asked live,
+and it presents a campaign brief for your approval before it changes the repository. To
+answer those questions up front, fill in a settings template and give it to the assistant:
 
-To answer those questions up front, copy and fill in a settings template:
-
-```bash
-cp crustify/templates/translate/CRUSTIFY.template.md my-campaign.md   # port or wrap
-cp crustify/templates/audit/CRUSTIFY.template.md my-campaign.md       # audit
-crustify /path/to/repo --settings my-campaign.md
+```text
+crustify/templates/translate/CRUSTIFY.template.md   # port or wrap
+crustify/templates/audit/CRUSTIFY.template.md       # audit
 ```
 
-Crustify copies the settings to `crustify/CRUSTIFY.md` in the repository and rereads
-that copy before each module, so you can edit it while a campaign runs.
+The settings live in the campaign's repository as `crustify/CRUSTIFY.md`, which the
+assistant rereads before each module, so you can edit it while a campaign runs. The
+repository's `.claude/settings.json` selects the assistant, so every later session opened
+there starts as it, and `claude --resume` continues an earlier one. Ask the assistant to
+start the campaign to run it end to end, or pass that as the session's first prompt, with
+`-p`, to run it headless.
 
-Common options:
-
-| Option | Effect |
-|---|---|
-| `--campaign port\|wrap\|audit` | Pick the campaign when the settings don't name one. |
-| `--start` | Run the campaign right away, as the settings configure it. A headless session needs it. |
-| `--resume [SESSION_ID]` | Continue an earlier session, from any directory. Without an id, the most recent one. |
-| `--backend claude\|codex` | Run the assistant on Claude Code (the default) or Codex. |
-| `--billing subscription\|api` | Use the CLI's logged-in account or an API key from the environment. |
-| `--model-proxy openrouter` | Send the CLI's requests through OpenRouter, with `OPENROUTER_API_KEY`. Needs `--billing api`. |
-| `-- <args>` | Pass the rest to the CLI unchanged, e.g. `-- --model opus --effort high`. Without a model there, the CLI runs its default. |
-
-`crustify usage <transcripts>` reports the tokens and cost of agent sessions. Crustify
-runs the `spawn-planner`, `spawn-binder`, `spawn-translator` and `spawn-reviewer`
-commands itself; you rarely need them. Run `crustify --help` or
-`crustify <command> --help` for the full reference.
+`crustify/utils/crustify-usage` reports the tokens and cost of an agent session from its
+transcript; run it with `--help` for its options.
 
 ## How it works
 
@@ -133,10 +125,9 @@ Deterministic tools ground the agents' judgement:
   surface per batch, wave, module and campaign; and
 - the target's own tests run under sanitizers.
 
-Claude Code and OpenAI Codex are supported as agent backends, with API or subscription
-billing, directly or through OpenRouter. Each agentic stage can use its own backend, and
-its own model and settings through the CLI's own arguments; without them, each CLI runs
-its default model.
+Claude Code runs every agent, with API or subscription billing, directly or through
+OpenRouter. Each stage can use its own billing, model and settings, through the CLI's own
+arguments; without them, it runs the session's.
 
 ## Results
 
