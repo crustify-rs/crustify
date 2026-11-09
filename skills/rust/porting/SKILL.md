@@ -51,6 +51,14 @@ While C consumers remain, the symbol is re-exported to C as the conventions desc
   build system, without assuming link mechanics, and the TU is deleted, as
   [`porting-workflow`](../../workflows/porting-workflow/SKILL.md)'s Builds section describes.
 
+A `static inline` function a header defines is internal API of the module the
+decomposition gives it, and is ported as its other functions are. Its C callers expand its
+body in their own TUs, so an export alone does not reach them: at the module's
+integration, the header's definition is replaced by its prototype, and the remaining C
+calls the Rust module's export, under the function's bare name, where it inlined the body.
+<!-- TODO: cross-language LTO (`-Clinker-plugin-lto`, with a clang whose LLVM matches
+rustc's) would inline the export back into its C callers. -->
+
 ## 5. Later stages
 
 A later stage, as [`scheduling`](../../planning/scheduling/SKILL.md)'s Later

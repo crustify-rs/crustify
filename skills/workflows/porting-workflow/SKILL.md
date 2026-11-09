@@ -63,10 +63,9 @@ with it. The removal is made on the working branch; the shipping branch keeps th
 the user approves shipping the module.
 
 The headers bundled with the module stay while remaining C includes them, declaring the
-module's exports, and go with the last C file that includes them. A `static inline`
-function a header defines is internal API like any other function of its module: once the
-module is ported, the header declares it, and the Rust module exports it under its bare
-name.
+module's exports, its `static inline` functions included, as
+[`porting`](../../rust/porting/SKILL.md)'s Symbols section describes, and go with the last C
+file that includes them.
 
 The module's equivalence tests, which need the C, are retired with it; the behaviour they
 established is kept by the module's unit tests and ported tests. The raw bindings of its
