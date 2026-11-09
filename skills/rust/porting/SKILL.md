@@ -51,6 +51,8 @@ While C consumers remain, the symbol is re-exported to C as the conventions desc
   build system, without assuming link mechanics, and the TU is deleted, as
   [`porting-workflow`](../../workflows/porting-workflow/SKILL.md)'s Builds section describes.
 
+### 4.1 Static inline functions
+
 A `static inline` function a header defines is internal API of the module the
 decomposition gives it, and is ported as its other functions are. Its C callers expand its
 body in their own TUs, so an export alone does not reach them: at the module's

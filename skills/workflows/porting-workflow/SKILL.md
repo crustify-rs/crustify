@@ -64,7 +64,7 @@ the user approves shipping the module.
 
 The headers bundled with the module stay while remaining C includes them, declaring the
 module's exports, its `static inline` functions included, as
-[`porting`](../../rust/porting/SKILL.md)'s Symbols section describes, and go with the last C
+[`porting`](../../rust/porting/SKILL.md)'s Static inline functions section describes, and go with the last C
 file that includes them.
 
 The module's equivalence tests, which need the C, are retired with it; the behaviour they
