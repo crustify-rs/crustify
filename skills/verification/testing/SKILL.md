@@ -44,9 +44,10 @@ commands run from it, its `version` raised whenever a command changes. They are:
     succeeds); it instruments the C through its own matched clang.
 
 A Rust- or bindgen-only change reuses a matching variant: same C revision, `build.json`
-version, compiler and instrumentation. A change to the compiled target needs a private
-build, which the raw bindings link when `CRUSTIFY_BUILD_DIR` names it in place of a
-variant, and the shared variants are rebuilt once that change lands.
+version, compiler and instrumentation. Nothing writes into a variant's `dir`: each run's
+logs and outputs go to paths of its own. A change to the compiled target, or no matching
+variant, needs a private build, which the raw bindings link when `CRUSTIFY_BUILD_DIR` names
+it in place of a variant, and the shared variants are rebuilt once that change lands.
 
 ### 1.1 Coverage
 
@@ -225,7 +226,8 @@ BSan, when available, is run for every batch and at module end:
   whole workspace, one invocation per test binary, as many side by side as
   [`concurrency`](../../operations/concurrency/SKILL.md) describes, each under a `timeout`.
 
-Miri is run after every wave, as a gate over the whole workspace: one
+A batch runs the tests it wrote under Miri. Miri is also run after every wave, as a gate
+over the whole workspace: one
 `cargo +nightly-<date> miri test` per test binary (`--lib`, and `--test <name>` for each
 integration binary), as many side by side as [`concurrency`](../../operations/concurrency/SKILL.md) describes,
 each with `-- --skip compile_fail`. The gate passes only

@@ -76,8 +76,10 @@ purge every level of the `layout` skill's Lifecycle section"), and adds only wha
 skills leave to it: the commands it runs, the judgements it makes, the cases it must not
 handle itself.
 
-Every agent's prompt opens with `agents/common.md`: the identity every commit takes, and
-how skills and tool skills are read. Every agent sees every skill, with its description:
+Every agent's prompt opens with `agents/common.md`: that every commit takes the identity
+[`versioning`](../../operations/versioning/SKILL.md)'s Identity section gives, that a task
+message's instructions take precedence over the rest of the prompt, and how skills and
+tool skills are read. Every agent sees every skill, with its description:
 its host lists them, or, for a host that does not, the provider fills the index of every
 skill at common's `<!-- SKILL INDEX -->` marker from the skills' names and descriptions, so
 that each description is written once.
@@ -90,8 +92,7 @@ The agent's own file follows, in three sections, every agent alike:
   already sends the agent to before a step needs no mention; a step names a skill where
   only part of it applies to the agent, or where the agent follows it only in some runs;
   and
-- `## Inputs`: what its task message names, which also says that the instructions a task
-  message adds take precedence where they conflict with the rest.
+- `## Inputs`: what its task message names.
 
 An agent's file names no value of one run: an integration branch or a batch id is "the one
 your task message names". `{crustify_root}` stands for the path of Crustify's checkout,

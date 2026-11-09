@@ -43,8 +43,8 @@ its objectives, its wave branch and its run fields:
  "base_branch": "<wave branch>", "backend": "<backend>", "billing": "<billing>"}
 ```
 
-Without `objectives`, a batch runs every objective its reviewer offers that applies: those
-this skill's Objectives section and the tool skills describe.
+Without `objectives`, a batch runs every objective that applies: those this skill's
+Objectives section and the tool skills describe.
 
 ## 2. Worklists
 
@@ -140,7 +140,7 @@ manually reviewed and independently reproduced.`
 
 ### 3.11 Fix (`fix`)
 
-Whether the reviewer patches what it finds. Without it, a review changes nothing outside
+Whether a review patches what it finds. Without it, a review changes nothing outside
 its reviews dir but the tests that fill coverage gaps.
 
 ## 4. Reports
@@ -161,8 +161,8 @@ reproducer, in the sub-directory of its objective:
 | `misc` | `misc/` |
 
 A tool may add sub-directories for findings on its own output. A defect in a tool
-rather than in the reviewed codebase is filed, with its reproducer, on a dedicated branch
-and worktree of that tool's local checkout.
+rather than in the reviewed codebase, Crustify included, is filed, with its reproducer and,
+under `fix`, its patch, on a dedicated branch and worktree of that tool's local checkout.
 
 A report states what is wrong, where, the evidence that proves it, and, under `fix`, how
 it was fixed. It carries everything needed to rerun its reproducer from a clean checkout:
@@ -204,8 +204,8 @@ Under `fix`, every finding of the batch's objectives is patched:
 - `conventions` and `misc`: the deviation or defect is fixed;
 - `revisit`: every report that still reproduces is patched, as for its objective.
 
-Outside a Crustify-generated batch, fixes follow the repository's contributor
-instructions. Every test a review adds is classified as [`testing`](../testing/SKILL.md)
+In a Crustify-generated batch, fixes follow the [conventions](../../rust/conventions/SKILL.md);
+outside one, the repository's contributor instructions. Every test a review adds is classified as [`testing`](../testing/SKILL.md)
 describes and placed where the conventions place tests of its kind, or, outside a
 Crustify-generated batch, in the reviewed crate's own suite for that kind.
 

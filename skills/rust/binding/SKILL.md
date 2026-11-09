@@ -129,8 +129,8 @@ Promoting construction-phase storage into an owner is unsafe, so it is encapsula
 type's safe constructor: consumers of the public API never call `assume_init` in their own
 unsafe blocks.
 
-Lifecycle routines are also scheduled as free symbols; the symbol route skips those a type
-run already emitted.
+Lifecycle routines are also scheduled as free symbols, although the type route emits them
+as it binds their types; the symbol route skips those a type batch already emitted.
 
 ### 4.4 Field accessors
 
@@ -232,8 +232,8 @@ An inline function pointer is wrapped when no ownership-compatible callable wrap
 ### 5.4 Lifecycle strategies
 
 The foundational modules hold the allocator or constructor, releaser, disposer and
-cloner routines of type-erased `void` and string handles, each with the lifecycle role the
-planner established. In a batch of a foundational module, which its task's `module` names
+cloner routines of type-erased `void` and string handles, each with the lifecycle role
+established while planning. In a batch of a foundational module, which its task's `module` names
 and `modules.json` marks `foundational`, an item with a lifecycle role becomes a generic
 policy or strategy that calls the primitive via FFI, so that owned string and generic
 array or singleton handles bind it to implement RAII. The primitive itself is not also

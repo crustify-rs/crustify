@@ -82,8 +82,7 @@ function.
 
 ## 4. Dependencies
 
-Each module's dependency edges are found with a wavefront configuration of its own, which
-names its files and the items it owns. The edges from a module to another are one record
+Each module's dependency edges are found from the files it holds and the items it owns. The edges from a module to another are one record
 of its `depends_on`, with its `outgoing_edges`, its `incoming_edges` and the item kinds
 consumed across them, and each out-of-tree library it uses is one record of its own, which
 names the library and counts what the module consumes from it. What holds for the library

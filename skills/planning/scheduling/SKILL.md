@@ -67,8 +67,8 @@ the order nor what any of them can rely on: a wave's batches are not planned, bu
 when it starts, as [Batches](#3-batches) describes.
 
 Type-erased and string lifecycle primitives are units of the foundational modules.
-Typed lifecycle primitives stay in the schedule as free symbols, although the type
-batches discover them on the fly; their binders skip them.
+Typed lifecycle primitives stay in the schedule as free symbols, as
+[`binding`](../../rust/binding/SKILL.md)'s Type route section describes.
 
 In a wrap campaign every item is `wrap`. In a port campaign, the items of the foundational
 modules are `wrap`, and those of every other module `port`: a symbol, a callback or an
@@ -132,7 +132,7 @@ depend on has landed: in an earlier wave, or in a wrap batch of the batch's own 
 lands before it. What has not landed is wrapped by such a batch:
 
 - a cut dependency, which the order puts after its user: it is bound before its consumer,
-  by a binder, rather than reached through raw bindings, and its own wave ports it later
+  by a `wrap` batch, rather than reached through raw bindings, and its own wave ports it later
   or, in a wrap campaign, finds it bound;
 - a dependency of a wave run before the waves that hold it, or of a part of the scope
   run without them; and
@@ -165,8 +165,8 @@ In a port campaign, part of an entity's work waits until the remaining C no long
 its C form. Each such stage is a planned item of its own, with the stage as its objective,
 in a wave that depends on the last waves of the modules whose integration frees it, so
 that it runs once they are integrated and the entity takes its Rust form as soon as the C
-lets it. The later stages the same integrations free share a wave, and the assistant packs
-them into batches when the wave starts, as [Batches](#3-batches) describes, a stage's
+lets it. The later stages the same integrations free share a wave, whose batches are
+packed when it starts, as [Batches](#3-batches) describes, a stage's
 items forming batches of their own, by its objective.
 
 ### 5.1 Types

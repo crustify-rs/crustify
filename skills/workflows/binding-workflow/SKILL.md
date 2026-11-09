@@ -113,10 +113,8 @@ Each batch then gets:
 - symlinks to the gitignored state its tree needs from the base checkout.
 
 The wave's batches run concurrently, as many at once as
-[`concurrency`](../../operations/concurrency/SKILL.md) describes. A `wrap` batch runs a binder, and a `port`
-batch, or one of a later stage, `port/layout`, `port/memory` or `port/unexport`, a
-translator, each from its `task.json`, whose objective names the agent it belongs to; the
-run's session id is recorded in its `task.json` once it starts. Each batch lands on
+[`concurrency`](../../operations/concurrency/SKILL.md) describes, each from its `task.json`, in which the
+run's session id is recorded once it starts. Each batch lands on
 the wave branch as [`versioning`](../../operations/versioning/SKILL.md)'s Landing section describes, after running the gates of
 [`testing`](../../verification/testing/SKILL.md)'s Regressions section on the tree it lands; those gates
 are not run again for the wave. Its `status` follows its run, and once it lands, its
@@ -147,10 +145,9 @@ review batches of the same wave, packed as the batches they review land, as
 [`reviewing`](../../verification/reviewing/SKILL.md)'s Review batches section
 describes, or one per translation batch when the settings ask for that.
 
-Each review batch's `task.json` holds the `commits` of the batches it reviews, as they sit
-on the wave branch, the approved objectives, the batch fields, the wave branch as
-`base_branch`, and the review run fields. Its objectives are those the reviewer offers,
-as [`reviewing`](../../verification/reviewing/SKILL.md)'s Objectives section and the tool skills list them.
+Each review batch's `task.json` holds the `commits` of the batches it reviews and the
+approved objectives, as [`task-schema`](../../artifacts/task-schema/SKILL.md)'s Review batches
+section describes.
 
 ## 6. Shipping
 

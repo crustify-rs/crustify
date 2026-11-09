@@ -146,14 +146,29 @@ replaces it, never both, and the Rust static library that the target's remaining
 from a module's integration on carries no C of its own, as the porting workflow's Builds
 section describes.
 
-## 4. Landing
+## 4. Extending
+
+The bindings grow with the batches: a batch whose items need a raw binding the bindings
+lack extends its own link unit's input, and nothing else:
+
+1. its link unit's `allowlist.txt` gains only the FFI items its items need, and
+   `wrapper.h` an internal header only when one of them is declared there;
+2. a shim is added to `shims.h` and `shims.c` only for what bindgen cannot bind, such as a
+   function-like macro, as `crustify_<NAME>`;
+3. the bindings are regenerated, in campaign mode with `CRUSTIFY_BINDINGS_UPDATE` set; and
+4. the safe crate is built and tested against them.
+
+An allowlist or `wrapper.h` change alone leaves the C library as it is, so it reuses a
+prebuilt variant; a shim compiles with the crate, as [Build modes](#3-build-modes) describes.
+
+## 5. Landing
 
 A batch that changes an allowlist, `external.txt`, a shim or `wrapper.h` regenerates the
 bindings and commits them in the same landing, so that the committed bindings always match
 their input. The gates that check it, and that the crate packages, are
 [`testing`](../../verification/testing/SKILL.md)'s Regressions section's.
 
-## 5. Publishing
+## 6. Publishing
 
 The safe crate is published with its raw bindings and the C it bundles. The packaged crate
 holds the layout above, `src/` and the files of `c/` that the bundled build reads, and

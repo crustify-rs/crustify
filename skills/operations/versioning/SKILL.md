@@ -1,6 +1,6 @@
 ---
 name: versioning
-description: "Repositories, branches, worktrees, landing under the landing lock, promotion, integration and their lifecycle. Read before creating, landing on, promoting or purging any branch or worktree."
+description: "Repositories, branches, worktrees, landing under the landing lock, promotion, integration, their lifecycle, and the identity every commit takes. Read before the first commit, and before creating, landing on, promoting or purging any branch or worktree."
 ---
 
 # Versioning
@@ -73,8 +73,8 @@ planner run has none: it runs in the repository's base dir, on its branch.
 
 A batch lands its commits on the integration branch it was given, which is never checked
 out. Before committing, the diff is checked to contain no unrelated work. A commit carries
-no trailer but the co-author trailers [`agents/common.md`](../../../agents/common.md) asks for: what ties it to
-its batch is the batch's branch, whose tip it is or precedes.
+no trailer but the co-author trailers of the campaign's [identity](#6-identity): what ties
+it to its batch is the batch's branch, whose tip it is or precedes.
 
 The landing operation is a local push through the Git common directory:
 
@@ -245,3 +245,33 @@ Once the batch has landed, its worktree is purged; its branch stays until its co
 recorded in `schedule.json`, since they are derived from it, as
 [Landing](#4-landing) describes. A batch that fails keeps its branch and worktree for
 inspection; they are removed before it is run again, which forks them anew.
+
+## 6. Identity
+
+Every commit of a campaign, in its repository and its wrappers', is authored and committed
+as Crustify, whose GitHub account is `crustify-ai` and whose git identity is
+`crustify <crustify@berkeley.edu>`, whatever the repository's git configuration says,
+unless the settings' `identity` answer names another: an author and any co-authors, each
+as `Name <email>`. The author named there then authors and commits every commit, and each
+message ends with one `Co-Authored-By:` trailer per co-author and no other, none that an
+agent's host suggests included.
+
+The identity is passed explicitly to every command that writes a commit, a rebase, a merge
+and a cherry-pick as much as a commit, since the host may have no git identity of its own.
+By default:
+
+```bash
+git -c user.name=crustify -c user.email=crustify@berkeley.edu commit ...
+```
+
+and with `author: Name <email>, co-authors: crustify <crustify@berkeley.edu>`:
+
+```bash
+git -c "user.name=Name" -c user.email=email commit -F - <<'MSG'
+<subject>
+
+<body>
+
+Co-Authored-By: crustify <crustify@berkeley.edu>
+MSG
+```

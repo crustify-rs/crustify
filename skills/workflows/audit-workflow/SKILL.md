@@ -37,17 +37,16 @@ The variants are rebuilt after a review wave whose reviewers changed the Rust or
 
 ## 3. Objectives
 
-The settings' task objectives map onto the reviewer's objectives:
+The settings' task objectives map onto review objectives:
 
-| task objective | reviewer objectives |
+| task objective | review objectives |
 |---|---|
 | `audit` | `ub`, `contracts`, `equiv` when `equivalence` is selected, and `disclose` |
 | `revisit` | `revisit` and `disclose`, over the reports the task names or every report filed so far |
 | `fix` | adds `fix` to the batches of `audit` and `revisit` |
 
 A task selects `audit`, `revisit` or both, and `fix` optionally; review objectives the
-settings name replace this mapping. Without `fix`, reviewers change nothing but their
-reviews dirs.
+settings name replace this mapping.
 
 ## 4. Worksets
 

@@ -64,8 +64,8 @@ crustify/artifacts/                             the campaign
 ├── reviewer/run-<n>/                           a reviewer's run of a review batch
 │   ├── task.json                               its input, with the batch and run fields, and its session id
 │   ├── task.md                                 its task message
-│   └── ffimap.json                             its ffimap scan, once recorded
-└── waves/wave-<index>/                         a wave's own records, such as its ffimap scan
+│   └── …                                       the records its run keeps, as the tool skills name them
+└── waves/wave-<index>/                         a wave's own records, such as its scans
 ```
 
 Each agent's runs are numbered from 1 in the order they launch, so a batch that is run
@@ -113,6 +113,6 @@ A review batch files its findings under its reviews dir, `crustify/reviews/<batc
 such as `crustify/reviews/wave-3/batch-1/`, in the repository the review lands in: one `<slug>` directory per finding, holding its report
 and, when it has one, its reproducer, under the sub-directory of the finding's kind.
 
-A planner that amends an earlier plan files its findings the same way under
+A planner run that amends an earlier plan files its findings the same way under
 `crustify/reviews/planner/`: `modules/` for `modules.json` and `schedule.json`, and
 one sub-directory per tool artifact it amends.
