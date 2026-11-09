@@ -20,7 +20,6 @@ ROOT = Path(__file__).resolve().parents[2]
 ROLES = ROOT / "agents"
 AGENTS = Path(__file__).resolve().parent / "agents"
 SYSTEM_PROMPT = Path(__file__).resolve().parent / "system-prompt.md"
-ADDENDUM = Path(__file__).resolve().parent / "assistant.md"
 SETTINGS = Path("crustify") / "CRUSTIFY.md"
 KINDS = {"port": "translate", "wrap": "translate", "audit": "audit"}
 
@@ -105,7 +104,7 @@ def build() -> None:
         _agent(f"assistant-{kind}",
                f"Crustify's assistant in {what}: plans and orchestrates the campaign with "
                f"the user. Runs as the main agent of a session in the campaign's repository.",
-               assistant_prompt(kind, "{crustify_root}") + "\n---\n\n" + ADDENDUM.read_text())
+               assistant_prompt(kind, "{crustify_root}"))
 
 
 def main(argv: list[str]) -> int:

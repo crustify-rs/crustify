@@ -25,7 +25,7 @@ come up. You can change course mid-campaign by editing its settings file.
 ## Installation
 
 Crustify runs on 64-bit Linux and translates targets built there, against glibc. It is a
-Claude Code plugin, and requires Claude Code and Python 3.13. Clone the components side by
+Claude Code plugin, and requires Claude Code and Python 3.13 for its scripts. Clone the components side by
 side and install the tools' Python packages. `ffibox` is a Rust crate that the generated
 wrappers depend on, so you only clone it.
 
@@ -97,8 +97,8 @@ there starts as it, and `claude --resume` continues an earlier one. Ask the assi
 start the campaign to run it end to end, or pass that as the session's first prompt, with
 `-p`, to run it headless.
 
-`crustify/utils/crustify-usage` reports the tokens and cost of an agent session from its
-transcript; run it with `--help` for its options.
+`crustify/skills/operations/usage/crustify-usage` reports the tokens and cost of an agent
+session from its transcript; run it with `--help` for its options.
 
 ## How it works
 

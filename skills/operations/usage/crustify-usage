@@ -1,0 +1,623 @@
+#!/usr/bin/env python3
+"""crustify-usage: tokens and cost of agent sessions, as JSON.
+
+Each input is a session's transcript, the file its CLI kept: a Claude Code
+session transcript or a Codex rollout, told apart by its contents. Every
+session is priced request by
+request and the costs summed, never the reverse: rate tiers key off a single
+request's context, so pricing the summed tokens would charge a session of
+many modest requests at a tier none of them reached.
+
+Rates are per service, so a model is priced only with the service that
+billed it, the session's model proxy or its backend's own service: OpenRouter's live catalogue for ``openrouter``, LiteLLM's table for
+``openai`` and ``anthropic``. A model or
+service the tables do not know is reported with ``cost_usd: null``, never a
+guessed zero. The rates are fetched on every run, and kept as a dated
+snapshot in crustify's home when they changed; the report names the snapshot
+its costs were computed at. Provider-reported dollars are not used:
+under subscription billing they are an API-equivalent figure, as this one is.
+
+Standard library only.
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import re
+import sys
+import urllib.request
+from dataclasses import dataclass, field
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+
+# --- Services and model proxies
+
+
+#: The provider CLIs crustify drives.
+BACKENDS = ("claude", "codex")
+
+#: How a CLI authenticates: its own logged-in account, or an API key from
+#: the environment.
+BILLINGS = ("subscription", "api")
+
+#: The service that bills a backend's runs without a proxy.
+NATIVE = {"claude": "anthropic", "codex": "openai"}
+
+
+@dataclass(frozen=True)
+class Proxy:
+    """A gateway the CLIs reach through their own endpoint settings."""
+
+    #: The environment variable holding the proxy's key.
+    key_env: str
+    #: Its Anthropic-compatible endpoint, for claude.
+    anthropic_url: str
+    #: Its OpenAI-compatible (Responses) endpoint, for codex.
+    openai_url: str
+    #: Its display name.
+    name: str
+
+
+PROXIES = {
+    "openrouter": Proxy(key_env="OPENROUTER_API_KEY",
+                        anthropic_url="https://openrouter.ai/api",
+                        openai_url="https://openrouter.ai/api/v1",
+                        name="OpenRouter"),
+}
+
+
+# --- Crustify's home
+
+
+def crustify_home() -> Path:
+    """Crustify's own home, shared by every campaign of this user:
+    ``$CRUSTIFY_HOME``, or ``~/.crustify``."""
+    return Path(os.environ.get("CRUSTIFY_HOME") or Path.home() / ".crustify")
+
+
+# --- Rates
+
+
+OPENROUTER_MODELS = "https://openrouter.ai/api/v1/models"
+LITELLM_PRICES = ("https://raw.githubusercontent.com/BerriAI/litellm/main/"
+                  "model_prices_and_context_window.json")
+
+_TIER_RE = re.compile(r"_above_(\d+)k_tokens$")
+
+
+def _rate_set(entry: dict) -> dict:
+    """One LiteLLM entry -> base rates plus context tiers, in $/token."""
+    field = {
+        "input_cost_per_token": "input",
+        "output_cost_per_token": "output",
+        "cache_read_input_token_cost": "cache_read",
+        "cache_creation_input_token_cost": "cache_write",
+        "cache_creation_input_token_cost_above_1hr": "cache_write_1h",
+    }
+    base, tiers = {}, {}
+    for key, val in entry.items():
+        if not isinstance(val, (int, float)):
+            continue
+        m = _TIER_RE.search(key)
+        stem = key[:m.start()] if m else key
+        name = field.get(stem)
+        if name is None:
+            continue
+        if m:
+            tiers.setdefault(int(m.group(1)) * 1000, {})[name] = float(val)
+        else:
+            base[name] = float(val)
+    return {"base": base, "tiers": sorted(tiers.items())}
+
+
+def _fetch_openrouter() -> dict:
+    with urllib.request.urlopen(OPENROUTER_MODELS, timeout=30) as r:
+        data = json.load(r)["data"]
+    out = {}
+    for m in data:
+        p = m.get("pricing") or {}
+        base = {}
+        for src, name in (("prompt", "input"), ("completion", "output"),
+                          ("input_cache_read", "cache_read"),
+                          ("input_cache_write", "cache_write")):
+            try:
+                v = float(p.get(src) or 0.0)
+            except (TypeError, ValueError):
+                continue
+            if v:
+                base[name] = v
+        if base:
+            out[m["id"]] = {"base": base, "tiers": []}
+    return out
+
+
+def _from_litellm(provider: str):
+    def fetch():
+        with urllib.request.urlopen(LITELLM_PRICES, timeout=60) as r:
+            data = json.load(r)
+        return {mid: _rate_set(v) for mid, v in data.items()
+                if isinstance(v, dict) and v.get("litellm_provider") == provider}
+    return fetch
+
+
+_SOURCES = {
+    "openrouter": _fetch_openrouter,
+    "openai": _from_litellm("openai"),
+    "anthropic": _from_litellm("anthropic"),
+}
+
+
+def rates_dir() -> Path:
+    """Where the rate snapshots live: crustify's home, beside the sessions
+    they price."""
+    return crustify_home() / "rates"
+
+
+def _stamp(when: datetime) -> str:
+    return when.astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+
+
+def latest(directory: Path | None = None) -> tuple[str | None, dict]:
+    """The latest rate snapshot: ``(its name, {provider: {model:
+    rate_set}})``, or ``(None, {})`` when none is kept."""
+    directory = directory or rates_dir()
+    paths = sorted(directory.glob("*.json"))
+    if not paths:
+        return None, {}
+    return paths[-1].stem, json.loads(paths[-1].read_text())
+
+
+def kept(snapshot: str, directory: Path | None = None) -> tuple[str, dict]:
+    """A kept snapshot: ``latest``, its name, ``<timestamp>``, or the path of
+    its file. Raises ``ValueError`` when there is none such."""
+    directory = directory or rates_dir()
+    if snapshot == "latest":
+        name, rates = latest(directory)
+        if name is None:
+            raise ValueError(f"no rate snapshot kept in {directory}")
+        return name, rates
+    path = Path(snapshot)
+    if not path.is_file():
+        path = directory / f"{snapshot.removesuffix('.json')}.json"
+    if not path.is_file():
+        raise ValueError(f"no rate snapshot {snapshot} in {directory}")
+    return path.stem, json.loads(path.read_text())
+
+
+def fetch(directory: Path | None = None, now: datetime | None = None
+          ) -> tuple[str, dict]:
+    """Fetch the current rates, and keep them as a new snapshot when they
+    differ from the latest; return ``(the snapshot they match, the rates)``.
+
+    A provider whose fetch fails keeps the rates of the latest snapshot, so
+    a failure never reads as a change."""
+    directory = directory or rates_dir()
+    name, kept = latest(directory)
+    current = {}
+    for prov, get in _SOURCES.items():
+        try:
+            current[prov] = get()
+        except Exception as exc:
+            old = kept.get(prov) or {}
+            print(f"warning: could not fetch {prov} prices ({exc}); "
+                  + (f"keeping the {len(old)} {prov} rates of the latest snapshot"
+                     if old else f"{prov}-billed runs will be unpriced"),
+                  file=sys.stderr)
+            current[prov] = old
+    # Compared as stored, so a tier's tuple and its stored list agree.
+    current = json.loads(json.dumps(current))
+    if current != kept and any(current.values()):
+        when = now or datetime.now(timezone.utc)
+        directory.mkdir(parents=True, exist_ok=True)
+        # Names sort as their times; two changes within a second keep both.
+        while (directory / f"{_stamp(when)}.json").exists():
+            when += timedelta(seconds=1)
+        name = _stamp(when)
+        path = directory / f"{name}.json"
+        tmp = path.with_suffix(".tmp")
+        tmp.write_text(json.dumps(current))
+        tmp.replace(path)
+    return name, current
+
+
+def price_request(rate_set: dict, req: dict) -> float:
+    """Cost of ONE request, tier chosen by that request's own input context.
+
+    Tiers are per request, so a session must be priced request by request and
+    the costs summed. Pricing the summed tokens would push a session of many
+    modest requests into a tier none of them ever reached.
+
+    An unpublished cache rate falls back to the full input rate, not to zero:
+    assuming a cache read is free understates, and does so silently.
+    """
+    ctx = (req.get("input_tokens", 0) + req.get("cache_read_tokens", 0)
+           + req.get("cache_write_tokens", 0)
+           + req.get("cache_write_1h_tokens", 0))
+    r = dict(rate_set["base"])
+    for threshold, over in rate_set["tiers"]:
+        if ctx > threshold:
+            r.update(over)
+    inp = r.get("input", 0.0)
+    return (req.get("input_tokens", 0) * inp
+            + req.get("output_tokens", 0) * r.get("output", 0.0)
+            + req.get("cache_read_tokens", 0) * r.get("cache_read", inp)
+            + req.get("cache_write_tokens", 0) * r.get("cache_write", inp)
+            + req.get("cache_write_1h_tokens", 0)
+              * r.get("cache_write_1h", r.get("cache_write", inp)))
+
+
+# --- Transcripts
+
+
+def claude_config_dir() -> Path:
+    """The operator's own Claude Code config dir."""
+    return Path(os.environ.get("CLAUDE_CONFIG_DIR") or Path.home() / ".claude")
+
+
+def _read_usage(transcript: Path) -> tuple[list[dict], str]:
+    """Extract one usage record per API request from a session transcript.
+
+    Returns ``(requests, model)``. Per-request rather than summed because
+    rate tiers key off a single request's context (see
+    :meth:`crustify.agentlog.AgentLog.usage`).
+
+    Buckets are exclusive as recorded - the CLI reports ``input_tokens``
+    already net of cached reads - and the 5m/1h cache-write split is kept
+    because the two bill at different rates. Records are deduplicated by
+    message id: the transcript repeats them, and summing naively
+    double-counts.
+    """
+    requests: list[dict] = []
+    model = ""
+    seen: set[str] = set()
+    with open(transcript, errors="replace") as fh:
+        for line in fh:
+            try:
+                e = json.loads(line)
+            except ValueError:
+                continue
+            if e.get("type") != "assistant":
+                continue
+            msg = e.get("message") or {}
+            mid = msg.get("id")
+            if mid in seen:
+                continue
+            seen.add(mid)
+            # `<synthetic>` marks a CLI-generated message, not a model that
+            # billed anything. Letting it win makes the whole file price as
+            # UNKNOWN -- silently dropping a real run from the total.
+            named = msg.get("model") or ""
+            if named and not named.startswith("<"):
+                model = named
+            u = msg.get("usage") or {}
+            cc = u.get("cache_creation") or {}
+            requests.append({
+                "model": named if named and not named.startswith("<") else model,
+                "input_tokens": int(u.get("input_tokens") or 0),
+                "output_tokens": int(u.get("output_tokens") or 0),
+                "cache_read_tokens": int(u.get("cache_read_input_tokens") or 0),
+                "cache_write_tokens": int(cc.get("ephemeral_5m_input_tokens") or 0),
+                "cache_write_1h_tokens": int(cc.get("ephemeral_1h_input_tokens") or 0),
+            })
+    return requests, model
+
+
+def read_rollout_usage(rollout: Path) -> list[dict]:
+    """One usage record per turn, from the rollout's ``token_count`` events.
+
+    Each event reports both a running ``total_token_usage`` and that turn's
+    ``last_token_usage``. The per-turn figure is taken, but only when the
+    running total has actually moved: codex re-emits ``token_count``
+    without a new request, and counting those would inflate every session.
+
+    Counts are converted to crustify's exclusive buckets - codex's
+    ``input_tokens`` includes ``cached_input_tokens``, so cached reads
+    would otherwise be billed twice, once at the input rate and once at
+    the cache rate.
+    """
+    requests: list[dict] = []
+    prev_total = None
+    model = ""
+    with open(rollout, errors="replace") as fh:
+        for line in fh:
+            try:
+                d = json.loads(line)
+            except ValueError:
+                continue
+            payload = d.get("payload") or {}
+            # Each turn names its model before its requests.
+            if d.get("type") == "turn_context" and payload.get("model"):
+                model = payload["model"]
+            if payload.get("type") != "token_count":
+                continue
+            info = payload.get("info") or {}
+            total = info.get("total_token_usage") or {}
+            last = info.get("last_token_usage") or {}
+            marker = total.get("total_tokens")
+            if marker is None or marker == prev_total:
+                continue
+            prev_total = marker
+            cached = int(last.get("cached_input_tokens") or 0)
+            inp = int(last.get("input_tokens") or 0)
+            requests.append({
+                "model": model,
+                "input_tokens": max(inp - cached, 0),
+                "output_tokens": int(last.get("output_tokens") or 0),
+                "cache_read_tokens": cached,
+                "cache_write_tokens": int(last.get("cache_write_input_tokens") or 0),
+                "cache_write_1h_tokens": 0,
+            })
+    return requests
+
+
+# ---------------------------------------------------------- crustify usage
+
+def transcript_format(path: Path) -> str:
+    """``claude`` or ``codex``: which CLI wrote the transcript at ``path``,
+    read off its events rather than its name or location."""
+    with open(path, errors="replace") as fh:
+        for n, line in enumerate(fh):
+            if n > 200:
+                break
+            try:
+                e = json.loads(line)
+            except ValueError:
+                continue
+            if e.get("type") == "session_meta":
+                return "codex"
+            if "sessionId" in e or e.get("type") in ("assistant", "user"):
+                return "claude"
+    raise ValueError(f"{path}: not a Claude Code transcript or a Codex rollout")
+
+
+def transcript_session(path: Path) -> str | None:
+    """The session id a transcript names: a Claude Code transcript's
+    ``sessionId``, a Codex rollout's ``session_meta`` id."""
+    with open(path, errors="replace") as fh:
+        for n, line in enumerate(fh):
+            if n > 200:
+                break
+            try:
+                e = json.loads(line)
+            except ValueError:
+                continue
+            if e.get("type") == "session_meta":
+                return (e.get("payload") or {}).get("id")
+            if e.get("sessionId"):
+                return e["sessionId"]
+    return None
+
+
+def _codex_identity(rollout: Path) -> tuple[str, str]:
+    """``(provider, model)`` a rollout records: its session's provider, and
+    the model of its last turn."""
+    provider = model = ""
+    with open(rollout, errors="replace") as fh:
+        for line in fh:
+            try:
+                e = json.loads(line)
+            except ValueError:
+                continue
+            p = e.get("payload") or {}
+            if e.get("type") == "session_meta":
+                provider = p.get("model_provider") or provider
+            elif e.get("type") == "turn_context" and p.get("model"):
+                model = p["model"]
+    return provider, model
+
+
+def _interval(path: Path) -> tuple[str | None, str | None, int | None]:
+    """First and last event timestamps, and the span between them in ms."""
+    from datetime import datetime
+    stamps = []
+    with open(path, errors="replace") as fh:
+        for line in fh:
+            try:
+                ts = json.loads(line).get("timestamp")
+            except (ValueError, AttributeError):
+                continue
+            if isinstance(ts, str):
+                try:
+                    stamps.append(datetime.fromisoformat(ts.replace("Z", "+00:00")))
+                except ValueError:
+                    pass
+    if not stamps:
+        return None, None, None
+    first, last = min(stamps), max(stamps)
+    iso = lambda d: d.isoformat(timespec="seconds")  # noqa: E731
+    return iso(first), iso(last), round((last - first).total_seconds() * 1000)
+
+
+def transcript_record(path: Path, *, backend: str | None = None,
+                      model_proxy: str | None = None) -> dict:
+    """The usage record of one session, from its transcript: one entry per
+    API request, in crustify's exclusive buckets, with the session's
+    interval and the service whose rates price it.
+
+    That service is the model proxy, when the run went through one: a Claude
+    Code transcript reads the same whether its requests went to Anthropic or
+    through a gateway. Without one, it is the backend's own service. The
+    transcript's format names the backend when ``backend`` does not, and must
+    agree with it when it does."""
+
+    fmt = transcript_format(path)
+    if backend is not None and backend != fmt:
+        raise ValueError(f"{path} is a {fmt} transcript, not a {backend} one")
+
+    provider = model_proxy or NATIVE[fmt]
+    if fmt == "claude":
+        requests, model = _read_usage(path)
+    else:
+        requests = read_rollout_usage(path)
+        seen_provider, model = _codex_identity(path)
+        # A rollout names the provider block crustify gave codex, which for a
+        # proxy is the proxy's own name.
+        if model_proxy is None and seen_provider in PROXIES:
+            provider = seen_provider
+    started, ended, duration = _interval(path)
+    return {"provider": provider, "model": model,
+            "requests": requests, "started_at": started, "ended_at": ended,
+            "duration_ms": duration}
+
+
+# --- Reports
+
+
+#: Token buckets, all exclusive of one another.
+BUCKETS = ("input_tokens", "output_tokens", "cache_read_tokens",
+           "cache_write_tokens", "cache_write_1h_tokens")
+
+
+def _session(record: dict, source: Path, rates: dict) -> dict:
+    """One session, with its token totals and its cost."""
+    requests = [r for r in record.get("requests") or [] if isinstance(r, dict)]
+    tokens = {b: sum(int(r.get(b, 0)) for r in requests) for b in BUCKETS}
+    table = rates.get(record.get("provider") or "") or {}
+    cost, unpriced = 0.0, 0
+    for r in requests:
+        rate_set = table.get(r.get("model") or record.get("model") or "")
+        if rate_set is None:
+            unpriced += 1
+        else:
+            cost += price_request(rate_set, r)
+    out = {k: record.get(k) for k in ("provider", "model", "started_at",
+                                      "ended_at", "duration_ms")}
+    return {"source": str(source), **out,
+            "request_count": len(requests), "tokens": tokens,
+            "cost_usd": None if unpriced or not requests else round(cost, 6),
+            "requests": requests}
+
+
+def report(paths: list[Path], *, backend: str | None = None,
+           model_proxy: str | None = None, snapshot: str | None = None,
+           rates: Path | None = None) -> dict:
+    """``{"rates": ..., "sessions": [...], "total": {...}}`` for the
+    transcripts named, in order, each run on ``backend`` through
+    ``model_proxy``, as its session record says. The current rates are
+    fetched and kept as a new snapshot when they changed, unless
+    ``snapshot`` names a kept one to price at instead, which reproduces the
+    costs a report that named it gave."""
+    records = [(transcript_record(p, backend=backend, model_proxy=model_proxy), p)
+               for p in paths]
+    snapshot, table = kept(snapshot, rates) if snapshot else fetch(rates)
+    sessions = [_session(r, p, table) for r, p in records]
+    total_tokens = {b: sum(s["tokens"][b] for s in sessions) for b in BUCKETS}
+    priced = [s["cost_usd"] for s in sessions if s["cost_usd"] is not None]
+    durations = [s["duration_ms"] for s in sessions
+                 if isinstance(s.get("duration_ms"), int)]
+    total = {"sessions": len(sessions),
+             "request_count": sum(s["request_count"] for s in sessions),
+             "tokens": total_tokens,
+             "cost_usd": round(sum(priced), 6),
+             "unpriced_sessions": len(sessions) - len(priced),
+             "duration_ms": sum(durations)}
+    # The snapshot the costs were computed at, in crustify's home.
+    return {"rates": snapshot, "sessions": sessions, "total": total}
+
+
+def session_record(session_id: str, home: Path | None = None) -> Path | None:
+    """The newest record crustify keeps of the session ``session_id``, in
+    its directory in crustify's home."""
+    sessions = (home or crustify_home()) / "sessions"
+    hits = []
+    for path in sessions.glob("*/*.session.json"):
+        try:
+            record = json.loads(path.read_text())
+        except (OSError, ValueError):
+            continue
+        if isinstance(record, dict) and record.get("session_id") == session_id:
+            hits.append(path)
+    return max(hits, key=lambda p: (p.parent.name, p.name)) if hits else None
+
+
+def _write(path: Path, record: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_text(json.dumps(record, indent=1) + "\n")
+    tmp.replace(path)
+
+
+def price_session(session_id: str, transcript: Path, *,
+                  snapshot: str | None = None, backend: str | None = None,
+                  model_proxy: str | None = None,
+                  rates: Path | None = None, home: Path | None = None) -> dict:
+    """The report of one session, from its transcript, priced at the rate
+    snapshot its record names.
+
+    A session priced for the first time is priced at the rates fetched now,
+    with the backend and model proxy the arguments give, and a record of it
+    is kept in crustify's home, ``sessions/<session id>/usage.session.json``,
+    naming them and the snapshot the rates match, so that every later pricing
+    gives the same figures. ``snapshot`` prices it at another kept snapshot,
+    which its record then names."""
+
+    named = transcript_session(transcript)
+    if named is not None and named != session_id:
+        raise ValueError(f"{transcript} is the transcript of session {named}, "
+                         f"not {session_id}")
+    path = session_record(session_id, home)
+    record = json.loads(path.read_text()) if path else {}
+    if "backend" not in record and "cli" in record:
+        # An earlier version's record: its CLI, and its billing service.
+        record.setdefault("backend", record["cli"])
+        if record.get("provider") in PROXIES:
+            record.setdefault("model_proxy", record["provider"])
+    backend = backend or record.get("backend")
+    model_proxy = model_proxy or record.get("model_proxy")
+    doc = report([transcript], backend=backend, model_proxy=model_proxy,
+                 snapshot=snapshot or record.get("rates"), rates=rates)
+    if path is None:
+        path = (home or crustify_home()) / "sessions" / session_id / "usage.session.json"
+        record = {"session_id": session_id, "backend": backend, "model_proxy": model_proxy}
+    if doc["rates"] and doc["rates"] != record.get("rates"):
+        kept_record = json.loads(path.read_text()) if path.is_file() else record
+        kept_record["rates"] = doc["rates"]
+        _write(path, kept_record)
+    return {"session_id": session_id, **doc}
+
+
+DESCRIPTION = (
+    "Report the tokens and cost of one agent session as JSON, from the transcript "
+    "its CLI kept: a Claude Code session transcript or a Codex rollout, recognized "
+    "by its contents, and priced request by request. A session is priced at the "
+    "rate snapshot its record in crustify's home names; one priced for the first "
+    "time, at the rates fetched now, kept as a dated snapshot when they changed, "
+    "with a record that names it.")
+
+
+def main(argv: list[str] | None = None) -> None:
+    parser = argparse.ArgumentParser(prog="crustify-usage", description=DESCRIPTION)
+    parser.add_argument("session_id", metavar="SESSION_ID",
+                        help="The session's id, as its task.json names it.")
+    parser.add_argument("transcript", type=Path, metavar="TRANSCRIPT_JSONL",
+                        help="Path to the session's transcript.")
+    parser.add_argument("-o", "--output", type=Path, default=None, metavar="FILE",
+                        help="Write the JSON there instead of to standard output.")
+    parser.add_argument("--rates", default=None, metavar="SNAPSHOT",
+                        help="Price at this kept rate snapshot instead of the one the "
+                             "session's record names: its timestamp, its file, or "
+                             "`latest`. The record then names it.")
+    parser.add_argument("--backend", default=None, choices=["claude", "codex"],
+                        help="The CLI that ran the session, for one priced the first "
+                             "time. Default: read off the transcript.")
+    parser.add_argument("--model-proxy", default=None, metavar="PROXY",
+                        help="The model proxy the session ran through, for one priced "
+                             "the first time, whose rates price it.")
+    args = parser.parse_args(argv)
+    if not args.transcript.is_file():
+        raise SystemExit(f"no file at {args.transcript}")
+    try:
+        doc = price_session(args.session_id, args.transcript, snapshot=args.rates,
+                            backend=args.backend, model_proxy=args.model_proxy)
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from exc
+    text = json.dumps(doc, indent=1) + "\n"
+    if args.output is None:
+        sys.stdout.write(text)
+    else:
+        args.output.write_text(text)
+
+
+if __name__ == "__main__":
+    main()

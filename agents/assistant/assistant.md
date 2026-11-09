@@ -182,8 +182,8 @@ brief, and never a batch's.
 Spawn each run in the background, as its stage's agent, with a task message that names
 what its agent's Inputs section lists, and its instructions file when it has one. Spawn the
 batches of a wave together, so that they run at once, and record each agent's session id
-as its task's `session_id`. How a stage's agent is spawned on your host follows, at the
-end of this prompt.
+as its task's `session_id`. A run whose `task.json` names another backend, billing or
+model proxy than this session's runs as a process of its own, as its stage's agent.
 
 ---
 

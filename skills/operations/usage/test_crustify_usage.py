@@ -6,7 +6,18 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from crustify.core.usage import transcript_format, transcript_record
+import importlib.machinery
+import importlib.util
+import sys
+
+# The script under test, beside this file: a module without a .py name.
+_loader = importlib.machinery.SourceFileLoader(
+    "crustify_usage", str(Path(__file__).with_name("crustify-usage")))
+_spec = importlib.util.spec_from_loader("crustify_usage", _loader)
+cu = importlib.util.module_from_spec(_spec)
+sys.modules["crustify_usage"] = cu
+_loader.exec_module(cu)
+transcript_format, transcript_record = cu.transcript_format, cu.transcript_record
 
 CLAUDE = [
     {"type": "user", "sessionId": "s", "timestamp": "2026-10-19T19:03:10.000Z",
@@ -113,12 +124,12 @@ class _Rates(unittest.TestCase):
     def sources(self, tables: dict):
         """The fetched rates: ``tables`` per provider, every other empty."""
         from unittest import mock
-        from crustify.core import pricing
+        pricing = cu
         return mock.patch.dict(pricing._SOURCES, {
             p: (lambda p=p: tables.get(p, {})) for p in pricing._SOURCES})
 
     def report(self, paths, tables, **kw):
-        from crustify.usage import report
+        report = cu.report
         with self.sources(tables):
             return report(paths, rates=self.rates, **kw)
 
@@ -170,14 +181,14 @@ class ReportTests(_Rates):
 
     def test_a_failed_fetch_keeps_the_latest_rates(self) -> None:
         from unittest import mock
-        from crustify.core import pricing
+        pricing = cu
         self.report([self.claude], {"anthropic": {"claude-sonnet-5": self.RATES}})
 
         def boom():
             raise OSError("offline")
         with mock.patch.dict(pricing._SOURCES, {p: boom for p in pricing._SOURCES}), \
                 mock.patch("sys.stderr"):
-            from crustify.usage import report
+            report = cu.report
             doc = report([self.claude], rates=self.rates)
         self.assertIsNotNone(doc["sessions"][0]["cost_usd"])
         # A failure reads as no change: no new snapshot.
@@ -198,7 +209,7 @@ class SessionTests(_Rates):
             "model_proxy": None, "args": [], "session_id": "s"}))
 
     def price(self, tables, **kw):
-        from crustify.usage import price_session
+        price_session = cu.price_session
         with self.sources(tables):
             return price_session("s", self.claude, rates=self.rates,
                                  home=self.home, **kw)
@@ -216,7 +227,7 @@ class SessionTests(_Rates):
 
     def test_a_named_snapshot_reprices_and_is_recorded(self) -> None:
         self.price({"anthropic": {"claude-sonnet-5": self.RATES}})
-        from crustify.core import pricing
+        pricing = cu
         double = {"base": {k: 2 * v for k, v in self.RATES["base"].items()},
                   "tiers": []}
         with self.sources({"anthropic": {"claude-sonnet-5": double}}):
@@ -234,7 +245,7 @@ class SessionTests(_Rates):
         self.assertIsNotNone(doc["sessions"][0]["cost_usd"])
 
     def test_another_sessions_transcript_is_refused(self) -> None:
-        from crustify.usage import price_session
+        price_session = cu.price_session
         with self.assertRaisesRegex(ValueError, "transcript of session s, not t"):
             price_session("t", self.claude, rates=self.rates, home=self.home)
 

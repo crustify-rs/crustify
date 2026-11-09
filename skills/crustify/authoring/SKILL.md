@@ -54,6 +54,10 @@ covers and before which step it is read. A skill stays under about 4,500 tokens,
 host that brings an invoked skill back after compacting an agent's context brings it back
 whole; one that outgrows that is split at a section that another step needs on its own.
 
+A skill's directory may also hold a script the skill describes, with its tests beside it,
+standard library only, so that it runs wherever the skill is read: `usage` holds
+`crustify-usage`.
+
 Every skill's sections are numbered. A reference to a section names it, with or without its
 number ("testing's Coverage section", "layout § Lifecycle › Waves"), so that a renumbering
 never silently points a reference at another section. A skill links another by its
@@ -143,10 +147,8 @@ manifest is `.claude-plugin/plugin.json`:
 - `agents/`, one plugin agent per stage, `crustify:<stage>`, and one assistant per campaign
   kind, `crustify:assistant-translate` and `crustify:assistant-audit`. A plugin agent's
   body replaces Claude Code's own system prompt, so each body opens with that prompt,
-  `system-prompt.md`, followed by `agents/common.md` and the agent's file; the assistant's
-  ends with `assistant.md`, what it does on Claude Code: how it spawns each stage's agent,
-  and the repository's `.claude/settings.json`, which selects it for every session there.
-  Each agent's frontmatter gives the description the assistant routes a run by;
+  `system-prompt.md`, followed by `agents/common.md` and the agent's file. Each agent's
+  frontmatter gives the description the assistant routes a run by;
 - `system-prompt.md`, Claude Code's own system prompt, captured from a real request by
   `dump-system-prompt.py`, less its one project's `# Memory` section, and dumped again
   when Claude Code is upgraded;
@@ -155,5 +157,5 @@ manifest is `.claude-plugin/plugin.json`:
   stage agent's transcript into Crustify's home; and
 - `compose.py`, which generates the agents (`compose.py build`) and runs the hooks.
 
-The generated files are committed, and regenerated whenever `agents/`, `system-prompt.md`
-or `assistant.md` changes.
+The generated files are committed, and regenerated whenever `agents/` or
+`system-prompt.md` changes.

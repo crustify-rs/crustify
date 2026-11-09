@@ -77,23 +77,8 @@ agent's full log and the source of its accounting.
 
 A transcript is copied into crustify's home, as `transcripts/<session id>.jsonl`, as soon
 as its agent ends, because the CLIs move and prune their own files. Its usage is derived
-from the copy, with the backend and model proxy its `task.json` names:
-
-```bash
-crustify-usage <session id> ~/.crustify/transcripts/<session id>.jsonl \
-    --backend <backend> [--model-proxy <proxy>]
-```
-
-`crustify-usage`, under `utils/` in Crustify's checkout, prices every request the
-transcript records, at the rates of the model proxy, or of the backend's own service
-without one, and reports the session's tokens, cost and interval as JSON. The transcript
-names the model of each request, but not the service that billed it. A session priced for
-the first time is priced at the rates fetched then, which are kept in crustify's home as
-`rates/<timestamp>.json` whenever they differ from the latest kept, and its record there,
-`sessions/<session id>/usage.session.json`, names its backend, its model proxy and that
-snapshot; every later pricing of it uses the same, unless `--rates` names another
-snapshot, so its figures never move. Its usage is not kept: the dashboard holds its
-figures, and `crustify-usage` gives them again.
+from the copy, as [`usage`](../usage/SKILL.md) describes, with the backend and model proxy its
+`task.json` names.
 
 The assistant's sessions are collected the same way: at the start of each session, the
 transcripts of the sessions before it. A resumed session keeps its id while its transcript
@@ -102,8 +87,8 @@ records, transcripts and rates stay in crustify's home.
 
 ## 4. Cost and time
 
-A run's cost and tokens are its usage's `total.cost_usd` and `total.tokens`, from
-`crustify-usage` on its transcript. The computed cost is used, never a provider-reported
+A run's cost and tokens are its usage's `total.cost_usd` and `total.tokens`, as
+[`usage`](../usage/SKILL.md) derives them from its transcript. The computed cost is used, never a provider-reported
 dollar total; under subscription billing it is the API-equivalent cost.
 
 An agent's wall time is its usage's interval. A wave's runs from its first batch's
