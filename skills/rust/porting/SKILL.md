@@ -6,10 +6,10 @@ description: "How a scheduled C item is reimplemented in safe Rust: surface, sto
 # Porting
 
 How a scheduled C item is reimplemented in safe Rust. A port starts from the item's
-analysis, as [`analysis`](../analysis/SKILL.md) describes, reaches enums and macros as
-[`conventions`](../conventions/SKILL.md)' Enums and macros section describes, and keeps
-[`binding`](../binding/SKILL.md)'s Safe boundary; a ported item keeps C interoperability
-and observable behaviour for as long as C consumes it.
+analysis, as [`analysis`](../analysis/SKILL.md) describes, and
+[`binding`](../binding/SKILL.md)'s Macros and Safe boundary sections apply to it unchanged;
+a ported item keeps C interoperability and observable behaviour for as long as C consumes
+it.
 
 ## 1. Surface
 

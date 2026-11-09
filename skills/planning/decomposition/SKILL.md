@@ -66,9 +66,9 @@ A shared header, one that carries no single TU's name, is split item by item:
 
 A header that implements what no TU does, and so has no TU to go to, is a header module of
 its own. Each split is recorded with the file entries' `items` lists, which stay empty for
-a file a module owns whole. Macros are not homed: they are not translated, and the Rust
-that needs one reaches it as [`conventions`](../../rust/conventions/SKILL.md)' Macros
-section describes.
+a file a module owns whole. Macros are not homed: they are not translated, and a binding
+that needs one reaches it as [`binding`](../../rust/binding/SKILL.md)'s Macros section
+describes.
 
 A module also lists its tests: the test files tied to it, those whose subject it is. A
 test's subject is each module whose internals it uses, the fields or the layout of the
@@ -136,7 +136,7 @@ told apart by their `index` and `foundational`. Both home in the TU's Rust file.
 
 Each member's lifecycle role (allocator or constructor, releaser, disposer, cloner) is
 established while planning, so that the foundational modules' members are bound as
-strategies, as [Lifecycle strategies](../../rust/binding/SKILL.md#34-lifecycle-strategies) describes. The
+strategies, as [Lifecycle strategies](../../rust/binding/SKILL.md#35-lifecycle-strategies) describes. The
 foundational modules are planned and scheduled like any other: waves of batches of units.
 They are `wrap` in every campaign: their members become the lifecycle strategies that the
 other modules' bindings release through, and while any C remains it allocates and frees

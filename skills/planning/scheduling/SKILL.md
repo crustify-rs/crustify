@@ -76,7 +76,7 @@ enum where the order places it, a struct or a union `wrap` there while another m
 uses its layout, and each followed by the later stages
 [Later stages](#5-later-stages) describes, each a planned item of its own.
 
-Nothing wraps an enum, as [`conventions`](../../rust/conventions/SKILL.md)' Enums section
+Nothing wraps an enum, as [`binding`](../../rust/binding/SKILL.md)'s Type route section
 describes: a wrap campaign schedules none for it, and a port campaign ports it once.
 
 ## 3. Batches

@@ -58,7 +58,7 @@ campaign:
   toolchain's `rustfmt`, whose output differs between toolchains, so that a nightly build
   regenerates the bytes a stable one committed;
 - enums are generated as constants (`Consts`), without the enum name as a prefix, and
-  used directly, as [`conventions`](../conventions/SKILL.md)' Enums section describes;
+  used directly, as [`binding`](../binding/SKILL.md)'s Type route section describes;
 - `Default` is derived, and layout tests are generated;
 - C comments are kept as doc comments, and the generated modules' doctests are off, since
   they hold C;

@@ -1,15 +1,13 @@
 ---
 name: binding
-description: "How a scheduled C item becomes a safe Rust binding: the safe boundary, the type route and the symbol route. Read before binding any item, and when reviewing bindings."
+description: "How a scheduled C item becomes a safe Rust binding: the safe boundary, the type route with enums, and the symbol route with macros. Read before binding any item, and when reviewing bindings."
 ---
 
 # Generating safe bindings
 
 How a scheduled C item becomes a safe Rust binding.
 A binding keeps the C implementation and puts a safe Rust API in front of it, shaped by the
-item's analysis, as [`analysis`](../analysis/SKILL.md) describes. Its enums and macros
-are handled as [`conventions`](../conventions/SKILL.md)' Enums and macros section
-describes.
+item's analysis, as [`analysis`](../analysis/SKILL.md) describes.
 
 ## 1. Safe boundary
 
@@ -40,6 +38,9 @@ bindings.
 ---
 
 ## 2. Type route
+
+An enum takes no type route: it has no fields, layout or lifecycle to publish, so nothing
+wraps it, and its generated raw binding is used directly, as a constant macro's is.
 
 ### 2.1 Surface
 
@@ -197,7 +198,17 @@ function-pointer type.
 
 An inline function pointer is wrapped when no ownership-compatible callable wrapper exists.
 
-### 3.4 Lifecycle strategies
+### 3.4 Macros
+
+A C macro is never published as an independent Rust API.
+
+- A symbol alias is bound by calling the underlying symbol's safe wrapper.
+- A function-like macro is bound through an existing shim, or the smallest shim it needs,
+  which is then bound and wrapped.
+- A constant macro is used through its generated binding.
+- A type-generating macro follows the type route.
+
+### 3.5 Lifecycle strategies
 
 The foundational modules hold the allocator or constructor, releaser, disposer and
 cloner routines of type-erased `void` and string handles, each with the lifecycle role
