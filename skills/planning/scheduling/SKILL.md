@@ -77,7 +77,8 @@ uses its layout, and each followed by the later stages
 [Later stages](#5-later-stages) describes, each a planned item of its own.
 
 Nothing wraps an enum, as [`binding`](../../rust/binding/SKILL.md)'s Type route section
-describes: a wrap campaign schedules none for it, and a port campaign ports it once.
+describes: a wrap campaign schedules none for it, and a port campaign ports it once, as
+[`porting`](../../rust/porting/SKILL.md)'s Enums section describes.
 
 ## 3. Batches
 

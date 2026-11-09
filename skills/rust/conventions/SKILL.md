@@ -121,7 +121,7 @@ workspace's `clippy::doc_markdown` lint requires of a path in a doc comment.
 | kind | item |
 |---|---|
 | `fn` | a function |
-| `ty` | a named type: a struct, a union or a callback typedef |
+| `ty` | a named type: a struct, a union, an enum or a callback typedef |
 | `fld` | a member of a struct or union |
 | `var` | a global |
 
