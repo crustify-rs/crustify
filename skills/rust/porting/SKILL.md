@@ -136,5 +136,23 @@ rustc's) would inline the export back into its C callers. -->
 
 ### 3.4 Macros
 
-`binding`'s Macros section applies to a port unchanged.
-<!-- TODO: how a port handles a macro, which remaining C may still expand, is undecided. -->
+A macro is ported to a Rust form of its own. A macro a TU defines has no C side to keep: it
+goes with its TU. A macro a header defines, internal or public API that another module's C
+may expand, also stays in its header for the remaining C, and its C and Rust forms are not
+linked, beyond the Rust form's annotation:
+
+- On the C side, the macro keeps expanding where remaining C invokes it, until its header
+  goes with the last C file that includes it, as
+  [`porting-workflow`](../../workflows/porting-workflow/SKILL.md)'s Principles section
+  describes: a type generator keeps minting the instances its remaining invocations
+  define, and what an expansion calls or accesses is reached as any remaining C reaches
+  it, a function or global Rust owns through its export, a type through its C layout. An
+  expansion site is a use by the function that holds it, so it holds back the later stages
+  of what it reaches, as [`scheduling`](../../planning/scheduling/SKILL.md)'s Later stages
+  section counts its users.
+- On the Rust side, the macro is ported natively: a type generator as one generic type,
+  its instances aliases of it; a constant macro as a `const`; a symbol alias through the
+  Rust that stands in for the symbol it names; and a macro that implements logic as a
+  function, `#[inline]`, `const` or generic as it needs, or as a `macro_rules!` only where
+  a function cannot express it: control flow that leaves its caller, token pasting or
+  stringification, an argument used as a place, or one evaluated lazily or more than once.
