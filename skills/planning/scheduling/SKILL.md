@@ -225,7 +225,7 @@ section describes. A function or global that remaining C never references has no
 and no `port/unexport`.
 
 A ported closed enum's referrers are the remaining C that uses its constants or values of
-its type. Its `port/unexport`, after its `unreferenced_after`, turns its newtype into a
-Rust enum, as [`porting`](../../rust/porting/SKILL.md)'s Enums section describes. A closed
-enum that remaining C never uses is ported as a Rust enum, with no `port/unexport`, and a
-flags enum or an enum without a name has no `port/unexport` at all.
+its type. Its `port/unexport`, after its `unreferenced_after`, removes the integer form it
+keeps for them, as [`porting`](../../rust/porting/SKILL.md)'s Enums section describes. A
+closed enum that remaining C never uses has no `port/unexport`, and a flags enum or an
+enum without a name has none at all.

@@ -9,14 +9,20 @@ How a scheduled C item is reimplemented in safe Rust. A port starts from the ite
 analysis, as [`analysis`](../analysis/SKILL.md) describes, and keeps C interoperability
 and observable behaviour for as long as C consumes the item.
 
-An item takes its Rust-native form in stages: its port, then the later stages its kind
-describes below, each changing the landed item once the integrations that free it have
-landed, as [`scheduling`](../../planning/scheduling/SKILL.md)'s Later stages section
-schedules them. A later stage changes the item and the code inside the crate that reaches
-its C form, its seams and export gateways, never the safe API its consumers use, and keeps
-the item's tests passing. A stage that moves state out of C, a lock or a handle a type held
-in its C layout, or memory C's allocator held, moves its uses onto the standard library
-where [`binding`](../binding/SKILL.md)'s Safe boundary section lets it.
+A port gives an item its native safe API at once, and that API does not change after it.
+An item the remaining C still uses keeps a C form behind it, its C layout, its storage in
+C's allocator, its export or its integer values, so that the C keeps working while its
+Rust consumers stay agnostic of which form implements it. The later stages its kind
+describes below migrate that form to Rust, part by part, once the integrations that free
+it have landed, as [`scheduling`](../../planning/scheduling/SKILL.md)'s Later stages
+section schedules them. An item no C uses is native in its API and its implementation from
+its port.
+
+A later stage changes the item and the code inside the crate that reaches its C form, its
+seams and export gateways, never the safe API its consumers use, and keeps the item's tests
+passing. A stage that moves state out of C, a lock or a handle a type held in its C layout,
+or memory C's allocator held, moves its uses onto the standard library where
+[`binding`](../binding/SKILL.md)'s Safe boundary section lets it.
 
 ## 1. FFI boundary
 
@@ -66,28 +72,34 @@ Its later stages:
 
 ### 2.2 Unions
 
-A union is ported as a struct is, with the same later stages. Its Rust-native layout, from
-its `port/layout`, is a tagged Rust enum, a variant for each member, where the analysis
-establishes the discriminator that selects its active member.
+A union is ported as a struct is, with the same later stages. Where the analysis
+establishes the discriminator that selects its active member, its safe API presents it as a
+tagged Rust enum from its port, a variant for each member, as
+[`binding`](../binding/SKILL.md)'s Field accessors section maps it, and its `port/layout`
+makes that enum its storage too.
 
 ### 2.3 Enums
 
 A ported enum is defined anew in Rust, and its header keeps the C definition for the
 remaining C: the two are not linked, beyond the Rust type's annotation, as the
-[conventions](../conventions/SKILL.md)' Anchors section describes. While remaining C
-uses the enum, its constants or values of its type, the Rust type is a
-`#[repr(transparent)]` newtype over the enum's integer type, as bindgen gives it, with an
-associated constant for each of its constants, rather than a Rust enum: C may pass any value
-of that integer, which the newtype holds and a Rust enum may not. Its values cross the
-boundary unchanged, and an enum whose constants C combines as flags also implements the
-bitwise operators. An enum without a name has no type to port: its constants become
-constants of its integer type.
+[conventions](../conventions/SKILL.md)' Anchors section describes.
 
-Its later stage, `port/unexport`, fully nativizes a closed enum once no remaining C uses
-it: the newtype becomes a Rust enum, with a variant for each of its constants. It is the
-one later stage that changes a safe API: its variants replace the newtype's constants, so
-it updates the enum's Rust consumers in the crate with it. A closed enum that no remaining
-C uses by its port is a Rust enum from its port.
+A closed enum is a Rust enum from its port, with a variant for each of its constants.
+While remaining C uses it, its constants or values of its type, it keeps an integer form
+for C: it is `#[repr]` over the enum's integer type, as bindgen gives it, each constant's
+value its variant's discriminant, and its values cross the boundary as that integer. A
+value from C is converted fallibly where it enters Rust, since C may pass one the enum does
+not name, which a Rust enum may not hold, and such a value is handled there as the C
+handled it.
+
+An enum whose constants C combines as flags is a `#[repr(transparent)]` newtype over its
+integer type, with an associated constant for each of its constants and the bitwise
+operators, since a combination is no variant. An enum without a name has no type to port:
+its constants become constants of its integer type. Neither has a later stage.
+
+A closed enum's later stage, `port/unexport`, removes its integer form once no remaining C
+uses it: its `repr`, its discriminants and its conversions. A closed enum that no remaining
+C uses by its port has no integer form.
 <!-- TODO: wavefront computes `unreferenced_after` only for functions and globals, and
 schedules enums only `--with-enums`: it has yet to count an enum's referrers and tell a
 closed enum from a flags one, so no enum's `port/unexport` is planned yet. -->
