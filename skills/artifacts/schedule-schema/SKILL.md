@@ -87,9 +87,9 @@ the objective it is translated with and its entity's release points:
 | field | meaning |
 |---|---|
 | `name`, `defined_in`, `kind`, `field_users`, `home` | as on a batch item |
-| `objective` | `wrap` or `port`, or one of the later stages of `scheduling`'s Later stages section: `port/layout` or `port/memory` for a struct or a union, `port/unexport` for a function or a global |
+| `objective` | `wrap` or `port`, or one of the later stages of `scheduling`'s Later stages section: `port/layout` or `port/memory` for a struct or a union, `port/unexport` for a function, a global or a closed enum |
 | `opaque_after`, `memory_unmanaged_after` | on a struct or a union, the release points after which none of its layout users, and none of its memory users, is left, as the scheduling spec's Later stages section defines them; `null` on any other item |
-| `unreferenced_after` | on a function or a global, the release point after which none of its referrers is left; `null` on any other item |
+| `unreferenced_after` | on a function, a global or a closed enum, the release point after which none of its referrers is left; `null` on any other item |
 
 A release point has two records, `closure` over every user and `scheduled` over those the
 schedule holds, each naming the last users, their waves and their `modules`, as the

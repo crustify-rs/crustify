@@ -30,7 +30,9 @@ bitwise operators. An enum without a name has no type to port: its constants bec
 constants of its integer type.
 
 Once no C uses it, the enum is fully nativized: a closed enum becomes a Rust enum, with a
-variant for each of its constants.
+variant for each of its constants, by its `port/unexport`, as
+[Later stages](#5-later-stages) describes, or by its port when no remaining C uses it by
+then.
 
 ## 2. Storage and layout
 
@@ -89,10 +91,13 @@ integrations that free it have landed:
 - `port/memory`: the type's storage moves from C's allocator to Rust's, as
   [Lifecycle](#3-lifecycle) describes: its owners allocate and drop it natively; and
 - `port/unexport`: the function's or global's export, which no remaining C references any
-  more, is removed with the raw binding and the allowlist entry that reach it.
+  more, is removed with the raw binding and the allowlist entry that reach it, and a closed
+  enum's newtype, which no remaining C uses any more, becomes a Rust enum, as
+  [Enums](#11-enums) describes.
 
 A stage changes the item and the code inside the crate that reaches its C form, its seams
 and export gateways, never the safe API its consumers use, and keeps the item's tests
-passing. A stage that moves state out of C, a lock or a handle a type held in its C layout,
+passing. An enum's `port/unexport` is the one exception: its variants replace its
+constants, so it updates the enum's Rust consumers in the crate with it. A stage that moves state out of C, a lock or a handle a type held in its C layout,
 or memory C's allocator held, moves its uses onto the standard library where `binding`'s
 Safe boundary section lets it.

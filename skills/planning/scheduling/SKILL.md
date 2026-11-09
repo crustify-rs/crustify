@@ -215,7 +215,7 @@ Its safe API does not change between the stages: it exposes no representation, s
 stage changes the type, its lifecycle and the code inside the crate that reaches its C form,
 and none of its consumers.
 
-### 5.2 Functions and globals
+### 5.2 Functions, globals and enums
 
 A ported function's or global's export, through which the remaining C reaches it, is
 removed with the raw binding that reaches it by a `port/unexport` item, after its
@@ -223,3 +223,9 @@ removed with the raw binding that reaches it by a `port/unexport` item, after it
 takes its address or accesses it, as the [conventions](../../rust/conventions/SKILL.md)' Exports
 section describes. A function or global that remaining C never references has no export,
 and no `port/unexport`.
+
+A ported closed enum's referrers are the remaining C that uses its constants or values of
+its type. Its `port/unexport`, after its `unreferenced_after`, turns its newtype into a
+Rust enum, as [`porting`](../../rust/porting/SKILL.md)'s Enums section describes. A closed
+enum that remaining C never uses is ported as a Rust enum, with no `port/unexport`, and a
+flags enum or an enum without a name has no `port/unexport` at all.
