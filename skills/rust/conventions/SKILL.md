@@ -124,7 +124,7 @@ workspace's `clippy::doc_markdown` lint requires of a path in a doc comment.
 | `st` | a struct |
 | `un` | a union |
 | `enm` | an enum, or one of its constants |
-| `ty` | a callback typedef |
+| `cbk` | a callback typedef |
 | `fld` | a member of a struct or union |
 | `glb` | a global |
 
