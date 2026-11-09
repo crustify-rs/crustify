@@ -7,8 +7,7 @@ description: "Naming, tree layout, anchors and test placement of the Rust a camp
 
 These are the shared, mechanical contracts of the code a campaign generates: how it is
 named, where it sits, how it records what it translated and where its tests go. The
-toolchain, edition, lints and formatting it is held to are [`toolchain`](../toolchain/SKILL.md)'s. The
-roles' prompts contain the decisions and procedures.
+toolchain, edition, lints and formatting it is held to are [`toolchain`](../toolchain/SKILL.md)'s.
 
 ## 1. Naming
 

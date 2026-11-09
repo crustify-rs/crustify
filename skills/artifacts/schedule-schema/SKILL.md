@@ -14,7 +14,7 @@ started. Waves are computable in advance, so writing them down makes a campaign'
 reviewable before it spends anything; their batches are not, since they are packed when
 each wave starts, as `scheduling`'s Batches section describes.
 
-TODO: an audit's review waves are left out of this schema for now.
+An audit's review waves are not recorded in it.
 
 The schedule holds two kinds of field:
 

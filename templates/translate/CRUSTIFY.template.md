@@ -16,7 +16,7 @@ for campaign decisions that remain unresolved.
 3. **What should this campaign target: a named subset of modules, or a named
    subset of functions and types, or the whole target repo? You can define them
    now or we can brainstorm them during the live session. You can also let the
-   orchestrator decide.** (`id: scope`)
+   assistant decide.** (`id: scope`)
    - Answer: `<named modules | named functions/types | whole target |
      assistant's choice>`
 
@@ -51,7 +51,7 @@ Unanswered optional questions use their defaults.
    should it make? Each run emits what the plan lacks and corrects what the runs
    before it committed.** (`id: plan-agent`)
    - Answer: `<claude | codex, subscription | api[, proxy: …][, args: …]>, runs: N |
-     orchestrator's choice>`
+     assistant's choice>`
    - By default: the translation agent's, 2 runs.
 
 8. **Should batches and parallelism be capped? Each wave's batches are packed when it

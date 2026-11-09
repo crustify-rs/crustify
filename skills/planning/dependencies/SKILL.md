@@ -91,7 +91,7 @@ Generation section describes.
 
 ## 4. Sources
 
-Campaigns run on Linux, with glibc, on 64-bit architectures. A library the target links from the system has no
+A library the target links from the system has no
 source of the campaign's own, so its side campaign's `c/` is the library's upstream
 repository at the release the target was built against: the version its build resolved,
 as its build system reports it (CMake's found version, `pkg-config --modversion`), the
@@ -108,9 +108,9 @@ those installs, as the setup workflow's Builds section describes.
 libc is the exception. Every other library on the system, and the dynamic loader, depend
 on the system's glibc, so the target keeps linking it, and its side campaign's `c/` holds
 glibc's source at the installed version, for reading its behaviour. Its raw bindings, like
-any wrapper's, are generated from the host's headers, which are that glibc's; layouts and
-constants that differ between 64-bit architectures, such as `struct stat`, are generated
-for each architecture a campaign builds on, and verified there.
+any wrapper's, are generated from the host's headers, which are that glibc's, so layouts and
+constants that differ between architectures, such as `struct stat`, are the campaign
+target's.
 
 ## 5. Reuse
 

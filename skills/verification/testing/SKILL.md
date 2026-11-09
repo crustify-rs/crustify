@@ -226,7 +226,7 @@ BSan, when available, is run for every batch and at module end:
   [`concurrency`](../../operations/concurrency/SKILL.md) describes, each under a `timeout`.
 
 Miri is run after every wave, as a gate over the whole workspace: one
-`cargo +nightly miri test` per test binary (`--lib`, and `--test <name>` for each
+`cargo +nightly-<date> miri test` per test binary (`--lib`, and `--test <name>` for each
 integration binary), as many side by side as [`concurrency`](../../operations/concurrency/SKILL.md) describes,
 each with `-- --skip compile_fail`. The gate passes only
 with no Miri error: a test that stops at the foreign boundary without the attribute gets

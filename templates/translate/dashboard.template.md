@@ -123,7 +123,7 @@ the corrections it made to what earlier runs committed.
 ## Side campaigns
 
 One row per out-of-tree library the campaign wraps in a side campaign, as
-`specs/planning/dependencies.md` describes. Each wrapper's own dashboard, in its
+the `dependencies` skill describes. Each wrapper's own dashboard, in its
 `<source>-crustify` repository, is its record; its row here copies that dashboard's
 figures as of the commit the campaign pins, and the `side campaigns` row of `Module stats`
 sums them.

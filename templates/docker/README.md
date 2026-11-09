@@ -1,8 +1,7 @@
 # Docker
 
 [`Dockerfile`](Dockerfile) builds the environment either campaign runs in. It starts
-nothing: the container idles, and `crustify` is run inside it: the command picks the
-campaign kind, and its options pick the model, billing and ablation.
+nothing: the container idles, and Crustify's assistant is opened inside it.
 
 ## Running one
 
@@ -49,35 +48,34 @@ docker run -d --init --name crustify-libgit2 \
     -e ANTHROPIC_API_KEY \
     -v /absolute/path/to/your/campaign-dir:/target \
     -v "$(dirname "$PWD"):/crustify-rs" \
-    -v /absolute/path/to/your/CRUSTIFY.md:/campaign/CRUSTIFY.md:ro \
     -v crustify-libgit2-work:/work \
     crustify
 ```
 
-Open Crustify on the target:
+Open Crustify's assistant in it, in the directory the campaign works in:
 
 ```sh
-docker exec -it crustify-libgit2 \
-    crustify /target --settings /campaign/CRUSTIFY.md \
-    --backend claude --billing api
+docker exec -it -w /target crustify-libgit2 \
+    claude --plugin-dir /opt/crustify --agent crustify:assistant-translate
 ```
 
-The settings' `campaign` answer, `port`, `wrap` or `audit`, decides which campaign
-Crustify runs; an audit runs in a container started the same way, with its own `/work`
-volume. Crustify waits for your instructions; add `--start` to run the campaign right
-away, which a session without a terminal (`docker exec` without `-it`) needs.
+`crustify:assistant-audit` opens an audit's, in a container started the same way, with its
+own `/work` volume. The assistant waits for your instructions; ask it to start the campaign,
+or pass that as the first prompt with `-p` to run it headless, which a session without a
+terminal (`docker exec` without `-it`) needs.
 
-The first run copies the settings to the target's `crustify/CRUSTIFY.md`, which is tracked
-on the working branch, `crustify/devel`. Edit that copy to change a campaign's settings
-while it runs, such as its models or batch sizes: Crustify rereads it before each
-module, or each review wave of an audit, and commits it whenever it applies a change, so
-the branch's history records the settings each one ran under. `main` is the
-shipping branch, which Crustify advances to `crustify/devel` only with your approval. To resume, omit `--settings`, or pass the same
-file; a file that differs from the copy is refused, so a resume never overwrites your
-edits.
+The settings live in the campaign's repository as `crustify/CRUSTIFY.md`, tracked on the
+working branch, `crustify/devel`. The assistant asks for them live, or reads a filled
+settings template you give it, and writes them there. Edit that file to change a
+campaign's settings while it runs, such as its models or batch sizes: Crustify rereads it
+before each module, or each review wave of an audit, and commits it whenever it applies a
+change, so the branch's history records the settings each one ran under. `main` is the
+shipping branch, which Crustify advances to `crustify/devel` only with your approval. A
+later session opened in the repository resumes the campaign, and `claude --resume`
+continues an earlier session.
 
-Add `--task-only` to either for the ablation control: the task file becomes the
-entire prompt. See [`audit/BARE.md`](../audit/BARE.md).
+The ablation control, one bare agent given only the task, is
+[`audit/BARE.md`](../audit/BARE.md)'s.
 
 `--init` runs a small init process as the container's first process, so the
 processes the agents leave behind are reaped instead of piling up as zombies
@@ -91,7 +89,7 @@ needs root on the host.
 
 `/target` is the directory the campaign works in, mounted read-write. The
 campaign repository goes in it — the Rust at its root, the C under `c/`, the
-campaign's own state under `crustify/`, as [`specs/operations/layout.md`](../../specs/operations/layout.md)
+campaign's own state under `crustify/`, as the [`layout`](../../skills/operations/layout/SKILL.md) skill
 lays it out — and the wrapper repositories of out-of-tree libraries are cloned
 beside it there. That is why the mount is a directory rather than the
 repository itself.
@@ -114,7 +112,7 @@ three at once, and the agents read the same trees you edit instead of three
 paths unrelated to each other or to anything on your machine. The image carries
 a build-time clone of each, so leaving the mount off is fine; a workspace
 mounted here must carry a directory per tool and a crustify checkout, since each is
-reached through a path inside it that otherwise dangles — the harness included.
+reached through a path inside it that otherwise dangles — Crustify included.
 An audit run uses only ffimap.
 
 `/target` stays its own mount even when the target fork lives in the workspace:
@@ -124,27 +122,18 @@ separate is what lets a target sit elsewhere entirely — on a volume with room
 for its builds and CodeQL data, say — while the toolchains stay in the
 workspace.
 
-Both routes into a tool land in the mount. `crustify`, `wavefront` and `ffimap`
-are installed editable from their workspace paths, so the commands on `PATH`
-run the mounted code; `/opt/venv/share/<tool>`, which is where Crustify looks
-for the documents it renders into a prompt, is a symlink into the workspace.
+`wavefront` and `ffimap` are installed editable from their workspace paths, so the
+commands on `PATH` run the mounted code. `/opt/venv/share/<tool>`, the path a campaign's
+manifest names ffibox by, is a symlink into the workspace. An editable install is a path
+entry, not a copy, so a mount redirects it with no re-install. Re-run
+`uv pip install -e /crustify-rs/<tool>` only when the mounted tree adds a console script,
+adds a dependency, or moves its package out of `src/`.
 
-An editable install is a path entry, not a copy, so a mount redirects it with
-no re-install. Re-run `uv pip install -e /crustify-rs/<tool>` only when the
-mounted tree adds a console script, adds a dependency, or moves its package out
-of `src/`.
-
-The harness is in the workspace with the other three, at
-`/crustify-rs/crustify`, installed from there and overridden the same way. So a
-mounted workspace supplies all four, and the harness that renders the prompts
-is the same tree the agents read — there is no version of this where the two
-disagree.
-
-`/opt/crustify` remains as a read alias for it, so that path still resolves
-wherever it is written down, but it is no longer a mount point: bind-mounting
-over it changes nothing, since the editable install and `PYTHONPATH` point into
-`/crustify-rs`. Override the harness with the workspace mount, or at build time
-with `--build-context crustify=<path>`.
+Crustify itself is in the workspace with the other three, at `/crustify-rs/crustify`, and
+`/opt/crustify`, the plugin directory the assistant is opened with, is a symlink to it. So
+a mounted workspace supplies all four, and the plugin is the same tree you edit.
+Bind-mounting over `/opt/crustify` replaces only the symlink; override Crustify with the
+workspace mount, or at build time with `--build-context crustify=<path>`.
 
 The container is started without `--rm`. Restart it with `docker start
 crustify-libgit2`; its writable root filesystem preserves tools, caches,
@@ -153,9 +142,9 @@ container loses those, so generally useful packages belong in the Dockerfile.
 
 ## Run-time environment
 
-Set with `-e` on `docker run`: only the credentials the chosen provider and
-billing need (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY` or `OPENROUTER_API_KEY`).
-Everything else is an option of the `crustify` command; see `crustify <command> --help`.
+Set with `-e` on `docker run`: only the credentials the chosen backends and billing
+need (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY` or `OPENROUTER_API_KEY`). Every other choice
+is a settings answer.
 
 ## Build environment
 
@@ -175,8 +164,7 @@ Set with `--build-arg` on `docker build`.
 | path | mode | used by | lifetime |
 |---|---|---|---|
 | `/target` | read-write, required | both | the directory the campaign works in, or, for an audit, the reviewed crate's own checkout: the campaign repository, with the C under `c/`, and the wrapper repositories beside it. May be empty — Crustify creates the repository and fetches the C. An existing campaign is resumed in place, and its branches, artifacts, CodeQL data and logs stay on the host |
-| `/campaign/CRUSTIFY.md` | read-only, conventional | both | the campaign settings passed with `--settings` on the first run, which copies them to `/target/crustify/CRUSTIFY.md`; any path works |
-| `/crustify-rs` | read-write, optional | both | the whole workspace: the crustify checkout — the harness itself — with wavefront, ffibox and ffimap beside it, the target forks and the reference crates. Replaces the build-time copy of all four, so one mount serves every tool |
+| `/crustify-rs` | read-write, optional | both | the whole workspace: the crustify checkout, the plugin itself, with wavefront, ffibox and ffimap beside it, the target forks and the reference crates. Replaces the build-time copy of all four, so one mount serves every tool |
 | `/work` | named volume, optional | both | `HOME`: the agents' session transcripts, the C libraries they build, the cargo registry. Outlives `docker rm`, so a re-created container keeps them. Not the artifacts — those land in the campaign repository |
 
 ## Dashboards

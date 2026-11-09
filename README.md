@@ -126,9 +126,9 @@ Deterministic tools ground the agents' judgement:
   surface per batch, wave, module and campaign; and
 - the target's own tests run under sanitizers.
 
-Claude Code runs every agent, with API or subscription billing, directly or through
-OpenRouter. Each stage can use its own billing, model and settings, through the CLI's own
-arguments; without them, it runs the session's.
+The assistant runs in Claude Code. Each stage agent runs on Claude Code or Codex, with API
+or subscription billing, directly or through OpenRouter, and can take its own model and
+arguments from the settings; without them, it runs the session's.
 
 ## Results
 

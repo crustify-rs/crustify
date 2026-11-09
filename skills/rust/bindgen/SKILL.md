@@ -75,8 +75,9 @@ Rust type across the crate. A type an out-of-tree library's wrapper publishes is
 re-exported as its wrapper's safe type, as
 [`dependencies`](../../planning/dependencies/SKILL.md)'s Wrappers section describes.
 
-The bindings are generated for `x86_64-unknown-linux-gnu`, the only target the crate
-supports: `src/ffi.rs` fails to compile on any other, naming the target.
+The bindings are generated for the campaign's target, the host's, as the setup workflow's
+Builds section names it, the only target the crate supports: `src/ffi.rs` fails to compile
+on any other, naming it.
 
 The C an out-of-tree library's wrapper bundles once its side campaign has ported part of
 the library is compiled with its symbols prefixed, as

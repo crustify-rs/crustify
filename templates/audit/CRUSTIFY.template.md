@@ -20,11 +20,11 @@ Optional answers may be left unresolved for Crustify to decide.
    - `revisit` hunts nothing new: it reruns the reproducers of the reports an
      earlier audit filed, which is what you want after a fix lands or an
      instrument that can now decide one is added. Name the reports, or leave
-     them to the orchestrator to take every report filed so far.
+     them to the assistant to take every report filed so far.
 2. **How many reviewers should run at once?**
    - Answer: `<N>`
 3. **What is the maximum spend, in USD? Once the audit's priced usage reaches
-   it, the orchestrator launches no further reviewers.**
+   it, the assistant launches no further reviewers.**
    - Answer: `<USD>`
 4. **Which agent CLI should the reviewers use, with which of its arguments?**
    - Answer: `<claude | codex>[, proxy: openrouter][, args: <the CLI's own
@@ -53,7 +53,7 @@ Optional answers may be left unresolved for Crustify to decide.
 
 # Optional questions
 
-Unanswered optional questions are decided by the orchestrator.
+Unanswered optional questions are decided by the assistant.
 
 ## Review
 

@@ -5,12 +5,11 @@ description: "The fields of a run's task.json: run fields, batch fields, routes 
 
 # task.json schema
 
-Field meaning for `task.json`, the one input of a spawned agent, in its run dir: a binder's
-for a `wrap` batch, a translator's for a `port` batch or a later stage, a reviewer's for a
-review batch, and a planner's for a planner run. One task is one agent's entire worklist
-and how that agent runs, and its objective names the agent it belongs to.
+Field meaning for `task.json`, the one input of a run, in its run dir: of a `wrap` batch,
+a `port` batch or a later stage's, a review batch, or a planner run. One task is one run's
+entire worklist and how it runs.
 
-A binder's or translator's task is one batch entry of `schedule-schema`,
+A translation batch's task is one batch entry of `schedule-schema`,
 packed from its wave's items when the wave starts. When the batch launches, that entry is
 written as `task.json`: its `kind` as `objective`, its `items`, the
 [batch fields](#2-batch-fields) that place it in the schedule, and the
@@ -47,8 +46,8 @@ its own.
 
 | root field | meaning |
 |---|---|
-| `objective` | execution objective for every item: `wrap` or `port`, or a later stage of a port campaign, `port/layout`, `port/memory` or `port/unexport`, as `scheduling`'s Later stages section describes; a binder runs `wrap`, a translator every other |
-| `items` | non-empty worklist; every item routes to the same agent |
+| `objective` | execution objective for every item: `wrap` or `port`, or a later stage of a port campaign, `port/layout`, `port/memory` or `port/unexport`, as `scheduling`'s Later stages section describes |
+| `items` | non-empty worklist; every item selects the same route |
 | `wave`, `batch`, `link_unit`, `module`, `foundational` | the [batch fields](#2-batch-fields) |
 | `base_branch`, `backend`, `billing`, `model_proxy`, `args` | the [run fields](#1-run-fields) |
 
@@ -66,10 +65,10 @@ All but `model_proxy` and `args` are required, and no other root field is accept
 | `args` | optional: arguments passed to the provider CLI unchanged, after Crustify's own, in the CLI's own syntax, such as `["--model", "opus", "--effort", "high"]` |
 
 Without `args` naming one, the CLI runs its own default model; Codex through a model proxy
-needs its model named, as the proxy knows it. A binder, translator or reviewer task
-carries `base_branch`, `backend` and `billing`. A planner task carries `backend` and
-`billing` only: a planner commits on the planner branch it is spawned on, which is
-then promoted to the working branch, `crustify/devel`.
+needs its model named, as the proxy knows it. A batch's task carries `base_branch`,
+`backend` and `billing`. A planner task carries `backend` and `billing` only: a planner
+run commits on the planner branch it is spawned on, which is then promoted to the working
+branch, `crustify/devel`.
 
 ## 2. Batch fields
 
@@ -83,8 +82,8 @@ then promoted to the working branch, `crustify/devel`.
 
 `wave` and `batch` form the batch id, `wave-<wave>/batch-<batch>`, which names the batch's
 branch, worktree and reviews dir as `versioning` and `layout` spell them, and leads from the run
-back to the batch's entry in `schedule.json`. A binder, translator or reviewer task
-carries all four; a planner task carries none.
+back to the batch's entry in `schedule.json`. A batch's task carries all five; a planner
+task carries none.
 
 ## 3. Task message
 
@@ -93,9 +92,6 @@ and the instructions its run needs beyond its role, if any, which take precedenc
 the rest of its prompt where the two conflict. It is kept in the run's artifact dir, as
 `task.md` beside `task.json`, so that git records what the agent was told along with the
 task.
-
-The settings a campaign ran under are recorded twice: per batch in its `task.json`, and per
-campaign in the history of `crustify/CRUSTIFY.md`.
 
 ## 4. Review batches
 
@@ -125,16 +121,20 @@ landed; in an audit, modules of the crate.
 }
 ```
 
+```json
+{"objectives": ["revisit", "disclose", "fix"], "reports": ["crustify/reviews/<batch id>/ub_safe/<slug>"]}
+```
+
 | root field | meaning |
 |---|---|
-| `objectives` | the review objectives to run; optional, every one the reviewer offers that applies when absent |
+| `objectives` | the review objectives to run; optional, every one that applies when absent |
 | `commits` | distinct commit ids, as they sit on its wave's branch; route `commits`: the `commits` of the batches its schedule entry `reviews`, whose `items` there list the C items they bound or ported |
 | `paths` | repo-relative source files and directories; route `paths`. An entry may instead be `{"path", "types", "trait_impls", "functions"}`, naming the parts of a module too large to review whole: types, each with its fields and inherent impls; trait impls, each `<trait> for <type>` as its impl header spells it; and free functions |
 | `reports` | repo-relative report dirs, `crustify/reviews/<batch id>/<kind>/<slug>`, to revisit |
 | `wave_gates` | optional, `false` when absent: `true` on the wave's last review batch, launched once every translation batch of the wave has landed, which runs the wave's gates, as `reviewing`'s Gates section describes; only on a batch with `commits` |
 
-The batch and run fields are required, as on a translation task; the second example
-leaves them out. An audit's batch has a `null` `link_unit` and `module`, and a `false`
+The batch and run fields are required, as on a translation task; the second and third
+examples leave them out. An audit's batch has a `null` `link_unit` and `module`, and a `false`
 `foundational`.
 A batch carries `commits` or `paths`, not both, and needs one of them or `reports`; one
 with only `reports` has route `reports`. A module path appears once, and a module object
@@ -142,11 +142,9 @@ names one or more of `types`, `trait_impls` and `functions`, each a distinct lis
 objectives, and an absent `objectives` includes `revisit` exactly when `reports` is given.
 The optional `wave_gates` is the only other root field accepted.
 
-The reviewer's prompt offers `unsafety`, `contracts`, `ub`, `equiv`, `internal`,
-`conventions`, `misc`, `coverage`, `revisit`, `disclose` and `fix`, with `conventions`
-applying to a Crustify-generated batch only. Its tools add their own. A batch naming
-an objective the installed tools do not offer is rejected.
-Without `fix`, the reviewer reports and reproduces what it finds but patches nothing.
+The objectives are those `reviewing`'s Objectives section describes and those the
+installed tools' skills add, such as wavefront's `lifecycle`. A batch naming an objective
+neither offers is rejected.
 
 ## 5. Planner tasks
 
@@ -182,9 +180,8 @@ Every field is required on every item, and no other field is accepted.
 functions and globals.
 `field_users` must not repeat a name.
 
-`home` is the sole placement input. A translator resolves no repo-tier artifact to decide
-where an item goes, so the tree the batch names must still exist when its agent starts: do
-not restructure `rust/` during a wave.
+`home` is the sole placement input: no other artifact decides where an item goes, so the
+Rust tree a wave's batches name is not restructured while the wave runs.
 
 ## 7. Routes
 
@@ -196,18 +193,6 @@ batch mixing routes is rejected.
 | `type` | `type` |
 | `symbol`, `callback` | `symbol` |
 
-A batch of a foundational module routes like any other. Its `module` and `foundational` name the module,
-which `modules.json` marks `foundational`, and its binder binds the items with a
-lifecycle role as
-strategies (`binding`, Lifecycle strategies).
-
-## 8. Earlier versions
-
-A task of an earlier version names a `model`, `<provider>/<model>`, in place of `backend`:
-`anthropic/<model>` runs on `claude` and `openai/<model>` on `codex`, each with the model
-in its `args`, and `openrouter/<vendor>/<model>` through the `openrouter` proxy, on `claude`
-for an `anthropic` vendor and on `codex` otherwise. A task names one or the other, never
-both.
-
-A task of an earlier version names its items' fields `field_anchors`, in place of
-`field_users`; it is not run again, and a run of its batch takes a new task.
+A batch of a foundational module routes like any other. Its `module` and `foundational`
+name the module, which `modules.json` marks `foundational`, and its items with a lifecycle
+role are bound as strategies (`binding`, Lifecycle strategies).

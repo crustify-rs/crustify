@@ -14,14 +14,11 @@ confirms.
 
 ## 1. Running one
 
-```sh
-crustify /path/to/repo --settings /path/to/CRUSTIFY.md --backend claude
-```
-
 The settings are filled from
-[`CRUSTIFY.template.md`](../../../templates/audit/CRUSTIFY.template.md); a headless run needs
-every mandatory answer. Rerunning the command resumes the audit, and `--task-only` runs the
-ablation control [`BARE.md`](../../../templates/audit/BARE.md) describes.
+[`CRUSTIFY.template.md`](../../../templates/audit/CRUSTIFY.template.md), and kept in the
+reviewed crate's repository as `crustify/CRUSTIFY.md`; a headless run needs every mandatory
+answer. A later session in the repository resumes the audit. The ablation control, a bare
+agent given only the task, is [`BARE.md`](../../../templates/audit/BARE.md)'s.
 
 ## 2. Setup
 
@@ -29,8 +26,8 @@ An audit runs the [setup workflow](../setup/SKILL.md), with two differences in i
 
 - the configuration is the one that covers the most of the crate, typically every feature
   that builds on the platform: Cargo features, targets, `cfg`s and the C sources the build
-  script compiles. A defect in a file no build compiles cannot be reproduced, and no ffimap
-  scan sees it, so the files no variant compiles are recorded in the dashboard as
+  script compiles. A defect in a file no build compiles cannot be reproduced, and no scan
+  sees it, so the files no variant compiles are recorded in the dashboard as
   unaudited; and
 - the `coverage` variant is built only when `coverage` is among the review objectives, and
   each sanitizer variant only when its sanitizer is selected. Miri and `equivalence` need
@@ -55,8 +52,8 @@ reviews dirs.
 ## 4. Worksets
 
 For `audit`, the crate is divided into disjoint worksets of modules, one per review batch,
-from the crate and the reports filed so far. The modules that hold the smells ffimap's tool
-spec names are batched first.
+from the crate and the reports filed so far, in the order the tool skills' Audit workflow
+sections give.
 
 A batch spans around the settings' `max-loc` lines of code, 500 by default; a small margin
 either way keeps a type with its impls, or avoids a small remainder. A module too large for
@@ -71,9 +68,8 @@ needing the same instrument or the same build share a reviewer.
 
 Each round of reviewers, as many as [`concurrency`](../../operations/concurrency/SKILL.md) describes, is
 one review wave: a wave of no link unit or module, each of its batches a `review` batch
-holding its `paths` or `reports`. TODO: `schedule.json`'s schema leaves review waves out
-for now, as [`schedule-schema`](../../artifacts/schedule-schema/SKILL.md) notes, so an audit's
-review waves are not recorded there until it holds them again.
+holding its `paths` or `reports`. `schedule.json` does not record an audit's review waves:
+each batch's `task.json` is its record.
 
 ## 5. Review waves
 
@@ -82,25 +78,8 @@ An audit's review waves are laid out as [`versioning`](../../operations/versioni
 each, the settings are reread and their changes applied, and the agent memory every agent
 reads at startup is curated. Each review batch's `task.json` holds its workset, its
 objectives, its batch fields, its review wave branch and its run fields, as
-[`task-schema`](../../artifacts/task-schema/SKILL.md) describes:
-
-```json
-{"objectives": ["ub", "equiv", "disclose"], "paths": ["src/frame.rs", "src/codec/"],
- "wave": 0, "batch": 0, "link_unit": null, "module": null, "foundational": false,
- "base_branch": "<review wave branch>", "backend": "<backend>", "billing": "<billing>"}
-```
-
-A part of a module names its types, trait impls and functions, and a revisit batch its
-report dirs (the batch and run fields are left out of these two examples):
-
-```json
-{"objectives": ["ub", "contracts", "disclose"], "paths": [{"path": "src/codec.rs", "types": ["Decoder"], "trait_impls": ["Drop for Decoder", "Iterator for Packets<'_>"], "functions": ["open_input"]}]}
-{"objectives": ["revisit", "disclose", "fix"], "reports": ["crustify/reviews/<batch id>/ub_safe/<slug>"]}
-```
-
-Its objectives are those the reviewer offers, as
-[`reviewing`](../../verification/reviewing/SKILL.md)'s Objectives section and the tool skills list them. The
-wave's reviewers run concurrently.
+[`task-schema`](../../artifacts/task-schema/SKILL.md)'s Review batches section describes,
+with a `null` `link_unit` and `module`. The wave's reviewers run concurrently.
 
 Each reviewer lands its reports and fixes on the review wave branch as
 [`versioning`](../../operations/versioning/SKILL.md)'s Landing section describes. A reviewer that fails keeps its branch and

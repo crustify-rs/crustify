@@ -1,6 +1,6 @@
 # The environment a crustify campaign runs in, for either kind of campaign.
 # Nothing here is target-specific, and nothing here starts a campaign: the image
-# is a machine, and `crustify` is run inside it.
+# is a machine, and Crustify's assistant is opened inside it.
 #
 # One image serves both kinds because they want the same machine. The translator
 # needs the sanitizers to check what it emitted; an audit needs a C
@@ -8,26 +8,22 @@
 # no miri, no BorrowSanitizer and no MemorySanitizer -- the instruments its
 # own prompt asks for -- while the audit side had no CodeQL and no bindgen.
 #
-#   docker build -t crustify -f templates/Dockerfile .
+#   docker build -t crustify -f templates/docker/Dockerfile .
 #
-# Start the container idle, then run the orchestrator in it:
+# Start the container idle, then open the assistant in it:
 #
 #   docker run -d --init --name crustify-libgit2 \
 #       --security-opt seccomp=unconfined \
 #       -e OPENROUTER_API_KEY \
 #       -v /absolute/path/to/your/campaign-dir:/target \
 #       -v "$(dirname "$PWD"):/crustify-rs" \
-#       -v /absolute/path/to/your/CRUSTIFY.md:/campaign/CRUSTIFY.md:ro \
 #       -v crustify-libgit2-work:/work \
 #       crustify
-#   docker exec -it crustify-libgit2 \
-#       crustify /target --settings /campaign/CRUSTIFY.md \
-#       --backend claude --billing api --model-proxy openrouter
+#   docker exec -it -w /target crustify-libgit2 \
+#       claude --plugin-dir /opt/crustify --agent crustify:assistant-translate
 #
-# The settings' `campaign` answer picks a port, wrap or audit campaign;
-# Crustify waits for instructions unless `--start` runs it right away, and
-# `--task-only` makes the settings file the entire prompt (the ablation
-# control). See `crustify --help`.
+# `crustify:assistant-audit` opens an audit's assistant instead. It waits for
+# instructions; `-p` with a first prompt runs the campaign headless.
 #
 # `--security-opt seccomp=unconfined` lets the TSan and BSan runtimes call
 # personality(ADDR_NO_RANDOMIZE) at startup; Docker's default profile rejects it
@@ -51,11 +47,6 @@
 #                      and nothing there is reset or replaced. An audit creates
 #                      no repository, so /target is the reviewed crate's own
 #                      checkout.
-#   /campaign/CRUSTIFY.md  The campaign settings, read-only, by convention:
-#                      `--settings` takes any path, and copies it to
-#                      /target/crustify/CRUSTIFY.md on the first run. Edit that
-#                      copy on the host to change settings mid-campaign;
-#                      Crustify rereads it before each module.
 #   /crustify-rs       Optional read-write bind mount of the whole crustify-rs
 #                      workspace: the toolchains the campaign uses -- wavefront,
 #                      ffibox, ffimap -- beside the target forks and the
@@ -67,28 +58,27 @@
 #                      optional; a workspace mounted here must carry a
 #                      directory per tool AND a crustify checkout, since each
 #                      is reached through a path inside it that otherwise
-#                      dangles -- the harness included. An audit uses only
+#                      dangles -- Crustify included. An audit uses only
 #                      ffimap.
-#   /opt/crustify      A read alias for /crustify-rs/crustify, the harness, so
-#                      that path still resolves. Not a mount point: mounting
-#                      over it changes nothing, because the install and
-#                      PYTHONPATH point into the workspace.
+#   /opt/crustify      A symlink to /crustify-rs/crustify, the plugin directory
+#                      the assistant is opened with. Not a mount point:
+#                      mounting over it replaces only the symlink.
 #   /work              Named volume, and `HOME`: the agents' session
 #                      transcripts, the C libraries they build, the cargo
 #                      registry. It outlives `docker rm`, so a container
 #                      re-created to change its mounts keeps them. Not the
 #                      artifacts -- those land in the campaign repository.
 #
-# The dashboard template rides the harness tree: the orchestrator reads
+# The dashboard template rides Crustify's tree: the assistant reads
 # templates/translate/dashboard.template.md from the checkout and writes the filled
 # dashboard where the campaign settings say. Nothing is seeded into /target.
 #
 # One container name per campaign: `docker exec -it <name> bash` opens a shell
-# beside the orchestrator, and `docker start <name>` brings a stopped container
+# beside the assistant, and `docker start <name>` brings a stopped container
 # back with post-boot installs intact in its writable layer. Removing the
 # container removes that state; bake generally useful packages into the image.
 #
-# `-it` on `docker exec` because both prompts are built around approval gates.
+# `-it` on `docker exec` because the assistant is built around approval gates.
 # Run tmux inside to detach from a long campaign.
 
 
@@ -97,7 +87,7 @@
 # `--build-context <tool>=<path>` replaces the stage of that name with a local
 # checkout, so its default is never run:
 #
-#   docker build -t crustify -f templates/Dockerfile \
+#   docker build -t crustify -f templates/docker/Dockerfile \
 #       --build-context ffimap=../ffimap \
 #       --build-context wavefront=../wavefront .
 #
@@ -110,7 +100,7 @@
 #                               Dockerfile ships in, which is the tree you are
 #                               building from
 #
-# crustify defaults to the context because `docker build -f templates/Dockerfile .`
+# crustify defaults to the context because `docker build -f templates/docker/Dockerfile .`
 # is run from a crustify checkout, so the local tree is what one means by
 # default.
 #
@@ -224,7 +214,7 @@ https://apt.llvm.org/noble/ llvm-toolchain-noble-23 main" \
     && rm -rf /var/lib/apt/lists/*
 ENV CRUSTIFY_MSAN_CC=/usr/lib/llvm-23/bin/clang
 
-# Keep the harness Python independent of whichever Python the base image uses.
+# Keep the tools' Python independent of whichever Python the base image uses.
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh \
     && uv python install "${PYTHON_VERSION}" \
     && uv venv --python "${PYTHON_VERSION}" /opt/venv
@@ -283,7 +273,7 @@ RUN cargo install bindgen-cli --locked
 # CodeQL CLI, for wavefront's extraction queries. GitHub publishes this bundle
 # for x86-64 Linux but not native Linux ARM64, so an ARM image ships without it
 # and an ARM campaign consumes T1/T2 tables extracted on an x86-64 machine.
-# Whether either is usable is the orchestrator's call, not the image's: it
+# Whether either is usable is the assistant's call, not the image's: it
 # reads the target's existing tables during setup and installs the cpp pack
 # from wavefront's qlpack itself when the CLI is here.
 RUN arch="$(dpkg --print-architecture)"; \
@@ -321,12 +311,10 @@ RUN if [ "${INSTALL_CLAUDE}" = "1" ]; then \
 # of the crustify checkout rather than three unrelated paths. One bind mount
 # there replaces all three, and the agents read the same tree the user edits.
 #
-# `<prefix>/share/<name>` is where crustify LOOKS for wavefront and ffibox --
-# the data prefix of the environment it is installed in, derived rather than
-# configured -- so each lookup path is a symlink into the workspace. Both
-# routes therefore land in the mount when there is one: the symlink for the
-# documents crustify renders into a prompt, and the editable installs below,
-# which record /crustify-rs paths, for the commands.
+# `/opt/venv/share/<name>` is the path a campaign's Cargo manifest names ffibox
+# by, so each is a symlink into the workspace. Both routes therefore land in
+# the mount when there is one: the symlink for ffibox, and the editable
+# installs below, which record /crustify-rs paths, for the commands.
 #
 # wavefront and ffimap are Python distributions installed editable, so their
 # commands (`wavefront`, `ffimap`) land in /opt/venv/bin, on PATH, and run
@@ -348,31 +336,14 @@ RUN mkdir -p /opt/venv/share \
     && (cd /crustify-rs/ffimap/src/ffimap/driver && rustup toolchain install) \
     && ffimap --help > /dev/null
 
-# Bake in a runnable harness -- the WHOLE repository, not just `src`. One
-# distribution ships both packages, and the orchestrators are told to read
-# templates out of `templates/`, so a partial copy works only until something
-# reaches past it. Nothing expensive follows this layer, so a cache miss here
-# costs seconds.
-#
-# A bind mount at this path replaces these sources. The install is editable and
-# PYTHONPATH points at the same tree, so a mounted checkout wins twice over.
-#
-# The harness goes in the workspace with the other three, installed from the
-# same path shape and overridden the same way, so the four are consistent: a
-# workspace mounted over /crustify-rs supplies all four, and the harness that
-# renders the prompts is then the same tree the agents read. An editable
-# install is a path entry, not a copy, so the mount redirects it with no
-# re-install.
-#
-# /opt/crustify stays as a read alias, so a path written down anywhere still
-# resolves -- but it is NOT an override any more. Bind-mounting over it would
-# replace the alias while PYTHONPATH and the install still pointed into
-# /crustify-rs, which is the split the move removes. Override the harness with
-# the workspace mount, or at build time with `--build-context crustify=`.
+# Crustify goes in the workspace with the other three, so a workspace mounted
+# over /crustify-rs supplies all four, and the plugin the assistant is opened
+# with is the same tree the user edits. It is a Claude Code plugin, not a
+# Python distribution: it needs no install. /opt/crustify, the plugin directory
+# the docs open it with, is a symlink to it. Override it with the workspace
+# mount, or at build time with `--build-context crustify=`.
 COPY --from=crustify / /crustify-rs/crustify
-RUN uv pip install --python /opt/venv/bin/python -e /crustify-rs/crustify \
-    && ln -sT /crustify-rs/crustify /opt/crustify
-ENV PYTHONPATH=/crustify-rs/crustify/src
+RUN ln -sT /crustify-rs/crustify /opt/crustify
 
 # HOME is the volume, so what the agent fetches or builds survives `--rm`.
 # RUSTUP_HOME is pinned back out of it: rustup resolves from HOME, and against
@@ -400,7 +371,7 @@ WORKDIR /target
 # Run it with `--init`, so the processes a campaign leaves behind are reaped
 # rather than collecting as zombies under this idle process.
 # Idle by default so the container is an environment, not one run: a campaign
-# started with `docker exec <name> crustify /target ...`
+# opened with `docker exec <name> claude ...`
 # survives its own crash, and a shell beside it can read the worktrees and caches
 # it left.
 CMD ["sleep", "infinity"]

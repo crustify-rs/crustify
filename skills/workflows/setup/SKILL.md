@@ -75,7 +75,7 @@ command changes. The commands carry no job count, which each build takes as
 each is smoke-tested once built. The shared variants are rebuilt after a landing changes
 the compiled target.
 
-Campaigns run on Linux, with glibc, on a 64-bit architecture: the host's. Each variant links the
+A campaign's target is the host's: Linux, with glibc, on a 64-bit architecture. Each variant links the
 out-of-tree libraries the target uses from their side campaigns' local installs of the
 same variant, as [`dependencies`](../../planning/dependencies/SKILL.md)'s Sources section describes,
 with each library's install prefix in its `configure` command, and libc from the system.

@@ -178,15 +178,13 @@ A function is bound as a `pub fn`; it is a `pub unsafe fn` only when no safe typ
 contract can express its caller obligation. Arguments and returns use typed wrappers, and
 raw pointers are reconstructed only at the FFI call, in a small documented unsafe block.
 
-Unless justified (e.g. the avoid a defect), a `static inline` function a header defines is bound as an exported one is: it is
+A `static inline` function a header defines is bound as an exported one is: it is
 allowlisted, and called through the raw binding generated for it, as
-[`bindgen`](../bindgen/SKILL.md)'s Generation section describes, never reimplemented in
-Rust. A reimplementation is a port, as [`porting`](../porting/SKILL.md) describes, and is
+[`bindgen`](../bindgen/SKILL.md)'s Generation section describes. The exception is a short
+one whose whole implementation is in the header, which may be ported instead, to save the
+cost of an FFI call, unless what it does depends on the build's features or configuration.
+A reimplementation is a port, as [`porting`](../porting/SKILL.md) describes, and is
 annotated `Replaces`, as the [conventions](../conventions/SKILL.md)' Anchors section describes.
-
-A `static inline` function with a pure-header implementation may be ported instead of wrapped
-to avoid the performance cost of an FFI call, except when there are reasons not to: complex
-implementation, feature/config-dependent, etc.
 
 Moved (exclusively or refcounted), borrowed (immutably or mutably), nullable, scalar and
 array variants are separate functions when one signature cannot express every valid
