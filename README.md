@@ -1,7 +1,7 @@
 # Crustify
 
 **Crustify is your AI co-translator for C-to-Rust work.** It is a plugin for Claude Code
-and Codex that turns LLMs into a specialized translators that plan, run and review
+and Codex that turns LLMs into specialized translators that plan, run and review
 whole-repository campaigns. It can:
 
 - **Generate safe Rust bindings over C.**
@@ -13,29 +13,15 @@ the loop.
 
 ## Why Crustify
 
-- **A generic, human-reviewed specification, not a prompt.** Every agent follows the
-  same written specs, as skills: how the codebase is decomposed, how each kind of C item
-  becomes Rust, how work is tested, reviewed and landed. Runs are consistent across
-  models and reproducible, and you don't reinvent the workflow for each codebase.
-- **Whole repositories, in parallel.** The C codebase is split into modules, ordered by
-  their dependencies, and handed out in batches to focused agents, each in its own Git
-  worktree.
-- **Grounded in deterministic tools.** [wavefront](https://github.com/crustify-rs/wavefront)
-  plans the work from CodeQL facts, [ffibox](https://github.com/crustify-rs/ffibox) gives
-  the Rust safe ownership of C memory, and [ffimap](https://github.com/crustify-rs/ffimap)
-  counts the unsafe and FFI surface left on the public API.
-- **Verified before it lands.** Every batch gets coverage-guided tests for equivalence
-  with the C and for undefined behavior under ASan, UBSan, TSan, MSan, Miri and
-  BorrowSanitizer, passes the target's own test suite, and is then reviewed by
-  independent, adversarial agents.
-- **You choose the control.** Run a campaign end to end, or approve its brief, plan one
-  module and stop, and decide as questions come up. Edit its settings mid-campaign to
-  change course.
-- **Any agent harness, any billing.** Crustify runs natively on Claude Code and Codex,
-  and on any other agent harness from its composed prompts. Each stage takes its own
-  model, under a subscription or an API key, directly or through OpenRouter.
-- **Every dollar accounted for.** A dashboard tracks tokens, cost and time per batch,
-  module and campaign, next to coverage and the unsafe surface.
+- **A generic, human-reviewed specification, not a prompt.**
+- **Whole repositories, in parallel.**
+- **Grounded in deterministic tools:** [wavefront](https://github.com/crustify-rs/wavefront),
+  [ffibox](https://github.com/crustify-rs/ffibox) and
+  [ffimap](https://github.com/crustify-rs/ffimap).
+- **Verified before it lands, with coverage-guided tests and adversarial review.**
+- **You choose the translator's autonomy.**
+- **Any agent harness, any billing.**
+- **Every dollar accounted for.**
 
 ## Results
 
@@ -129,21 +115,29 @@ campaign's repository as `crustify/CRUSTIFY.md`, which you can edit while it run
 
 ## How it works
 
+Every agent follows the same written specification, as skills: how the codebase is
+decomposed, how each kind of C item becomes Rust, and how work is tested, reviewed and
+landed. Runs are consistent across models and reproducible, and you don't reinvent the
+workflow for each codebase.
+
 Crustify's assistant talks to you and launches four kinds of agent:
 
 | Agent | Role |
 |---|---|
 | **assistant** | Configures the campaign, prepares builds and test baselines, launches the other agents, lands and promotes their work, and keeps the dashboard. |
-| planner | Decomposes the codebase into modules, one per translation unit, and schedules them into waves and batches. |
+| planner | Decomposes the codebase into modules, one per translation unit, and schedules them into waves and batches by their dependencies. |
 | binder | Wraps a batch: keeps its C and puts a safe Rust API in front of it. |
 | translator | Ports a batch to safe Rust. |
 | reviewer | Reviews what a wave landed for unsafety, undefined behavior and equivalence with the C, files a report and reproducer per finding, and fixes it. |
 
-Agents run in parallel, each seeing only its own batch, and land their work behind build,
-test and safety gates; the assistant reconciles the results and repairs what fails. An
-audit runs the reviewers alone over an existing crate.
+Agents run in parallel, each in its own Git worktree and seeing only its own batch. Every
+batch gets coverage-guided tests for equivalence with the C and for undefined behavior
+under ASan, UBSan, TSan, MSan, Miri and BorrowSanitizer, and passes the target's own test
+suite before it lands; independent, adversarial reviewers then check each wave before its
+dependents start. The assistant reconciles the results and repairs what fails. An audit
+runs the reviewers alone over an existing crate.
 
-Its tools:
+Deterministic tools ground the agents' judgement:
 
 - [wavefront](https://github.com/crustify-rs/wavefront) sorts the C codebase into
   dependency-ordered waves from CodeQL facts;
@@ -151,6 +145,13 @@ Its tools:
   generated Rust holds C memory through; and
 - [ffimap](https://github.com/crustify-rs/ffimap) measures the unsafe and FFI surface per
   batch, wave, module and campaign.
+
+You choose how much control to keep: run a campaign end to end, or approve its brief, plan
+one module and stop, and decide as questions come up; edit its settings mid-campaign to
+change course. Each stage runs on Claude Code, Codex or any other agent harness, with its
+own model, under a subscription or an API key, directly or through OpenRouter. A
+dashboard tracks tokens, cost and time per batch, module and campaign, next to coverage
+and the unsafe surface.
 
 ## Repository
 
