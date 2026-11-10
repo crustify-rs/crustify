@@ -91,26 +91,30 @@ Implementation `<model>` on `<backend>`; review
 
 ## Safety audit
 
-Deterministic `ffimap <workdir> --json`; no model. Every counter is in the `ffimap.json`
-tracked in the campaign's artifact dir, in each wave's `waves/wave-<index>/` and in each
-batch run's dir.
+Deterministic `ffimap`, run as the `ffimap` skill's Accounting section describes; no
+model. Every counter is in the `ffimap.json` tracked in the campaign's artifact dir, in
+each wave's `waves/wave-<index>/` and in each batch run's dir. Each metric is one counter
+or a combination of counters, named by their dotted paths into the scan's `counts`; a `%`
+metric is a share within one record, and a `−` subtracts a share from the record it cuts.
 
 ### Metrics
 
 | metric | counters | what it counts |
 |---|---|---|
-| pub raw ptr (safe) | `raw_ptr_pub_safe_interface` | raw pointers on the safe public interface: public fields and safe public fns |
-| pub raw ptr | `raw_ptr_pub` | raw pointers anywhere on the public interface, `unsafe fn`s included |
-| pub void ptr | `void_ptr_ty_pub_fields_pub` + `void_ptr_fn_pub_safe` + `void_ptr_fn_pub_unsafe` | type-erased pointers left to the API's users |
-| pub unsafe fn | `unsafe_fns_pub` | the obligations the crate exports to its callers |
-| C borrow | `c_type_borrow.fn_sig.non_sanctioned` | Rust references into C memory on the public interface, outside the sanctioned handle positions; target 0 |
-| slice borrow | `raw_ptr_as_slice_borrow` | slices and strings borrowed over raw pointers, which C must neither free nor change |
-| unsafe loc | `unsafe_block_code_lines` / `code_lines` | lines of unsafe code over code lines; the comparable measure of unsafe volume |
-| unsafe blocks | `unsafe_blocks` | how that code is divided up; moves with the crate's one-op-per-block policy, so not comparable across crates |
-| Send/Sync | `unsafe_send_impl` + `unsafe_sync_impl` | thread safety asserted rather than derived from the fields |
-| C by value | Σ `c_type_by_val_*` + Σ `c_type_std_owner_*` | C types held outside an ffibox owner, which a move can leave dangling |
-| Drop/Clone | `drop_impl` + `clone_impl` | lifecycles written by hand rather than through an owner |
-| deref outside impl | `raw_ptr_derefs_outside_impl` | raw pointer dereferences outside any `impl` or trait body |
+| pub raw ptr | `raw_ptr.total.safe.pub` | raw pointers a consumer meets without writing `unsafe`: public fields and the signatures of safe public fns; target 0 |
+| pub void ptr | `raw_ptr.field.of_which.void.pub` + `raw_ptr.fn_sig_arg.of_which.void.{safe,unsafe}.pub` + `raw_ptr.fn_sig_ret.of_which.void.{safe,unsafe}.pub` | type-erased pointers left to the API's users, `unsafe fn`s included |
+| pub unsafe fn | `fn.unsafe.pub` | the obligations the crate exports to its callers |
+| &cell | `ty.ffibox.wrapper.as.borrowed.std.pub` − `….of_which.self_in_ref_accessor.pub` − `….of_which.self_in_trait_impl.pub` | public references to a cell outside the positions ffibox sanctions, where the convention wants a handle; target 0 |
+| C by value | `ty.ffibox.sys.as.by_val.total` + `ty.ffibox.sys.as.owned.std.total` | C structs held by value or in a standard-library owner rather than through a cell, which a move can leave dangling |
+| celled % | `ty.ffibox.sys.of_which.raw_ptr_in_sys.of_which.wrapped` / `….of_which.used` | of the C types the bindings pass by pointer that the crate uses, those a cell covers |
+| raw→std | `raw_ptr.casted_to.std.total` | raw pointers turned into a standard-library borrow, slice, string or owner, whose lifetime or ownership the type system then trusts |
+| unmanaged ptr types | `ty.storing_raw_ptr.of_which.none.total` | types that store a raw pointer and declare nothing about it |
+| ptr Drop | `ty.storing_raw_ptr.of_which.impl_drop.total` | types that store a raw pointer and free it by hand, rather than through an owner |
+| Send/Sync | `ty.impl_trait.of_which.std.send.total` + `ty.impl_trait.of_which.std.sync.total` | thread safety asserted rather than derived from the fields |
+| raw deref | `raw_ptr.deref.total` | raw-pointer reads and writes in bodies, each a pointer the code vouches for |
+| FFI calls | `code.unsafe_call.ffi` | calls across the C boundary, through bindings or stored function pointers |
+| unsafe loc % | `code.loc.unsafe` / `code.loc.total` | lines of unsafe code over code lines; the comparable measure of unsafe volume |
+| unsafe blocks | `code.unsafe_block.total` − `code.unsafe_block.of_which.ffi_export` | hand-written unsafe blocks, a port's generated export gateways left out; moves with the one-op-per-block policy, so not comparable across crates |
 
 ## Planning
 
@@ -167,13 +171,13 @@ sums them.
 
 Deterministic `ffimap`; no model.
 
-| module | wave | batch | objective | pass | pub raw ptr (safe) | pub raw ptr | pub void ptr | pub unsafe fn | C borrow | slice borrow | unsafe loc % | unsafe blocks | Send/Sync | C by value | Drop/Clone | deref outside impl |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| `<link-unit>/<module>` | `<n>` | `<n>` | wrap | first | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` pp | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` |
-| `<link-unit>/<module>` | `<n>` | `<n>` | port | first | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` pp | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` |
-| `<link-unit>/<module>` | `<n>` | `<n>` | wrap | review | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` pp | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` |
-| **Σ first** |  |  |  |  | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>` pp** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** |
-| **Σ review** |  |  |  |  | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>` pp** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** |
+| module | wave | batch | objective | pass | pub raw ptr | pub void ptr | pub unsafe fn | &cell | C by value | celled % | raw→std | unmanaged ptr types | ptr Drop | Send/Sync | raw deref | FFI calls | unsafe loc % | unsafe blocks |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| `<link-unit>/<module>` | `<n>` | `<n>` | wrap | first | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` pp | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` pp | `±<n>` |
+| `<link-unit>/<module>` | `<n>` | `<n>` | port | first | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` pp | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` pp | `±<n>` |
+| `<link-unit>/<module>` | `<n>` | `<n>` | wrap | review | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` pp | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` pp | `±<n>` |
+| **Σ first** |  |  |  |  | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>` pp** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>` pp** | **`±<n>`** |
+| **Σ review** |  |  |  |  | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>` pp** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>` pp** | **`±<n>`** |
 
 ### Batches — review: PoC + reports
 
@@ -213,13 +217,13 @@ Deterministic `ffimap`; no model.
 
 Deterministic `ffimap`; no model.
 
-| module | wave | batch | objective | pass | pub raw ptr (safe) | pub raw ptr | pub void ptr | pub unsafe fn | C borrow | slice borrow | unsafe loc % | unsafe blocks | Send/Sync | C by value | Drop/Clone | deref outside impl |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| `<link-unit>/<module>` | `<n>` | `<n>` | wrap | first | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` pp | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` |
-| `<link-unit>/<module>` | `<n>` | `<n>` | port | first | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` pp | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` |
-| `<link-unit>/<module>` | `<n>` | `<n>` | wrap | review | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` pp | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` |
-| **Σ first** |  |  |  |  | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>` pp** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** |
-| **Σ review** |  |  |  |  | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>` pp** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** |
+| module | wave | batch | objective | pass | pub raw ptr | pub void ptr | pub unsafe fn | &cell | C by value | celled % | raw→std | unmanaged ptr types | ptr Drop | Send/Sync | raw deref | FFI calls | unsafe loc % | unsafe blocks |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| `<link-unit>/<module>` | `<n>` | `<n>` | wrap | first | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` pp | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` pp | `±<n>` |
+| `<link-unit>/<module>` | `<n>` | `<n>` | port | first | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` pp | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` pp | `±<n>` |
+| `<link-unit>/<module>` | `<n>` | `<n>` | wrap | review | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` pp | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` pp | `±<n>` |
+| **Σ first** |  |  |  |  | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>` pp** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>` pp** | **`±<n>`** |
+| **Σ review** |  |  |  |  | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>` pp** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>` pp** | **`±<n>`** |
 
 ### Batches — review: PoC + reports
 

@@ -8,7 +8,8 @@ description: "Deterministic counts and sites of a Rust crate's unsafe and FFI su
 ffimap maps a Rust crate's FFI and unsafe surface deterministically: a rustc driver over
 HIR and typeck counts unsafe blocks and fns, raw and void pointers by position and
 visibility, FFI calls and wrapper use. No model is involved, so two runs over one tree
-agree exactly. Its `--help` lists its flags and counters.
+agree exactly. Its `--help` lists its flags, and its `docs/schema.md`, read in full before
+its first scan, its counters and how a report combines them.
 
 It counts what the build compiles of the safe crate itself, and prints one JSON document:
 
@@ -32,28 +33,36 @@ ffimap <workdir> --ffibox --sys-crates <the -sys crates> \
 
 Two scans are compared only when they name the same seams.
 
-`--sites <counter> ...` also lists where each named counter's increments are. The
-counters that recur:
+Its counters form one tree, each named by its dotted path into the scan's `counts`, as
+ffimap's `docs/schema.md` describes; a metric is a counter, or a combination of counters
+that schema allows: a partition's leaves summed, a share read against the record it cuts,
+or subtracted from it. `--sites <counter> ...` also lists where each named counter's
+increments are, and takes leaves only, such as `fn.unsafe.pub`; the workspace is named
+before it. The counters that recur:
 
-- `unsafe_fns_pub`, the public `unsafe fn`s, the crate's public unsafe surface, and
-  `raw_ptr_fn_pub_unsafe`, the raw pointers in their signatures;
-- `raw_ptr_ty_pub_fields_pub`, the raw pointers in public fields of public types, and
-  `raw_ptr_fn_pub_safe`, those in the signatures of public safe fns: together, the raw
-  pointers on the safe public interface; and `void_ptr_ty_pub_fields_pub` and
-  `void_ptr_fn_pub_safe`, the type-erased ones among them;
-- `c_type_borrow_non_sanctioned`, references into C memory outside the sanctioned handle
-  positions, `Deref` impls included, which assert `noalias`, `readonly` or validity over
-  memory C may write; `c_type_borrow_generic`, those generic code forms from a raw pointer
-  for every type its callers pick; and `raw_ptr_as_slice_borrow`, the `&[T]`, `&str` and
-  `&CStr` formed from a raw pointer, over bytes C must neither free nor change while they
-  live;
-- `unsafe_send_impl` and `unsafe_sync_impl`, each an unchecked assertion that a value may
-  move to or be shared with another thread;
-- `raw_ptr_derefs_wr` and `raw_ptr_derefs_rd`, raw-pointer writes and reads, each a
-  pointer the implementer vouches is non-null, aligned, live, initialized and unaliased by
-  a live reference, and `raw_ptr_derefs_outside_impl`, those that bypass a type's
-  accessors; and
-- `drop_impl` and `clone_impl`, hand-written teardown and copies.
+- `fn.unsafe.pub`, the public `unsafe fn`s, the crate's public unsafe surface, of which
+  `fn.unsafe.of_which.other.pub` are those neither a trait nor a seam required; and
+  `raw_ptr.fn_sig_arg.unsafe.pub` and `raw_ptr.fn_sig_ret.unsafe.pub`, the raw pointers in
+  their signatures;
+- `raw_ptr.field.pub`, `raw_ptr.fn_sig_arg.safe.pub` and `raw_ptr.fn_sig_ret.safe.pub`, the
+  raw pointers in public fields and in the signatures of public safe fns, together
+  `raw_ptr.total.safe.pub`, the raw pointers on the safe public interface; and their
+  `of_which.void` shares, the type-erased ones among them;
+- `ty.ffibox.wrapper.as.borrowed.std.{pub,priv}`, the references to a cell, less their
+  `of_which.self_in_ref_accessor` and `of_which.self_in_trait_impl` shares, the positions
+  ffibox sanctions: references to C memory where a handle belongs, which assert `noalias`,
+  `readonly` or validity over memory C may write; `ty.ffibox.sys.as.borrowed.std`, the same
+  of the raw C structs; and `raw_ptr.casted_to.std.{borrow,slice,string}`, the borrows,
+  slices and strings formed from a raw pointer, over bytes C must neither free nor change
+  while they live;
+- `ty.impl_trait.of_which.std.send` and `ty.impl_trait.of_which.std.sync`, each an unchecked
+  assertion that a value may move to or be shared with another thread;
+- `raw_ptr.deref.wr` and `raw_ptr.deref.rd`, raw-pointer writes and reads, each a pointer
+  the implementer vouches is non-null, aligned, live, initialized and unaliased by a live
+  reference; and
+- `ty.storing_raw_ptr.of_which.impl_drop` and `ty.storing_raw_ptr.of_which.impl_clone`, the
+  types that hold a raw pointer and tear it down or copy it by hand, and
+  `ty.storing_raw_ptr.of_which.none`, those that declare nothing about it.
 
 ffimap is neither complete nor sound: its sites are where review starts, not all it
 covers. It does not count the lifetimes formed inside `unsafe` blocks, such as a reference
@@ -67,8 +76,8 @@ adds to, and states only what ffimap adds there.
 
 ### Binding › Safe boundary
 
-Before a batch lands, a scan with
-`--sites unsafe_fns_pub raw_ptr_ty_pub_fields_pub raw_ptr_fn_pub_safe` lists the public
+Before a batch lands, a scan with `--sites fn.unsafe.pub raw_ptr.field.pub
+raw_ptr.fn_sig_arg.safe.pub raw_ptr.fn_sig_ret.safe.pub` lists the public
 `unsafe fn`s and the raw pointers on the safe public interface, and each of those sites
 that belongs to the batch's changeset and that a safe variant could replace is fixed.
 
@@ -95,25 +104,29 @@ A review locates the sites of its objectives with a scan, `--sites` with their c
 and keeps those in its workset: the code its commits add or change, or its modules and
 the types, trait impls and functions they name.
 
-- `unsafety`: `unsafe_fns_pub`, `raw_ptr_ty_pub_fields_pub` and `raw_ptr_fn_pub_safe`.
-- `contracts`: `unsafe_fns_pub` and `raw_ptr_fn_pub_unsafe`, whose `# Safety` obligations
-  are evaluated.
+- `unsafety`: `fn.unsafe.pub`, `raw_ptr.field.pub`, `raw_ptr.fn_sig_arg.safe.pub` and
+  `raw_ptr.fn_sig_ret.safe.pub`.
+- `contracts`: `fn.unsafe.pub`, `raw_ptr.fn_sig_arg.unsafe.pub` and
+  `raw_ptr.fn_sig_ret.unsafe.pub`, whose `# Safety` obligations are evaluated.
 - `ub`: these smells first, in this order:
-  1. references into C memory: `c_type_borrow_non_sanctioned`, then
-     `c_type_borrow_generic` and `raw_ptr_as_slice_borrow`;
-  2. thread-safety claims, `unsafe_send_impl` and `unsafe_sync_impl`, checked against the
-     C library's contract: a data race is reachable from safe code when the library does
-     not allow what they assert;
+  1. references into C memory: the references to a cell outside its sanctioned positions,
+     `ty.ffibox.wrapper.as.borrowed.std.{pub,priv}` less those shares, and to a raw C
+     struct, `ty.ffibox.sys.as.borrowed.std.{pub,priv}`, then
+     `raw_ptr.casted_to.std.{borrow,slice,string}`;
+  2. thread-safety claims, `ty.impl_trait.of_which.std.send` and `.sync`, checked against
+     the C library's contract: a data race is reachable from safe code when the library
+     does not allow what they assert;
   3. the lifetimes formed inside `unsafe` blocks, found in the source: unsound when the
      handle can outlive the owner of the memory or the point at which C frees or
      invalidates it;
-  4. raw pointers a consumer can set, `raw_ptr_fn_pub_safe`, `void_ptr_fn_pub_safe`,
-     `raw_ptr_ty_pub_fields_pub` and `void_ptr_ty_pub_fields_pub`: unsound when a safe
-     path dereferences or frees what the consumer passed or stored;
-  5. raw-pointer dereferences, `raw_ptr_derefs_wr` then `raw_ptr_derefs_rd`: first in the
-     modules that also hold `c_type_borrow_non_sanctioned` sites, where a write may
-     invalidate a reference, and outside impls, `raw_ptr_derefs_outside_impl`; and
-  6. hand-written teardown and copies, `drop_impl` and `clone_impl`.
+  4. raw pointers a consumer can set, `raw_ptr.fn_sig_arg.safe.pub` and
+     `raw_ptr.field.pub`, with their `of_which.void` shares: unsound when a safe path
+     dereferences or frees what the consumer passed or stored;
+  5. raw-pointer dereferences, `raw_ptr.deref.wr` then `raw_ptr.deref.rd`: first in the
+     modules that also hold references into C memory, where a write may invalidate a
+     reference, and outside a type's accessors; and
+  6. hand-written teardown and copies, `ty.storing_raw_ptr.of_which.impl_drop` and
+     `.impl_clone`.
 
 ## Audit
 
@@ -125,11 +138,11 @@ A file outside every configuration scanned has no sites, and is planned from its
 
 For `ub`, the modules that hold the smells ffimap's review guidance lists for `ub` are
 reviewed first, in that order; for `contracts`, those that hold the crate's unsafe API and
-its justifications, `unsafe_fns_pub` and `raw_ptr_fn_pub_unsafe`. The rest of the crate
+its justifications, the `contracts` counters above. The rest of the crate
 follows the smells.
 
 The modules are batched by their sites, and a module that is split keeps a type, trait
-impl or function with its sites in one batch. A `drop_impl`, `clone_impl`,
-`unsafe_send_impl` or `unsafe_sync_impl` site is a trait impl, named `Drop for <type>`,
-`Clone for <type>`, `Send for <type>` or `Sync for <type>`. Each review runs the same scan
-over its own modules, so the sites are not passed on.
+impl or function with its sites in one batch. A site of `ty.storing_raw_ptr.of_which.impl_drop`,
+`.impl_clone`, `ty.impl_trait.of_which.std.send` or `.sync` is a trait impl, named
+`Drop for <type>`, `Clone for <type>`, `Send for <type>` or `Sync for <type>`. Each review
+runs the same scan over its own modules, so the sites are not passed on.
