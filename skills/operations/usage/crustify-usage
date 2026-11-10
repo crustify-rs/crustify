@@ -373,7 +373,9 @@ def transcript_format(path: Path) -> str:
 
 def transcript_session(path: Path) -> str | None:
     """The session id a transcript names: a Claude Code transcript's
-    ``sessionId``, a Codex rollout's ``session_meta`` id."""
+    ``sessionId``, or, for a subagent's, which names the session that spawned
+    it, ``agent-<agentId>``, the name Claude Code gives its transcript; a
+    Codex rollout's ``session_meta`` id."""
     with open(path, errors="replace") as fh:
         for n, line in enumerate(fh):
             if n > 200:
@@ -384,6 +386,8 @@ def transcript_session(path: Path) -> str | None:
                 continue
             if e.get("type") == "session_meta":
                 return (e.get("payload") or {}).get("id")
+            if e.get("isSidechain") and e.get("agentId"):
+                return f"agent-{e['agentId']}"
             if e.get("sessionId"):
                 return e["sessionId"]
     return None
