@@ -31,7 +31,9 @@ ownership contracts, each safe variant has a distinct, descriptive name.
 ### 1.2 Types
 
 A wrapped C type is the layout-compatible newtype `Foo`, named by the rules above; its
-shared and exclusive borrowed handles are `FooRef<'a>` and `FooMut<'a>`. A typedef that
+shared and exclusive borrowed handles are `FooRef<'a>` and `FooMut<'a>`, and its sole and
+counted owners `FooBox` and `FooArc`. A port keeps these names while what they name
+changes, as [`porting`](../porting/SKILL.md)'s Structs section describes. A typedef that
 names a type under another name, which its item lists among its `typedefs`, is a
 `pub type` alias of the type's Rust form.
 

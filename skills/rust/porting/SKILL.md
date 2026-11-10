@@ -70,13 +70,31 @@ routine through its raw binding, as a binding's does. Its storage stays in C's a
 while any C allocates or frees it raw, a lifecycle routine of its own module still in C
 included, so that what Rust allocates is never freed by C's releaser, nor the reverse.
 
-Its later stages:
+Its handles keep the names its port gives them, `Foo`, `FooRef`, `FooMut` and its owners,
+while what they name follows its later stages, so that its consumers never change, as
+`binding`'s Safe layout section describes:
 
 - `port/layout`: the struct takes a Rust-native layout, its C layout gone with its last C
-  layout user; and
-- `port/memory`: its storage moves from C's allocator to Rust's: its owners allocate and
-  drop it natively, and it uses native Rust lifecycle operations instead of the C
-  primitives.
+  layout user. `Foo` is defined in its Rust module, each field of the native type that
+  keeps the ownership the analysis established, an owning string a `String` and a borrowed
+  one a borrow; `FooRef<'a>` and `FooMut<'a>` become aliases of `&'a Foo` and
+  `&'a mut Foo`, and the getters and setters move to `impl Foo`, reading and writing its
+  fields; and
+- `port/memory`: its storage moves from C's allocator to Rust's: its owners become aliases
+  of the native ones, `FooBox` of `Box<Foo>` and `FooArc` of `Arc<Foo>`, which allocate and
+  drop it natively, with native Rust lifecycle operations instead of the C primitives.
+
+Each switches when its own stage lands, whichever comes first. From its native layout on, a
+struct has by-value constructors, `Foo::new(…) -> Foo`, and a constructor that returns an
+owner builds the value and moves it into the owner, whose allocator its stage decides:
+C's while any C still frees it raw, Rust's from its `port/memory`.
+
+While C keeps its address, as `binding`'s Lifecycle section describes, a struct with a
+native layout is `!Unpin` and its native handles are pinned: `FooMut<'a>` is an alias of
+`Pin<&'a mut Foo>` and `FooBox` of `Pin<Box<Foo>>`, and an export gateway rebuilds the
+pinned handle from the pointer C passes it. Once no remaining C keeps its address, the
+struct becomes `Unpin`, so that its pinned handles give plain access, and its aliases keep
+their `Pin`, unchanged for its consumers.
 
 ### 2.2 Unions
 

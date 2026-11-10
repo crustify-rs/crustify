@@ -59,6 +59,15 @@ surface has three types, named as the conventions describe:
 | `FooRef<'a>` | copyable shared borrowed handle with getters |
 | `FooMut<'a>` | exclusive borrowed handle with setters, and shared and exclusive reborrows |
 
+Its owners, which [Lifecycle](#23-lifecycle) describes, are named `FooBox` and `FooArc`, as
+the conventions name them too. These names are what consumers use, whatever they name: here
+pointer wrappers and owners over C's allocator, which a port changes, stage by stage, into
+native borrows and owners, as [`porting`](../porting/SKILL.md)'s Structs section describes,
+without changing its consumers. A consumer relies only on what every form they may take
+offers: their methods, their reborrows (`as_ref`, `as_mut`) and the dereferences the
+native forms offer, which the pointer wrappers mirror. What one form offers beyond that,
+such as an owner's raw access, is no part of the safe API.
+
 No Rust reference to the wrapped C object is ever formed. Borrowed handles contain
 pointers and carry lifetimes; references to handles cover Rust-owned handle storage only.
 Layout access starts from `FooRef::as_ptr()` or `FooMut::as_mut_ptr()`, in small justified
@@ -90,6 +99,11 @@ possible it is exported as a safe function returning the fully-formed object. Ev
 argument names is wrapped before it, since a wrap brings in its signature's types.
 
 C lifecycle primitives are kept while C can allocate or free the storage.
+
+A type whose address C keeps beyond the call that receives it, to read it, call back with it
+or free it, as the analysis establishes, is never moved while C keeps it: a value of it
+held by value is never handed to C to keep, and an owner that could move it out is
+pinned.
 
 Promoting construction-phase storage into an owner is unsafe, so it is encapsulated in the
 type's safe constructor: consumers of the public API never call `assume_init` in their own

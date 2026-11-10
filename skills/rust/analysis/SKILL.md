@@ -24,7 +24,9 @@ The analysis establishes:
 - nullability;
 - scalar, array, or other cardinality;
 - type erasure and known element types;
-- borrow and keepalive relationships; and
+- borrow and keepalive relationships;
+- address retention: whether C keeps an object's address beyond the call that receives it,
+  to read it, call back with it or free it; and
 - construction, clone, and destruction paths.
 
 Observed behaviour overrides names and comments. A distinction the analysis establishes is

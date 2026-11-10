@@ -25,6 +25,13 @@ adds to, and states only what ffibox adds there.
 A type that stays interoperable with C is bound through ffibox's primitives wherever they
 apply, as its documentation describes.
 
+### Binding › Type route › Safe layout
+
+While a type keeps its C layout, `define_ctype!` mints `Foo`, `FooRef<'a>` and `FooMut<'a>`,
+and its owners are aliases of ffibox's owners over the policy that names its lifecycle
+routines: `pub type FooBox = CBox<Foo, FooFree>;`, and `CArc<Foo, P>` for `FooArc`. A
+value held inline that disposes its resources on drop is a `CVal<Foo, P>`.
+
 ### Binding › Symbol route › Function pointers
 
 A Rust closure reaches C through `callback::CClosure`, where C keeps it for the call that
@@ -45,6 +52,17 @@ is a `CVec<MaybeUninit<T>, P>` with a safe initializer, or a `CVec<T, P>` for a
 its `CLenClone` declares `ALIGN`. A Rust value whose release C drives, such as a
 refcounted user payload, gets a hand-written owner whose free callback runs the value's
 destructor.
+
+### Porting › Type route › Structs
+
+Until a ported struct's `port/layout`, its handles are ffibox's, as
+[Binding › Type route › Safe layout](#binding--type-route--safe-layout) describes; from it
+on, `FooRef` and `FooMut` are aliases of native borrows. Its owners stay ffibox's until its
+`port/memory`, their policy calling its lifecycle routines, C's through their raw bindings
+until each is ported, then the Rust ones.
+<!-- TODO: ffibox's owners hold only `CCell` layout types, so an owner over C's allocator
+of a struct whose layout is native, between its `port/layout` and its `port/memory`, is
+hand-written until ffibox has one. -->
 
 ## Testing
 
