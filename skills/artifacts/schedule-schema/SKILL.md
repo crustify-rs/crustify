@@ -87,10 +87,10 @@ the objective it is translated with and its entity's release points:
 | field | meaning |
 |---|---|
 | `name`, `defined_in`, `kind`, `field_users`, `typedefs`, `home` | as on a batch item |
-| `objective` | `wrap` or `port`, or one of the later stages of `scheduling`'s Later stages section: `port/layout` or `port/memory` for a struct or a union, `port/layout` for a closed enum, `port/unexport` for a function or a global |
+| `objective` | `wrap` or `port`, or one of the later stages of `scheduling`'s Later stages section: `port/layout` or `port/memory` for a struct or a union, `port/layout` for a closed enum, `port/unexport` for a function, a global or a function pointer |
 | `opaque_after` | on a struct, a union or an enum, the release point after which none of its layout users is left, as the scheduling spec's Later stages section defines them; `null` on any other item |
 | `memory_unmanaged_after` | on a struct or a union, the release point after which none of its memory users is left; `null` on any other item |
-| `unreferenced_after` | on a function, a global or a macro, the release point after which none of its referrers is left; `null` on any other item |
+| `unreferenced_after` | on a function, a global, a macro, a function pointer or a typedef, the release point after which none of its referrers is left, and for a function pointer written inline none of what reaches the sites that write it; `null` on any other item |
 
 A release point has two records, `closure` over every user and `scheduled` over those the
 schedule holds, each naming the last users, their waves and their `modules`, as the

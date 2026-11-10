@@ -179,7 +179,8 @@ Every field is required on every item, and no other field is accepted.
 
 `(name, defined_in)` identifies an item and must be unique within the batch. A
 `port/layout` batch holds only structs, unions and enums, a `port/memory` batch only
-structs and unions, and a `port/unexport` batch only functions and globals.
+structs and unions, and a `port/unexport` batch only functions, globals and function
+pointers.
 `field_users` and `typedefs` must not repeat a name.
 
 `home` is the sole placement input: no other artifact decides where an item goes, so the

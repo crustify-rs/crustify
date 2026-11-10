@@ -155,10 +155,11 @@ pointer of its type or supplies one, its C form stays beneath it: the function-p
 of its raw binding, the trampolines through which a Rust closure reaches the C that calls
 it, and the `unsafe` constructor through which a C function reaches Rust, passed to an
 export, whose gateway builds the C variant from the function and the context it receives,
-or stored where C wrote it. A function pointer no remaining C calls or supplies by its port
-is native in its implementation too: its closure or trait alone.
-<!-- TODO: wavefront gives a function pointer no release point, so no later stage removes
-its C form once its last C caller and supplier are integrated. -->
+or stored where C wrote it. Its later stage, `port/unexport`, removes that C form, with the
+raw binding and the allowlist entry that reach it, once no remaining C references it, as
+[`scheduling`](../../planning/scheduling/SKILL.md)'s Later stages section times it. A
+function pointer no remaining C calls or supplies by its port is native in its
+implementation too: its closure or trait alone.
 
 ### 3.4 Static inline functions
 

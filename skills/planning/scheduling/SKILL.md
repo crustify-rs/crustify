@@ -223,7 +223,7 @@ Its safe API does not change between the stages: it exposes no representation, s
 stage changes the type, its lifecycle and the code inside the crate that reaches its C form,
 and none of its consumers.
 
-### 5.2 Functions and globals
+### 5.2 Functions, globals and function pointers
 
 A ported function's or global's export, through which the remaining C reaches it, is
 removed with the raw binding that reaches it by a `port/unexport` item, after its
@@ -231,3 +231,9 @@ removed with the raw binding that reaches it by a `port/unexport` item, after it
 takes its address or accesses it, as the [conventions](../../rust/conventions/SKILL.md)' Exports
 section describes. A function or global that remaining C never references has no export,
 and no `port/unexport`.
+
+A ported function pointer's C form, through which the remaining C calls a Rust closure or
+hands Rust a C function, is removed the same way, after its `unreferenced_after`: the
+integration of its last referrers, the remaining C that names it or calls through it, and
+for one written inline the C that reaches a site that writes it, as
+[`porting`](../../rust/porting/SKILL.md)'s Function pointers section describes.

@@ -173,9 +173,10 @@ A port campaign's schedule, which is not `--api-headers-only`, gives each schedu
 its release points, which `schedule.json`'s items carry as wavefront records them and which
 place its later stages: a struct's, union's or closed enum's `opaque_after` its
 `port/layout`, a struct's or union's `memory_unmanaged_after` its `port/memory`, and a
-function's or global's `unreferenced_after` its `port/unexport`. A module's C leaves at its integration, so a
-stage's wave waits for the last waves of the modules its point's `closure.modules` names,
-less the item's own; with none left, the stage is not planned. The users behind each point
+function's, global's or function pointer's `unreferenced_after` its `port/unexport`; a
+macro's or typedef's places none. A module's C leaves at its integration, so a stage's wave
+waits for the last waves of the modules its point's `closure.modules` names, less the
+item's own; with none left, the stage is not planned. The users behind each point
 are a query away: `query structs --name <T> --layout-users` lists a struct's layout users
 with the site and kind of each use, as `query unions` and `query enums` do theirs,
 `query structs --name <T> --raw-sites` its memory users, and
@@ -222,9 +223,9 @@ declares is named by it, and one written inline by its signature, as
 `int (*)(ctx *, void *)`, homed in the file that writes it. Its record's `used_by` names
 its users; the sites of an inline one, each with the field, parameter, return, global,
 local or cast that holds it, are the rows of T2's `function_pointer_uses.csv` that name
-its signature and file.
-<!-- TODO: wavefront gives a function pointer no release point, as `porting`'s Function
-pointers section needs to plan the stage that removes its C form. -->
+its signature and file. An inline one's `unreferenced_after` waits for what reaches each of
+those sites: a field's struct through its layout users, a parameter's or return's function
+and a global through their referrers.
 
 ### Binding › Symbol route › Lifecycle strategies
 
