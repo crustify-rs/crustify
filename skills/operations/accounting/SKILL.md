@@ -27,8 +27,9 @@ The dashboard's cells fall into three kinds, by when their figures can be known.
 
 The cells measured on the tree a landing commits:
 
-- for a batch, under the kind of each of its items: its rows in the kind's `Batches`, tests
-  and `Batches: safety audit` tables, and for a review batch in
+- for a batch, under the route its items' `kind` selects, as
+  [`task-schema`](../../artifacts/task-schema/SKILL.md)'s Routes section gives it: its rows
+  in that route's `Batches`, tests and `Batches: safety audit` tables, and for a review batch in
   `Batches — review: PoC + reports`, each placed in module, wave and batch order under
   its `pass`; those tables' `Σ` rows; and the `Coverage stats` table and the Overview's LoC
   line;

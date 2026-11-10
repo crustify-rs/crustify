@@ -25,8 +25,11 @@ and in Notes.
   the wave and batch indices
 - `objective` — `wrap` or `port`, or a later stage, `port/layout`, `port/memory` or `port/unexport`; `pass` — `first` for a translation batch, `review` for a
   review batch; `Σ first` / `Σ review` total each pass apart
-- `types` / `symbols` / `fields` — the batch's scheduled units (function pointers count as
-  symbols) and its types' assigned field accessors; a review row counts what it reviewed
+- `types` / `symbols` / `fields` — the batch's scheduled units, each under the route its
+  `kind` selects, as the `task-schema` skill's Routes section gives it: structs, unions,
+  enums, typedefs and type-generating macros are types, functions, globals, function
+  pointers and other macros symbols; and the members its items' `field_users` list, a
+  struct's or a union's fields and an enum's constants; a review row counts what it reviewed
 - `$` / `tokens` / `wall` — the agent's computed cost (API-equivalent under
   subscription), its tokens in millions as `crustify-usage` reports them, and its elapsed
   time, C rebuild included; `$/<unit>` divides `$` by the row's units
@@ -136,40 +139,20 @@ sums them.
 
 ## Types
 
-### Batches — wrap
+### Batches
 
 `<model>` on `<backend>`.
 
-| module | wave | batch | pass | types | fields | +LoC | cov (C/Rust) | $ | tokens | wall | $/type | $/field |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| `<link-unit>/<module>` | `<n>` | `<n>` | first | `<n>` | `<n>` | `+<n>/-<n>` | `<n>`% / `<n>`% | `$<n>` | `<n>M` | `<n>m<n>s` | `$<n>` | `$<n>` |
-| `<link-unit>/<module>` | `<n>` | `<n>` | review | `<n>` | `<n>` | `+<n>/-<n>` | `<n>`% / `<n>`% | `$<n>` | `<n>M` | `<n>m<n>s` | `$<n>` | `$<n>` |
-| **Σ first** |  |  |  | **`<n>`** | **`<n>`** | **`+<n>/-<n>`** | **`<n>`% / `<n>`%** | **`$<n>`** | **`<n>M`** | — | **`$<n>`** | **`$<n>`** |
-| **Σ review** |  |  |  | **`<n>`** | **`<n>`** | **`+<n>/-<n>`** | **`<n>`% / `<n>`%** | **`$<n>`** | **`<n>M`** | — | **`$<n>`** | **`$<n>`** |
+| module | wave | batch | objective | pass | types | fields | +LoC | cov (C/Rust) | $ | tokens | wall | $/type | $/field |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| `<link-unit>/<module>` | `<n>` | `<n>` | wrap | first | `<n>` | `<n>` | `+<n>/-<n>` | `<n>`% / `<n>`% | `$<n>` | `<n>M` | `<n>m<n>s` | `$<n>` | `$<n>` |
+| `<link-unit>/<module>` | `<n>` | `<n>` | port | first | `<n>` | `<n>` | `+<n>/-<n>` | `<n>`% / `<n>`% | `$<n>` | `<n>M` | `<n>m<n>s` | `$<n>` | `$<n>` |
+| `<link-unit>/<module>` | `<n>` | `<n>` | port/layout | first | `<n>` | `<n>` | `+<n>/-<n>` | `<n>`% / `<n>`% | `$<n>` | `<n>M` | `<n>m<n>s` | `$<n>` | `$<n>` |
+| `<link-unit>/<module>` | `<n>` | `<n>` | wrap | review | `<n>` | `<n>` | `+<n>/-<n>` | `<n>`% / `<n>`% | `$<n>` | `<n>M` | `<n>m<n>s` | `$<n>` | `$<n>` |
+| **Σ first** |  |  |  |  | **`<n>`** | **`<n>`** | **`+<n>/-<n>`** | **`<n>`% / `<n>`%** | **`$<n>`** | **`<n>M`** | — | **`$<n>`** | **`$<n>`** |
+| **Σ review** |  |  |  |  | **`<n>`** | **`<n>`** | **`+<n>/-<n>`** | **`<n>`% / `<n>`%** | **`$<n>`** | **`<n>M`** | — | **`$<n>`** | **`$<n>`** |
 
-### Batches — wrap: tests
-
-`<model>` on `<backend>`.
-
-| module | wave | batch | pass | +UB safe tests (+C/+Rust pp) | +UB unsafe tests (+C/+Rust pp) | +equiv tests (+C/+Rust pp) | +unit tests (+C/+Rust pp) |
-|---|---|---|---|---|---|---|---|
-| `<link-unit>/<module>` | `<n>` | `<n>` | first | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) |
-| `<link-unit>/<module>` | `<n>` | `<n>` | review | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) |
-| **Σ first** |  |  |  | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** |
-| **Σ review** |  |  |  | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** |
-
-### Batches — port
-
-`<model>` on `<backend>`.
-
-| module | wave | batch | pass | types | fields | +LoC | cov (C/Rust) | $ | tokens | wall | $/type | $/field |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| `<link-unit>/<module>` | `<n>` | `<n>` | first | `<n>` | `<n>` | `+<n>/-<n>` | `<n>`% / `<n>`% | `$<n>` | `<n>M` | `<n>m<n>s` | `$<n>` | `$<n>` |
-| `<link-unit>/<module>` | `<n>` | `<n>` | review | `<n>` | `<n>` | `+<n>/-<n>` | `<n>`% / `<n>`% | `$<n>` | `<n>M` | `<n>m<n>s` | `$<n>` | `$<n>` |
-| **Σ first** |  |  |  | **`<n>`** | **`<n>`** | **`+<n>/-<n>`** | **`<n>`% / `<n>`%** | **`$<n>`** | **`<n>M`** | — | **`$<n>`** | **`$<n>`** |
-| **Σ review** |  |  |  | **`<n>`** | **`<n>`** | **`+<n>/-<n>`** | **`<n>`% / `<n>`%** | **`$<n>`** | **`<n>M`** | — | **`$<n>`** | **`$<n>`** |
-
-### Batches — port: tests
+### Batches: tests
 
 `<model>` on `<backend>`.
 
@@ -288,8 +271,9 @@ gateways and scaffolding with no C counterpart.
 
 The four unit counts are de-duplicated over ENTITIES, not scheduled units: an
 entity appears once, under the last objective it ran, so a type wrapped and
-later ported counts as ported and never in both. Name the entities that took
-both paths. Function pointers count with symbols.
+later ported, or given its native layout by its `port/layout`, counts as ported
+and never in both. Name the entities that took both paths. Each counts under its
+route, as the legend gives it.
 
 Some of it is structural and belongs here every time: how each wave's batches
 were packed, and why: their sizes, the caps if any, the waves that shared
