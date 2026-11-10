@@ -86,12 +86,15 @@ module claims the units its files are home to, the file that defines them or, wi
 their declaration: a shared header's types and `static inline` functions are claimed by
 listing the header with them as `included`, never by listing a header that only declares
 them, which wavefront refuses. A unit two modules claim is refused too, so every entity is
-owned by exactly one module. Macros are listed by none. The configuration is verified
+owned by exactly one module. A file listed whole claims every unit it is home to, its
+macros included, as an entry with an `excluded` list claims every unit but those it names;
+an entry with an `included` list claims only the units it names, so a split header's
+entry names each API macro it owns there too. The configuration is verified
 against the CLI.
-<!-- TODO: enums and macros are items of a plan, as `decomposition` and `scheduling`
-describe, and wavefront schedules both, but every macro of the closure's files, and it
-lists no header macro as owned. It has yet to own the macros that are API, and only those
-(no include guards, configuration, feature-test or attribute macros), count enums and
+<!-- TODO: wavefront makes a header's macro a unit only where the closure's code expands
+it (`is_macro_port_reachable`), so an API macro no C of the closure expands is planned
+nowhere, and it makes units of the configuration and attribute macros the closure expands
+too. It has yet to make units of the macros that are API, and only those, count enums and
 macros in the modules' records, and tell a closed enum from a flags one, which the planner
 judges until then, as `scheduling`'s Later stages section describes. -->
 
