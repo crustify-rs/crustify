@@ -213,7 +213,7 @@ A type is scheduled in stages:
 
 A stage with no users to wait for is not planned: its change is part of the type's `port`,
 or, for `port/memory`, of the port of the last of its own module's memory users, a
-lifecycle routine its type's port left in C, as [`porting`](../../rust/porting/SKILL.md)'s
+lifecycle routine its type's port or wrap left in C, as [`porting`](../../rust/porting/SKILL.md)'s
 Structs section describes.
 A user that stays C, in a foundational module, in a module the scope leaves out or in a
 struct that embeds the type and stays C, keeps the stage it holds back from being planned

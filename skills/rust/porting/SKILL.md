@@ -60,34 +60,40 @@ A layout is ported only once no unported C of the target touches it: no field to
 and no other layout user. Tests and the C consumers outside the target do not count, as
 [`porting-workflow`](../../workflows/porting-workflow/SKILL.md)'s Principles section
 describes, so neither a test's field access nor a definition in an installed header keeps
-the layout in C.
+the layout in C. A struct whose layout another module's C still uses is wrapped where the
+order places it instead, keeping its C layout behind a binding, and takes its native layout
+from its `port/layout`, as [`scheduling`](../../planning/scheduling/SKILL.md)'s Later
+stages section schedules it.
 
-A struct's port fixes its lifecycle API with its layout: the owners, handles, constructors,
-drop and clone its consumers use from then on. Each lifecycle routine behind them is ported
-where the order places it, as a function of its own, so that a routine whose call graph is
-not ported yet does not bring it forward: until then, the owner's policy calls the C
-routine through its raw binding, as a binding's does. Its storage stays in C's allocator
-while any C allocates or frees it raw, a lifecycle routine of its own module still in C
-included, so that what Rust allocates is never freed by C's releaser, nor the reverse.
+A struct's lifecycle API is fixed by the item that first gives it a safe API, its port, or
+the wrap that precedes its later stages: the owners, handles, constructors, drop and clone
+its consumers use from then on, which its later stages keep. Each lifecycle routine behind
+them is ported where the order places it, as a function of its own, so that a routine
+whose call graph is not ported yet does not bring it forward: until then, the owner's
+policy calls the C routine through its raw binding, as a binding's does. Its storage stays
+in C's allocator while any C allocates or frees it raw, a lifecycle routine of its own
+module still in C included, so that what Rust allocates is never freed by C's releaser,
+nor the reverse.
 
-Its handles keep the names its port gives them, `Foo`, `FooRef`, `FooMut` and its owners,
+Its handles keep the names that item gives them, `Foo`, `FooRef`, `FooMut` and its owners,
 while what they name follows its later stages, so that its consumers never change, as
 `binding`'s Safe layout section describes:
 
-- `port/layout`: the struct takes a Rust-native layout, its C layout gone with its last C
-  layout user. `Foo` is defined in its Rust module, each field of the native type that
-  keeps the ownership the analysis established, an owning string a `String` and a borrowed
-  one a borrow; `FooRef<'a>` and `FooMut<'a>` become aliases of `&'a Foo` and
-  `&'a mut Foo`, and the getters and setters move to `impl Foo`, reading and writing its
-  fields; and
+- `port/layout`: the struct, wrapped until then, takes a Rust-native layout, its C layout
+  gone with its last C layout user. `Foo` is defined in its Rust module, each field of the
+  native type that keeps the ownership the analysis established, an owning string a
+  `String` and a borrowed one a borrow; `FooRef<'a>` and `FooMut<'a>` become aliases of
+  `&'a Foo` and `&'a mut Foo`, and the getters and setters move to `impl Foo`, reading and
+  writing its fields; and
 - `port/memory`: its storage moves from C's allocator to Rust's: its owners become aliases
   of the native ones, `FooBox` of `Box<Foo>` and `FooArc` of `Arc<Foo>`, which allocate and
   drop it natively, with native Rust lifecycle operations instead of the C primitives.
 
-Each switches when its own stage lands, whichever comes first. From its native layout on, a
-struct has by-value constructors, `Foo::new(…) -> Foo`, and a constructor that returns an
-owner builds the value and moves it into the owner, whose allocator its stage decides:
-C's while any C still frees it raw, Rust's from its `port/memory`.
+Each switches with its own stage, or with the struct's port where that stage is not
+planned. From its native layout on, from its port or its `port/layout`, a struct has
+by-value constructors, `Foo::new(…) -> Foo`, and a constructor that returns an owner
+builds the value and moves it into the owner, whose allocator its stage decides: C's while
+any C still frees it raw, Rust's from its `port/memory`.
 
 While C keeps its address, as `binding`'s Lifecycle section describes, a struct with a
 native layout is `!Unpin` and its native handles are pinned: `FooMut<'a>` is an alias of
@@ -141,11 +147,12 @@ A function that remaining C calls or takes the address of is exported, as
 export, with the raw binding and the allowlist entry that reach it, once no remaining C
 references it.
 
-A lifecycle routine's port reimplements it behind the policy its type's port wrote, which
-it repoints at the Rust routine, and writes no API of its own, as `binding`'s Lifecycle
-section has the symbol route skip what a type batch emitted. The last of its type's own
-module's memory users to be ported moves its storage to Rust's allocator, unless C of other
-modules still allocates or frees it raw, which leaves that move to its `port/memory`.
+A lifecycle routine's port reimplements it behind the policy its type's port or wrap
+wrote, which it repoints at the Rust routine, and writes no API of its own, as `binding`'s
+Lifecycle section has the symbol route skip what a type batch emitted. The last of its
+type's own module's memory users to be ported moves its storage to Rust's allocator,
+unless C of other modules still allocates or frees it raw, which leaves that move to its
+`port/memory`.
 
 ### 3.2 Globals
 
