@@ -1,6 +1,6 @@
 # Crustify
 
-**Crustify is your AI co-translator for C-to-Rust work.** It is a plugin for Claude Code
+**Crustify is your AI co-translator for automating C-to-Rust work.** It is a plugin for Claude Code
 and Codex that turns LLMs into specialized translators that plan, run and review
 whole-repository campaigns. It can:
 
