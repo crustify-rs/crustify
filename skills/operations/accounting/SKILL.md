@@ -73,7 +73,9 @@ An audit's dashboard follows the same kinds over its own tables.
 Every run's `task.json` records how its agent ran: its backend, billing, model proxy and
 the arguments its CLI was given, and, once it starts, its `session_id`, which ties the run
 to its session. The session's transcript, which its CLI keeps by session id, is the
-agent's full log and the source of its accounting.
+agent's full log and the source of its accounting. An agent spawned as a subagent of the
+assistant's session has no session of its own: its session id is `agent-<agent id>`, the
+name Claude Code gives its transcript, under the spawning session's `subagents/`.
 
 A transcript is copied into crustify's home, as `transcripts/<session id>.jsonl`, as soon
 as its agent ends, because the CLIs move and prune their own files. Its usage is derived

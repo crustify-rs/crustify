@@ -249,5 +249,15 @@ class SessionTests(_Rates):
         with self.assertRaisesRegex(ValueError, "transcript of session s, not t"):
             price_session("t", self.claude, rates=self.rates, home=self.home)
 
+    def test_a_subagent_transcript_names_its_agent(self) -> None:
+        sub = self.dir / "agent-a1.jsonl"
+        sub.write_text("".join(
+            json.dumps({**e, "isSidechain": True, "agentId": "a1"}) + "\n"
+            for e in CLAUDE))
+        self.assertEqual(cu.transcript_session(sub), "agent-a1")
+        with self.assertRaisesRegex(ValueError, "transcript of session agent-a1, not s"):
+            cu.price_session("s", sub, rates=self.rates, home=self.home)
+
+
 if __name__ == "__main__":
     unittest.main()
