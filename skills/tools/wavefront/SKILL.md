@@ -91,10 +91,11 @@ macros included, as an entry with an `excluded` list claims every unit but those
 an entry with an `included` list claims only the units it names, so a split header's
 entry names each API macro it owns there too. The configuration is verified
 against the CLI.
-<!-- TODO: wavefront makes a header's macro a unit only where the closure's code expands
-it (`is_macro_port_reachable`), so an API macro no C of the closure expands is planned
-nowhere, and it makes units of the configuration and attribute macros the closure expands
-too. It has yet to make units of the macros that are API, and only those, count enums and
+<!-- TODO: wavefront makes a unit of every macro an installed header defines, but of an
+internal header's macro only where the closure's code expands it, so an internal API macro
+no C of the closure expands is planned nowhere, and it makes units of the configuration and
+attribute macros the closure expands too. It has yet to make units of the macros that are
+API, and only those, count enums and
 macros in the modules' records, and tell a closed enum from a flags one, which the planner
 judges until then, as `scheduling`'s Later stages section describes. -->
 
