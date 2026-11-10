@@ -13,15 +13,15 @@ the loop.
 
 ## Why Crustify
 
-- **A generic, human-reviewed specification, not a prompt.**
-- **Whole repositories, in parallel.**
-- **Grounded in deterministic tools:** [wavefront](https://github.com/crustify-rs/wavefront),
+- Agents are driven by a generic, human-reviewed specification, not only a prompt.
+- Whole repositories, in parallel.
+- Grounded in deterministic tools: [wavefront](https://github.com/crustify-rs/wavefront),
   [ffibox](https://github.com/crustify-rs/ffibox) and
   [ffimap](https://github.com/crustify-rs/ffimap).
-- **Verified before it lands, with coverage-guided tests and adversarial review.**
-- **You choose the translator's autonomy.**
-- **Any agent harness, any billing.**
-- **Every dollar accounted for.**
+- Validated before it lands, with coverage-guided tests and adversarial review.
+- You choose the translator's autonomy.
+- Any agent harness, any billing.
+- Fine-grained cost tracking.
 
 ## Results
 
