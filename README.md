@@ -25,7 +25,7 @@ the loop.
 
 ## Results
 
-Crustify generated safe bindings for two libraries, with one developer in the loop, as
+Crustify generated safe bindings for two libraries, with little guidance from one developer overseeing it, as
 our [paper](https://arxiv.org/abs/2611.10394) details. Binders and reviewers mainly ran
 Claude Opus 5.5; GPT-6.1 Sol and GPT-6 Astra wrapped a few modules, and Claude Fable 5.1
 ran the early reviews.
