@@ -195,7 +195,6 @@ batch mixing routes is rejected.
 |---|---|
 | `struct`, `union`, `enum`, `typedef`, and a `macro` that generates types | `type` |
 | `function`, `global`, `function_pointer`, and any other `macro` | `symbol` |
-<!-- TODO: neither `binding` nor `porting` has an arm for a typedef of its own yet. -->
 
 A macro generates types when its record in the planning tools lists the instance types it
 mints: its instances share the one generic the type route writes for it, as

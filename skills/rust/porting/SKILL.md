@@ -1,6 +1,6 @@
 ---
 name: porting
-description: "How a scheduled C item is reimplemented in safe Rust: the FFI boundary and its exports, the type route for structs, unions and enums, the symbol route for functions, globals, function pointers, static inline functions and macros, each with its later stages. Read before porting any item, and when reviewing ports."
+description: "How a scheduled C item is reimplemented in safe Rust: the FFI boundary and its exports, the type route for structs, unions, enums and typedefs, the symbol route for functions, globals, function pointers, static inline functions and macros, each with its later stages. Read before porting any item, and when reviewing ports."
 ---
 
 # Porting
@@ -119,6 +119,13 @@ closed enum that no remaining C uses by its port has no integer form, and a flag
 an enum without a name has no later stage.
 <!-- TODO: no enum's `port/layout` is planned until wavefront schedules enums, as its
 skill's TODO says. -->
+
+### 2.4 Typedefs
+
+A ported typedef takes the Rust form [`binding`](../binding/SKILL.md)'s Typedefs section
+gives it, which is native from its port, and its header keeps the C typedef for the
+remaining C: the two are not linked, beyond the Rust form's annotation, and the typedef is
+not exported. It has no later stage: no C form of it remains in Rust for one to remove.
 
 ---
 

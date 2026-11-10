@@ -1,6 +1,6 @@
 ---
 name: binding
-description: "How a scheduled C item becomes a safe Rust binding: the safe boundary, the type route for structs, unions as tagged enums, and enums, and the symbol route for functions, globals, function pointers and macros. Read before binding any item, and when reviewing bindings."
+description: "How a scheduled C item becomes a safe Rust binding: the safe boundary, the type route for structs, unions as tagged enums, enums and typedefs, and the symbol route for functions, globals, function pointers and macros. Read before binding any item, and when reviewing bindings."
 ---
 
 # Generating safe bindings
@@ -183,6 +183,17 @@ pass one the enum does not name, which a Rust enum may not hold: such a value ta
 path the C gives an invalid value, or an error of the safe API where it gives none. A
 binding keeps the integer form for good, since C implements what produces and consumes
 the enum's values.
+
+### 2.7 Typedefs
+
+A typedef of its own, one that names no struct, union, enum or function pointer, gives
+another name to a type that has a Rust form already: a primitive, an array, a pointer, or a
+type another link unit or an out-of-tree library's wrapper owns. It is bound under its own
+name to the Rust form the analysis shapes from its uses: an alias of the type it names where
+they give it no meaning that type lacks, and a type of its own where they do, an invariant,
+an ownership or a type erasure that an alias would flatten. Its raw form is no part of the
+safe API, as [Safe boundary](#1-safe-boundary) describes, and it has no interop layer of
+its own: its values cross the boundary as those of the type it names do.
 
 ---
 
