@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """The SubagentStop hook: copy a Crustify stage agent's transcript into Crustify's home,
 `$CRUSTIFY_HOME/transcripts/<agent id>.jsonl`, the moment it ends, since the CLI prunes its
-own copies. Standard library only."""
+own copies. Codex runs it too, from this plugin's manifest, with the same event fields and
+`CLAUDE_PLUGIN_ROOT` set. Standard library only."""
 import json
 import os
 import shutil

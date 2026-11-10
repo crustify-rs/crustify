@@ -2,7 +2,7 @@
   "hooks": {
     "SubagentStop": [
       {
-        "matcher": "crustify:.*",
+        "matcher": "crustify[:-].*",
         "hooks": [
           {"type": "command", "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/providers/claude/transcripts.py\""}
         ]
