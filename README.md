@@ -13,7 +13,7 @@ the loop.
 
 ## Why Crustify
 
-- Agents are driven by a generic, human-reviewed specification, not only a prompt.
+- Driven by a generic, human-reviewed specification, not only a prompt.
 - Whole repositories, in parallel.
 - Grounded in deterministic tools: [wavefront](https://github.com/crustify-rs/wavefront),
   [ffibox](https://github.com/crustify-rs/ffibox) and
