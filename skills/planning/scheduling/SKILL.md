@@ -184,10 +184,14 @@ Its memory users are the target's C that hands its storage to C's allocator: cod
 allocates it with an allocator of untyped memory, or frees or disposes of it with a
 releaser of untyped memory. The C that calls its constructors, destructors and cloners is
 no memory user, since it reaches them as any other function, but a routine that allocates
-or frees it raw is one, as any other C is, its own lifecycle routines included. A closed
-enum's layout
-users are the C that uses its constants or values of its type, which depend on its integer
-form, and it has no memory users.
+or frees it raw is one, as any other C is, its own lifecycle routines included.
+
+A closed enum's layout users are the C that uses its constants or values of its type, which
+depend on its integer form, and it has no memory users. Wavefront gives every enum an
+`opaque_after`, closed or not: the planner tells a closed enum from one whose constants C
+combines as flags, from its constants' values and how its users combine them, as
+[`binding`](../../rust/binding/SKILL.md)'s Enums section tells their forms apart, and plans
+a `port/layout` for a closed enum alone.
 
 Each kind is found in every function that mentions the type, its globals and the struct
 fields declared with it, macro expansions included. Three kinds of C are no users, as

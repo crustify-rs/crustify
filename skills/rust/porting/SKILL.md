@@ -122,9 +122,10 @@ A closed enum keeps its integer form, which binding's Enums section describes, o
 remaining C uses it, its constants or values of its type. Its later stage, `port/layout`,
 removes that form, its C layout: its `repr`, its discriminants and its conversions. A
 closed enum that no remaining C uses by its port has no integer form, and a flags enum or
-an enum without a name has no later stage.
-<!-- TODO: no enum's `port/layout` is planned until wavefront schedules enums, as its
-skill's TODO says. -->
+an enum without a name has no later stage. Which enums are closed is the plan's judgment,
+as [`scheduling`](../../planning/scheduling/SKILL.md)'s Later stages section describes: a
+port whose analysis finds otherwise gives the enum the form its analysis finds, and reports
+the mismatch, which the next planner run corrects.
 
 ### 2.4 Typedefs
 

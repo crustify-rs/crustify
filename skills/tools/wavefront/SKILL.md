@@ -92,7 +92,8 @@ against the CLI.
 describe, and wavefront schedules both, but every macro of the closure's files, and it
 lists no header macro as owned. It has yet to own the macros that are API, and only those
 (no include guards, configuration, feature-test or attribute macros), count enums and
-macros in the modules' records, and tell a closed enum from a flags one. -->
+macros in the modules' records, and tell a closed enum from a flags one, which the planner
+judges until then, as `scheduling`'s Later stages section describes. -->
 
 A module's dependency records are counted from a schedule of the whole closure, without
 `schedule_seeds`: the module's record in its `modules` gives each in-tree record's
