@@ -26,9 +26,9 @@ the loop.
 ## Results
 
 Crustify generated safe bindings for two libraries, with little guidance from one developer overseeing it, as
-our [paper](https://arxiv.org/abs/2611.10394) details. Binders and reviewers mainly ran
+our [paper](https://arxiv.org/abs/2611.10394) details. Binder agents mainly ran
 Claude Opus 5.5; GPT-6.1 Sol and GPT-6 Astra wrapped a few modules, and Claude Fable 5.1
-ran the early reviews.
+ran the early review agents.
 
 | | [libgit2](https://github.com/crustify-rs/libgit2-crustify) | [FFmpeg](https://github.com/crustify-rs/ffmpeg-crustify) |
 |---|---:|---:|
