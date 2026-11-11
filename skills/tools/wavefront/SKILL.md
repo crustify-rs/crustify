@@ -188,8 +188,8 @@ submitted with `--update`.
 A function pointer's record and its users are `query function_pointers --name <name>`'s,
 named as `docs/graph.md`'s Nodes section names it, and the sites of one written inline,
 and what reaches them, are as `docs/batching.md`'s Release points section describes.
-<!-- TODO: that section names the sites' table on wavefront's `docs/fp-sites` branch, not
-yet merged; no query lists an inline function pointer's sites yet. -->
+<!-- TODO: no query lists an inline function pointer's sites yet: they are read from the
+table that section names. -->
 
 ### Binding symbols › Lifecycle strategies
 
