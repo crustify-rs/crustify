@@ -74,7 +74,7 @@ A type that another link unit's bindings own is blocklisted, as `external.txt` l
 and re-exported from that link unit's module under its C name, so that each C type has one
 Rust type across the crate. A type an out-of-tree library's wrapper publishes is
 re-exported as its wrapper's safe type, as
-[`dependencies`](../../planning/dependencies/SKILL.md)'s Wrappers section describes.
+[`dependencies`](../../planning/dependencies/SKILL.md)'s Routes section describes.
 
 The bindings are generated for the campaign's target, the host's, as the setup workflow's
 Builds section names it, the only target the crate supports: `src/ffi.rs` fails to compile

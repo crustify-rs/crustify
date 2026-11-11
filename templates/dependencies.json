@@ -1,5 +1,5 @@
 {
-  "_comment": "Example `<workdir>/crustify/artifacts/dependencies.json`, emitted by the planner beside modules.json: one entry per out-of-tree library a module depends on. `resolved` is what the target's build found, `source` the side campaign's c/ at that release, `linked_from` whether the target links the side campaign's install or the system's copy, as libc does, `decision` how the campaign reaches the library, as the user chose it once the plan was complete (`wrapper`, or the adopted crate), and `wrapper.pin` the wrapper commit the workspace pins, which the assistant moves as the side campaign advances. `rust_equivalent` judges each crate against everything the campaign consumes from the library, its notes arguing it for the user's choice.",
+  "_comment": "Example `<workdir>/crustify/artifacts/dependencies.json`, emitted by the planner beside modules.json: one entry per out-of-tree library a module depends on. `resolved` is what the target's build found, `source` the side campaign's c/ at that release, `linked_from` whether the target links the side campaign's install or the system's copy, as libc does. `rust_equivalent` assesses each crate against what the campaign uses of the library, by area, with the evidence of each criterion, `recommendation` is the plan's route, and `decision` the user's: the crates adopted, by area, each with any fork that extends it, and the route of the remainder, `wrapper`, `local` over a -sys crate, or null. `wrapper.pin` and a fork's `pin` are the commits the workspace pins, which the assistant moves as they advance.",
   "version": "1f053298e30c0a9b5d0f3c1e7a4b8d2f6c9e0a11",
   "libraries": [
     {
@@ -14,19 +14,31 @@
         "tag": "v1.3",
         "patches": "zlib 1:1.3.dfsg-3"
       },
-      "linked_from": "side-campaign",
-      "decision": "wrapper",
-      "wrapper": {
-        "repository": "crustify-rs/zlib-crustify",
-        "pin": null
-      },
+      "linked_from": "system",
       "rust_equivalent": {
         "ported": [
           {
             "crate": "miniz_oxide",
             "feature_parity": "partial",
             "license": "MIT OR Zlib OR Apache-2.0",
-            "notes": "raw deflate and zlib streams only; no gzip file API"
+            "notes": "raw deflate and zlib streams only; no gzip file API",
+            "version": "0.8.0",
+            "areas": [
+              "deflate streams"
+            ],
+            "shares_state": false,
+            "soundness": {
+              "judgement": "sound",
+              "evidence": "no unsafe code reachable from its safe API"
+            },
+            "advisories": [],
+            "maintenance": {
+              "last_release": "2026-08-14",
+              "publisher": "two maintainers"
+            },
+            "qualifies": [
+              "deflate streams"
+            ]
           }
         ],
         "bindings": [
@@ -35,10 +47,58 @@
             "sys": "libz-sys",
             "feature_parity": "full",
             "license": "MIT OR Apache-2.0",
-            "notes": ""
+            "notes": "",
+            "version": "1.1.2",
+            "areas": [
+              "deflate streams",
+              "gzip files"
+            ],
+            "shares_state": true,
+            "soundness": {
+              "judgement": "sound",
+              "evidence": "safe API owns every z_stream; unsafe confined to its zlib backend, each call within zlib's contract"
+            },
+            "advisories": [],
+            "maintenance": {
+              "last_release": "2026-09-02",
+              "publisher": "the rust-lang organization"
+            },
+            "qualifies": [
+              "deflate streams",
+              "gzip files"
+            ]
           }
         ]
-      }
+      },
+      "recommendation": {
+        "adopt": [
+          {
+            "crate": "flate2",
+            "areas": [
+              "deflate streams",
+              "gzip files"
+            ],
+            "fork": null
+          }
+        ],
+        "remainder": null,
+        "remainder_sys": null
+      },
+      "decision": {
+        "adopt": [
+          {
+            "crate": "flate2",
+            "areas": [
+              "deflate streams",
+              "gzip files"
+            ],
+            "fork": null
+          }
+        ],
+        "remainder": null,
+        "remainder_sys": null
+      },
+      "wrapper": null
     },
     {
       "name": "libc",
@@ -53,15 +113,100 @@
         "patches": "glibc 2.39-0ubuntu8"
       },
       "linked_from": "system",
-      "decision": "wrapper",
-      "wrapper": {
-        "repository": "crustify-rs/glibc-crustify",
-        "pin": null
-      },
       "rust_equivalent": {
         "ported": [],
-        "bindings": []
-      }
+        "bindings": [
+          {
+            "crate": "socket2",
+            "sys": "libc",
+            "feature_parity": "full",
+            "license": "MIT OR Apache-2.0",
+            "notes": "",
+            "version": "0.6.1",
+            "areas": [
+              "sockets"
+            ],
+            "shares_state": true,
+            "soundness": {
+              "judgement": "sound",
+              "evidence": "sockets owned by a Socket that closes on drop; raw fds reachable only through AsRawFd and FromRawFd, the latter unsafe"
+            },
+            "advisories": [],
+            "maintenance": {
+              "last_release": "2026-07-21",
+              "publisher": "the rust-lang organization"
+            },
+            "qualifies": [
+              "sockets"
+            ]
+          },
+          {
+            "crate": "rustix",
+            "sys": "linux-raw-sys",
+            "feature_parity": "partial",
+            "license": "Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT",
+            "notes": "no regcomp or iconv",
+            "version": "1.1.2",
+            "areas": [
+              "system calls"
+            ],
+            "shares_state": true,
+            "soundness": {
+              "judgement": "sound",
+              "evidence": "owned and borrowed file descriptors (OwnedFd, BorrowedFd) on every call; no raw pointer on its safe API"
+            },
+            "advisories": [],
+            "maintenance": {
+              "last_release": "2026-09-30",
+              "publisher": "the bytecodealliance organization"
+            },
+            "qualifies": [
+              "system calls"
+            ]
+          }
+        ]
+      },
+      "recommendation": {
+        "adopt": [
+          {
+            "crate": "socket2",
+            "areas": [
+              "sockets"
+            ],
+            "fork": null
+          },
+          {
+            "crate": "rustix",
+            "areas": [
+              "system calls"
+            ],
+            "fork": null
+          }
+        ],
+        "remainder": "local",
+        "remainder_sys": "libc"
+      },
+      "decision": {
+        "adopt": [
+          {
+            "crate": "socket2",
+            "areas": [
+              "sockets"
+            ],
+            "fork": null
+          },
+          {
+            "crate": "rustix",
+            "areas": [
+              "system calls"
+            ],
+            "fork": null
+          }
+        ],
+        "remainder": "local",
+        "remainder_sys": "libc"
+      },
+      "wrapper": null
     }
   ]
 }

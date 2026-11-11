@@ -54,9 +54,12 @@ ship.
 3. **Rust tree.** Scaffold the Rust tree as the `binding-workflow` skill's Rust tree
    section describes, and commit it on the working branch.
 4. **Side campaigns.** For each out-of-tree library the plan needs, put its
-   `rust_equivalent` records to the user, with your recommendation, and record their
-   choice, as the `dependencies` skill's Wrappers section describes. Add an adopted crate
-   to the workspace. Establish each wrapper the user chooses as that skill's Wrappers,
+   `rust_equivalent` records and its `recommendation` to the user, and record their
+   choice as its `decision`, as the `dependencies` skill's Routes section describes. Add
+   each adopted crate to the workspace, and clone each fork that extends one beside the
+   campaign's repository, pinned with a Cargo `[patch]`, as that skill's Adopted crates
+   section describes; open its upstream pull request only with the user's approval.
+   Establish each wrapper the user chooses as that skill's Routes,
    Side campaigns, Sources and Reuse sections describe, creating it on `crustify-rs` only
    once the user approves; carry out its setup workflow in its repository, pin it in the
    parent's workspace, and rebuild the parent's variants and run its baseline again, as

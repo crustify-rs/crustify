@@ -1,6 +1,6 @@
 ---
 name: dependencies
-description: "How a campaign reaches libraries from outside its tree: wrappers, side campaigns, sources, reuse, adopted crates. Read before planning or advancing an out-of-tree library's wrapper."
+description: "How a campaign reaches libraries from outside its tree: the order of routes, adopted crates and their criteria, local bindings, wrappers, side campaigns, sources, reuse. Read before planning an out-of-tree library's route, or advancing its wrapper or a fork of an adopted crate."
 ---
 
 # Dependencies
@@ -13,18 +13,26 @@ its wrapper and the Rust crates that port or bind it, as
 [`dependencies-schema`](../../artifacts/dependencies-schema/SKILL.md) describes. This spec describes
 what the campaign does with them.
 
-## 1. Wrappers
+## 1. Routes
 
-An out-of-tree library a campaign uses is reached through a Crustify wrapper of its own,
-or through an existing crate the user adopts for it, as [Adopted crates](#6-adopted-crates)
-describes. The choice is made per library once the plan is complete: the plan's `ported`
-and `bindings` records of `dependencies.json`, each with its feature parity and the notes
-that argue it, are put to the user, who chooses, and the choice is recorded as the
-library's `decision`. The records inform the choice; they do not make it.
+What a campaign uses of an out-of-tree library is reached, in this order of preference:
 
-What a library provides that the Rust standard library provides too is reached through
-the standard library wherever no state is shared with C, as
-[Standard-library equivalents](#2-standard-library-equivalents) describes.
+1. through the Rust standard library, wherever no state is shared with C, as
+   [Standard-library equivalents](#2-standard-library-equivalents) describes;
+2. through established crates adopted for parts of the library, extended in a fork where
+   they lack a little, as [Adopted crates](#6-adopted-crates) describes;
+3. bound locally, in the consuming module's own `ffi_import` region over the library's
+   established `-sys` crate, such as `libc`, for a remainder too small to be worth a
+   wrapper, as [Local bindings](#7-local-bindings) describes; and
+4. through a Crustify wrapper of the library, a side campaign of its own, as the rest of
+   this section and [Side campaigns](#3-side-campaigns) describe.
+
+The plan records each library's candidate crates with the evidence for each, and
+recommends a route for what the campaign uses of it. Once the plan is complete, the
+recommendation is put to the user, who chooses, and the choice is recorded as the
+library's `decision` in `dependencies.json`, as
+[`dependencies-schema`](../../artifacts/dependencies-schema/SKILL.md) describes. The
+records inform the choice; they do not make it.
 
 A library's wrapper is a wrap campaign of the source it is built from, in a repository of
 its own: `<source>-crustify` under the `crustify-rs` organization, `<source>` being the
@@ -122,6 +130,51 @@ which every later campaign that uses the library continues.
 
 ## 6. Adopted crates
 
-When the user adopts a crate for a library, such as one of its `ported` or `bindings`
-records, the library gets no wrapper and no batches: its consumers use the crate directly,
-and their bindings name its types and functions where they would name the wrapper's.
+A crate is adopted for an area of a library: a coherent part of what the campaign uses of
+it, such as a subsystem, a header's API or a kind of resource (sockets, memory maps,
+processes), never for an item or two. A library may be covered by several crates, one per
+area, the fewest that cover what the campaign uses: libc's uses may be the standard
+library's for files and threads, one crate's for sockets and another's for the remaining
+system calls. What no adopted crate covers takes the next route.
+
+A crate qualifies for an area when it meets every criterion below, each recorded with its
+evidence:
+
+- **coverage**: it provides what the campaign uses of the area, with the same behaviour, or
+  does once extended a little;
+- **shared state**: where the remaining C shares the area's state with the Rust, such as
+  a handle the C still uses, the crate exposes that state to C. A crate that binds the C
+  library and exposes its raw handles can; one that reimplements the library qualifies
+  only where no state crosses to the remaining C, as
+  [Standard-library equivalents](#2-standard-library-equivalents) describes;
+- **soundness**: a read of its public API and its unsafe code finds no undefined
+  behaviour reachable from its safe API, by the hazards
+  [`binding`](../../rust/binding/SKILL.md)'s Safe boundary excludes from the campaign's
+  own; a deterministic scan of its unsafe surface backs the judgement where that surface
+  is large or the judgement is borderline;
+- **advisories**: no unfixed security advisory affects the version and the features the
+  campaign uses; and
+- **maintenance**: it released within the last 12 months, it is published by an
+  organization or by more than one maintainer, and its license and minimum Rust version
+  suit the campaign's.
+
+Every qualifying crate is recommended for its area. Once the user adopts it, its area gets
+no wrapper and no batches: its consumers use the crate directly, and their bindings name
+its types and functions where they would name the wrapper's.
+
+A crate that lacks a little of an area is extended rather than passed over: in a fork
+cloned beside the campaign's repository, as a wrapper is, on a branch of its own, which the
+campaign's workspace pins with a Cargo `[patch]`. The extension is offered upstream, as a
+pull request opened with the user's approval, so that the fork can be dropped once it is
+merged.
+<!-- TODO: whether a ship point may pin an unmerged fork is decided at the end of the
+first campaign that meets one. -->
+
+## 7. Local bindings
+
+A remainder of a library too small to be worth a wrapper, a few functions no adopted
+crate covers, is bound where it is used: over the library's established `-sys` crate, in
+the consuming module's `ffi_import` region, behind a safe API of that module's, as
+[`binding`](../../rust/binding/SKILL.md) describes for any item, by the batch that consumes
+it. A remainder that grows past a few functions, or that several modules need, is a
+wrapper's.

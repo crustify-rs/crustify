@@ -1,6 +1,6 @@
 ---
 name: ffibox
-description: "The library the campaign's Rust holds C memory through, in both directions: owners, handles, lifecycle policies, status conventions, callbacks and exports. Read before writing any wrapper, owner, lifecycle strategy, callable type or export, and when testing or reviewing one."
+description: "The library the campaign's Rust holds C memory through, in both directions: owners, handles, lifecycle policies, status conventions, callbacks and exports. Read before writing any wrapper, owner, lifecycle strategy, callable type or export, when judging a crate for adoption, and when testing or reviewing one."
 ---
 
 # ffibox
@@ -21,6 +21,14 @@ describes, with the same seam and safety-comment discipline. Its goals and non-g
 
 What follows is how ffibox serves each stage: each section names the skill and section it
 adds to, and states only what ffibox adds there.
+
+## Planning
+
+### Dependencies › Adopted crates
+
+A candidate crate's soundness is read against the hazards `docs/goals.md`'s G9 lists,
+each of which ffibox excludes from the campaign's own bindings: the crate qualifies where
+its safe API excludes them too, by whatever means it uses.
 
 ## Binding workflow
 
