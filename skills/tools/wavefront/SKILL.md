@@ -155,7 +155,9 @@ points, which `schedule.json`'s items carry as wavefront records them, and which
 later stages: `opaque_after` a `port/layout`, `memory_unmanaged_after` a `port/memory` and
 `unreferenced_after` a `port/unexport`; a macro's or a typedef's places none. A stage's
 wave waits for the last waves of the modules its point's `closure.modules` names, less the
-item's own; with none left, the stage is not planned. Whether a user stays C is read from
+item's own; with none left, the stage is not planned. A `port/unexport` also waits for the C tests
+that stay, which the closure leaves out, as the `scheduling` skill's Later stages section
+describes. Whether a user stays C is read from
 the whole list of its users, as `docs/batching.md`'s Release points section queries them.
 `memory_unmanaged_after` is `null` until the ownership store holds the raw roles, so they
 are established first.

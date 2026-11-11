@@ -53,6 +53,10 @@ A test whose subject is several modules is tied to each of them, and leaves at t
 point at which it would leave as a test of one of them alone. Each ported module's own
 tests cover it from then on.
 
+A test case whose body the configured build compiles empty, under a configuration the
+target is built without, such as `GIT_WIN32`, tests nothing of the target: it is out of
+scope, as a configured-out translation unit is, tied to no module and holding nothing back.
+
 ### 1.3 One language per module
 
 A module is in one language at a time. The campaign maintains C and Rust side by side, but
