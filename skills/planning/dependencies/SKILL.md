@@ -147,29 +147,42 @@ be the standard library's for files and threads, one crate's for sockets and ano
 the remaining system calls. What no adopted crate covers takes the next route.
 
 Each entity's `matches` record what each candidate offers for it, and how closely; each
-candidate's `quality_assessment` reasons, in prose, on the criteria below. A crate is fit to
-adopt for the entities it matches when it meets every one:
+candidate's `quality_assessment` weighs it, in prose, on the considerations below. Only
+soundness and advisories are gates: a crate with undefined behaviour reachable from its
+safe API, or with an unfixed advisory on what the campaign uses, is not adopted unless a
+fork fixes it. The others are weighed against the alternative routes, which are never free:
+a crustify campaign or local bindings put the campaign's own unsafe code where the crate
+would have put none.
 
-- **coverage**: it provides what the campaign uses of those entities, with the same
-  behaviour, or does once extended a little, as their `matches` show;
+- **coverage**: it serves what the campaign uses of those entities, as their `matches`
+  show. Same behaviour is not required: a port is a new implementation, and a difference
+  the port can absorb in its own safe code (a verifier, a loop in place of a sizing call,
+  configuration loaded eagerly), or that it can adopt deliberately and record as the safe
+  API's changed behaviour (an option it rejects, a deprecated fallback it drops), weighs
+  against the crate only by its cost. What only an extension of the crate would provide
+  is extended, as below;
 - **shared state**: where the remaining C shares an entity's state with the Rust, such as
   a handle the C still uses, the crate exposes that state to C, which the entity's match
-  note says, citing the release point after which the C stops sharing it. A crate that binds the C
-  library and exposes its raw handles can; one that reimplements the library qualifies
-  only where no state crosses to the remaining C, as
-  [Standard-library equivalents](#2-standard-library-equivalents) describes;
-- **soundness**: a read of its public API and its unsafe code finds no undefined
+  note says, citing the release point after which the C stops sharing it. A crate that
+  binds the C library and exposes its raw handles can; one that reimplements the library
+  serves only where no state crosses to the remaining C, as
+  [Standard-library equivalents](#2-standard-library-equivalents) describes. An entity
+  only one module uses, whose port keeps the state in Rust, shares none;
+- **soundness** (a gate): a read of its public API and its unsafe code finds no undefined
   behaviour reachable from its safe API, by the hazards
   [`binding`](../../rust/binding/SKILL.md)'s Safe boundary excludes from the campaign's
   own; a deterministic scan of its unsafe surface backs the judgement where that surface
   is large or the judgement is borderline;
-- **advisories**: no unfixed security advisory affects the version and the features the
-  campaign uses; and
-- **maintenance**: it released within the last 12 months, it is published by an
-  organization or by more than one maintainer, and its license and minimum Rust version
-  suit the campaign's.
+- **advisories** (a gate): no unfixed security advisory affects the version and the
+  features the campaign uses; and
+- **maintenance**: how likely the crate is to keep up with its dependencies, toolchains and
+  advisories: its release history and its maintainers, weighed by how much the crate does
+  and how settled its scope is, since a complete crate with a narrow scope needs few
+  releases. A crate whose `-sys` crate the alternative route would use anyway is no
+  riskier than that route. Its license and minimum Rust version suit the campaign's.
 
-Every fit crate is recommended for the entities it serves best. Once the user adopts it,
+Every crate that passes the gates and weighs better than the alternative routes is
+recommended for the entities it serves best. Once the user adopts it,
 those entities get no wrapper and no batches: their consumers use the crate directly, and
 their bindings name its types and functions where they would name the wrapper's.
 
