@@ -136,7 +136,8 @@ describes.
 When review is enabled, each wave's landed batches are reviewed before it is promoted, by
 review batches of the same wave, packed as the batches they review land, as
 [`reviewing`](../../verification/reviewing/SKILL.md)'s Review batches section
-describes, or one per translation batch when the settings ask for that.
+describes, or one per translation batch when the settings ask for that, and a module pass
+reviews each module whole before its integration, or at its end in a wrap campaign.
 
 Each review batch's `task.json` holds the `commits` of the batches it reviews and the
 approved objectives, as [`task-schema`](../../artifacts/task-schema/SKILL.md)'s Review batches

@@ -68,8 +68,8 @@ Unanswered optional questions use their defaults.
 
 10. **Which objectives should review agents review for? By default, every one the
     reviewer offers.** (`id: review-objectives`)
-    - Answer: `<all | any of: lifecycle, unsafety, contracts, ub, equiv, internal,
-      conventions, misc, coverage, disclose, fix>`
+    - Answer: `<all | any of: lifecycle, unsafety, contracts, ub, equiv, logic, ergonomics,
+      idiom, conventions, misc, test-adequacy, disclose, fix>`
     - Without `fix`, reviewers report and reproduce what they find but patch nothing.
 
 11. **Which sanitizers should the campaign build and test under? By default, every one

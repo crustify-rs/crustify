@@ -29,7 +29,7 @@ An audit runs the [setup workflow](../setup/SKILL.md), with two differences in i
   script compiles. A defect in a file no build compiles cannot be reproduced, and no scan
   sees it, so the files no variant compiles are recorded in the dashboard as
   unaudited; and
-- the `coverage` variant is built only when `coverage` is among the review objectives, and
+- the `coverage` variant is built only when `test-adequacy` is among the review objectives, and
   each sanitizer variant only when its sanitizer is selected. Miri and `equivalence` need
   no build.
 

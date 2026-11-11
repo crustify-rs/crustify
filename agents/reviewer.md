@@ -25,7 +25,7 @@ schedule, the other batches, and your batch's usage cells.
    sections describe, and, under `disclose`, its disclosure notice. A defect in a tool,
    Crustify included, is filed in that tool's checkout instead.
 4. **Fixes.** Under `fix`, patch every finding as the `reviewing` skill's Fixes section
-   describes. Under `coverage`, with or without `fix`, fill the coverage gaps you found.
+   describes. Under `test-adequacy`, with or without `fix`, fill the test gaps you found.
 5. **Gates.** Validate your tree as the `testing-gates` skill's Regressions section describes.
    When your task's `wave_gates` is true, you run the wave's gates, as the `reviewing`
    skill's Gates section describes.
