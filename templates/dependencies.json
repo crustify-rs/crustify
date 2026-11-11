@@ -1,5 +1,5 @@
 {
-  "_comment": "Example `<workdir>/crustify/artifacts/dependencies.json`, emitted by the planner beside modules.json: one entry per out-of-tree library a module depends on. `resolved` is what the target's build found, `source` the side campaign's c/ at that release, `linked_from` whether the target links the side campaign's install or the system's copy, as libc does. `rust_equivalent` assesses each crate against what the campaign uses of the library, by area, with the evidence of each criterion, `recommendation` is the plan's route, and `decision` the user's: the crates adopted, by area, each with any fork that extends it, and the route of the remainder, `wrapper`, `local` over a -sys crate, or null. `wrapper.pin` and a fork's `pin` are the commits the workspace pins, which the assistant moves as they advance.",
+  "_comment": "Example `<workdir>/crustify/artifacts/dependencies.json`, emitted by the planner beside modules.json: one entry per out-of-tree library a module depends on. `resolved` is what the target's build found, `source` the side campaign's c/ at that release, `linked_from` whether the target links the side campaign's install or the system's copy, as libc does. `candidates` are the crates assessed, each with a free-text `quality_assessment`; `c_entities` maps every entity the campaign uses to what each candidate, and `std`, offers for it, with the plan's `recommended` route, and its `confirmation` by the first batch that needs it. `recommendation` is the plan's route for the library, and `decision` the user's: the crates adopted, each with any fork that extends it, and the route of what they leave `uncovered`, `crustify-campaign`, `local` over a -sys crate, or null. `crustify_campaign.pin`, a fork's `pin` and each `confirmation` are progress, which the assistant records.",
   "version": "1f053298e30c0a9b5d0f3c1e7a4b8d2f6c9e0a11",
   "libraries": [
     {
@@ -15,90 +15,123 @@
         "patches": "zlib 1:1.3.dfsg-3"
       },
       "linked_from": "system",
-      "rust_equivalent": {
-        "ported": [
-          {
-            "crate": "miniz_oxide",
-            "feature_parity": "partial",
-            "license": "MIT OR Zlib OR Apache-2.0",
-            "notes": "raw deflate and zlib streams only; no gzip file API",
-            "version": "0.8.0",
-            "areas": [
-              "deflate streams"
-            ],
-            "shares_state": false,
-            "soundness": {
-              "judgement": "sound",
-              "evidence": "no unsafe code reachable from its safe API"
+      "candidates": [
+        {
+          "crate": "flate2",
+          "version": "1.1.11",
+          "license": "MIT OR Apache-2.0",
+          "kind": "ported",
+          "sys": null,
+          "quality_assessment": "Fit. Its default backend, miniz_oxide, forbids unsafe_code; flate2's own 37 unsafe lines sit in ffi/c.rs, compiled for its C backends only, and mem.rs:647-656 clamps set_len to the capacity. No RustSec advisory affects 1.1.11. Published by the rust-lang organization, last released 2026-11-06; MSRV 1.67."
+        },
+        {
+          "crate": "zlib-rs",
+          "version": "0.6.8",
+          "license": "Zlib",
+          "kind": "ported",
+          "sys": null,
+          "quality_assessment": "Unclear. stable.rs:357-376 sets next_in/next_out from slices and clears them after each call, but its other ~456 unsafe lines (SIMD, allocator) were not read, and no scan was run. No advisory; two maintainers of the Trifecta Tech Foundation, last released 2026-09-15."
+        }
+      ],
+      "c_entities": [
+        {
+          "c_name": "crc32",
+          "kind": "function",
+          "header": "zlib.h",
+          "used_by": [
+            {
+              "link_unit": "libgit2",
+              "module": "src/libgit2/pack.c",
+              "foundational": false
             },
-            "advisories": [],
-            "maintenance": {
-              "last_release": "2026-08-14",
-              "publisher": "two maintainers"
+            {
+              "link_unit": "libgit2",
+              "module": "src/libgit2/indexer.c",
+              "foundational": false
+            }
+          ],
+          "matches": [
+            {
+              "crate": "flate2",
+              "rust_api": "flate2::Crc::update",
+              "match": "exact",
+              "note": ""
             },
-            "qualifies": [
-              "deflate streams"
-            ]
-          }
-        ],
-        "bindings": [
-          {
+            {
+              "crate": "zlib-rs",
+              "rust_api": "zlib_rs::crc32::crc32",
+              "match": "exact",
+              "note": ""
+            }
+          ],
+          "recommended": {
+            "route": "crate",
             "crate": "flate2",
-            "sys": "libz-sys",
-            "feature_parity": "full",
-            "license": "MIT OR Apache-2.0",
-            "notes": "",
-            "version": "1.1.2",
-            "areas": [
-              "deflate streams",
-              "gzip files"
-            ],
-            "shares_state": true,
-            "soundness": {
-              "judgement": "sound",
-              "evidence": "safe API owns every z_stream; unsafe confined to its zlib backend, each call within zlib's contract"
-            },
-            "advisories": [],
-            "maintenance": {
-              "last_release": "2026-09-02",
-              "publisher": "the rust-lang organization"
-            },
-            "qualifies": [
-              "deflate streams",
-              "gzip files"
-            ]
+            "rust_api": "flate2::Crc::update"
+          },
+          "confirmation": {
+            "batch": "wave-412/batch-0",
+            "route": "recommended",
+            "crate": "flate2",
+            "rust_api": "flate2::Crc::update",
+            "note": ""
           }
-        ]
-      },
+        },
+        {
+          "c_name": "deflateBound",
+          "kind": "function",
+          "header": "zlib.h",
+          "used_by": [
+            {
+              "link_unit": "libgit2",
+              "module": "deps/reftable/block.c",
+              "foundational": false
+            }
+          ],
+          "matches": [
+            {
+              "crate": "flate2",
+              "rust_api": null,
+              "match": "missing",
+              "note": "used only to size one output buffer for a single Z_FINISH call; a Compress::compress_vec loop until StreamEnd replaces it"
+            },
+            {
+              "crate": "zlib-rs",
+              "rust_api": "zlib_rs::deflate::compress_bound",
+              "match": "exact",
+              "note": ""
+            }
+          ],
+          "recommended": {
+            "route": "crate",
+            "crate": "flate2",
+            "rust_api": "flate2::Compress::compress_vec"
+          },
+          "confirmation": null
+        }
+      ],
       "recommendation": {
         "adopt": [
           {
             "crate": "flate2",
-            "areas": [
-              "deflate streams",
-              "gzip files"
-            ],
             "fork": null
           }
         ],
-        "remainder": null,
-        "remainder_sys": null
+        "uncovered": null,
+        "uncovered_sys": null
       },
       "decision": {
         "adopt": [
           {
             "crate": "flate2",
-            "areas": [
-              "deflate streams",
-              "gzip files"
-            ],
             "fork": null
           }
         ],
-        "remainder": null,
-        "remainder_sys": null
+        "uncovered": null,
+        "uncovered_sys": null,
+        "overrides": []
       },
-      "wrapper": null
+      "crustify_campaign": null
     },
     {
       "name": "libc",
@@ -113,100 +146,114 @@
         "patches": "glibc 2.39-0ubuntu8"
       },
       "linked_from": "system",
-      "rust_equivalent": {
-        "ported": [],
-        "bindings": [
-          {
+      "candidates": [
+        {
+          "crate": "socket2",
+          "version": "0.6.1",
+          "license": "MIT OR Apache-2.0",
+          "kind": "bindings",
+          "sys": "libc",
+          "quality_assessment": "Fit. Its Socket owns the descriptor and exposes it as RawFd for the C that still uses it; its unsafe code is one libc call per method, each within the call's contract. No advisory; published by the rust-lang organization, last released 2026-08-20."
+        }
+      ],
+      "c_entities": [
+        {
+          "c_name": "getsockopt",
+          "kind": "function",
+          "header": "sys/socket.h",
+          "used_by": [
+            {
+              "link_unit": "libgit2",
+              "module": "src/libgit2/streams/socket.c",
+              "foundational": false
+            }
+          ],
+          "matches": [
+            {
+              "crate": "socket2",
+              "rust_api": "socket2::Socket::take_error",
+              "match": "differs",
+              "note": "only SO_ERROR is read, which take_error returns as an io::Error rather than an int"
+            }
+          ],
+          "recommended": {
+            "route": "crate",
             "crate": "socket2",
-            "sys": "libc",
-            "feature_parity": "full",
-            "license": "MIT OR Apache-2.0",
-            "notes": "",
-            "version": "0.6.1",
-            "areas": [
-              "sockets"
-            ],
-            "shares_state": true,
-            "soundness": {
-              "judgement": "sound",
-              "evidence": "sockets owned by a Socket that closes on drop; raw fds reachable only through AsRawFd and FromRawFd, the latter unsafe"
-            },
-            "advisories": [],
-            "maintenance": {
-              "last_release": "2026-07-21",
-              "publisher": "the rust-lang organization"
-            },
-            "qualifies": [
-              "sockets"
-            ]
+            "rust_api": "socket2::Socket::take_error"
           },
-          {
-            "crate": "rustix",
-            "sys": "linux-raw-sys",
-            "feature_parity": "partial",
-            "license": "Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT",
-            "notes": "no regcomp or iconv",
-            "version": "1.1.2",
-            "areas": [
-              "system calls"
-            ],
-            "shares_state": true,
-            "soundness": {
-              "judgement": "sound",
-              "evidence": "owned and borrowed file descriptors (OwnedFd, BorrowedFd) on every call; no raw pointer on its safe API"
-            },
-            "advisories": [],
-            "maintenance": {
-              "last_release": "2026-09-30",
-              "publisher": "the bytecodealliance organization"
-            },
-            "qualifies": [
-              "system calls"
-            ]
-          }
-        ]
-      },
+          "confirmation": null
+        },
+        {
+          "c_name": "strftime",
+          "kind": "function",
+          "header": "time.h",
+          "used_by": [
+            {
+              "link_unit": "libgit2",
+              "module": "src/util/date.c",
+              "foundational": false
+            }
+          ],
+          "matches": [],
+          "recommended": {
+            "route": "crustify-campaign",
+            "crate": null,
+            "rust_api": null
+          },
+          "confirmation": null
+        },
+        {
+          "c_name": "open",
+          "kind": "function",
+          "header": "fcntl.h",
+          "used_by": [
+            {
+              "link_unit": "libgit2",
+              "module": "src/util/posix.c",
+              "foundational": false
+            }
+          ],
+          "matches": [
+            {
+              "crate": "std",
+              "rust_api": "std::fs::OpenOptions::open",
+              "match": "differs",
+              "note": "flags map to OpenOptions; the descriptor crosses to C as an OwnedFd's raw fd while the C still reads it"
+            }
+          ],
+          "recommended": {
+            "route": "std",
+            "crate": "std",
+            "rust_api": "std::fs::OpenOptions::open"
+          },
+          "confirmation": null
+        }
+      ],
       "recommendation": {
         "adopt": [
           {
             "crate": "socket2",
-            "areas": [
-              "sockets"
-            ],
-            "fork": null
-          },
-          {
-            "crate": "rustix",
-            "areas": [
-              "system calls"
-            ],
             "fork": null
           }
         ],
-        "remainder": "local",
-        "remainder_sys": "libc"
+        "uncovered": "crustify-campaign",
+        "uncovered_sys": null
       },
       "decision": {
         "adopt": [
           {
             "crate": "socket2",
-            "areas": [
-              "sockets"
-            ],
-            "fork": null
-          },
-          {
-            "crate": "rustix",
-            "areas": [
-              "system calls"
-            ],
             "fork": null
           }
         ],
-        "remainder": "local",
-        "remainder_sys": "libc"
+        "uncovered": "crustify-campaign",
+        "uncovered_sys": null,
+        "overrides": []
       },
-      "wrapper": null
+      "crustify_campaign": {
+        "repository": "crustify-rs/glibc-crustify",
+        "pin": "6180870f2ddbc30a43e5687395eb4f13908b3cbf"
+      }
     }
   ]
 }

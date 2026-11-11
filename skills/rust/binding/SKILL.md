@@ -42,6 +42,10 @@ standard library wherever it provides it and the state the entity works on stays
 or crosses to C only as values the boundary converts: `errno` set from an `io::Error` by
 an export gateway, a `struct stat` filled from an `fs::Metadata`. It is reached through the
 library's bindings wherever that state is shared with C: a lock, a handle or an allocation
-the remaining C uses too. The code being translated decides which; no plan records it. An
+the remaining C uses too. `dependencies.json` recommends a route for each entity, which a
+library's `decision` adopts or overrides; the first batch that needs the entity checks that
+route against the code it translates, takes another the decision allows where it does not
+hold, and reports which in its final message, as
+[`dependencies`](../../planning/dependencies/SKILL.md)'s Confirmation section describes. An
 entity needed through a wrapper that lacks it is reported, never reached through raw
 bindings.

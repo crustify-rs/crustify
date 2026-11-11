@@ -9,7 +9,8 @@ How a campaign reaches the libraries its target uses from outside its tree: libc
 OpenSSL and the like. The [decomposition](../decomposition/SKILL.md) records each one a module
 uses as a dependency record, counting the entities the module consumes from it, and
 `dependencies.json` records each library once: the release the target links, its source,
-its wrapper and the Rust crates that port or bind it, as
+its crustify campaign, the Rust crates that port or bind it, and every entity the
+campaign uses of it, mapped to what those crates offer, as
 [`dependencies-schema`](../../artifacts/dependencies-schema/SKILL.md) describes. This spec describes
 what the campaign does with them.
 
@@ -22,17 +23,22 @@ What a campaign uses of an out-of-tree library is reached, in this order of pref
 2. through established crates adopted for parts of the library, extended in a fork where
    they lack a little, as [Adopted crates](#6-adopted-crates) describes;
 3. bound locally, in the consuming module's own `ffi_import` region over the library's
-   established `-sys` crate, such as `libc`, for a remainder too small to be worth a
+   established `-sys` crate, such as `libc`, for what is left too small to be worth a
    wrapper, as [Local bindings](#7-local-bindings) describes; and
-4. through a Crustify wrapper of the library, a side campaign of its own, as the rest of
-   this section and [Side campaigns](#3-side-campaigns) describe.
+4. through the library's crustify campaign, a wrap campaign of its own whose crate is the
+   library's Crustify wrapper, as the rest of this section and
+   [Side campaigns](#3-side-campaigns) describe.
 
-The plan records each library's candidate crates with the evidence for each, and
-recommends a route for what the campaign uses of it. Once the plan is complete, the
-recommendation is put to the user, who chooses, and the choice is recorded as the
-library's `decision` in `dependencies.json`, as
+The routes are named `std`, `crate`, `local` and `crustify-campaign` in
+`dependencies.json`. The plan records each library's candidate crates, each with its
+quality assessment, and maps every entity the campaign uses of the library to what each
+candidate and the standard library offer for it, recommending a route for each entity and,
+from those, the crates to adopt and the route of what they leave uncovered. Once the plan is
+complete, the recommendation is put to the user, who chooses per library, and the choice
+is recorded as the library's `decision`, as
 [`dependencies-schema`](../../artifacts/dependencies-schema/SKILL.md) describes. The
-records inform the choice; they do not make it.
+records inform the choice; they do not make it. Each entity's route is then checked against
+the code by the first batch that needs it, as [Confirmation](#8-confirmation) describes.
 
 A library's wrapper is a wrap campaign of the source it is built from, in a repository of
 its own: `<source>-crustify` under the `crustify-rs` organization, `<source>` being the
@@ -59,8 +65,10 @@ The campaign's Rust reaches an out-of-tree library's entity through the Rust sta
 library wherever the state the entity works on stays in Rust, or crosses to C only as
 values the boundary converts, and through the library's wrapper wherever that state is
 shared with C, as [`binding`](../../rust/binding/SKILL.md)'s Safe boundary
-section describes. The agent doing the work judges which; no plan records it, so a
-wrapper covers what the campaign's Rust reaches through it as its waves need it.
+section describes. The plan recommends which for each entity, from what it knows of the
+uses; the batch that first needs the entity judges it from the code, as
+[Confirmation](#8-confirmation) describes, so a wrapper covers what the campaign's Rust
+reaches through it as its waves need it.
 
 ## 3. Side campaigns
 
@@ -79,8 +87,8 @@ every entity of a library the standard library does not replace, and of the othe
 whose state the items share with the remaining C, as
 [Standard-library equivalents](#2-standard-library-equivalents) describes. What the
 wrapper lacks of them, the side campaign plans and runs waves to wrap; once those are
-promoted to its working branch, the parent's pin, its library's `wrapper.pin` in
-`dependencies.json`, moves to that commit, and the parent wave starts. A batch that needs
+promoted to its working branch, the parent's pin, its library's `crustify_campaign.pin`
+in `dependencies.json`, moves to that commit, and the parent wave starts. A batch that needs
 an entity through a wrapper that lacks it reports it rather than reaching it through raw
 bindings, and runs again once the side campaign has wrapped it. The parent ships
 only once each wrapper it pins has shipped the commit it pins, each with the user's
@@ -130,20 +138,23 @@ which every later campaign that uses the library continues.
 
 ## 6. Adopted crates
 
-A crate is adopted for an area of a library: a coherent part of what the campaign uses of
-it, such as a subsystem, a header's API or a kind of resource (sockets, memory maps,
-processes), never for an item or two. A library may be covered by several crates, one per
-area, the fewest that cover what the campaign uses: libc's uses may be the standard
-library's for files and threads, one crate's for sockets and another's for the remaining
-system calls. What no adopted crate covers takes the next route.
+A crate is adopted for a coherent part of what the campaign uses of a library, the
+entities a subsystem, a header's API or a kind of resource (sockets, memory maps,
+processes) groups, never for an item or two: entities that share state, such as a stream's
+initializer, its operations and its finalizer, take the same crate. A library may be
+covered by several crates, the fewest that cover what the campaign uses: libc's uses may
+be the standard library's for files and threads, one crate's for sockets and another's for
+the remaining system calls. What no adopted crate covers takes the next route.
 
-A crate qualifies for an area when it meets every criterion below, each recorded with its
-evidence:
+Each entity's `matches` record what each candidate offers for it, and how closely; each
+candidate's `quality_assessment` reasons, in prose, on the criteria below. A crate is fit to
+adopt for the entities it matches when it meets every one:
 
-- **coverage**: it provides what the campaign uses of the area, with the same behaviour, or
-  does once extended a little;
-- **shared state**: where the remaining C shares the area's state with the Rust, such as
-  a handle the C still uses, the crate exposes that state to C. A crate that binds the C
+- **coverage**: it provides what the campaign uses of those entities, with the same
+  behaviour, or does once extended a little, as their `matches` show;
+- **shared state**: where the remaining C shares an entity's state with the Rust, such as
+  a handle the C still uses, the crate exposes that state to C, which the entity's match
+  note says, citing the release point after which the C stops sharing it. A crate that binds the C
   library and exposes its raw handles can; one that reimplements the library qualifies
   only where no state crosses to the remaining C, as
   [Standard-library equivalents](#2-standard-library-equivalents) describes;
@@ -158,11 +169,11 @@ evidence:
   organization or by more than one maintainer, and its license and minimum Rust version
   suit the campaign's.
 
-Every qualifying crate is recommended for its area. Once the user adopts it, its area gets
-no wrapper and no batches: its consumers use the crate directly, and their bindings name
-its types and functions where they would name the wrapper's.
+Every fit crate is recommended for the entities it serves best. Once the user adopts it,
+those entities get no wrapper and no batches: their consumers use the crate directly, and
+their bindings name its types and functions where they would name the wrapper's.
 
-A crate that lacks a little of an area is extended rather than passed over: in a fork
+A crate that lacks a little of what it is adopted for is extended rather than passed over: in a fork
 cloned beside the campaign's repository, as a wrapper is, on a branch of its own, which the
 campaign's workspace pins with a Cargo `[patch]`. The extension is offered upstream, as a
 pull request opened with the user's approval, so that the fork can be dropped once it is
@@ -172,9 +183,27 @@ first campaign that meets one. -->
 
 ## 7. Local bindings
 
-A remainder of a library too small to be worth a wrapper, a few functions no adopted
-crate covers, is bound where it is used: over the library's established `-sys` crate, in
+What a library's adopted crates leave uncovered, when it is too small to be worth a
+wrapper, a few functions, is bound where it is used: over the library's established `-sys` crate, in
 the consuming module's `ffi_import` region, behind a safe API of that module's, as
 [`binding`](../../rust/binding/SKILL.md) describes for any item, by the batch that consumes
-it. A remainder that grows past a few functions, or that several modules need, is a
-wrapper's.
+it. What grows past a few functions, or what several modules need, is the library's
+crustify campaign's.
+
+## 8. Confirmation
+
+An entity's route is a recommendation made before any of its uses was translated. The first
+batch that binds or ports one of its users checks the route against the code it translates,
+by the uses the entity's `match` and note describe, and reports what it found in its final
+message; the assistant records it as the entity's `confirmation`. Each later batch takes
+the confirmed route.
+
+When the route does not hold, the batch reaches the entity through another route the
+library's `decision` already allows, in this order: the standard library, where
+[Standard-library equivalents](#2-standard-library-equivalents) allows it; another crate the
+decision adopts for the library; the decision's `uncovered` route. A `crustify-campaign`
+route that the library's crustify campaign does not yet cover is reported, and advanced as
+[Side campaigns](#3-side-campaigns) describes, before the batch runs again. Where no route
+the decision allows serves the entity, because the library leaves nothing `uncovered` or
+only a crate the user has not adopted would, the batch reports it, and the assistant puts
+it to the user, whose answer is recorded among the decision's `overrides`.
