@@ -20,6 +20,9 @@ is placed where the conventions' Testing section places tests of its kind:
 - unit tests show that the Rust keeps its contract, by passing Rust assertions, without
   the C: `unit_pub` on the public interface, `unit_priv` on the internal routines.
 
+<!-- TODO: fuzzing, of the safe public interface and differentially against the C, is
+deferred. -->
+
 Test objects are constructed through safe constructors. The UB tests on the safe public
 interface use the safe API alone, their suite forbidding `unsafe_code` at its root: a type
 that no safe constructor or producer yields yet gets those tests in the batch that wraps
