@@ -113,7 +113,7 @@ The wave's batches run concurrently, as many at once as
 [`concurrency`](../../operations/concurrency/SKILL.md) describes, each from its `task.json`, in which the
 run's session id is recorded once it starts. Each batch lands on
 the wave branch as [`versioning`](../../operations/versioning/SKILL.md)'s Landing section describes, after running the gates of
-[`testing`](../../verification/testing/SKILL.md)'s Regressions section on the tree it lands; those gates
+[`testing-gates`](../../verification/testing/gates/SKILL.md)'s Regressions section on the tree it lands; those gates
 are not run again for the wave. Its `status` follows its run, and once it lands, its
 `commits` are derived from its branch, as [`versioning`](../../operations/versioning/SKILL.md)'s Landing
 section describes.

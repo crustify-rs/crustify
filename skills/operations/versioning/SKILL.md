@@ -103,7 +103,7 @@ until its landing has succeeded:
    lands while it holds the lock;
 3. it resolves any conflict the rebase raises and runs again, on the rebased tree, the
    gates that could catch a regression of the integration, as
-   [`testing`](../../verification/testing/SKILL.md)'s Regressions section describes, fixing what fails;
+   [`testing-gates`](../../verification/testing/gates/SKILL.md)'s Regressions section describes, fixing what fails;
 4. it pushes the fast-forward, which nothing can reject; and
 5. it releases the lock.
 
@@ -182,7 +182,7 @@ record, and the working branch still moves only by fast-forward.
    keeps both sides, and the generated bindings are regenerated from the merged input. Any other conflict is a defect of the integration, resolved without
    discarding either side.
 2. The merge's tree passes the gates of
-   [`testing`](../../verification/testing/SKILL.md)'s Regressions section, and in
+   [`testing-gates`](../../verification/testing/gates/SKILL.md)'s Regressions section, and in
    a port campaign the module's integration, as
    [`porting-workflow`](../../workflows/porting-workflow/SKILL.md)'s Builds section describes.
 3. The working branch is fast-forwarded to the module's branch.

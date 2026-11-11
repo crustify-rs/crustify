@@ -38,7 +38,7 @@ Each module carries the C tests tied to it, those whose subject it is, as
 They assert the C contract, which a safe Rust implementation may change, so they run while
 the module is C and leave with it at its integration. The tests its port batches write
 mirror their regression cases, as
-[`testing`](../../verification/testing/SKILL.md)'s Regressions section describes. A
+[`testing`](../../verification/testing/SKILL.md) describes. A
 test's access to a module's internals is a use within that module, so it never keeps a type
 wrapped.
 
@@ -123,7 +123,7 @@ as C and as Rust, nor its Rust twice:
   of its own, through the target's actual build system.
 
 The C tests that remain run over that second link as the integration regression gate, as
-the testing spec's Regressions section describes.
+[`testing-gates`](../../verification/testing/gates/SKILL.md)'s Regressions section describes.
 
 ## 4. Scope
 

@@ -111,7 +111,7 @@ Any other defect in the workset.
 
 Gaps the codebase's existing external and inline test suites leave in the workset's C and
 Rust execution paths, found by reading those suites against the C code and measured as
-[`testing`](../testing/SKILL.md) describes. A gap is filled with tests, not filed: the coverage
+[`testing-builds`](../testing/builds/SKILL.md)'s Coverage section describes. A gap is filled with tests, not filed: the coverage
 measurement shows the delta.
 
 ### 3.9 Revisit (`revisit`)
@@ -205,7 +205,7 @@ Crustify-generated batch, in the reviewed crate's own suite for that kind.
 
 ## 7. Gates
 
-The gates [`testing`](../testing/SKILL.md)'s Regressions section gives a wave run in its last
+The gates [`testing-gates`](../testing/gates/SKILL.md)'s Regressions section gives a wave run in its last
 review batch, which launches once every translation batch of the wave has landed, and
 whose task's `wave_gates` says so: Miri in
 every wave, and BSan over everything the module landed when the wave is the module's last:

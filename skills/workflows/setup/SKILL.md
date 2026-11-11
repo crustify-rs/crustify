@@ -55,7 +55,7 @@ A new campaign gets:
 
 ## 4. Builds
 
-The target is built in the variants [`testing`](../../verification/testing/SKILL.md)'s Builds section lists:
+The target is built in the variants [`testing-builds`](../../verification/testing/builds/SKILL.md)'s Builds section lists:
 `plain`, `coverage`, and one per sanitizer the campaign enables, by default every one the
 toolchain supports. A sanitizer without a variant is one no batch tests for or runs under.
 

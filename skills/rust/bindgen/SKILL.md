@@ -168,7 +168,7 @@ prebuilt variant; a shim compiles with the crate, as [Build modes](#3-build-mode
 A batch that changes an allowlist, `external.txt`, a shim or `wrapper.h` regenerates the
 bindings and commits them in the same landing, so that the committed bindings always match
 their input. The gates that check it, and that the crate packages, are
-[`testing`](../../verification/testing/SKILL.md)'s Regressions section's.
+[`testing-gates`](../../verification/testing/gates/SKILL.md)'s Regressions section's.
 
 ## 6. Publishing
 

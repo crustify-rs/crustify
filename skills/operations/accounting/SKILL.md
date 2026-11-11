@@ -36,7 +36,7 @@ The cells measured on the tree a landing commits:
 - for a planner run, its row in `Planning`, but for its usage cells.
 
 They are filled in the landing's last commit, and measured against the integration branch
-tip it was rebased onto: coverage as [`testing`](../../verification/testing/SKILL.md)'s Coverage section measures
+tip it was rebased onto: coverage as [`testing-builds`](../../verification/testing/builds/SKILL.md)'s Coverage section measures
 it, and the safety audit columns as the changes in the dashboard's Safety audit metrics. A
 rebase that conflicts in the dashboard keeps every row both sides added, and the landing's
 cells, `Σ` rows included, are measured again where the gates its rebase reruns cover them;

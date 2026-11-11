@@ -62,7 +62,7 @@ standard library only, so that it runs wherever the skill is read: `usage` holds
 `crustify-usage`.
 
 Every skill's sections are numbered. A reference to a section names it, with or without its
-number ("testing's Coverage section", "layout § Lifecycle › Waves"), so that a renumbering
+number ("testing-builds' Coverage section", "layout § Lifecycle › Waves"), so that a renumbering
 never silently points a reference at another section. A skill links another by its
 relative path, with the other's name as the link's text.
 

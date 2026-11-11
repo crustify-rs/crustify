@@ -16,6 +16,8 @@
     "./skills/rust/porting/types",
     "./skills/rust/porting/symbols",
     "./skills/verification",
+    "./skills/verification/testing/builds",
+    "./skills/verification/testing/gates",
     "./skills/operations",
     "./skills/artifacts",
     "./skills/tools",
