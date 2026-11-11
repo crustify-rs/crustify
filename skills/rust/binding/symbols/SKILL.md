@@ -58,8 +58,9 @@ A method is emitted in an `impl T` block on the type it implements, taking `&sel
 
 ## 2. Globals
 
-A global is bound as a `'static` borrow, never as an owner. Its access discipline follows
-from every C access:
+A global is bound as a `'static` borrow, never as an owner, its value taking the safe form
+its type takes in a signature, as [Functions](#1-functions) describes. Its access
+discipline follows from every C access:
 
 - immutable after initialization: a shared handle;
 - synchronized by C: the matching safe synchronization (an atomic, or guards handing out
@@ -68,8 +69,9 @@ from every C access:
 - thread-local: a handle borrowed for a closure on the current thread, neither `Send` nor
   `Sync`.
 
-A lock counts only if every access takes it and it rejects same-thread re-entry. While C
-consumers reference the symbol, its C layout and synchronization protocol are kept.
+A lock counts only if every access takes it and it rejects same-thread re-entry. A global
+C sets up in a routine, rather than in its definition, is reached through the safe API only
+once that routine has run, however the binding ensures it.
 
 ## 3. Function pointers
 

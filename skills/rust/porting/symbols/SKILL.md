@@ -40,9 +40,14 @@ unless C of other modules still allocates or frees it raw, which leaves that mov
 
 ## 2. Globals
 
-A global that remaining C accesses is exported, and keeps its C layout and its
-synchronization protocol while it is, as `binding-symbols`' Globals section describes. Its later
-stage, `port/unexport`, removes the export, as a function's does.
+A ported global takes the safe API [`binding-symbols`](../../binding/symbols/SKILL.md)'s
+Globals section gives a global, or keeps its wrapper's. A global that remaining C accesses
+is exported, as a function is, and keeps the C layout and the synchronization protocol
+those accesses rely on while it is. Its later stage, `port/unexport`, removes the export, as
+a function's does, and its storage then takes a native form, as state moved out of C does.
+A thread-local one cannot be defined for C on stable Rust, so a shim keeps its C definition,
+as [`bindgen`](../../bindgen/SKILL.md)'s shims are compiled, until that stage. A global no
+remaining C accesses is native from its port.
 
 ## 3. Function pointers
 
