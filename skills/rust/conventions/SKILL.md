@@ -227,8 +227,8 @@ not necessarily the item that makes the FFI call:
 
 One C item may have several annotated Rust items, each carrying the same anchor and
 alias: the ownership variants one C function is split into when one signature cannot
-express every valid contract, as [`binding`](../binding/SKILL.md)'s Functions
-section describes, and the accessors of one field. That is the only case in which an
+express every valid contract, as [`binding-symbols`](../binding-symbols/SKILL.md)'s
+Functions section describes, and the accessors of one field. That is the only case in which an
 annotation is duplicated. Existing annotations are completed work unless the current
 objective deliberately promotes their item: a port of an item a binding wraps, or the
 `port/layout` that gives a wrapped struct or union its native layout, replaces its `Wraps`

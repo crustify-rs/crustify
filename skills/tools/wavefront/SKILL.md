@@ -221,7 +221,7 @@ of a generator in `type_generators.csv` share one generic, with per-instance ali
 A type's lifecycle primitives are identified as `docs/type-lifecycle.md` describes, and
 submitted through the CLI's `--update`.
 
-### Binding › Symbol route › Function pointers
+### Binding symbols › Function pointers
 
 A function pointer's record is `query function_pointers --name <name>`: one a typedef
 declares is named by it, and one written inline by its signature, as
@@ -232,7 +232,7 @@ its signature and file. An inline one's `unreferenced_after` waits for what reac
 those sites: a field's struct through its layout users, a parameter's or return's function
 and a global through their referrers.
 
-### Binding › Symbol route › Lifecycle strategies
+### Binding symbols › Lifecycle strategies
 
 Each foundational item's lifecycle role is in the ownership store, where planning
 submitted it, and is queried for every item of the batch. A role that the item's body

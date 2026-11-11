@@ -156,7 +156,7 @@ lack extends its own link unit's input, and nothing else:
    `wrapper.h` an internal header only when one of them is declared there;
 2. a shim is added to `shims.h` and `shims.c` only for a macro whose expansion depends on
    the build's configuration, as `crustify_<NAME>`, as
-   [`binding`](../binding/SKILL.md)'s Macros section describes;
+   [`binding-symbols`](../binding-symbols/SKILL.md)'s Macros section describes;
 3. the bindings are regenerated, in campaign mode with `CRUSTIFY_BINDINGS_UPDATE` set; and
 4. the safe crate is built and tested against them.
 

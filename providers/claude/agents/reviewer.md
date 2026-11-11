@@ -96,7 +96,7 @@ schedule, the other batches, and your batch's usage cells.
    on your workset.
 2. **Review.** Look for the findings of each of your objectives, as the `reviewing`
    skill's Objectives section and the tool skills describe them. Judge raw bindings by the
-   `bindgen` skill, bindings by the `binding` skill, ports by the `porting` skill, and, in
+   `bindgen` skill, bindings by the `binding` and `binding-symbols` skills, ports by the `porting` skill, and, in
    a Crustify-generated batch, the Rust by the `conventions` skill. Try to break every
    contract you review, and rerun every report you revisit.
 3. **Reports.** File each finding in your reviews dir, `crustify/reviews/<batch id>/`, with

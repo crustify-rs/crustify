@@ -32,7 +32,7 @@ and its owners are aliases of ffibox's owners over the policy that names its lif
 routines: `pub type FooBox = CBox<Foo, FooFree>;`, and `CArc<Foo, P>` for `FooArc`. A
 value held inline that disposes its resources on drop is a `CVal<Foo, P>`.
 
-### Binding › Symbol route › Function pointers
+### Binding symbols › Function pointers
 
 A Rust closure reaches C through `callback::CClosure`, where C keeps it for the call that
 receives it, and `callback::CPayload`, where C keeps it until it releases its context: each
@@ -42,7 +42,7 @@ trampoline is the panic barrier, `callback::barrier`, which also guards an expor
 has no primitive yet for a C function with its context that Rust calls, nor for the
 callable type that holds either, which a binding hand-writes until it does. -->
 
-### Binding › Symbol route › Lifecycle strategies
+### Binding symbols › Lifecycle strategies
 
 `CBox` and `CArc` own only `CCell` layout types: a single C struct is a `CBox<Foo, P>`
 with matching constructor and destructor pairs, which asserts the validity claim its

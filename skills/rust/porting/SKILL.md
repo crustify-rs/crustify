@@ -145,8 +145,8 @@ behaviour preserved.
 
 ### 3.1 Functions
 
-A ported function takes the safe API [`binding`](../binding/SKILL.md)'s Functions section
-gives a function, or keeps its wrapper's, as [FFI boundary](#1-ffi-boundary) describes.
+A ported function takes the safe API [`binding-symbols`](../binding-symbols/SKILL.md)'s Functions
+section gives a function, or keeps its wrapper's, as [FFI boundary](#1-ffi-boundary) describes.
 
 A function that remaining C calls or takes the address of is exported, as
 [FFI boundary](#1-ffi-boundary) describes. Its gateway undoes what the safe API converted,
@@ -171,13 +171,13 @@ unless C of other modules still allocates or frees it raw, which leaves that mov
 ### 3.2 Globals
 
 A global that remaining C accesses is exported, and keeps its C layout and its
-synchronization protocol while it is, as `binding`'s Globals section describes. Its later
+synchronization protocol while it is, as `binding-symbols`' Globals section describes. Its later
 stage, `port/unexport`, removes the export, as a function's does.
 
 ### 3.3 Function pointers
 
-A ported function pointer keeps the safe callable type [`binding`](../binding/SKILL.md)'s
-Function pointers section gives it, which is its API from its port: its Rust consumers, and
+A ported function pointer keeps the safe callable type
+[`binding-symbols`](../binding-symbols/SKILL.md)'s Function pointers section gives it, which is its API from its port: its Rust consumers, and
 the ported code that calls it, use that type alone. While remaining C calls a function
 pointer of its type or supplies one, its C form stays beneath it: the function-pointer type
 of its raw binding, the trampolines through which a Rust closure reaches the C that calls
@@ -201,7 +201,7 @@ rustc's) would inline the export back into its C callers. -->
 
 ### 3.5 Macros
 
-A macro takes the Rust form [`binding`](../binding/SKILL.md)'s Macros section gives it,
+A macro takes the Rust form [`binding-symbols`](../binding-symbols/SKILL.md)'s Macros section gives it,
 which reaches the Rust items its expansion uses once they are ported. A macro a TU defines
 goes with its TU. A macro a header defines, internal or public API that another module's C
 may expand, also stays in its header for the remaining C, unexported, and its C and Rust

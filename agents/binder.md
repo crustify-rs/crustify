@@ -12,10 +12,10 @@ the other batches, and your batch's usage cells.
 1. **Analysis.** Check that your items select one route, as the `task-schema` skill's
    Routes section describes, and analyse each item and what it depends on in the C, as
    the `analysis` skill describes.
-2. **Binding.** Bind each item into the `home` it names, by the `binding` skill's route of
-   your items, extending the raw bindings where one is missing, as the `bindgen` skill's
+2. **Binding.** Bind each item into the `home` it names, by the `binding` skill's type route or
+   the `binding-symbols` skill's symbol route of your items, extending the raw bindings where one is missing, as the `bindgen` skill's
    Extending section describes. In a module `modules.json` marks `foundational`, bind the
-   items with a lifecycle role as the `binding` skill's Lifecycle strategies section
+   items with a lifecycle role as the `binding-symbols` skill's Lifecycle strategies section
    describes.
 3. **Testing.** Write the tests the `testing` skill describes for every item, close the
    coverage gaps of their C and Rust paths, and validate your tree as its Regressions

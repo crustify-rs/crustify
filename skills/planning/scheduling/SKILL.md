@@ -77,7 +77,8 @@ union `wrap` there while another module's C uses its layout, and each followed b
 later stages [Later stages](#5-later-stages) describes, each a planned item of its own.
 
 Enums and macros are items as any other entity is, bound or ported as
-[`binding`](../../rust/binding/SKILL.md)'s Enums and Macros sections, and
+[`binding`](../../rust/binding/SKILL.md)'s Enums section and
+[`binding-symbols`](../../rust/binding-symbols/SKILL.md)'s Macros section, and
 [`porting`](../../rust/porting/SKILL.md)'s, describe.
 
 ## 3. Batches
