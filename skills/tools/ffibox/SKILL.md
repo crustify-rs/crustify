@@ -59,7 +59,10 @@ Until a ported struct's `port/layout`, its handles are ffibox's, as
 [Binding types › Safe layout](#binding-types--safe-layout) describes; from it
 on, `FooRef` and `FooMut` are aliases of native borrows. Its owners stay ffibox's until its
 `port/memory`, their policy calling its lifecycle routines, C's through their raw bindings
-until each is ported, then the Rust ones.
+until each is ported, then the Rust ones. A `port/memory` before its `port/layout` keeps
+them ffibox's and changes their policy to `RustAlloc` alone: `FooBox` becomes
+`CBox<Foo, RustAlloc>`, its handles unchanged, until its `port/layout` makes it
+`Box<Foo>`, or `Pin<Box<Foo>>` while C keeps its address.
 <!-- TODO: ffibox's owners hold only `CCell` layout types, so an owner over C's allocator
 of a struct whose layout is native, between its `port/layout` and its `port/memory`, is
 hand-written until ffibox has one. -->

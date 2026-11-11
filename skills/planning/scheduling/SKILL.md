@@ -218,6 +218,10 @@ A type is scheduled in stages:
 3. `port/memory`, after its `memory_unmanaged_after`: its storage moves from C's
    allocator, which its owners allocate and free through until then, to Rust's.
 
+The two later stages are independent: each waits for its own release point alone, so
+either may come first. A type's last memory users often end before its last layout users,
+since a raw free reads no layout, while a raw allocation takes the type's size.
+
 A stage with no users to wait for is not planned: its change is part of the type's `port`,
 or, for `port/memory`, of the port of the last of its own module's memory users, a
 lifecycle routine its type's port or wrap left in C, as [`porting-types`](../../rust/porting/types/SKILL.md)'s

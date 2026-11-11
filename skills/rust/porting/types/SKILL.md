@@ -53,9 +53,15 @@ while what they name follows its later stages, so that its consumers never chang
   drop it natively, with native Rust lifecycle operations instead of the C primitives.
 
 Each switches with its own stage, or with the struct's port where that stage is not
-planned. From its native layout on, from its port or its `port/layout`, a struct has
-by-value constructors, `Foo::new(…) -> Foo`, and a constructor that returns an owner
-builds the value and moves it into the owner, whose allocator its stage decides: C's while
+planned, and the two stages come in either order. A `port/memory` before the struct's
+`port/layout` keeps its C layout and its handles, and moves its owners to Rust's allocator
+alone: they stay the C-layout owners, over a policy of Rust's allocator, since remaining
+C still holds pointers into the object and reads its fields, which a native owner's claim
+to sole access would break. Its `port/layout` then makes them the native ones.
+
+From its native layout on, from its port or its `port/layout`, a struct has by-value
+constructors, `Foo::new(…) -> Foo`, and a constructor that returns an owner builds the
+value and moves it into the owner, whose allocator its stage decides: C's while
 any C still frees it raw, Rust's from its `port/memory`.
 
 While C keeps its address, as `binding-types`' Lifecycle section describes, a struct with a
