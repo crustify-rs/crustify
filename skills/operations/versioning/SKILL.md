@@ -46,7 +46,8 @@ An audit reviews an existing Rust crate in its own repository, and creates none.
 | batch | `crustify/batches/wave-<index>/batch-<index>` | in its worktree |
 
 The shipping branch holds what the user has approved to ship: it advances only with the
-user's approval, by a fast-forward to the working branch. The working branch is where the
+user's approval, by a fast-forward to the working branch, and each advance is tagged on it,
+`ship-<n>` numbered from 1, or `crustify/ship-<n>` in an audit. The working branch is where the
 campaign integrates its work: planner runs fork from it and are promoted back to it, and
 the modules are integrated into it, as `scheduling` describes.
 
@@ -65,8 +66,11 @@ way.
 
 ## 3. Worktrees
 
-Each batch has its own worktree at `crustify/.worktrees/<its branch name>`, its `c/` a
-worktree of the base checkout's submodule, and so does a module while it integrates. A
+Each batch has its own worktree, its `c/` a worktree of the base checkout's submodule, at
+`crustify/.worktrees/<module dir>/<batch id>`, named as
+[`layout`](../layout/SKILL.md)'s Ids section names them, so that its name tells which
+module it works on, and so does a module while it integrates, at
+`crustify/.worktrees/<module dir>/integration`, beside its batches'. A
 planner run has none: it runs in the repository's base dir, on its branch.
 
 ## 4. Landing
