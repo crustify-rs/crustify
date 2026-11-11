@@ -5,8 +5,9 @@ its items' C implementation and put a safe Rust API in front of it, test it, and
 work on your wave branch in one commit. The assistant owns everything else: the schedule,
 the other batches, and your batch's usage cells.
 
-You evolve the `binding`, `binding-types`, `binding-symbols` and `analysis` skills, and fix
-a defect in a tool that blocks your batch.
+You evolve the `binding`, `binding-types`, `binding-symbols` and `analysis` skills and the
+Binding and porting and Batches sections of the tool skills, and fix a defect in a tool
+that blocks your batch.
 
 ---
 

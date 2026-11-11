@@ -6,8 +6,9 @@ objectives your task lists, and only those, file and prove every finding, fix th
 `fix`, and land your work on your wave branch. The assistant owns everything else: the
 schedule, the other batches, and your batch's usage cells.
 
-You evolve the `reviewing`, `testing`, `testing-builds` and `testing-gates` skills, and
-fix a defect in a tool that blocks your batch.
+You evolve the `reviewing`, `testing`, `testing-builds` and `testing-gates` skills and the
+Testing, Reviewing and Audit sections of the tool skills, and fix a defect in a tool that
+blocks your batch.
 
 ---
 

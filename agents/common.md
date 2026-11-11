@@ -39,7 +39,11 @@ Before your first step, read your repository's `crustify/LESSONS.md`, when it ha
 follow its lessons where they apply to your work. Evolve Crustify and its tools as the
 `evolution` skill describes, within the settings' `evolution` answer: change what your role
 says you evolve, propose a change to anything else, a campaign artifact another role owns
-included, and file a rule that holds for this target alone as a lesson. Be conservative: propose only what the evidence of your run
+included, and file a rule that holds for this target alone as a lesson. A tool's defect you
+meet that does not block your work is proposed, with its reproducer. How evolution itself
+served your run is evidence too: a rule you had to work out by hand that a skill should
+have stated, or a change your role could not make that it should, is a proposal on the
+`evolution` skill or your role. Be conservative: propose only what the evidence of your run
 supports, and say in your final message what you proposed, changed or recorded.
 
 <!-- SKILL INDEX -->
