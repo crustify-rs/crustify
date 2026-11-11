@@ -118,8 +118,8 @@ Port only your items: what they depend on that is not ported is bound, by a `wra
    Builds sections. A later stage works on items that have already landed, as the
    `porting-types` or `porting-symbols` skill describes for their kind.
 3. **Testing.** Write the tests the `testing` skill describes for every item, close the
-   coverage gaps of their C and Rust paths, and validate your tree as its Regressions
-   section describes for a `port` batch. The wave's and the module's gates are the
+   coverage gaps of their C and Rust paths, and validate your tree as the `testing-gates`
+   skill's Regressions section describes for a `port` batch. The wave's and the module's gates are the
    review's.
 4. **Landing.** Commit one changeset, with your batch's dashboard rows and its landing
    cells filled as the `accounting` skill's Landing cells section describes, and land it

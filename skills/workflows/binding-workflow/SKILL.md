@@ -129,6 +129,8 @@ Progress section times them.
 
 Once the last wave of a module's run has been promoted, the module is integrated into the
 working branch, as [`versioning`](../../operations/versioning/SKILL.md)'s Integration section
+describes. In a port campaign a module is integrated from C once, and its later-stage waves
+run after that, as [`porting-workflow`](../porting-workflow/SKILL.md)'s Later stages section
 describes.
 
 ## 5. Review batches

@@ -188,14 +188,17 @@ record, and the working branch still moves only by fast-forward.
    discarding either side.
 2. The merge's tree passes the gates of
    [`testing-gates`](../../verification/testing/gates/SKILL.md)'s Regressions section, and in
-   a port campaign the module's integration, as
+   a port campaign, in the run that holds the last wave of the module's `wrap` and `port`
+   items, the module's integration from C, which happens once, as
    [`porting-workflow`](../../workflows/porting-workflow/SKILL.md)'s Builds section describes:
    its export feature is deleted, and the C test cases none of its `unit_pub` tests carries
    over are listed before its C tests leave.
 3. The working branch is fast-forwarded to the module's branch.
 
 Modules integrate one at a time, and nothing else is committed on the working branch while
-one does, so that its fast-forward cannot be rejected.
+one does, so that its fast-forward cannot be rejected. A port's later-stage waves come after
+their module's integration, are promoted to the working branch, and integrate nothing, as
+the porting workflow's Later stages section describes.
 
 ## 5. Lifecycle
 
@@ -227,13 +230,16 @@ A module's branch is forked from its base before its first wave,
 once the waves of other modules that its waves depend on have been integrated. A module
 whose waves the order splits, such as one that wraps a cut dependency ahead of its
 consumer, runs once per contiguous run of its waves, each run on a branch forked anew
-from the working branch. Once a run has been integrated, its branch and worktree are
-purged; its end state is the working branch's commit its last run integrates into.
+from the working branch. In a port campaign, only the run that holds the last wave of the
+module's `wrap` and `port` items integrates it from C; an earlier run's integration merges
+its Rust alone, the module still C. Once a run has been integrated, its branch and worktree
+are purged; its end state is the working branch's commit its last run integrates into.
 
 ### 5.4 Waves
 
-A wave's integration branch is forked from its module's branch's tip before any of its
-batches launch, so that it exists before the first landing, as [Branches](#2-branches)
+A wave's integration branch is forked from its module's branch's tip, or, for a port's
+later-stage wave, which runs after its module's integration, from the working branch's tip,
+before any of its batches launch, so that it exists before the first landing, as [Branches](#2-branches)
 requires; that commit is the wave's base.
 Once every batch has landed, the wave is promoted, as [Promotion](#43-promotion)
 describes, and its branch purged.

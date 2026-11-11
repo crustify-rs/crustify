@@ -132,9 +132,9 @@ sections of the tool skills, and fix a defect in a tool that blocks your run.
    Record each criterion's evidence in its `rust_equivalent` record, and recommend a
    route for the library, as that skill's Routes section orders them, since the user
    chooses from them. Name the crates you leave out, and why, in your commit message.
-3. **Scheduling.** Record each module's and link unit's `depends_on`, the order of the
-   modules and the waves of the units your scope adds into `schedule.json`, from
-   `templates/schedule.json`, as the `scheduling` skill describes, each item's `home` as
+3. **Scheduling.** Record each module's `depends_on`, the order of the modules and the
+   waves of the units your scope adds into `schedule.json`, from `templates/schedule.json`,
+   or `templates/schedule.port.json` in a port campaign, as the `scheduling` skill describes, each item's `home` as
    the `conventions` skill places it. Plan no waves that replace raw seams. For each
    out-of-tree library your waves need, check `github.com/crustify-rs` for its wrapper, as
    the `dependencies` skill's Reuse section describes, and record in your commit message

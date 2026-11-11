@@ -43,7 +43,8 @@ The foundational modules depend on no other, so they run first.
 ## 2. Waves and batches
 
 `schedule.json` follows [`schedule-schema`](../../artifacts/schedule-schema/SKILL.md); its layout
-example is [`templates/schedule.json`](../../../templates/schedule.json). Each wave records
+example is [`templates/schedule.json`](../../../templates/schedule.json), and a port
+campaign's, with its later stages, [`templates/schedule.port.json`](../../../templates/schedule.port.json). Each wave records
 the waves it depends on, split as modules' are into `scheduled` and `cut`: its module's
 previous wave, and the waves that hold its items' dependencies, in its module or in the
 modules ordered before it.
@@ -169,7 +170,10 @@ in a wave that depends on the last waves of the modules whose integration frees 
 that it runs once they are integrated and the entity takes its Rust form as soon as the C
 lets it. The later stages the same integrations free share a wave, whose batches are
 packed when it starts, as [Batches](#3-batches) describes, a stage's
-items forming batches of their own, by its objective.
+items forming batches of their own, by its objective. A later-stage wave runs after its own
+module's integration, as [`porting-workflow`](../../workflows/porting-workflow/SKILL.md)'s
+Later stages section describes; a stage whose release point the item's own port already
+passes is not planned, its change part of the port.
 
 ### 5.1 Types
 

@@ -58,12 +58,14 @@ tests cover it from then on.
 A module is in one language at a time. The campaign maintains C and Rust side by side, but
 on disjoint modules, never the same code in both.
 
-While a module's waves run, its C is the reference its ports are tested against, and the
-target is built and linked from C alone. Once its last wave has landed, the module is
-integrated, as [Builds](#3-builds) describes: the Rust module replaces the TU in the
-target's link, its C is removed from the build and from the tree, and its tests switch
-with it. The removal is made on the working branch; the shipping branch keeps the C until
-the user approves shipping the module.
+While the waves of a module's `wrap` and `port` items run, its C is the reference its
+ports are tested against, and the target is built and linked from C alone.
+Once the last of them has landed, the module is integrated, once, as [Builds](#3-builds)
+describes: the Rust module replaces the TU in the target's link, its C is removed from the
+build and from the tree, and its tests switch with it. The removal is made on the working branch; the shipping branch keeps the C until
+the user approves shipping the module. From then on the module is Rust's: what it still
+keeps for the remaining C, its types' C layouts and storage and its exports, its later
+stages remove after the integration, as [Later stages](#4-later-stages) describes.
 
 The headers bundled with the module stay while remaining C includes them, declaring the
 module's exports, its `static inline` functions included, as
@@ -104,9 +106,9 @@ The C stays until integration: the target's other C still calls the module's sym
 only the exports could define, and the module's equivalence tests and its cut cycles still
 run through it.
 
-Once the module's last wave has landed, it is integrated in one step, with concurrent
-modules as part of its branch's integration into the working branch, as
-[`versioning`](../../operations/versioning/SKILL.md)'s Integration section
+Once the last wave of the module's `wrap` and `port` items has landed, it is integrated
+in one step, with concurrent modules as part of its branch's integration into the working
+branch, as [`versioning`](../../operations/versioning/SKILL.md)'s Integration section
 describes: its export feature is deleted, so that its gateway compiles from then on, its TU
 and the C tests tied to it that reach its internals are removed from `c/`, and the
 remaining C reaches the module through its exports. The C side of the
@@ -128,8 +130,22 @@ as C and as Rust, nor its Rust twice:
 
 The C tests that remain run over that second link as the integration regression gate, as
 [`testing-gates`](../../verification/testing/gates/SKILL.md)'s Regressions section describes.
+For that link, the first integration changes the fork's C build so that the remaining C's
+tests and executables link the safe crate's Rust library, static or shared, in the build
+system's own idiom, and each later integration takes its module's C out of that build.
 
-## 4. Scope
+## 4. Later stages
+
+A module is integrated once. Its later-stage waves, `port/layout`, `port/memory` and
+`port/unexport`, run after its integration, each once the integrations its release point
+waits for have landed, as [`scheduling`](../../planning/scheduling/SKILL.md)'s Later stages
+section times them: as the remaining C stops using its types' layouts and storage and
+calling its exports, they nativize the types and remove the exports. They belong to no run
+of the module and integrate nothing: each forks from the working branch and is promoted
+back to it, as [`versioning`](../../operations/versioning/SKILL.md)'s Lifecycle section
+describes, and changes no C, since the C that held it back has left the build.
+
+## 5. Scope
 
 The unit of a port is a module: its scope is whole modules, the foundational ones
 included, which stay `wrap`, as

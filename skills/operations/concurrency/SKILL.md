@@ -30,8 +30,8 @@ much of their building and testing overlaps, the memory and disk each one's tree
 the rate the provider allows.
 
 The number of agents in flight follows from those, for each wave as it starts and again as
-its batches land or fail. A `parallelism` number in the settings is a cap on it; the
-default, `assistant's choice`, sets none. When the waves of several modules, campaigns,
+its batches land or fail. A `parallelism` number in the settings' `workload` answer is a
+cap on it; the default, `assistant's choice`, sets none. When the waves of several modules, campaigns,
 or of a campaign and its side campaigns, run at once, they share the host as one workload.
 
 One unit of work may be given priority over another by suspending the other's agents, with
@@ -59,5 +59,5 @@ system's own equivalent.
 
 `crustify/artifacts/build.json`'s commands carry no job count. A job count does not change
 what a build produces, so it is no part of a variant: adding or removing one does not
-change the variant, and does not raise the file's `version`. The settings' `parallelism`,
-when set, is the only number a campaign records, and it is a cap.
+change the variant, and does not raise the file's `version`. The `workload` answer's
+`parallelism`, when set, is the only number a campaign records, and it is a cap.

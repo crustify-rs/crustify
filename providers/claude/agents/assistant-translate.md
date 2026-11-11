@@ -299,11 +299,12 @@ ship.
 2. **Waves and batches.** Run the waves the session covers, and their review batches, as
    the `binding-workflow` skill's Order, Waves and batches, and Review batches sections
    describe, with the `porting-workflow` skill's differences in a port campaign, within the
-   settings' `parallelism` when it sets one. Pack each wave's batches when it starts, as
-   the `scheduling` skill's Batches and Wrap batches sections describe, judging their size
+   `parallelism` of the settings' `workload` answer when it sets one. Pack each wave's
+   batches when it starts, as the `scheduling` skill's Batches and Wrap batches sections
+   describe, judging their size
    from how the campaign's batches have gone so far. When a batch fails, run it again or
-   pack its items anew. Once every other batch of a module's last wave has landed, run its
-   module pass, as the `reviewing` skill's Review batches section describes, before you
+   pack its items anew. Once every other batch of the last wave of a module's `wrap` and
+   `port` items has landed, run its module pass, as the `reviewing` skill's Review batches section describes, before you
    integrate the module.
 
    Before each wave starts, and when a batch reports an out-of-tree entity a wrapper

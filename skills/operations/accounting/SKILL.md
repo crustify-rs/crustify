@@ -48,14 +48,16 @@ the others stand as measured on the batch's base.
 The cells known only once an agent has ended, from its usage: its cost, tokens and wall,
 the per-unit costs derived from them, and their `Σ` cells. A batch's are filled on the
 working branch once its row is there, once its module is integrated, as
-[`versioning`](../versioning/SKILL.md) describes. A planner run's are filled once the run is
+[`versioning`](../versioning/SKILL.md) describes, or, for a port's later-stage batch, which
+runs after its module's integration, once its wave is promoted. A planner run's are filled once the run is
 promoted. A batch run more than once costs the sum of its runs.
 
 ### 2.3 Campaign cells
 
 The cells that span agents: the `Module stats` table, the Overview's branch line and
 test baseline, and the `Settings` lines. A module's row and the branch line are filled
-when the module is integrated, the baseline once it is recorded, and the `Settings` lines,
+when the module is integrated, and a port's module row again as each of its later-stage
+waves is promoted, the baseline once it is recorded, and the `Settings` lines,
 with a Notes entry, whenever a settings change is applied.
 
 ### 2.4 Side campaign cells

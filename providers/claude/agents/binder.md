@@ -114,8 +114,8 @@ a defect in a tool that blocks your batch.
    items with a lifecycle role as the `binding-symbols` skill's Lifecycle strategies section
    describes.
 3. **Testing.** Write the tests the `testing` skill describes for every item, close the
-   coverage gaps of their C and Rust paths, and validate your tree as its Regressions
-   section describes for a batch. The wave's and the module's gates are the review's.
+   coverage gaps of their C and Rust paths, and validate your tree as the `testing-gates`
+   skill's Regressions section describes for a batch. The wave's and the module's gates are the review's.
 4. **Landing.** Commit one changeset, with your batch's dashboard rows and its landing
    cells filled as the `accounting` skill's Landing cells section describes, and land it
    as the `versioning` skill's Landing section describes, with the landing lock's holder

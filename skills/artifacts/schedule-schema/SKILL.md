@@ -6,7 +6,8 @@ description: "The fields of schedule.json: modules, waves, items, batches, progr
 # schedule.json schema
 
 Field meaning for `<workdir>/crustify/artifacts/schedule.json`, the campaign's module
-order, waves and batches. Layout example: [`templates/schedule.json`](../../../templates/schedule.json).
+order, waves and batches. Layout examples: [`templates/schedule.json`](../../../templates/schedule.json), and a port
+campaign's, [`templates/schedule.port.json`](../../../templates/schedule.port.json).
 
 The campaign has one schedule, which every planner run extends: the first run creates it,
 and each later one appends the waves its scope adds and re-plans the waves that have not
@@ -124,7 +125,7 @@ that wave's, and it lands on that wave's integration branch.
 | `status` | `todo`, `wip`, `done` or `failed` |
 | `items` | a translation batch's worklist, as `task-schema` describes its `items` |
 | `reviews` | a `review` batch's worklist: the indices of the batches of its wave it reviews; empty in a module pass |
-| `module_pass` | optional, `false` when absent: `true` on the `review` batch that reviews its module whole, its last wave's last batch, as `reviewing`'s Review batches section describes |
+| `module_pass` | optional, `false` when absent: `true` on the `review` batch that reviews its module whole, the last batch of the last wave of its `wrap` and `port` items, as `reviewing`'s Review batches section describes |
 | `commits` | the commits the batch landed, in order; empty until it lands |
 
 The batches are packed when the wave starts, and added as it runs: a batch that fails may
