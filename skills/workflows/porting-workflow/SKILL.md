@@ -128,4 +128,6 @@ the testing spec's Regressions section describes.
 ## 4. Scope
 
 The unit of a port is a module: its scope is whole modules, the foundational ones
-included. Porting a few named items without their module is not described.
+included, which stay `wrap`, as
+[`decomposition`](../../planning/decomposition/SKILL.md)'s Foundational modules section
+describes. Porting a few named items without their module is not described.

@@ -88,7 +88,8 @@ A wave's batches are packed when it starts, from the state of the campaign at th
 moment, and packed again as its batches land or fail. Each batch holds items of one
 objective and one route, as [`task-schema`](../../artifacts/task-schema/SKILL.md)'s Routes
 section describes: structs, unions, enums, typedefs and the macros that generate types,
-or functions, globals, function pointers and the other macros.
+or functions, globals, function pointers and the other macros. A foundational family's
+allocator, releaser and cloner, which form one policy, share a batch.
 
 A batch is sized so that its agent carries every item through its analysis, its tests and
 its gates within one session, without its context running out, and so that what it lands

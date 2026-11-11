@@ -141,13 +141,20 @@ is the exception: it is reached through a shim, `crustify_<NAME>`, bound and wra
 
 ## 5. Lifecycle strategies
 
-The foundational modules hold the allocator or constructor, releaser, disposer and
-cloner routines of type-erased `void` and string handles, each with the lifecycle role
-established while planning. In a batch of a foundational module, which its task's `module` names
-and `modules.json` marks `foundational`, an item with a lifecycle role becomes a generic
-policy or strategy that calls the primitive via FFI, so that owned string and generic
-array or singleton handles bind it to implement RAII. The primitive itself is not also
-exposed as an ordinary safe function. The module's other items follow their route.
+A type's own lifecycle routines are bound with the type, as
+[`binding-types`](../types/SKILL.md)'s Lifecycle section describes. The foundational
+modules hold the rest: the allocators or constructors, releasers, disposers and cloners of
+type-erased memory and of strings, each with the lifecycle role established while
+planning, as [`decomposition`](../../../planning/decomposition/SKILL.md)'s Foundational
+modules section describes. The analysis confirms each role from the item's body, and a role
+the body contradicts is corrected, the correction recorded with the batch.
+
+In a foundational module's batch, an item with a lifecycle role becomes a generic policy
+or strategy that calls the primitive, through which the owners of strings and of
+type-erased singletons and arrays allocate, clone and release what they hold, so that each
+owner frees what it holds through the family that allocated it. The primitive itself is
+not also exposed as an ordinary safe function. The module's other items follow their
+route.
 
 Singleton and array handles have separate policies, each in its primitive's home. A
-family's allocator, releaser and cloner form one policy and share a batch.
+family's allocator, releaser and cloner form one policy.
