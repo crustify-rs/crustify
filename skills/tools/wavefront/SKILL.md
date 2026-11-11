@@ -19,7 +19,9 @@ body, and to judge what wavefront records.
 Its `README.md` and `--help` are read in full before its first command, and each section
 below names the documents under its `docs/` that its stage reads, also in full. How
 wavefront scopes, orders and batches, what its configuration, tables and records hold, and
-what each query returns are those documents', and are not restated here.
+what each query returns are those documents', and are not restated here. Its goals and
+non-goals, `docs/goals.md`, are what a change to wavefront is judged against, as
+[`evolution`](../../crustify/evolution/SKILL.md) describes.
 
 ## Campaign state
 

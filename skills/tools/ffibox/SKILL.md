@@ -15,7 +15,9 @@ Its `README.md` is read in full before the first wrapper is written, and each se
 below names the documents under its `docs/` that its stage reads, also in full. Which
 primitive serves which C declaration, and how each is built, is those documents'. A
 representation ffibox cannot express is hand-written, as its `docs/hand-written.md`
-describes, with the same seam and safety-comment discipline.
+describes, with the same seam and safety-comment discipline. Its goals and non-goals,
+`docs/goals.md`, are what a change to ffibox is judged against, as
+[`evolution`](../../crustify/evolution/SKILL.md) describes.
 
 What follows is how ffibox serves each stage: each section names the skill and section it
 adds to, and states only what ffibox adds there.

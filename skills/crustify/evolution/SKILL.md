@@ -17,12 +17,15 @@ this guidance itself among them. Where a change goes within Crustify is
 
 Every change is judged against Crustify's goals, [`GOALS.md`](../../../GOALS.md), read in
 full before the first proposal: a change serves one of them, or it is not made. The goals
-are evolved too, when the evidence questions them, as `GOALS.md` describes. A change to
-a tool is judged against that tool's own goals and non-goals too, which keep what the tool
-is from drifting, such as an analysis that stays syntactic and does no data-flow analysis.
-<!-- TODO: the tools' goals documents are deferred; until each tool has one, a change that
-alters what a tool is, rather than fixing or extending what it does, is proposed, not
-made. -->
+are evolved too, when the evidence questions them, as `GOALS.md` describes.
+
+A change to a tool is judged against that tool's own goals and non-goals too, the document
+its tool skill names, read in full before the first change to the tool: they keep what the
+tool is from drifting, such as an analysis that stays syntactic and does no data-flow
+analysis. A change that departs from one of them is proposed, not made, and says so. A
+tool with no such document has every change that alters what it is, rather than fixing or
+extending what it does, proposed, not made.
+<!-- TODO: ffimap has no goals document yet. -->
 
 ## 2. Signals
 
