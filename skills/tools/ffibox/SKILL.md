@@ -1,29 +1,41 @@
 ---
 name: ffibox
-description: "The library the campaign's Rust holds C memory through: owners, handles, lifecycle policies and C/Rust interop primitives. Read before writing any wrapper, owner or lifecycle strategy, and when testing or reviewing one."
+description: "The library the campaign's Rust holds C memory through, in both directions: owners, handles, lifecycle policies, status conventions, callbacks and exports. Read before writing any wrapper, owner, lifecycle strategy, callable type or export, and when testing or reviewing one."
 ---
 
 # ffibox
 
-ffibox is the library a campaign's Rust holds C memory through: memory a C library
-allocates, frees, copies, refcounts or locks, wrapped in the raw bindings' types behind a
-safe API, or managed by ported code. C's ownership and lifetime conventions are expressed
-through its primitives rather than raw pointers and hand-written `Drop` impls. Its own
-documentation, its `README.md`, which walks from a C declaration to the wrapper it needs,
-and the documents under its `docs/`, is read in full before the first wrapper is written.
+ffibox is the library a campaign's Rust expresses C's ownership and lifetime conventions
+through, in both directions: memory C allocates, frees, copies, refcounts or locks, held
+from Rust behind a safe API, and memory Rust owns that C holds, calls or reads. Its
+primitives stand in for raw pointers and hand-written `Drop` impls wherever C aliases a
+value; what C does not alias is plain Rust.
 
-A representation ffibox cannot express is hand-written, with the same seam and
-safety-comment discipline.
+Its `README.md` is read in full before the first wrapper is written, and each section
+below names the documents under its `docs/` that its stage reads, also in full. Which
+primitive serves which C declaration, and how each is built, is those documents'. A
+representation ffibox cannot express is hand-written, as its `docs/hand-written.md`
+describes, with the same seam and safety-comment discipline.
 
 What follows is how ffibox serves each stage: each section names the skill and section it
 adds to, and states only what ffibox adds there.
 
+## Binding workflow
+
+### Binding workflow › Rust tree
+
+The workspace depends on ffibox from its `feat/bidirectional` branch.
+<!-- TODO: until that branch is released. -->
+
 ## Binding and porting
+
+Binding reads `docs/ownership.md`, `docs/borrows.md`, `docs/patterns.md` and
+`docs/hand-written.md`; porting reads `docs/outbound.md` too.
 
 ### Binding types
 
 A type that stays interoperable with C is bound through ffibox's primitives wherever they
-apply, as its documentation describes.
+apply, as `docs/ownership.md` and `docs/borrows.md` walk from its C declaration to them.
 
 ### Binding types › Safe layout
 
@@ -32,26 +44,43 @@ and its owners are aliases of ffibox's owners over the policy that names its lif
 routines: `pub type FooBox = CBox<Foo, FooFree>;`, and `CArc<Foo, P>` for `FooArc`. A
 value held inline that disposes its resources on drop is a `CVal<Foo, P>`.
 
+### Binding symbols › Functions
+
+A C routine's status convention becomes a `Result` through `status`, an object returned
+through an out-parameter a return value through `from_c_out` or `from_raw_out`, and C's
+iteration conventions iterators, as `docs/patterns.md` maps them.
+
 ### Binding symbols › Function pointers
 
-A Rust closure reaches C through `callback::CClosure`, where C keeps it for the call that
-receives it, and `callback::CPayload`, where C keeps it until it releases its context: each
-gives the trampoline, typed as the C declaration names it, and the context, and its
-trampoline is the panic barrier, `callback::barrier`, which also guards an export's body.
-<!-- TODO: both are on ffibox's `feat/bidirectional` branch, not yet released; and ffibox
-has no primitive yet for a C function with its context that Rust calls, nor for the
-callable type that holds either, which a binding hand-writes until it does. -->
+A function pointer's callable type is a `CCallback`, where C holds it for a call or a
+borrow, or a `CCallbackBox`, where C keeps it until it releases its context. Its Rust half
+is a closure, a `CClosure` or a `CPayload`, which C reaches through its trampoline; its C
+half is a C function with its context, a `CFn` or a `CFnBox`, which Rust calls, built only
+inside the crate through its `unsafe` constructor. A trampoline is the panic barrier,
+`callback::barrier`, which also guards an export's body.
+<!-- TODO: ffibox has no primitive yet for a struct of function pointers a library calls
+into, bound to a trait the Rust side implements: a binding hand-writes it until it does. -->
 
 ### Binding symbols › Lifecycle strategies
 
-`CBox` and `CArc` own only `CCell` layout types: a single C struct is a `CBox<Foo, P>`
-with matching constructor and destructor pairs, which asserts the validity claim its
-allocator makes, zeroed memory with `CZeroable` or raw memory with `MaybeUninit`. An array
-is a `CVec<MaybeUninit<T>, P>` with a safe initializer, or a `CVec<T, P>` for a
-`CPlainElem`; copies into the allocator use `CVec::from_slice` or `CSlice::to_cvec`, and
-its `CLenClone` declares `ALIGN`. A Rust value whose release C drives, such as a
-refcounted user payload, gets a hand-written owner whose free callback runs the value's
-destructor.
+Each lifecycle is held by the owner `docs/ownership.md` chooses for its shape, over the
+policy that names its routines; a policy with state, such as an allocator context, is held
+by `CBoxState`. A Rust value whose release C drives, such as a refcounted user payload, is
+a `CPayload`, released through the routine it gives C.
+
+### Porting › FFI boundary
+
+An export gateway is built from the primitives `docs/outbound.md` chooses for what C does
+with the Rust it reaches:
+
+- the lifecycle routines C still calls on a ported type are `export_cnew!`,
+  `export_cdrop!` and `export_cdupclone!` over the type's policy, which take and return
+  its owners and handles;
+- memory C frees comes from the allocator C frees it with: Rust's, `RustAlloc`, when C
+  frees it through an exported release;
+- a callback C passes an export is a `CFn` or a `CFnBox`, and a value C keeps a
+  `CPayload`; and
+- the gateway's body runs in `callback::barrier`.
 
 ### Porting types › Structs
 
@@ -77,10 +106,14 @@ it, for UB or functionality, is a unit test.
 
 ## Reviewing
 
+Reviewing reads `docs/goals.md`.
+
 ### Reviewing › Objectives
 
 A workset's use of ffibox's primitives is reviewed against ffibox's documentation, and its
-hand-written representations against the contract ffibox would have enforced.
+hand-written representations against the contract ffibox would have enforced. Under `ub`,
+the hazards `docs/goals.md`'s G9 lists are the checklist: each is excluded by the
+primitive or the producer's contract it names, or is a finding.
 
 ### Reviewing › Reports
 
