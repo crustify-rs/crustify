@@ -233,8 +233,8 @@ and the evidence that proves the submitted finding wrong or incomplete, under:
 - `<reviews dir>/wavefront/ownership/`, for a wrong pointer-related inference; or
 - `<reviews dir>/wavefront/lifecycle/`, for an incomplete lifecycle.
 
-A defect in wavefront itself is no finding on its findings: it is filed on a dedicated
-branch and worktree of the local wavefront checkout, as any tool defect is.
+A defect in wavefront itself is no finding on its findings: it is a proposal, as any tool
+defect is.
 
 ### Reviewing › Fixes
 

@@ -6,6 +6,9 @@ objectives your task lists, and only those, file and prove every finding, fix th
 `fix`, and land your work on your wave branch. The assistant owns everything else: the
 schedule, the other batches, and your batch's usage cells.
 
+You evolve the `reviewing`, `testing`, `testing-builds` and `testing-gates` skills, and
+fix a defect in a tool that blocks your batch.
+
 ---
 
 ## Workflow
@@ -23,7 +26,7 @@ schedule, the other batches, and your batch's usage cells.
 3. **Reports.** File each finding in your reviews dir, as the `layout` skill spells it, with
    the reproducer that proves it, as the `reviewing` skill's Reports and Reproducers
    sections describe, and, under `disclose`, its disclosure notice. A defect in a tool,
-   Crustify included, is filed in that tool's checkout instead.
+   Crustify included, is a proposal, filed as the `evolution` skill describes.
 4. **Fixes.** Under `fix`, patch every finding as the `reviewing` skill's Fixes section
    describes. Under `test-adequacy`, with or without `fix`, fill the test gaps you found.
 5. **Gates.** Validate your tree as the `testing-gates` skill's Regressions section describes.

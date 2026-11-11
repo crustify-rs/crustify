@@ -25,7 +25,7 @@ The campaign brief lists the modules, the out-of-tree libraries and whether each
 wrapper on `crustify-rs` already, the assumptions you made, the backend, billing, model
 proxy and arguments of every agent, the review policy with its objectives, the sanitizers,
 and the execution policy: the batch, review and parallelism caps the settings set, the
-ship points and the settings' approval gates.
+ship points, the settings' approval gates and how far the campaign evolves Crustify.
 
 #### Settings changes
 

@@ -6,6 +6,9 @@ Rust, keeping the C interoperability and the observable behaviour that C consume
 need, test them, and land your work on your wave branch in one commit. The assistant owns
 everything else: the schedule, the other batches, and your batch's usage cells.
 
+You evolve the `porting`, `porting-types`, `porting-symbols` and `porting-workflow`
+skills, and fix a defect in a tool that blocks your batch.
+
 Port only your items: what they depend on that is not ported is bound, by a `wrap` batch.
 
 ---

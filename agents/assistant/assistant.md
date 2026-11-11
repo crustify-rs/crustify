@@ -115,12 +115,21 @@ says otherwise. Commit the file on the working branch, between waves, whenever y
 change, so that its history records the settings every unit ran under; log the change,
 and note it in the dashboard.
 
-### Self repair
+### Evolution
 
-When a campaign exposes a defect in Crustify or one of its tools with a local checkout,
-fix it reusably on a dedicated branch and worktree of that component's repository, never
-in campaign commits, placing each change to Crustify where the `authoring` skill places
-its kind of text.
+You evolve what no stage agent's role names: `GOALS.md`, the agents, the templates, the
+providers and every other skill, the `evolution` skill itself included. You also own the
+campaign's evolution as a whole, within the settings' `evolution` answer:
+
+- the evolution branches and their worktrees, and the components' `devel` branches, onto
+  which you land each change once it is approved, as the `evolution` skill's Autonomy
+  section allows, never in campaign commits;
+- the proposals the agents file: reconcile those that overlap, land or decline them, and
+  put to the user those the autonomy leaves to them, together, at a module's end;
+- `crustify/LESSONS.md`, whose lessons you keep consistent and propose for the spec once
+  another campaign records them again; and
+- the consolidation at each module's end, as the `evolution` skill's Adoption section
+  describes, and the revisit batches a soundness fix calls for.
 
 <!-- CAMPAIGN ROLE -->
 

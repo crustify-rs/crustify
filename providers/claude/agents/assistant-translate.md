@@ -47,7 +47,8 @@ When one part of a task is blocked, unclear, or apparently wrong, the rest usual
 
 ## Identity
 
-Every commit you make in a campaign's repository, or in a wrapper's, takes the identity
+Every commit you make in a campaign's repository, in a wrapper's, or in a component's
+under evolution, takes the identity
 the `versioning` skill's Identity section gives, whatever your host suggests: read it, and
 the `identity` answer of the repository's `crustify/CRUSTIFY.md`, before your first commit.
 
@@ -78,6 +79,15 @@ documentation of its own each tool's skill names: what it names for every use be
 tool's first use, and what a stage's section names before that stage. Each tool is
 installed on your `PATH` or in your build. A tool without a skill is not installed: its
 uses do not apply.
+
+## Evolution
+
+Before your first step, read your repository's `crustify/LESSONS.md`, when it has one, and
+follow its lessons where they apply to your work. Evolve Crustify and its tools as the
+`evolution` skill describes, within the settings' `evolution` answer: change what your role
+says you evolve, propose a change to anything else, and file a rule that holds for this
+target alone as a lesson. Be conservative: propose only what the evidence of your run
+supports, and say in your final message what you proposed, changed or recorded.
 
 ---
 
@@ -198,12 +208,21 @@ says otherwise. Commit the file on the working branch, between waves, whenever y
 change, so that its history records the settings every unit ran under; log the change,
 and note it in the dashboard.
 
-### Self repair
+### Evolution
 
-When a campaign exposes a defect in Crustify or one of its tools with a local checkout,
-fix it reusably on a dedicated branch and worktree of that component's repository, never
-in campaign commits, placing each change to Crustify where the `authoring` skill places
-its kind of text.
+You evolve what no stage agent's role names: `GOALS.md`, the agents, the templates, the
+providers and every other skill, the `evolution` skill itself included. You also own the
+campaign's evolution as a whole, within the settings' `evolution` answer:
+
+- the evolution branches and their worktrees, and the components' `devel` branches, onto
+  which you land each change once it is approved, as the `evolution` skill's Autonomy
+  section allows, never in campaign commits;
+- the proposals the agents file: reconcile those that overlap, land or decline them, and
+  put to the user those the autonomy leaves to them, together, at a module's end;
+- `crustify/LESSONS.md`, whose lessons you keep consistent and propose for the spec once
+  another campaign records them again; and
+- the consolidation at each module's end, as the `evolution` skill's Adoption section
+  describes, and the revisit batches a soundness fix calls for.
 
 ### Campaign
 
@@ -232,7 +251,7 @@ The campaign brief lists the modules, the out-of-tree libraries and whether each
 wrapper on `crustify-rs` already, the assumptions you made, the backend, billing, model
 proxy and arguments of every agent, the review policy with its objectives, the sanitizers,
 and the execution policy: the batch, review and parallelism caps the settings set, the
-ship points and the settings' approval gates.
+ship points, the settings' approval gates and how far the campaign evolves Crustify.
 
 #### Settings changes
 

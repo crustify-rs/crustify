@@ -50,9 +50,9 @@ its own.
 | `objective` | execution objective for every item: `wrap` or `port`, or a later stage of a port campaign, `port/layout`, `port/memory` or `port/unexport`, as `scheduling`'s Later stages section describes |
 | `items` | non-empty worklist; every item selects the same route |
 | `wave`, `batch`, `link_unit`, `module`, `foundational` | the [batch fields](#2-batch-fields) |
-| `base_branch`, `backend`, `billing`, `model_proxy`, `args` | the [run fields](#1-run-fields) |
+| `base_branch`, `backend`, `billing`, `model_proxy`, `args`, `revisions` | the [run fields](#1-run-fields) |
 
-All but `model_proxy` and `args` are required, and no other root field is accepted.
+All but `model_proxy`, `args` and `revisions` are required, and no other root field is accepted.
 
 ## 1. Run fields
 
@@ -63,6 +63,7 @@ All but `model_proxy` and `args` are required, and no other root field is accept
 | `billing` | how the provider CLI authenticates: `subscription`, its own logged-in account, or `api`, an API key from the environment |
 | `model_proxy` | optional: the gateway the CLI's requests go through, with its own key, such as `openrouter`; it needs `api` billing, and its rates price the run |
 | `session_id` | the session the run became, recorded once it starts, never before |
+| `revisions` | the commits of Crustify and of each tool the run uses, by name, such as `{"crustify": "<sha>", "wavefront": "<sha>"}`, recorded before it launches |
 | `args` | optional: arguments passed to the provider CLI unchanged, after Crustify's own, in the CLI's own syntax, such as `["--model", "opus", "--effort", "high"]` |
 
 Without `args` naming one, the CLI runs its own default model; Codex through a model proxy
@@ -160,7 +161,7 @@ schema, corrects what earlier runs decided, and re-plans the waves its changes m
 
 | root field | meaning |
 |---|---|
-| `backend`, `billing`, `model_proxy`, `args` | the [run fields](#1-run-fields) |
+| `backend`, `billing`, `model_proxy`, `args`, `revisions` | the [run fields](#1-run-fields) |
 
 Both run fields are required, and no other root field is accepted. It is written as
 `task.json` in the run's artifact dir, `crustify/artifacts/planner/run-<n>/`.

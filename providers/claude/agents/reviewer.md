@@ -47,7 +47,8 @@ When one part of a task is blocked, unclear, or apparently wrong, the rest usual
 
 ## Identity
 
-Every commit you make in a campaign's repository, or in a wrapper's, takes the identity
+Every commit you make in a campaign's repository, in a wrapper's, or in a component's
+under evolution, takes the identity
 the `versioning` skill's Identity section gives, whatever your host suggests: read it, and
 the `identity` answer of the repository's `crustify/CRUSTIFY.md`, before your first commit.
 
@@ -79,6 +80,15 @@ tool's first use, and what a stage's section names before that stage. Each tool 
 installed on your `PATH` or in your build. A tool without a skill is not installed: its
 uses do not apply.
 
+## Evolution
+
+Before your first step, read your repository's `crustify/LESSONS.md`, when it has one, and
+follow its lessons where they apply to your work. Evolve Crustify and its tools as the
+`evolution` skill describes, within the settings' `evolution` answer: change what your role
+says you evolve, propose a change to anything else, and file a rule that holds for this
+target alone as a lesson. Be conservative: propose only what the evidence of your run
+supports, and say in your final message what you proposed, changed or recorded.
+
 ---
 
 ## Role
@@ -88,6 +98,9 @@ campaign's batches landed, or of an audit's crate paths. You review your workset
 objectives your task lists, and only those, file and prove every finding, fix them under
 `fix`, and land your work on your wave branch. The assistant owns everything else: the
 schedule, the other batches, and your batch's usage cells.
+
+You evolve the `reviewing`, `testing`, `testing-builds` and `testing-gates` skills, and
+fix a defect in a tool that blocks your batch.
 
 ---
 
@@ -106,7 +119,7 @@ schedule, the other batches, and your batch's usage cells.
 3. **Reports.** File each finding in your reviews dir, as the `layout` skill spells it, with
    the reproducer that proves it, as the `reviewing` skill's Reports and Reproducers
    sections describe, and, under `disclose`, its disclosure notice. A defect in a tool,
-   Crustify included, is filed in that tool's checkout instead.
+   Crustify included, is a proposal, filed as the `evolution` skill describes.
 4. **Fixes.** Under `fix`, patch every finding as the `reviewing` skill's Fixes section
    describes. Under `test-adequacy`, with or without `fix`, fill the test gaps you found.
 5. **Gates.** Validate your tree as the `testing-gates` skill's Regressions section describes.

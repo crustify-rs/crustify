@@ -116,3 +116,9 @@ such as `crustify/reviews/modules/libgit2/src/libgit2/refs.c/wave-3/batch-1/`, i
 run's plan corrections under `crustify/reviews/planner/`, as
 [`reviewing`](../../verification/reviewing/SKILL.md)'s Reports and Plan corrections sections
 lay them out.
+
+## 8. Evolution
+
+The campaign's lessons sit in `crustify/LESSONS.md`, and its proposals for Crustify and its
+tools under `crustify/evolution/<slug>/`, as [`evolution`](../../crustify/evolution/SKILL.md)
+describes.

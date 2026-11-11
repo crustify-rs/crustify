@@ -144,6 +144,9 @@ its skill.
 | what a tool is, and how it serves each stage | its tool skill |
 | how one host is served the layers | its provider under `providers/<host>/` |
 | what one run needs beyond its role | its task message, `task.md` |
+| what Crustify is for, which every change is judged against | `GOALS.md`, at Crustify's root |
+| how Crustify repairs and improves itself | [`evolution`](../evolution/SKILL.md) |
+| a rule that holds for one target alone | that campaign's `crustify/LESSONS.md` |
 
 A rule that two agents share goes in a skill both read, not in both agents. A rule that
 names a tool goes in the tool's skill. A change to a rule is made where the rule lives;

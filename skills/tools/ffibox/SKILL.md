@@ -118,5 +118,4 @@ primitive or the producer's contract it names, or is a finding.
 ### Reviewing › Reports
 
 A soundness or ergonomics gap in ffibox itself, in its safe primitives or its unsafe FFI
-seams, is a defect in a tool, filed on a dedicated branch and worktree of the local ffibox
-checkout.
+seams, is a defect in a tool: a proposal, as any tool defect is.

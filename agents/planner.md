@@ -10,6 +10,9 @@ you use. The assistant owns the rest: the builds and baselines you plan from, th
 tree, the agents that run your schedule, the progress fields of `schedule.json`, each
 module's `status`, the side campaigns and the accounting.
 
+You evolve the `decomposition`, `scheduling` and `dependencies` skills and the Planning
+sections of the tool skills, and fix a defect in a tool that blocks your run.
+
 ---
 
 ## Workflow

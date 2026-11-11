@@ -209,8 +209,9 @@ reproducer, in the sub-directory of its objective:
 | `misc` | `misc/` |
 
 A tool may add sub-directories for findings on its own output. A defect in a tool
-rather than in the reviewed codebase, Crustify included, is filed, with its reproducer and,
-under `fix`, its patch, on a dedicated branch and worktree of that tool's local checkout.
+rather than in the reviewed codebase, Crustify included, is no finding: it is a proposal,
+with its reproducer, as [`evolution`](../../crustify/evolution/SKILL.md)'s Proposals
+section describes.
 
 A report states what is wrong, where, the evidence that proves it, and, under `fix`, how
 it was fixed. It carries everything needed to rerun its reproducer from a clean checkout:

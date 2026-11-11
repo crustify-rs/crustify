@@ -74,9 +74,22 @@ Unanswered optional questions are decided by the assistant.
    `crustify/artifacts/audit-dashboard.md`, from `templates/audit/dashboard.template.md`.**
    - Answer: `<default | <dashboard path>, <templates/audit/dashboard.template.md | custom template>>`
 
+## Evolution
+
+10. **How far may the audit evolve Crustify and its tools from what it exposes, and for
+    how long without asking you? Agents file proposals and record the target's lessons;
+    fixes and improvements land on each component's `devel` branch, never on its `main`.**
+    (`id: evolution`)
+    - Answer: `<off | propose | repair | evolve>[, unattended: the whole audit]`
+    - `propose`: proposals and lessons only. `repair`: also fixes of defects. `evolve`: also
+      improvements and new tools. Without `unattended`, you approve each change at the
+      audit's end. Merging `devel` into `main`, and a new tool upstream, always need your
+      approval.
+    - By default: `propose`.
+
 ## Commits
 
-10. **Which git identity should the campaign's commits carry: an author, and any
+11. **Which git identity should the campaign's commits carry: an author, and any
     co-authors? By default, Crustify's own, `crustify <crustify@berkeley.edu>` (the
     GitHub account `crustify-ai`), as the author, with no co-author.** (`id: identity`)
     - Answer: `<default | author: Name <email>[, co-authors: Name <email>, ...]>`

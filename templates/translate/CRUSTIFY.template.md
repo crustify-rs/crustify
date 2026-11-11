@@ -92,9 +92,23 @@ Unanswered optional questions use their defaults.
       with the boundary each would leave, and record your choice here.
     - By default: after every integrated module.
 
+## Evolution
+
+14. **How far may the campaign evolve Crustify and its tools from what it exposes, and for
+    how long without asking you? Agents file proposals and record the target's lessons;
+    fixes and improvements land on each component's `devel` branch, never on its `main`.**
+    (`id: evolution`)
+    - Answer: `<off | propose | repair | evolve>[, unattended: <until the next ship point |
+      N modules | the whole campaign>]`
+    - `propose`: proposals and lessons only. `repair`: also fixes of defects. `evolve`: also
+      improvements and new tools. Without `unattended`, you approve each change at the next
+      module's end. Merging `devel` into `main`, and a new tool upstream, always need your
+      approval.
+    - By default: `propose`.
+
 ## Commits
 
-14. **Which git identity should the campaign's commits carry: an author, and any
+15. **Which git identity should the campaign's commits carry: an author, and any
     co-authors? By default, Crustify's own, `crustify <crustify@berkeley.edu>` (the
     GitHub account `crustify-ai`), as the author, with no co-author.** (`id: identity`)
     - Answer: `<default | author: Name <email>[, co-authors: Name <email>, ...]>`
@@ -103,20 +117,20 @@ Unanswered optional questions use their defaults.
 
 Answer these approval-gate questions only if question 6 is answered `no`.
 
-15. **Should I wait for your approval before starting the setup phase?** (`id: gates.setup`)
+16. **Should I wait for your approval before starting the setup phase?** (`id: gates.setup`)
     - Answer: `<yes | no>`
-16. **Should I wait for your approval before starting the translation phase?**
+17. **Should I wait for your approval before starting the translation phase?**
     (`id: gates.translation`)
     - Answer: `<yes | no>`
-17. **Should I wait for your approval before integrating each module into the working
+18. **Should I wait for your approval before integrating each module into the working
     branch?** (`id: gates.module`)
     - Answer: `<yes | no | not applicable>`
-18. **Should I wait for your approval before starting review passes?** (`id: gates.review`)
+19. **Should I wait for your approval before starting review passes?** (`id: gates.review`)
     - Answer: `<yes | no | not applicable>`
 
 # Benchmark recording questions
 
-19. **Where and in what format should the dashboard be recorded? By default, at
+20. **Where and in what format should the dashboard be recorded? By default, at
     `crustify/artifacts/dashboard.md`, from the standard template.** (`id: dashboard`)
     - Answer: `<default | <dashboard path>, <standard | custom template>>`
 
