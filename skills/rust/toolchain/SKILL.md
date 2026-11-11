@@ -18,7 +18,7 @@ components. Miri, the sanitizer and coverage instrumentation of the Rust,
 BorrowSanitizer's `bsan` toolchain aside, and the formatter's unstable options need
 nightly: a nightly pinned by date, recorded in the workspace manifest as
 `[workspace.metadata.crustify] nightly = "nightly-<date>"`, and named explicitly wherever it
-runs, as `cargo +nightly-<date> …`. A toolchain is moved forward only between waves, in a
+runs. A toolchain is moved forward only between waves, in a
 commit of its own.
 
 ## 2. Edition and manifests
@@ -88,8 +88,7 @@ Every crate is formatted by `rustfmt`, configured once in the workspace's `rustf
 | `reorder_impl_items` | `true` |
 
 The options from `imports_granularity` down are unstable, so the formatter runs on the
-pinned nightly, as `cargo +nightly-<date> fmt --all`. A landing's tree is formatted; the
-gate checks it with `--check`.
+pinned nightly. A landing's tree is formatted, and the gate checks that it is.
 
 ## 5. Unsafe code
 

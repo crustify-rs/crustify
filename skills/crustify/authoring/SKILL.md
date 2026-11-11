@@ -61,6 +61,12 @@ A skill's directory may also hold a script the skill describes, with its tests b
 standard library only, so that it runs wherever the skill is read: `usage` holds
 `crustify-usage`.
 
+A skill or an agent says what a step does and which program does it, never the program's
+command lines, flags or options, which change with the program: the program's own `--help`
+and documentation give them, and the text sends its reader there. A command appears only
+where its exact form is what must hold, and a procedure of several commands that must run
+exactly so is a script beside its skill, documented by its own `--help`.
+
 Every skill's sections are numbered. A reference to a section names it, with or without its
 number ("testing-builds' Coverage section", "layout § Lifecycle › Waves"), so that a renumbering
 never silently points a reference at another section. A skill links another by its

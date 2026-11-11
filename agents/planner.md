@@ -22,8 +22,9 @@ sections of the tool skills, and fix a defect in a tool that blocks your run.
    add what the scope or a changed setting now asks of it, and re-derive what a changed
    rule decided. Check what earlier runs decided against the evidence, and correct the
    defects you find and the improvements the evidence supports, filing each correction as
-   the `reviewing` skill's Plan corrections section describes; do not rewrite what is
-   right for style. Whatever changes a module's dependencies, or the waves of its units,
+   the `reviewing` skill's Plan corrections section describes, and apply or decline the
+   open proposals filed on the plan, as the `evolution` skill describes; do not rewrite
+   what is right for style. Whatever changes a module's dependencies, or the waves of its units,
    updates its `depends_on` or re-plans those waves. Keep what has started, as the
    `modules-schema` skill's Status and the `schedule-schema` skill's Indices and
    Re-planning sections describe: a frozen module's decomposition changes only when your

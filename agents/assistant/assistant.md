@@ -105,7 +105,7 @@ silently broaden the approved scope.
 
 The user may edit the settings while the campaign runs, for the work not yet started.
 Reread them before each unit of work the Campaign section names, and compare them with
-the settings the previous unit ran under, `git show <its base>:crustify/CRUSTIFY.md`.
+the settings the previous unit ran under, the file as committed at its base.
 Apply each change as the user's decision, without asking, unless an answer is invalid or
 ambiguous: then ask in an interactive session, and otherwise keep the previous answer and
 report it. The source is fixed, and the kind changes only as the Campaign section allows.

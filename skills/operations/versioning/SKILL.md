@@ -87,14 +87,10 @@ progress commit is `progress: wave-<index>`, and an integration's merge, in the 
 repository and on the fork's `main`, `integrate <module>`, the module written as
 [`modules-schema`](../../artifacts/modules-schema/SKILL.md) writes it.
 
-The landing operation is a local push through the Git common directory:
-
-```bash
-git push "$(git rev-parse --git-common-dir)" HEAD:refs/heads/<integration branch>
-```
-
-`git update-ref` is no substitute: its compare-and-swap form makes the ref update atomic,
-but does not enforce that the new commit descends from the expected old commit.
+The landing operation is a local push of the batch's tip to the integration branch through
+the repository's Git common directory, which accepts only a fast-forward. A direct ref
+update is no substitute: its compare-and-swap form makes the update atomic, but does not
+enforce that the new commit descends from the expected old commit.
 
 ### 4.1 The landing lock
 
@@ -130,6 +126,8 @@ holder records itself beside the lock, in `<integration branch>.lock.holder`, as
 and the CLI's. A waiter bounds each wait, to stay within the time a single command may run,
 and waits again when it expires. For example, with `$CLI_PID` the agent CLI's pid, found by
 walking up the shell's parent processes:
+<!-- TODO: this procedure must run exactly so: it belongs in a script beside this skill,
+documented by its `--help`, as `authoring` describes. -->
 
 ```bash
 lock="$(git rev-parse --git-common-dir)/crustify/landing/<integration branch>.lock"
@@ -155,13 +153,9 @@ then run again, as any failed batch is.
 
 Every landing is a fast-forward, so an integration branch is linear, and each batch's
 commits are one unbroken run of it, ending at its branch's tip and starting after the wave
-base or the tip of the batch that landed before it:
-
-```bash
-git rev-list --reverse <batch branch> --not <wave base> <the wave's other landed batch branches>
-```
-
-They become the batch's `commits` in `schedule.json`.
+base or the tip of the batch that landed before it: the commits its branch reaches and
+neither the wave base nor the wave's other landed batches reach, oldest first, which
+become the batch's `commits` in `schedule.json`.
 
 The integration branch is never reset, force-updated or moved backward, and nothing is
 pushed to a remote. The worktree stays after landing, until it is purged as [Lifecycle](#5-lifecycle)
@@ -269,22 +263,6 @@ as `Name <email>`. The author named there then authors and commits every commit,
 message ends with one `Co-Authored-By:` trailer per co-author and no other, none that an
 agent's host suggests included.
 
-The identity is passed explicitly to every command that writes a commit, a rebase, a merge
-and a cherry-pick as much as a commit, since the host may have no git identity of its own.
-By default:
-
-```bash
-git -c user.name=crustify -c user.email=crustify@berkeley.edu commit ...
-```
-
-and with `author: Name <email>, co-authors: crustify <crustify@berkeley.edu>`:
-
-```bash
-git -c "user.name=Name" -c user.email=email commit -F - <<'MSG'
-<subject>
-
-<body>
-
-Co-Authored-By: crustify <crustify@berkeley.edu>
-MSG
-```
+The identity is passed explicitly, as configuration on the command line, to every command
+that writes a commit, a rebase, a merge and a cherry-pick as much as a commit, since the
+host may have no git identity of its own.

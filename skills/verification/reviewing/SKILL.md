@@ -239,7 +239,7 @@ without one.
 
 Each reproducer is a standalone Cargo package: its `Cargo.toml` declares an empty
 `[workspace]` table and depends on the affected crate through a relative `path`, and its
-`src/main.rs` runs one scenario, so that `cargo run` exits non-zero on the affected commit.
+`src/main.rs` runs one scenario, so that running it exits non-zero on the affected commit.
 
 ## 6. Fixes
 

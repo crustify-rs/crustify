@@ -87,7 +87,7 @@ code; once it reaches neither, as a port's later stages bring about, Miri covers
   behaviour, a panic or a failed assertion, which are findings. The mark goes once what it
   names no longer stops the test, as an integration or a later stage brings about. Neither
   `#[cfg(not(miri))]` nor test-name filters stand in for the attribute: with it in place,
-  `cargo miri test` runs every other test.
+  Miri runs every other test.
 
 A leak is not undefined behaviour, in Rust or in C, so neither a LeakSanitizer report,
 which ASan's runtime makes by default, nor Miri's leak check is a UB candidate.

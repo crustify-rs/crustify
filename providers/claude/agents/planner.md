@@ -85,8 +85,8 @@ uses do not apply.
 Before your first step, read your repository's `crustify/LESSONS.md`, when it has one, and
 follow its lessons where they apply to your work. Evolve Crustify and its tools as the
 `evolution` skill describes, within the settings' `evolution` answer: change what your role
-says you evolve, propose a change to anything else, and file a rule that holds for this
-target alone as a lesson. Be conservative: propose only what the evidence of your run
+says you evolve, propose a change to anything else, a campaign artifact another role owns
+included, and file a rule that holds for this target alone as a lesson. Be conservative: propose only what the evidence of your run
 supports, and say in your final message what you proposed, changed or recorded.
 
 ---
@@ -115,8 +115,9 @@ sections of the tool skills, and fix a defect in a tool that blocks your run.
    add what the scope or a changed setting now asks of it, and re-derive what a changed
    rule decided. Check what earlier runs decided against the evidence, and correct the
    defects you find and the improvements the evidence supports, filing each correction as
-   the `reviewing` skill's Plan corrections section describes; do not rewrite what is
-   right for style. Whatever changes a module's dependencies, or the waves of its units,
+   the `reviewing` skill's Plan corrections section describes, and apply or decline the
+   open proposals filed on the plan, as the `evolution` skill describes; do not rewrite
+   what is right for style. Whatever changes a module's dependencies, or the waves of its units,
    updates its `depends_on` or re-plans those waves. Keep what has started, as the
    `modules-schema` skill's Status and the `schedule-schema` skill's Indices and
    Re-planning sections describe: a frozen module's decomposition changes only when your

@@ -32,7 +32,7 @@ under `crustify/wavefront/`, which the configuration names as its `state_dir`,
 - `configs/wavefront-config.json`, the campaign's configuration, which every query of the
   bindings and reviews resolves through, with `"t3_dir": "t3"`;
 - `t3/`, the T3 tables, one campaign-wide pair; and
-- `ownership-store.json`, the findings submitted with the CLI's `--update`. A finding
+- `ownership-store.json`, the findings submitted to it through the CLI. A finding
   submitted once is queried again rather than re-derived.
 
 The configuration's `modules` hold one record per module of `modules.json`, named
@@ -98,7 +98,7 @@ the T3 tables are written, so that their cast edges resolve type-erased values: 
 type-erased units that no cast edge ties to a named type, and the units whose pointers
 carry the `string` property, that depend on no other module's types. Each candidate's body
 is read before it is admitted. Each member's lifecycle role is identified as
-`docs/type-lifecycle.md` describes and submitted with `--update`, so that the bindings of
+`docs/type-lifecycle.md` describes and submitted to the ownership store, so that the bindings of
 the foundational modules find it.
 
 ### Scheduling › Order
@@ -120,10 +120,10 @@ A row wavefront warns is stale is corrected or deleted.
 
 ### Scheduling › Waves and batches
 
-- A planner run schedules once, with `wavefront schedule`, its `schedule_seeds` the files
+- A planner run schedules once, its `schedule_seeds` the files
   of the modules it plans, without batch caps: the waves' batches are packed when each
   starts. The output is written to `crustify/tmp/`, never over `schedule.json`.
-- A wrap campaign schedules with `--api-headers-only`.
+- A wrap campaign schedules over the API headers alone, in wavefront's API mode.
 - A unit wavefront warns belongs to no module, and a module it warns claims no unit, are
   gaps in the decomposition, corrected before the schedule is used.
 - Wavefront's `modules` become `schedule.json`'s, each named back to its `link_unit`,
@@ -143,12 +143,12 @@ A row wavefront warns is stale is corrected or deleted.
 ### Scheduling › Wrap batches
 
 The units a batch's items depend on are their `depends_on` in the planner run's schedule,
-or `query dag --name <items>`. A wrap batch's items are closed over their wrap dependencies
-with `query dag --name <items> --api-headers-only`, less what has landed.
+or wavefront's dependency query over them. A wrap batch's items are closed over their wrap
+dependencies by that query in API mode, less what has landed.
 
 ### Scheduling › Later stages
 
-A port campaign's schedule, which is not `--api-headers-only`, gives each item its release
+A port campaign's schedule, which is not in API mode, gives each item its release
 points, which `schedule.json`'s items carry as wavefront records them, and which place its
 later stages: `opaque_after` a `port/layout`, `memory_unmanaged_after` a `port/memory` and
 `unreferenced_after` a `port/unexport`; a macro's or a typedef's places none. A stage's
@@ -174,18 +174,18 @@ Binding and porting read `docs/pointer-properties.md`, `docs/type-lifecycle.md`,
 ### Analysis
 
 An item's analysis queries the campaign's configuration, and its findings are submitted
-with `--update`. A type-erased parameter or field is looked up in the T3 tables before it
+to the ownership store. A type-erased parameter or field is looked up in the T3 tables before it
 is bound, and the binding names the type a row gives it rather than a raw pointer. The
 instances of a type generator share one generic, with per-instance aliases.
 
 ### Binding types › Surface
 
 A type's lifecycle primitives are identified as `docs/type-lifecycle.md` describes, and
-submitted with `--update`.
+submitted to the ownership store.
 
 ### Binding symbols › Function pointers
 
-A function pointer's record and its users are `query function_pointers --name <name>`'s,
+A function pointer's record and its users are those of wavefront's function-pointer query,
 named as `docs/graph.md`'s Nodes section names it, and the sites of one written inline,
 and what reaches them, are as `docs/batching.md`'s Release points section describes.
 <!-- TODO: no query lists an inline function pointer's sites yet: they are read from the
@@ -195,13 +195,13 @@ table that section names. -->
 
 Each foundational item's lifecycle role is in the ownership store, where planning
 submitted it, and is queried for every item of the batch. A role that the item's body
-contradicts is corrected with `--update`, and the correction named in the batch's commit
+contradicts is corrected in the ownership store, and the correction named in the batch's commit
 message.
 
 ### Porting types
 
 A ported type's lifecycle primitives are identified as `docs/type-lifecycle.md`
-describes, and submitted with `--update`.
+describes, and submitted to the ownership store.
 
 ## Reviewing
 
@@ -238,8 +238,7 @@ defect is.
 
 ### Reviewing › Fixes
 
-Under `fix`, each corrected or completed set of findings is submitted again with
-`--update`, and a completed lifecycle gets the representations the Rust is missing.
+Under `fix`, each corrected or completed set of findings is submitted again, and a completed lifecycle gets the representations the Rust is missing.
 
 ### Reviewing › Plan corrections
 

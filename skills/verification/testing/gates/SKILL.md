@@ -13,27 +13,15 @@ builds [`testing-builds`](../builds/SKILL.md) describes.
 Every batch checks, formats and lints the workspace on the tree it lands, with warnings
 denied, as [`toolchain`](../../../rust/toolchain/SKILL.md) describes, and tests what its
 change can affect: its module and the modules that depend on it, as `modules.json` records
-them, each by its tests' module paths:
-
-```bash
-cargo check --workspace --all-targets
-cargo +nightly-<date> fmt --all --check
-cargo clippy --workspace --all-targets -- -D warnings
-cargo test --workspace -- <the modules' test paths>
-```
+them, each by its tests' module paths.
 
 Every build of those gates runs in the raw bindings' campaign mode, as
 [`bindgen`](../../../rust/bindgen/SKILL.md)'s Build modes section describes, so that each fails when the
 committed bindings do not match their input. A batch that changed the raw bindings, or a
 landing that changes `c/`, also packages the safe crate, built alone in bundled mode from
-the C it packages:
-
-```bash
-CRUSTIFY_BUILD_VARIANT= cargo package --config 'patch.crates-io.<crate>.path="<path>"' ...
-```
-
-Until the out-of-tree wrappers are published, each crate the package depends on is patched
-to its local source, so that the package builds alone.
+the C it packages, with no build variant selected. Until the out-of-tree wrappers are
+published, each crate the package depends on is patched to its local source, so that the
+package builds alone.
 
 The tests run against the matching variant, or a private replacement, and each event runs
 them to its own depth:
@@ -57,10 +45,10 @@ BSan, when available, is run for every batch and at module end:
   [`concurrency`](../../../operations/concurrency/SKILL.md) describes, each under a `timeout`.
 
 A batch runs the tests it wrote under Miri. Miri is also run after every wave, as a gate
-over the whole workspace: one
-`cargo +nightly-<date> miri test` per test binary (`--lib`, and `--test <name>` for each
-integration binary), as many side by side as [`concurrency`](../../../operations/concurrency/SKILL.md) describes,
-each with `-- --skip compile_fail`. The gate passes only
+over the whole workspace: one Miri run on the pinned nightly per test binary, the library's
+and each integration suite's, as many side by side as
+[`concurrency`](../../../operations/concurrency/SKILL.md) describes, each skipping the
+compile-fail tests. The gate passes only
 with no Miri error: a test that stops at the foreign boundary without the attribute gets
 it, and any other Miri error is a UB candidate of the item it touches.
 

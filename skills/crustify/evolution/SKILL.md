@@ -5,8 +5,9 @@ description: "How Crustify repairs and improves itself from what its campaigns e
 
 # Evolution
 
-How a campaign changes the harness that runs it: Crustify's skills, agents, templates and
-providers, its tools, and the tools it lacks. A campaign exposes what the harness gets
+How a campaign changes the harness that runs it, Crustify's skills, agents, templates and
+providers, its tools and the tools it lacks, and how its agents propose changes to the
+campaign's artifacts that other roles own. A campaign exposes what the harness gets
 wrong, what it constrains needlessly and what it repeats by hand; evolution turns that
 evidence into changes, under the autonomy the settings' `evolution` answer grants, and
 this guidance itself among them. Where a change goes within Crustify is
@@ -15,7 +16,8 @@ this guidance itself among them. Where a change goes within Crustify is
 ## 1. Goals
 
 Every change is judged against Crustify's goals, [`GOALS.md`](../../../GOALS.md), read in
-full before the first proposal: a change serves one of them, or it is not made. A change to
+full before the first proposal: a change serves one of them, or it is not made. The goals
+are evolved too, when the evidence questions them, as `GOALS.md` describes. A change to
 a tool is judged against that tool's own goals and non-goals too, which keep what the tool
 is from drifting, such as an analysis that stays syntactic and does no data-flow analysis.
 <!-- TODO: the tools' goals documents are deferred; until each tool has one, a change that
@@ -38,6 +40,7 @@ Evolution starts from evidence a campaign produces, never from taste:
 | one representation hand-written in several places, or a TODO met again and again | a primitive or tool feature that is missing |
 | one procedure repeated by hand: the same script written again, the same queries run in sequence | a tool, or a subcommand of one |
 | a signal evolution missed, or a proposal that proved wrong | a defect in this guidance |
+| a goal no decision cites, two that keep conflicting the same way, or a well-founded change no goal serves | a change to the goals |
 
 A proposal needs one of these, with its evidence: a defect, a failure, a recurring
 finding, a workaround or a measured waste. Fewer, well-founded proposals serve better than
@@ -53,8 +56,10 @@ Each signal goes to one destination:
 - **a lesson**: a rule that holds for this target alone, recorded in the campaign's
   [`LESSONS.md`](#5-lessons);
 - **the spec**: a skill, an agent, a template or a provider, where `authoring` places it;
-  or
-- **a tool**: its code, its documentation or its tests, or a new tool.
+- **a tool**: its code, its documentation or its tests, or a new tool; or
+- **a campaign artifact**: the plan, the dependencies, the schedule or the dashboard, where
+  the evidence shows one wrong or improvable and another role owns it. Its owner applies
+  the proposal or declines it, a plan's at the next planner run.
 
 The test between a lesson and the spec is generality: a rule that can only be stated in
 the target's own names is a lesson, and one the spec takes is stated without them, as it
@@ -65,8 +70,8 @@ would hold for any C codebase.
 A proposal is filed in the campaign's repository under `crustify/evolution/<slug>/`, as
 its `PROPOSAL.md`: the signal and its evidence, with the runs, findings and commits it
 cites; its destination; the change, or the patch; how it was validated; and its status,
-`open`, `landed`, with the commit it landed as, or `declined`, with why. A proposal that
-changes nothing of Crustify, a lesson's, is not filed: the lesson records it.
+`open`, `landed`, with the commit it landed as, or `declined`, with why. A lesson is not
+filed as a proposal: `LESSONS.md` records it.
 
 A defect in a tool found while reviewing is such a proposal, not a finding on the reviewed
 code, and is filed with its reproducer.
@@ -121,7 +126,8 @@ The settings' `evolution` answer sets how far a campaign evolves the harness:
 Its `unattended` part says how long a change lands on `devel` without the user's approval:
 until the next ship point, across a number of modules, or for the whole campaign; without
 it, the user approves each at the next module's end, or at an audit's end. Merging a component's `devel` into
-its `main`, and merging a new tool upstream, always need the user's approval.
+its `main`, merging a new tool upstream, and changing `GOALS.md` always need the user's
+approval.
 
 ## 9. Adoption
 

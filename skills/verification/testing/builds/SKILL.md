@@ -26,8 +26,8 @@ commands run from it, its `version` raised whenever a command changes. They are:
   - `msan`, which instruments every component, the standard library included;
   - `tsan`, separate from `asan-ubsan`, since ASan and TSan instrument the same memory
     operations and their runtimes conflict; and
-  - `bsan`, when BorrowSanitizer's `bsan` toolchain is installed (`cargo bsan --version`
-    succeeds); it instruments the C through its own matched clang.
+  - `bsan`, when BorrowSanitizer's `bsan` toolchain is installed and answers its version;
+    it instruments the C through its own matched clang.
 
 A Rust- or bindgen-only change reuses a matching variant: same C revision, `build.json`
 version, compiler and instrumentation. Nothing writes into a variant's `dir`: each run's
@@ -46,7 +46,7 @@ alike, and count the code under test only:
   from a clang of the pinned nightly's LLVM major version, and the Rust is compiled on that
   nightly with `-C instrument-coverage`. One profiling runtime counts both, into a profile
   per process and module (`LLVM_PROFILE_FILE=<dir>/%p-%m.profraw`), and the nightly's
-  `llvm-profdata` and `llvm-cov` read both. gcc's `--coverage` and gcov are not used: their
+  `llvm-profdata` and `llvm-cov` read both. gcc's coverage instrumentation and gcov are not used: their
   lines follow the line table of the optimized code, which the optimization level changes,
   so their figures cannot be compared with Rust's.
 - **Test code.** Test code is not instrumented, so it is neither credited as covered nor

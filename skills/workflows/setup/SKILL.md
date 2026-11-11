@@ -93,7 +93,7 @@ Once the plan exists and before the first wave launches:
 1. each selected run names a backend, a billing and, optionally, a model proxy and the
    arguments its CLI takes;
 2. the backend's executable is on the `PATH` of the process that spawns agents, and
-   answers `--version`;
+   reports its version;
 3. the credential variables its billing and model proxy need are set, checked without
    printing their values;
 4. an unsupported combination of backend, billing and model proxy is rejected;

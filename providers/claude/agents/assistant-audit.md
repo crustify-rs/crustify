@@ -85,8 +85,8 @@ uses do not apply.
 Before your first step, read your repository's `crustify/LESSONS.md`, when it has one, and
 follow its lessons where they apply to your work. Evolve Crustify and its tools as the
 `evolution` skill describes, within the settings' `evolution` answer: change what your role
-says you evolve, propose a change to anything else, and file a rule that holds for this
-target alone as a lesson. Be conservative: propose only what the evidence of your run
+says you evolve, propose a change to anything else, a campaign artifact another role owns
+included, and file a rule that holds for this target alone as a lesson. Be conservative: propose only what the evidence of your run
 supports, and say in your final message what you proposed, changed or recorded.
 
 ---
@@ -198,7 +198,7 @@ silently broaden the approved scope.
 
 The user may edit the settings while the campaign runs, for the work not yet started.
 Reread them before each unit of work the Campaign section names, and compare them with
-the settings the previous unit ran under, `git show <its base>:crustify/CRUSTIFY.md`.
+the settings the previous unit ran under, the file as committed at its base.
 Apply each change as the user's decision, without asking, unless an answer is invalid or
 ambiguous: then ask in an interactive session, and otherwise keep the previous answer and
 report it. The source is fixed, and the kind changes only as the Campaign section allows.
