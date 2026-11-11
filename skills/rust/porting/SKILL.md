@@ -18,8 +18,9 @@ it have landed, as [`scheduling`](../../planning/scheduling/SKILL.md)'s Later st
 section schedules them. An item no C uses is native in its API and its implementation from
 its port.
 
-A later stage changes the item and the code inside the crate that reaches its C form, its
-seams and export gateways, never the safe API its consumers use, and keeps the item's tests
+A later stage changes the item and the code inside the crate that reaches its C form, in
+its module's unsafe regions, as the [conventions](../conventions/SKILL.md)' Unsafe regions
+section describes, never the safe API its consumers use, and keeps the item's tests
 passing. A stage that moves state out of C, a lock or a handle a type held in its C layout,
 or memory C's allocator held, moves its uses onto the standard library where
 [`binding`](../binding/SKILL.md)'s Safe boundary section lets it.
@@ -36,7 +37,8 @@ no C-interoperability requirement remains, an out-of-tree library's entity inclu
 While C consumers remain, a ported item is re-exported to C as the
 [conventions](../conventions/SKILL.md)' Exports section describes:
 
-- The raw gateway reconstructs safe wrappers and calls the native function.
+- The raw gateway, its module's `ffi_export` region, reconstructs safe wrappers and calls
+  the native function.
 - The gateway is compiled only under its module's export feature, which stays off until
   the module is integrated, so that the exports never collide with the C they replace.
 - At integration, the Rust static library is linked in place of the TU through the actual
@@ -80,7 +82,7 @@ while what they name follows its later stages, so that its consumers never chang
 `binding`'s Safe layout section describes:
 
 - `port/layout`: the struct, wrapped until then, takes a Rust-native layout, its C layout
-  gone with its last C layout user. `Foo` is defined in its Rust module, each field of the
+  gone with its last C layout user. `Foo` is defined in its module's native code, out of `ffi_import`, each field of the
   native type that keeps the ownership the analysis established, an owning string a
   `String` and a borrowed one a borrow; `FooRef<'a>` and `FooMut<'a>` become aliases of
   `&'a Foo` and `&'a mut Foo`, and the getters and setters move to `impl Foo`, reading and

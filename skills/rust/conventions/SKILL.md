@@ -48,8 +48,8 @@ A callable macro shim is `crustify_<NAME>`.
 
 ### 1.4 Exports
 
-Each ported module has one `mod ffi_export { use super::*; ... }` raw ABI gateway in its
-Rust file, whose exports use `#[unsafe(no_mangle)] extern "C"` under the bare C names: the
+Each ported module has one raw ABI gateway, its `ffi_export` region, as
+[Unsafe regions](#21-unsafe-regions) describes, whose exports use `#[unsafe(no_mangle)] extern "C"` under the bare C names: the
 module's externally visible functions and globals, and the `static inline` functions its
 headers define. Static functions and static globals are not exported: nothing outside
 their TU reaches them. The exports serve the target's remaining C, its tests and
@@ -101,6 +101,41 @@ Where a C layout has no idiomatic Rust counterpart, the tree adapts it in the co
 Rust way and keeps the C path recognizable. A batch names the `.rs` file each of its items
 belongs in, as `src/<link-unit>/…/<file>.rs`. Entities sharing a
 definition site co-home. A home may be shared across waves.
+
+### 2.1 Unsafe regions
+
+A module's unsafe code is confined to at most two inline child modules of its file, its
+unsafe regions, so that the rest of the file, its native code, holds none:
+
+- `mod ffi_import`: what the module reaches in C: its calls through the raw bindings, the C
+  layouts it wraps with their handles and accessors, the owners and lifecycle policies over
+  C's allocator, and the trampolines and contexts through which C calls a Rust closure
+  back; and
+- `mod ffi_export { use super::*; … }`: the gateway through which C reaches the module by
+  symbol, as [Exports](#14-exports) describes, compiled only under its
+  [export feature](#15-export-features).
+
+Unsafe code is every `unsafe` block, `unsafe fn`, `unsafe impl`, `unsafe extern` block and
+`#[unsafe(…)]` attribute, and every invocation of another crate's macro that expands to
+one, such as ffibox's `define_ctype!`, which the compiler's `unsafe_code` lint does not
+see. Outside the regions, only the raw bindings hold any. The regions take the lint back as
+[`toolchain`](../toolchain/SKILL.md)'s Unsafe code section describes.
+
+A region exposes to its module only what [`binding`](../binding/SKILL.md)'s Safe boundary
+section lets it expose, and the module re-exports the public items a region defines, as
+`pub use ffi_import::{Foo, FooBox, FooMut, FooRef};`, so that their paths do not depend on
+which side defines them. A type's inherent `impl` blocks may be split between the native
+code and a region: each method is visible as its own visibility says, counted from the
+module that holds its block, so that a region's private helpers stay hidden from the
+native code.
+
+A region exists only while it holds something. A wrap's items are in `ffi_import`. A port
+writes its item in the native code, and keeps in the regions only the C form the item
+keeps, as [`porting`](../porting/SKILL.md) describes; a wrapped item it ports leaves
+`ffi_import` with its re-export. The later stages empty the regions part by part: an
+item's C layout and C owners leave `ffi_import` with its `port/layout` and `port/memory`,
+its export leaves `ffi_export` with its `port/unexport`. A module without either region is
+native, and its file carries `#![forbid(unsafe_code)]`.
 
 ## 3. Anchors
 
@@ -215,6 +250,10 @@ translation unit, in `<suite>/<the tested TU>.rs`.
 - Tests that compare the public interface's behaviour with C's are placed in
   `tests/equiv`.
 - Tests that check internal routines through Rust assertions are placed in an inline
-  `#[cfg(test)] mod unit_tests` beside the unit they test.
+  `#[cfg(test)] mod unit_tests` beside the unit they test: a test of a region's code in
+  that region, and only there may a unit test hold unsafe code.
+
+The suites whose tests call the raw bindings or the public unsafe API, `tests/ub_unsafe`
+and `tests/equiv`, take `unsafe_code` back at their `main.rs`, as a region does.
 
 A standalone reproducer is not a test: it is placed with the report that cites it.

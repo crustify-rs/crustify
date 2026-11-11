@@ -80,6 +80,10 @@ Before a batch lands, a scan with `--sites fn.unsafe.pub raw_ptr.field.pub
 raw_ptr.fn_sig_arg.safe.pub raw_ptr.fn_sig_ret.safe.pub` lists the public
 `unsafe fn`s and the raw pointers on the safe public interface, and each of those sites
 that belongs to the batch's changeset and that a safe variant could replace is fixed.
+<!-- TODO: ffimap counts the unsafe blocks of `ffi_export` regions,
+`code.unsafe_block.of_which.ffi_export`, but not yet those of `ffi_import`, nor the unsafe
+code a macro of another crate expands outside both regions, which the `unsafe_code` lint
+misses: until it does, those invocations are found in the source. -->
 
 ## Accounting
 

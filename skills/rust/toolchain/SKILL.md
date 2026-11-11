@@ -38,6 +38,7 @@ at `deny`; `deny` marks the lints no item may opt out of.
 | lint | level | why |
 |---|---|---|
 | `nonstandard_style` (`non_snake_case`, `non_camel_case_types`, `non_upper_case_globals`) | `deny` | the naming the conventions' Naming section gives: `snake_case` functions, methods, modules and variables, `UpperCamelCase` types and traits, `SCREAMING_SNAKE_CASE` constants and statics |
+| `unsafe_code` | `warn` | unsafe code only in a module's unsafe regions, which take it back, as [Unsafe code](#5-unsafe-code) describes |
 | `unsafe_op_in_unsafe_fn` | `deny` | each unsafe operation in an `unsafe fn` sits in its own justified `unsafe` block |
 | `missing_docs` | `warn` | every public item carries its anchor, which is a doc comment |
 | `rust_2018_idioms` | `warn` | elided lifetimes in paths and other pre-2018 idioms |
@@ -95,3 +96,13 @@ Every unsafe block carries a specific, falsifiable `// SAFETY:` comment: the inv
 operation relies on, and why it holds on every path that reaches it. Native Rust APIs are
 safe unless their caller obligation cannot be expressed in the type system; an `unsafe fn`
 documents that obligation in its `# Safety` section.
+
+Unsafe code sits only in a module's unsafe regions and in the raw bindings, as the
+[conventions](../conventions/SKILL.md)' Unsafe regions section describes. A region that
+holds unsafe code of its own takes `unsafe_code` back where it is declared, as
+`#[expect(unsafe_code, reason = "<what it reaches>")] mod ffi_import { … }`, so that the
+expectation fails once the region holds none; and so does each test suite and unit-test
+module that holds unsafe code. A region whose only unsafe code a macro of another crate
+expands takes none: the lint does not see that code, and the expectation would fail. A
+module with no region carries `#![forbid(unsafe_code)]`, which no item within it can take
+back.
