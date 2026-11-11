@@ -41,7 +41,9 @@ unless C of other modules still allocates or frees it raw, which leaves that mov
 ## 2. Globals
 
 A ported global takes the safe API [`binding-symbols`](../../binding/symbols/SKILL.md)'s
-Globals section gives a global, or keeps its wrapper's. A global that remaining C accesses
+Globals section gives a global, or keeps its wrapper's. Rust holds its storage from its
+port, beside its module's C, which keeps its own copy until the integration; from then on
+the Rust's is the only one. A global that remaining C accesses
 is exported, as a function is, and keeps the C layout and the synchronization protocol
 those accesses rely on while it is. Its later stage, `port/unexport`, removes the export, as
 a function's does, and its storage then takes a native form, as state moved out of C does.

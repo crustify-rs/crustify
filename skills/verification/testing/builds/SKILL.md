@@ -17,7 +17,10 @@ commands run from it, its `version` raised whenever a command changes. They are:
 - `plain`, the functional baseline;
 - `coverage`, the coverage-instrumented build for campaign measurements, instrumented as
   [Coverage](#2-coverage) describes; and
-- one variant per sanitizer the campaign enables:
+- one variant per sanitizer the campaign enables, whose tests build the Rust with the same
+  sanitizer, so that a report from the Rust's own unsafe code is caught too, and whose C
+  consumers that link the safe crate's Rust static library, from a module's integration
+  on, link one built with the same instrumentation:
   - `asan-ubsan`, the general build, which FFI and lifecycle tests use;
   - `msan`, which instruments every component, the standard library included;
   - `tsan`, separate from `asan-ubsan`, since ASan and TSan instrument the same memory
@@ -83,3 +86,10 @@ above, and coverage is inspected for the C and Rust execution
 paths belonging to the worklist. Focused tests are added to cover its reachable uncovered
 paths. Paths that remain uncovered because they are unreachable, environment-dependent, or
 intentionally nondeterministic are reported as such.
+
+Coverage is maximized, not gated. Each worklist reports its regions and branches beside
+its lines, and which of its types' states and transitions, as the analysis lists them, its
+tests reach. In a port, a module's C is the reference until its integration: its coverage
+under the module's equivalence tests shows how much of its behaviour they compare, set
+against what its own C tests reach. From the integration on, the module's coverage is its
+Rust's.

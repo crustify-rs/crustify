@@ -35,10 +35,13 @@ definition in an installed header: the C consumers it would serve are outside th
 
 Each module carries the C tests tied to it, those whose subject it is, as
 [`decomposition`](../../planning/decomposition/SKILL.md)'s Bundling section describes.
-They assert the C contract, which a safe Rust implementation may change, so they run while
-the module is C and leave with it at its integration. The tests its port batches write
-mirror their regression cases, as
-[`testing`](../../verification/testing/SKILL.md) describes. A
+They assert the C contract, which a safe Rust implementation may change. Those that reach
+the module's internals run while it is C and leave with it at its integration. Those that
+use only its public API stay, and check its exports, which keep that contract for the C
+that calls them, until their `port/unexport`, which they do not hold back, as the
+[conventions](../../rust/conventions/SKILL.md)' Exports section describes. The tests its
+port batches write mirror their regression cases, as
+[`testing`](../../verification/testing/SKILL.md)'s C tests carried over section describes. A
 test's access to a module's internals is a use within that module, so it never keeps a type
 wrapped.
 
@@ -46,9 +49,9 @@ A C test that only calls a module, to set up or tear down its fixtures, is not t
 once the module is integrated, the test reaches it through its exports, so that it checks
 its own subject with the ported Rust under it, as part of the integration regression gate.
 
-A test whose subject is several modules is tied to each of them: it runs while all of them
-are C, and leaves with the first of them to be integrated. Each ported module's own tests
-cover it from then on.
+A test whose subject is several modules is tied to each of them, and leaves at the first
+point at which it would leave as a test of one of them alone. Each ported module's own
+tests cover it from then on.
 
 ### 1.3 One language per module
 
@@ -67,8 +70,8 @@ module's exports, its `static inline` functions included, as
 [`porting-symbols`](../../rust/porting/symbols/SKILL.md)'s Static inline functions section describes, and go with the last C
 file that includes them.
 
-The module's equivalence tests, which need the C, are retired with it; the behaviour they
-established is kept by the module's unit tests and ported tests. The raw bindings of its
+The module's equivalence tests, which need the C, are retired with it, and the behaviour
+they established is kept by its unit tests. The raw bindings of its
 exported functions and globals then reach its exports, so that a consumer's raw calls keep
 working, and an allowlist entry goes with the export it reaches. Those of its functions and
 globals that have no export, which only its own C referenced, are removed with their
@@ -104,8 +107,9 @@ run through it.
 Once the module's last wave has landed, it is integrated in one step, with concurrent
 modules as part of its branch's integration into the working branch, as
 [`versioning`](../../operations/versioning/SKILL.md)'s Integration section
-describes: its export feature is turned on, its TU and the C tests tied to it are removed
-from `c/`, and the remaining C reaches the module through its exports. The C side of the
+describes: its export feature is deleted, so that its gateway compiles from then on, its TU
+and the C tests tied to it that reach its internals are removed from `c/`, and the
+remaining C reaches the module through its exports. The C side of the
 step is a commit on the fork's `main`, as
 [`versioning`](../../operations/versioning/SKILL.md)'s Repositories section
 describes, and the campaign's commit records the submodule at it: integrations run one at a

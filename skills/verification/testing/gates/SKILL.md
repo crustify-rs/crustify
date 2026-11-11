@@ -1,6 +1,6 @@
 ---
 name: testing-gates
-description: "The regression gates work lands through: check, format, lint and test, campaign mode and packaging, sanitizers, BSan and Miri, rebases under the landing lock, and a port batch's and a module integration's gates. Read before running a batch's gates, landing, or integrating a module."
+description: "The regression gates work lands through, by event: a batch's scoped gates, a wave's, a module's end or integration and a ship point's; campaign mode and packaging, sanitizers, BSan and Miri, rebases under the landing lock, and a port batch's export checks. Read before running a batch's gates, landing, integrating a module or shipping."
 ---
 
 # Testing gates
@@ -10,14 +10,16 @@ builds [`testing-builds`](../builds/SKILL.md) describes.
 
 ## 1. Regressions
 
-Every batch checks, formats, lints and tests the workspace on the tree it lands, with
-warnings denied, as [`toolchain`](../../../rust/toolchain/SKILL.md) describes:
+Every batch checks, formats and lints the workspace on the tree it lands, with warnings
+denied, as [`toolchain`](../../../rust/toolchain/SKILL.md) describes, and tests what its
+change can affect: its module and the modules that depend on it, as `modules.json` records
+them, each by its tests' module paths:
 
 ```bash
 cargo check --workspace --all-targets
 cargo +nightly-<date> fmt --all --check
 cargo clippy --workspace --all-targets -- -D warnings
-cargo test --workspace
+cargo test --workspace -- <the modules' test paths>
 ```
 
 Every build of those gates runs in the raw bindings' campaign mode, as
@@ -33,8 +35,17 @@ CRUSTIFY_BUILD_VARIANT= cargo package --config 'patch.crates-io.<crate>.path="<p
 Until the out-of-tree wrappers are published, each crate the package depends on is patched
 to its local source, so that the package builds alone.
 
-Every FFI, UB, and equivalence test runs against the matching reusable sanitized C library
-or a private sanitized replacement, and under every available sanitizer.
+The tests run against the matching variant, or a private replacement, and each event runs
+them to its own depth:
+
+- a batch: the tests above, plain and under ASan/UBSan, and its own tests under each other
+  sanitizer its items call for, such as TSan where it asserts `Send` or `Sync` or adds a
+  threaded callback, or MSan where C leaves memory it hands over partly unwritten;
+- a wave's end: the workspace's tests, and the Miri gate below;
+- a module's end, its integration in a port: every test under every available sanitizer,
+  and BSan as below; and
+- a ship point: every gate over the whole workspace under every available sanitizer, with
+  the coverage measurement.
 
 BSan, when available, is run for every batch and at module end:
 
@@ -71,11 +82,19 @@ makes the resolved tree new work of the batch's own.
 
 A `port` batch changes no C: its gates are those above, run against the variants with its
 module's export feature off, so that the ported Rust is tested beside the C it replaces.
+It also checks and lints the safe crate with that feature on, which compiles the module's
+gateway without linking it, and each export is checked at compile time against the raw
+binding of the C declaration it replaces, so that a signature that drifts from C's fails
+to build.
 
-A module's integration removes its translation unit and the C tests tied to it from `c/`,
-rebuilds the variants from the C that remains and turns the module's export feature on, as
-[`porting-workflow`](../../../workflows/porting-workflow/SKILL.md)'s Builds section describes. Its gates
-are those above, in campaign mode over the rebuilt variants, and the target's remaining C
-tests, which link the remaining C and the safe crate's Rust static library, so that the C
-reaches the ported module through its exports; the C tests tied to the module leave with
-it, as the porting workflow's Tests follow their modules section describes.
+A module's integration removes its translation unit, and the C tests tied to it that reach
+its internals, from `c/`, rebuilds the variants from the C that remains and deletes the
+module's export feature, as
+[`porting-workflow`](../../../workflows/porting-workflow/SKILL.md)'s Builds section
+describes. Its gates are a module's end's, in campaign mode over the rebuilt variants, and
+the target's remaining C tests, which link the remaining C and the safe crate's Rust static
+library, so that the C reaches the ported module through its exports: the module's tied C
+tests that use only its public API among them, as the porting workflow's Tests follow
+their modules section describes. Before a tied C test leaves, the cases none of the
+module's `unit_pub` tests carries over are listed, as [`testing`](../SKILL.md)'s C tests
+carried over section describes.

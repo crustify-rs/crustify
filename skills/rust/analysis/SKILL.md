@@ -28,6 +28,8 @@ The analysis establishes:
 - address retention: whether C keeps an object's address beyond the call that receives it,
   to read it, call back with it or free it;
 - construction, clone, and destruction paths;
+- states and transitions: the states each type's objects pass through, and the calls that
+  move them between states, in the orders C allows;
 - out-parameters: the pointer arguments a function only writes through;
 - string encodings, where a string is known to hold text or a path; and
 - failure reporting: the status or sentinel returns and the error state beside the call

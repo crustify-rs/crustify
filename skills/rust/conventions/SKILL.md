@@ -60,14 +60,16 @@ on; nor are static functions and static globals, which nothing outside their TU 
 exported, beyond what the remaining C references, is still open. -->
 An export is removed, with the raw binding that reaches it, by its symbol's `port/unexport`,
 after the integration that removes the last C that calls it, takes its address or
-accesses it.
+accesses it. A C test tied to the module that stays, using only its public API, does not
+hold an export back: it checks the export while other C needs it, and leaves with it.
 
 ### 1.5 Export features
 
 Each module's `ffi_export` is compiled only under the safe crate's Cargo feature
 `ffi-export-<tu>`, with `<tu>` its translation unit's path below the C root, every character
 that is not an ASCII letter or digit replaced by `-`. The feature is off until the module is
-integrated, so that its exports never collide with the C they replace.
+integrated, so that its exports never collide with the C they replace, and the integration
+deletes it, its gateway compiling unconditionally from then on.
 
 ## 2. Crates, modules, and TUs
 
@@ -250,13 +252,17 @@ translation unit, in `<suite>/<the tested TU>.rs`.
   should reject are placed in `tests/ub_safe/compile_fail/`.
 - Tests that target undefined behaviour on the unsafe public interface are placed in
   `tests/ub_unsafe`.
-- Tests that compare the public interface's behaviour with C's are placed in
-  `tests/equiv`.
-- Tests that check internal routines through Rust assertions are placed in an inline
-  `#[cfg(test)] mod unit_tests` beside the unit they test: a test of a region's code in
-  that region, and only there may a unit test hold unsafe code.
+- Tests that compare the module's exported API with C's are placed in `tests/equiv_pub`,
+  and those that compare its internals with C's in an inline `#[cfg(test)] mod equiv_priv`
+  beside the unit they test.
+- Tests that check the public interface through Rust assertions are placed in
+  `tests/unit_pub`, and those that check internal routines in an inline
+  `#[cfg(test)] mod unit_priv` beside the unit they test.
 
-The suites whose tests call the raw bindings or the public unsafe API, `tests/ub_unsafe`
-and `tests/equiv`, take `unsafe_code` back at their `main.rs`, as a region does.
+An inline test of a region's code sits in that region, and an inline test that holds
+unsafe code, such as an `equiv_priv` test calling the C, sits in a region: the module's
+`ffi_import`, for the C it calls. The suites whose tests call the raw bindings or the public unsafe API,
+`tests/ub_unsafe` and `tests/equiv_pub`, take `unsafe_code` back at their `main.rs`, as a
+region does.
 
 A standalone reproducer is not a test: it is placed with the report that cites it.
