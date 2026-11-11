@@ -244,8 +244,8 @@ A ported function's or global's export, through which the remaining C reaches it
 removed with the raw binding that reaches it by a `port/unexport` item, after its
 `unreferenced_after`: the integration of its last referrers, the remaining C that calls it,
 takes its address or accesses it, as the [conventions](../../rust/conventions/SKILL.md)' Exports
-section describes. A function or global that remaining C never references has no export,
-and no `port/unexport`.
+section describes. A function or global that neither remaining C nor a C test that stays
+references has no export, and no `port/unexport`.
 
 The target's C tests are not among its referrers, as wavefront's release points leave them
 out: an export the remaining C no longer needs is not kept, with its unsafe boundary, for a
@@ -255,6 +255,18 @@ and removes them from `c/`. A carried-over case reaches what is still C through 
 wrappers, which a wrap batch binds ahead where they are missing, as
 [Wrap batches](#4-wrap-batches) describes. A test case whose body the configured build
 compiles empty is out of scope, as a configured-out translation unit is.
+
+An export whose release point its own port passes, but which C test cases or the test
+harness still reference once its module is integrated, is exported for them at that
+integration; its `port/unexport` is planned in a wave freed by that integration alone, and
+carries them over. A case has left by then when it reaches the internals of the item's
+module or of a module ordered before it. The harness's own references, those of the code
+every C test links rather than of a test case, are adapted by the `port/unexport` that
+removes the export: a call to an optional hook is dropped, a call the harness can make
+otherwise is replaced, and an export the harness cannot run without ends the C suite: its
+wave carries over every case still in `c/` and removes the harness with them. Each
+`port/unexport` item records what its stage carries over, as
+[`schedule-schema`](../../artifacts/schedule-schema/SKILL.md) describes.
 
 A ported function pointer's C form, through which the remaining C calls a Rust closure or
 hands Rust a C function, is removed the same way, after its `unreferenced_after`: the

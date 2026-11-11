@@ -92,6 +92,7 @@ the objective it is translated with and its entity's release points:
 | `opaque_after` | on a struct, a union or an enum, the release point after which none of its layout users is left, as the scheduling spec's Later stages section defines them; `null` on any other item |
 | `memory_unmanaged_after` | on a struct or a union, the release point after which none of its memory users is left; `null` on any other item |
 | `unreferenced_after` | on a function, a global, a macro, a function pointer or a typedef, the release point after which none of its referrers is left, and for a function pointer written inline none of what reaches the sites that write it; `null` on any other item |
+| `carries_over` | on a `port/unexport` item, the C test cases and harness code still referencing its export when its wave runs, in the plan's order, below; absent on every other objective |
 
 A release point has two records, `closure` over every user and `scheduled` over those the
 schedule holds, each naming the last users, their waves and their `modules`, as the
@@ -100,6 +101,20 @@ wave of a later stage lists, among its `depends_on.scheduled`, the last wave of 
 its release point's `closure.modules` names but the item's own, so that it runs once those
 modules are integrated: `opaque_after` for `port/layout`, `memory_unmanaged_after` for
 `port/memory`, and `unreferenced_after` for `port/unexport`.
+
+A `port/unexport` item's `carries_over` records what of the target's C tests its stage
+carries over and removes from `c/`, as `scheduling`'s Later stages section describes:
+
+| `carries_over` field | meaning |
+|---|---|
+| `cases` | the test cases still referencing the export when the wave runs, each `{path, tests}`: the test file and its test case names |
+| `if_still_in_c` | the cases, shaped as `cases`, that reference the export but that the plan's order removes before the wave, by an integration or another wave's carry-over it does not depend on: the stage carries over those still in `c/` when it runs |
+| `harness` | the functions of the test harness, as `file:function`, that reference the export, which the stage adapts |
+
+The plan's order on disk decides which wave carries over a case several of them
+reference: the first by index that runs after the case's last chance to leave otherwise.
+A wave whose dependencies let it run earlier carries over what is still in `c/` when it
+runs, which its batch checks against the record.
 
 `depends_on.scheduled` lists the waves that complete before this one: its module's
 previous wave, and the waves that hold its items' dependencies. `depends_on.cut` lists the

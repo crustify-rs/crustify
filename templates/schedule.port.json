@@ -721,6 +721,18 @@
                 "src/io.c"
               ]
             }
+          },
+          "carries_over": {
+            "cases": [
+              {
+                "path": "tests/core.c",
+                "tests": [
+                  "test_core__open"
+                ]
+              }
+            ],
+            "if_still_in_c": [],
+            "harness": []
           }
         }
       ],
