@@ -24,8 +24,10 @@ once its translation batches and their reviews have landed. An audit's review wa
 Review is tiered. Each landing is reviewed within its wave, to the depth
 [Depth](#11-depth) gives it. Before a module's integration in a port, and at its end in a
 wrap, a module pass reviews the module whole, across its batches: its unsafe regions, its
-exports and its tests. It is a review batch of the module's last wave whose worklist is the
-module's paths, and it runs the module's end gates, as [Gates](#7-gates) describes.
+exports and its tests. It is the last review batch of the module's last wave, marked
+`module_pass`, launched once every other batch of that wave has landed; its worklist is
+the module's paths, and it runs the wave's gates and the module's end gates, as
+[Gates](#7-gates) describes.
 
 Review batches are packed eagerly, as the batches they review land: one launches as soon as
 the landed batches not yet reviewed fill it, and the last once every translation batch of

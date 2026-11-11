@@ -195,7 +195,9 @@ record, and the working branch still moves only by fast-forward.
 2. The merge's tree passes the gates of
    [`testing-gates`](../../verification/testing/gates/SKILL.md)'s Regressions section, and in
    a port campaign the module's integration, as
-   [`porting-workflow`](../../workflows/porting-workflow/SKILL.md)'s Builds section describes.
+   [`porting-workflow`](../../workflows/porting-workflow/SKILL.md)'s Builds section describes:
+   its export feature is deleted, and the C test cases none of its `unit_pub` tests carries
+   over are listed before its C tests leave.
 3. The working branch is fast-forwarded to the module's branch.
 
 Modules integrate one at a time, and nothing else is committed on the working branch while

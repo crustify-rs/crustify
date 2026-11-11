@@ -31,7 +31,8 @@ The cells measured on the tree a landing commits:
   [`task-schema`](../../artifacts/task-schema/SKILL.md)'s Routes section gives it: its rows
   in that route's `Batches`, tests and `Batches: safety audit` tables, and for a review batch in
   `Batches — review: PoC + reports`, each placed in module, wave and batch order under
-  its `pass`; those tables' `Σ` rows; and the `Coverage stats` table and the Overview's LoC
+  its `pass`, and for a module pass, which spans both routes, in `Module passes`; those
+  tables' `Σ` rows; and the `Coverage stats` table and the Overview's LoC
   line;
 - for a planner run, its row in `Planning`, but for its usage cells.
 

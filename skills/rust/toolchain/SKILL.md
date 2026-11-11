@@ -14,8 +14,9 @@ enforces on it.
 
 The workspace builds and tests on stable Rust, pinned in `rust-toolchain.toml` to the
 stable release current when the repository is created, with the `clippy` and `rustfmt`
-components. Miri, BorrowSanitizer's `bsan` toolchain aside, and the formatter's unstable
-options need nightly: a nightly pinned by date, recorded in the workspace manifest as
+components. Miri, the sanitizer and coverage instrumentation of the Rust,
+BorrowSanitizer's `bsan` toolchain aside, and the formatter's unstable options need
+nightly: a nightly pinned by date, recorded in the workspace manifest as
 `[workspace.metadata.crustify] nightly = "nightly-<date>"`, and named explicitly wherever it
 runs, as `cargo +nightly-<date> …`. A toolchain is moved forward only between waves, in a
 commit of its own.

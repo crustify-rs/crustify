@@ -18,9 +18,10 @@ commands run from it, its `version` raised whenever a command changes. They are:
 - `coverage`, the coverage-instrumented build for campaign measurements, instrumented as
   [Coverage](#2-coverage) describes; and
 - one variant per sanitizer the campaign enables, whose tests build the Rust with the same
-  sanitizer, so that a report from the Rust's own unsafe code is caught too, and whose C
-  consumers that link the safe crate's Rust static library, from a module's integration
-  on, link one built with the same instrumentation:
+  LLVM sanitizer as the C, the C's clang of the pinned nightly's LLVM major version as for
+  coverage, so that one runtime serves both and a report from the Rust's own unsafe code is
+  caught too, and whose C consumers that link the safe crate's Rust static library, from a
+  module's integration on, link one built with the same instrumentation:
   - `asan-ubsan`, the general build, which FFI and lifecycle tests use;
   - `msan`, which instruments every component, the standard library included;
   - `tsan`, separate from `asan-ubsan`, since ASan and TSan instrument the same memory

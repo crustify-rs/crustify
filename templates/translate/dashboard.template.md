@@ -24,7 +24,8 @@ and in Notes.
 - `module` / `wave` / `batch` — the batch's place in `schedule.json`: its wave's module and
   the wave and batch indices
 - `objective` — `wrap` or `port`, or a later stage, `port/layout`, `port/memory` or `port/unexport`; `pass` — `first` for a translation batch, `review` for a
-  review batch; `Σ first` / `Σ review` total each pass apart
+  review batch; `Σ first` / `Σ review` total each pass apart; a module pass has its own
+  table
 - `types` / `symbols` / `fields` — the batch's scheduled units, each under the route its
   `kind` selects, as the `task-schema` skill's Routes section gives it: structs, unions,
   enums, typedefs and type-generating macros are types, functions, globals, function
@@ -36,16 +37,18 @@ and in Notes.
 - `+LoC` — the landing's Rust insertions/deletions; `loc` — its `.rs` insertions
 - `cov (C/Rust)` — line coverage after the landing, all test workloads in one run: C over
   the link unit's TUs, Rust over non-test sources; a `Σ` cell is the pass's last landing
-- `+UB safe tests` … `+unit tests` — the tests the landing added, with its C/Rust coverage
-  change in pp
-- `+lifecycle` … `+misc`, `total` — the reports a review batch filed, by kind
+- `+UB safe` … `+unit priv` — the tests the landing added to each suite, with its C/Rust
+  coverage change in pp
+- `+lifecycle` … `+misc`, `total` — the reports a review batch filed, by the reviews dir's
+  sub-directory
 - safety audit columns — the Safety audit's metrics, as a landing changed them
 - `cost` / `review cost` / `total` — a module's translation, review and combined cost;
   `module wall` — first launch to final gate; `Σ recorded agents` leaves the assistant
   out, `Σ campaign` adds it, without per-unit cells
-- `UB safe tests` … `Unit tests` — `#[test]` functions per suite, each with the coverage of
-  running it alone; `Total tests` — all four, whose coverage is one joint run's union,
-  never the sum
+- `UB safe tests` … `Unit priv tests` — `#[test]` functions per suite, each with the
+  coverage of running it alone, as line / region / branch; `Total tests` — all six, whose
+  coverage is one joint run's union, never the sum; `states & transitions` — those the
+  analysis lists and the tests reach
 - `total`, `ported` and `wrapped` types and symbols — the scheduled public-API units, and
   those with a `Replaces` or a `Wraps` anchor at the tip; `share` is of the total
 
@@ -60,13 +63,16 @@ records name, and the table. All prose belongs in Notes.
 
 ### Coverage stats
 
-| | count | share | C LoC coverage | Rust LoC coverage |
+| | count | share | C coverage (line / region / branch) | Rust coverage (line / region / branch) |
 |---|---:|---:|---:|---:|
-| UB safe tests | `<n>` | — | `<n>`% | `<n>`% |
-| UB unsafe tests | `<n>` | — | `<n>`% | `<n>`% |
-| Equiv tests | `<n>` | — | `<n>`% | `<n>`% |
-| Unit tests | `<n>` | — | `<n>`% | `<n>`% |
-| **Total tests** | **`<n>`** | — | **`<n>`%** | **`<n>`%** |
+| UB safe tests | `<n>` | — | `<n>`% / `<n>`% / `<n>`% | `<n>`% / `<n>`% / `<n>`% |
+| UB unsafe tests | `<n>` | — | `<n>`% / `<n>`% / `<n>`% | `<n>`% / `<n>`% / `<n>`% |
+| Equiv pub tests | `<n>` | — | `<n>`% / `<n>`% / `<n>`% | `<n>`% / `<n>`% / `<n>`% |
+| Equiv priv tests | `<n>` | — | `<n>`% / `<n>`% / `<n>`% | `<n>`% / `<n>`% / `<n>`% |
+| Unit pub tests | `<n>` | — | `<n>`% / `<n>`% / `<n>`% | `<n>`% / `<n>`% / `<n>`% |
+| Unit priv tests | `<n>` | — | `<n>`% / `<n>`% / `<n>`% | `<n>`% / `<n>`% / `<n>`% |
+| **Total tests** | **`<n>`** | — | **`<n>`% / `<n>`% / `<n>`%** | **`<n>`% / `<n>`% / `<n>`%** |
+| states & transitions | `<n>` | `<n>`% | — | — |
 | total types | `<n>` | — | — | — |
 | ported types | `<n>` | `<n>`% | — | — |
 | wrapped types | `<n>` | `<n>`% | — | — |
@@ -160,12 +166,12 @@ sums them.
 
 `<model>` on `<backend>`.
 
-| module | wave | batch | pass | +UB safe tests (+C/+Rust pp) | +UB unsafe tests (+C/+Rust pp) | +equiv tests (+C/+Rust pp) | +unit tests (+C/+Rust pp) |
-|---|---|---|---|---|---|---|---|
-| `<link-unit>/<module>` | `<n>` | `<n>` | first | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) |
-| `<link-unit>/<module>` | `<n>` | `<n>` | review | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) |
-| **Σ first** |  |  |  | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** |
-| **Σ review** |  |  |  | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** |
+| module | wave | batch | pass | +UB safe | +UB unsafe | +equiv pub | +equiv priv | +unit pub | +unit priv |
+|---|---|---|---|---|---|---|---|---|---|
+| `<link-unit>/<module>` | `<n>` | `<n>` | first | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) |
+| `<link-unit>/<module>` | `<n>` | `<n>` | review | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) |
+| **Σ first** |  |  |  | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** |
+| **Σ review** |  |  |  | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** |
 
 ### Batches: safety audit
 
@@ -183,10 +189,10 @@ Deterministic `ffimap`; no model.
 
 `<model>` on `<backend>`.
 
-| module | wave | batch | +lifecycle | +unsafe | +UB safe | +UB unsafe | +equiv | +internal | +conventions | +misc | total |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `<link-unit>/<module>` | `<n>` | `<n>` | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `<n>` |
-| **Σ** |  |  | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`<n>`** |
+| module | wave | batch | +lifecycle | +unsafe | +contracts import | +contracts export | +UB safe | +UB unsafe | +UB export | +equiv | +logic | +ergonomics | +idiom | +conventions | +misc | total |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `<link-unit>/<module>` | `<n>` | `<n>` | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `<n>` |
+| **Σ** |  |  | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`<n>`** |
 
 ## Symbols
 
@@ -206,12 +212,12 @@ Deterministic `ffimap`; no model.
 
 `<model>` on `<backend>`.
 
-| module | wave | batch | pass | +UB safe tests (+C/+Rust pp) | +UB unsafe tests (+C/+Rust pp) | +equiv tests (+C/+Rust pp) | +unit tests (+C/+Rust pp) |
-|---|---|---|---|---|---|---|---|
-| `<link-unit>/<module>` | `<n>` | `<n>` | first | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) |
-| `<link-unit>/<module>` | `<n>` | `<n>` | review | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) |
-| **Σ first** |  |  |  | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** |
-| **Σ review** |  |  |  | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** |
+| module | wave | batch | pass | +UB safe | +UB unsafe | +equiv pub | +equiv priv | +unit pub | +unit priv |
+|---|---|---|---|---|---|---|---|---|---|
+| `<link-unit>/<module>` | `<n>` | `<n>` | first | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) |
+| `<link-unit>/<module>` | `<n>` | `<n>` | review | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) | `+<n>` (`+<n>`/`+<n>` pp) |
+| **Σ first** |  |  |  | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** |
+| **Σ review** |  |  |  | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** | **`+<n>` (`+<n>`/`+<n>` pp)** |
 
 ### Batches: safety audit
 
@@ -229,10 +235,34 @@ Deterministic `ffimap`; no model.
 
 `<model>` on `<backend>`.
 
-| module | wave | batch | +lifecycle | +unsafe | +UB safe | +UB unsafe | +equiv | +internal | +conventions | +misc | total |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `<link-unit>/<module>` | `<n>` | `<n>` | — | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `<n>` |
-| **Σ** |  |  | — | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`<n>`** |
+| module | wave | batch | +lifecycle | +unsafe | +contracts import | +contracts export | +UB safe | +UB unsafe | +UB export | +equiv | +logic | +ergonomics | +idiom | +conventions | +misc | total |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `<link-unit>/<module>` | `<n>` | `<n>` | — | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `<n>` |
+| **Σ** |  |  | — | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`<n>`** |
+
+## Module passes
+
+One row per module pass, which reviews its module whole across both routes, as the
+`reviewing` skill's Review batches section describes; its usage counts in its module's
+review cost.
+
+### Passes
+
+`<model>` on `<backend>`.
+
+| module | wave | batch | types | symbols | +LoC | $ | tokens | wall |
+|---|---|---|---|---|---|---|---|---|
+| `<link-unit>/<module>` | `<n>` | `<n>` | `<n>` | `<n>` | `+<n>/-<n>` | `$<n>` | `<n>M` | `<n>m<n>s` |
+| **Σ** |  |  | **`<n>`** | **`<n>`** | **`+<n>/-<n>`** | **`$<n>`** | **`<n>M`** | — |
+
+### Passes: PoC + reports
+
+`<model>` on `<backend>`.
+
+| module | wave | batch | +lifecycle | +unsafe | +contracts import | +contracts export | +UB safe | +UB unsafe | +UB export | +equiv | +logic | +ergonomics | +idiom | +conventions | +misc | total |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `<link-unit>/<module>` | `<n>` | `<n>` | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `+<n>` | `<n>` |
+| **Σ** |  |  | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`+<n>`** | **`<n>`** |
 
 ## Notes
 

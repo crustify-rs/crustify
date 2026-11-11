@@ -279,7 +279,9 @@ ship.
    settings' `parallelism` when it sets one. Pack each wave's batches when it starts, as
    the `scheduling` skill's Batches and Wrap batches sections describe, judging their size
    from how the campaign's batches have gone so far. When a batch fails, run it again or
-   pack its items anew.
+   pack its items anew. Once every other batch of a module's last wave has landed, run its
+   module pass, as the `reviewing` skill's Review batches section describes, before you
+   integrate the module.
 
    Before each wave starts, and when a batch reports an out-of-tree entity a wrapper
    lacks, advance that library's side campaign as the `dependencies` skill's Side
@@ -289,7 +291,8 @@ ship.
 
    No agent's gates cover a module integration's merge, so you merge it, resolve its
    additive conflicts and run its gates yourself, as the `versioning` skill's Integration
-   section describes; hand any other conflict, or a gate that fails, to an agent of the
+   section describes, deleting a ported module's export feature and listing the C test
+   cases nothing carries over; hand any other conflict, or a gate that fails, to an agent of the
    module's batch kind, whose task message asks it to resolve them in the module's
    worktree.
 3. **Shipping.** At each point the settings' `ship` answer names, ask the user whether to

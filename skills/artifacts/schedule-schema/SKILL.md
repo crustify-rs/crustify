@@ -123,7 +123,8 @@ that wave's, and it lands on that wave's integration branch.
 | `kind` | an objective of its items, as a planned item's, or `review` |
 | `status` | `todo`, `wip`, `done` or `failed` |
 | `items` | a translation batch's worklist, as `task-schema` describes its `items` |
-| `reviews` | a `review` batch's worklist: the indices of the batches of its wave it reviews |
+| `reviews` | a `review` batch's worklist: the indices of the batches of its wave it reviews; empty in a module pass |
+| `module_pass` | optional, `false` when absent: `true` on the `review` batch that reviews its module whole, its last wave's last batch, as `reviewing`'s Review batches section describes |
 | `commits` | the commits the batch landed, in order; empty until it lands |
 
 The batches are packed when the wave starts, and added as it runs: a batch that fails may
