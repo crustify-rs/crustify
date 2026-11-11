@@ -64,13 +64,15 @@ the user approves shipping the module.
 
 The headers bundled with the module stay while remaining C includes them, declaring the
 module's exports, its `static inline` functions included, as
-[`porting`](../../rust/porting/SKILL.md)'s Static inline functions section describes, and go with the last C
+[`porting-symbols`](../../rust/porting/symbols/SKILL.md)'s Static inline functions section describes, and go with the last C
 file that includes them.
 
 The module's equivalence tests, which need the C, are retired with it; the behaviour they
 established is kept by the module's unit tests and ported tests. The raw bindings of its
-functions and globals then reach its exports, so that a consumer's raw calls keep working,
-and an allowlist entry goes with the export it reaches.
+exported functions and globals then reach its exports, so that a consumer's raw calls keep
+working, and an allowlist entry goes with the export it reaches. Those of its functions and
+globals that have no export, which only its own C referenced, are removed with their
+allowlist entries at the integration.
 
 A ported module's items therefore reach the rest of its module natively from the start:
 an edge within a module needs neither a `wrap` binding nor an export, only the edges that

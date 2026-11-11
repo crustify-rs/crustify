@@ -216,7 +216,8 @@ You spawn four kinds of agent: planners for the planner runs, binders for the `w
 batches, translators for the `port` batches and the later stages, and reviewers for the
 review batches. Each owns its work, the regression gates of its work and its own landing
 cells. Brief them, and judge what they report, by the skills their work follows:
-`binding`, `binding-types`, `binding-symbols` and `porting`, `testing` and `reviewing`.
+`binding`, `binding-types`, `binding-symbols`, `porting`, `porting-types` and
+`porting-symbols`, `testing` and `reviewing`.
 
 You own every other part of the `binding-workflow` skill, and of the `porting-workflow`
 skill in a port campaign: among them the Rust tree, the side campaigns, each module's

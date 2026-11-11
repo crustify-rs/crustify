@@ -79,7 +79,8 @@ later stages [Later stages](#5-later-stages) describes, each a planned item of i
 Enums and macros are items as any other entity is, bound or ported as
 [`binding-types`](../../rust/binding/types/SKILL.md)'s Enums section and
 [`binding-symbols`](../../rust/binding/symbols/SKILL.md)'s Macros section, and
-[`porting`](../../rust/porting/SKILL.md)'s, describe.
+[`porting-types`](../../rust/porting/types/SKILL.md)'s and
+[`porting-symbols`](../../rust/porting/symbols/SKILL.md)'s, describe.
 
 ## 3. Batches
 
@@ -218,7 +219,7 @@ A type is scheduled in stages:
 
 A stage with no users to wait for is not planned: its change is part of the type's `port`,
 or, for `port/memory`, of the port of the last of its own module's memory users, a
-lifecycle routine its type's port or wrap left in C, as [`porting`](../../rust/porting/SKILL.md)'s
+lifecycle routine its type's port or wrap left in C, as [`porting-types`](../../rust/porting/types/SKILL.md)'s
 Structs section describes.
 A user that stays C, in a foundational module, in a module the scope leaves out or in a
 struct that embeds the type and stays C, keeps the stage it holds back from being planned
@@ -241,4 +242,4 @@ A ported function pointer's C form, through which the remaining C calls a Rust c
 hands Rust a C function, is removed the same way, after its `unreferenced_after`: the
 integration of its last referrers, the remaining C that names it or calls through it, and
 for one written inline the C that reaches a site that writes it, as
-[`porting`](../../rust/porting/SKILL.md)'s Function pointers section describes.
+[`porting-symbols`](../../rust/porting/symbols/SKILL.md)'s Function pointers section describes.

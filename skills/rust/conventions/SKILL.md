@@ -33,7 +33,7 @@ ownership contracts, each safe variant has a distinct, descriptive name.
 A wrapped C type is the layout-compatible newtype `Foo`, named by the rules above; its
 shared and exclusive borrowed handles are `FooRef<'a>` and `FooMut<'a>`, and its sole and
 counted owners `FooBox` and `FooArc`. A port keeps these names while what they name
-changes, as [`porting`](../porting/SKILL.md)'s Structs section describes. A typedef that
+changes, as [`porting-types`](../porting/types/SKILL.md)'s Structs section describes. A typedef that
 names a type under another name, which its item lists among its `typedefs`, is a
 `pub type` alias of the type's Rust form.
 
@@ -50,11 +50,15 @@ A callable macro shim is `crustify_<NAME>`.
 
 Each ported module has one raw ABI gateway, its `ffi_export` region, as
 [Unsafe regions](#21-unsafe-regions) describes, whose exports use `#[unsafe(no_mangle)] extern "C"` under the bare C names: the
-module's externally visible functions and globals, and the `static inline` functions its
-headers define. Static functions and static globals are not exported: nothing outside
-their TU reaches them. The exports serve the target's remaining C, its tests and
-executables included, which reaches the module through them once it is integrated; an
-export is removed, with the raw binding that reaches it, by its symbol's `port/unexport`,
+module's functions and globals that C outside the module references, another module's TU
+or a C test or executable that stays, the `static inline` functions its headers define
+included. The exports serve that C, which reaches the module through them once it is
+integrated. A function or global only the module's own C references is not exported: that
+C leaves the build with the module at its integration, and its callers are Rust from then
+on; nor are static functions and static globals, which nothing outside their TU reaches.
+<!-- TODO: how a module's functions and globals on the target's public C API are
+exported, beyond what the remaining C references, is still open. -->
+An export is removed, with the raw binding that reaches it, by its symbol's `port/unexport`,
 after the integration that removes the last C that calls it, takes its address or
 accesses it.
 

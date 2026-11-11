@@ -53,7 +53,7 @@ its `CLenClone` declares `ALIGN`. A Rust value whose release C drives, such as a
 refcounted user payload, gets a hand-written owner whose free callback runs the value's
 destructor.
 
-### Porting › Type route › Structs
+### Porting types › Structs
 
 Until a ported struct's `port/layout`, its handles are ffibox's, as
 [Binding types › Safe layout](#binding-types--safe-layout) describes; from it

@@ -7,7 +7,7 @@ description: "How a scheduled C symbol becomes a safe Rust binding, binding's sy
 
 How a scheduled C symbol becomes a safe Rust binding: the symbol route, which follows
 [`binding`](../SKILL.md)'s Safe boundary section and reaches the types
-[`binding-types`](../types/SKILL.md) binds. [`porting`](../../porting/SKILL.md)'s Symbol route starts from it.
+[`binding-types`](../types/SKILL.md) binds. [`porting-symbols`](../../porting/symbols/SKILL.md) starts from it.
 
 ## 1. Functions
 
@@ -94,7 +94,7 @@ It is bound to a safe callable type that holds either of its implementations:
 
 A function pointer that crosses the boundary gets both, whichever direction its uses take
 today, since a port turns the C that calls or supplies it into Rust, as
-[`porting`](../../porting/SKILL.md)'s Function pointers section describes, and its safe API
+[`porting-symbols`](../../porting/symbols/SKILL.md)'s Function pointers section describes, and its safe API
 does not change then. Its consumers see only the safe form, its closures taking and
 returning safe types: a closure borrowed for the call, `impl FnMut(…)`, where C keeps it
 for the call that receives it; an owned closure, released with its context, where C keeps

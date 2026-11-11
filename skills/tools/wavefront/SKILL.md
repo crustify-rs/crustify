@@ -239,7 +239,7 @@ submitted it, and is queried for every item of the batch. A role that the item's
 contradicts is corrected through the CLI's `--update`, and the correction named in the
 batch's commit message.
 
-### Porting › Type route
+### Porting types
 
 A ported type's lifecycle primitives are identified as `docs/type-lifecycle.md`
 describes, and submitted through the CLI's `--update`.

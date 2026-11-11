@@ -7,7 +7,7 @@ description: "How a scheduled C type becomes a safe Rust binding, binding's type
 
 How a scheduled C type becomes a safe Rust binding: the type route, which follows
 [`binding`](../SKILL.md)'s Safe boundary section; the symbols it reaches are
-[`binding-symbols`](../symbols/SKILL.md)'s. [`porting`](../../porting/SKILL.md)'s Type route
+[`binding-symbols`](../symbols/SKILL.md)'s. [`porting-types`](../../porting/types/SKILL.md)
 starts from it.
 
 ## 1. Surface
@@ -33,7 +33,7 @@ surface has three types, named as the conventions describe:
 Its owners, which [Lifecycle](#3-lifecycle) describes, are named `FooBox` and `FooArc`, as
 the conventions name them too. These names are what consumers use, whatever they name: here
 pointer wrappers and owners over C's allocator, which a port changes, stage by stage, into
-native borrows and owners, as [`porting`](../../porting/SKILL.md)'s Structs section describes,
+native borrows and owners, as [`porting-types`](../../porting/types/SKILL.md)'s Structs section describes,
 without changing its consumers. A consumer relies only on what every form they may take
 offers: their methods, their reborrows (`as_ref`, `as_mut`) and the dereferences the
 native forms offer, which the pointer wrappers mirror. What one form offers beyond that,

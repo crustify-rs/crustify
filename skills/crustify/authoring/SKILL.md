@@ -55,7 +55,7 @@ host that brings an invoked skill back after compacting an agent's context bring
 whole; one that outgrows that is split at a section that another step needs on its own.
 The parts sit in sub-directories of the skill's own, `skills/<group>/<skill>/<part>/SKILL.md`,
 each named `<skill>-<part>`, and the skill's own `SKILL.md` keeps what they share: `binding`
-keeps its safe boundary, and `binding-types` and `binding-symbols` its routes.
+and `porting` keep their boundaries, and their `-types` and `-symbols` parts their routes.
 
 A skill's directory may also hold a script the skill describes, with its tests beside it,
 standard library only, so that it runs wherever the skill is read: `usage` holds

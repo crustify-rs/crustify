@@ -13,6 +13,8 @@
     "./skills/rust",
     "./skills/rust/binding/types",
     "./skills/rust/binding/symbols",
+    "./skills/rust/porting/types",
+    "./skills/rust/porting/symbols",
     "./skills/verification",
     "./skills/operations",
     "./skills/artifacts",
