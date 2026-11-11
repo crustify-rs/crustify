@@ -26,12 +26,18 @@ value, `from_raw`, and the view of a C object as another, `as_object`. A crate b
 ffibox is scanned with `--ffibox`, and its `-sys` crates are named with `--sys-crates`:
 
 ```bash
-ffimap <workdir> --ffibox --sys-crates <the -sys crates> \
+ffimap <workdir> --ffibox --sys-crates <the -sys crates> --regions ffi_import,ffi_export \
     --seams as_ptr,as_mut_ptr,as_void_ptr,from_ptr,from_void_ptr,from_raw_parts,into_raw_parts,from_c,into_c,as_c_ptr,from_raw,as_object \
     > <file>.json
 ```
 
-Two scans are compared only when they name the same seams.
+In a port campaign, a scan names with `--features` the export feature of every module not
+yet integrated, as the [conventions](../../rust/conventions/SKILL.md)' Export features section
+names them, so that the `ffi_export` gateways compiled under them are counted. Every scan
+names the module's unsafe regions, as the conventions' Unsafe regions section names them,
+with `--regions`.
+
+Two scans are compared only when they name the same seams, regions and features.
 
 Its counters form one tree, each named by its dotted path into the scan's `counts`, as
 ffimap's `docs/schema.md` describes; a metric is a counter, or a combination of counters
@@ -55,14 +61,16 @@ before it. The counters that recur:
   of the raw C structs; and `raw_ptr.casted_to.std.{borrow,slice,string}`, the borrows,
   slices and strings formed from a raw pointer, over bytes C must neither free nor change
   while they live;
-- `ty.impl_trait.of_which.std.send` and `ty.impl_trait.of_which.std.sync`, each an unchecked
-  assertion that a value may move to or be shared with another thread;
+- `ty.impl_trait.of_which.std.send.{pub,priv}` and `ty.impl_trait.of_which.std.sync.{pub,priv}`,
+  each an unchecked assertion that a value may move to or be shared with another thread;
 - `raw_ptr.deref.wr` and `raw_ptr.deref.rd`, raw-pointer writes and reads, each a pointer
   the implementer vouches is non-null, aligned, live, initialized and unaliased by a live
   reference; and
-- `ty.storing_raw_ptr.of_which.impl_drop` and `ty.storing_raw_ptr.of_which.impl_clone`, the
-  types that hold a raw pointer and tear it down or copy it by hand, and
-  `ty.storing_raw_ptr.of_which.none`, those that declare nothing about it.
+- `ty.storing_raw_ptr.of_which.impl_drop.{pub,priv}` and
+  `ty.storing_raw_ptr.of_which.impl_clone.{pub,priv}`, the types that hold a raw pointer and
+  tear it down or copy it by hand, and `ty.storing_raw_ptr.of_which.none.{pub,priv}`, those
+  that declare nothing about it. Each of these five also has a `.total`, the sum of its two
+  leaves, which is no leaf for `--sites`.
 
 ffimap is neither complete nor sound: its sites are where review starts, not all it
 covers. It does not count the lifetimes formed inside `unsafe` blocks, such as a reference
@@ -80,10 +88,11 @@ Before a batch lands, a scan with `--sites fn.unsafe.pub raw_ptr.field.pub
 raw_ptr.fn_sig_arg.safe.pub raw_ptr.fn_sig_ret.safe.pub` lists the public
 `unsafe fn`s and the raw pointers on the safe public interface, and each of those sites
 that belongs to the batch's changeset and that a safe variant could replace is fixed.
-<!-- TODO: ffimap counts the unsafe blocks of `ffi_export` regions,
-`code.unsafe_block.of_which.ffi_export`, but not yet those of `ffi_import`, nor the unsafe
-code a macro of another crate expands outside both regions, which the `unsafe_code` lint
-misses: until it does, those invocations are found in the source. -->
+Its `--sites` also name the unsafe code outside both regions,
+`code.unsafe_block.of_which.outside_regions`, another crate's macro expansions included,
+which the `unsafe_code` lint misses, and `fn.unsafe.of_which.outside_regions.pub` and
+`.priv`: outside the raw bindings, each of those sites in the batch's changeset is moved
+into its region.
 
 ## Accounting
 
@@ -98,7 +107,7 @@ the tree it lands.
 An unseeded scan of the unsafe and FFI surface is recorded at each batch's, wave's and
 the campaign's end, as `ffimap.json` in its artifact directory: a batch's in the run dir
 of the run that landed it, a wave's in its wave's dir, as `layout` spells it, and the
-campaign's in `crustify/artifacts/`. A module's end is the scan of its last wave.
+campaign's in `crustify/artifacts/`. A module's end is the scan of the last wave of its `wrap` and `port` items.
 
 ## Reviewing
 
@@ -117,7 +126,8 @@ the types, trait impls and functions they name.
      `ty.ffibox.wrapper.as.borrowed.std.{pub,priv}` less those shares, and to a raw C
      struct, `ty.ffibox.sys.as.borrowed.std.{pub,priv}`, then
      `raw_ptr.casted_to.std.{borrow,slice,string}`;
-  2. thread-safety claims, `ty.impl_trait.of_which.std.send` and `.sync`, checked against
+  2. thread-safety claims, `ty.impl_trait.of_which.std.send.{pub,priv}` and
+     `ty.impl_trait.of_which.std.sync.{pub,priv}`, checked against
      the C library's contract: a data race is reachable from safe code when the library
      does not allow what they assert;
   3. the lifetimes formed inside `unsafe` blocks, found in the source: unsound when the
@@ -129,8 +139,8 @@ the types, trait impls and functions they name.
   5. raw-pointer dereferences, `raw_ptr.deref.wr` then `raw_ptr.deref.rd`: first in the
      modules that also hold references into C memory, where a write may invalidate a
      reference, and outside a type's accessors; and
-  6. hand-written teardown and copies, `ty.storing_raw_ptr.of_which.impl_drop` and
-     `.impl_clone`.
+  6. hand-written teardown and copies, `ty.storing_raw_ptr.of_which.impl_drop.{pub,priv}`
+     and `ty.storing_raw_ptr.of_which.impl_clone.{pub,priv}`.
 
 ## Audit
 
@@ -147,6 +157,6 @@ follows the smells.
 
 The modules are batched by their sites, and a module that is split keeps a type, trait
 impl or function with its sites in one batch. A site of `ty.storing_raw_ptr.of_which.impl_drop`,
-`.impl_clone`, `ty.impl_trait.of_which.std.send` or `.sync` is a trait impl, named
+`.impl_clone`, `ty.impl_trait.of_which.std.send` or `.sync`, at either leaf, is a trait impl, named
 `Drop for <type>`, `Clone for <type>`, `Send for <type>` or `Sync for <type>`. Each review
 runs the same scan over its own modules, so the sites are not passed on.

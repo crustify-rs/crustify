@@ -94,8 +94,9 @@
 # That is how a private or unpushed tool gets into the image, and it is the
 # same flag for every one of the four. What differs is only the default:
 #
-#   wavefront, ffibox, ffimap   a shallow clone of the default branch, from the
-#                               crustify-rs organization
+#   wavefront, ffibox, ffimap   a shallow clone of the `devel` branch, from the
+#                               crustify-rs organization: the line campaigns run
+#                               and the skills follow
 #   crustify                    the build context -- the checkout this
 #                               Dockerfile ships in, which is the tree you are
 #                               building from
@@ -105,31 +106,31 @@
 # default.
 #
 # There is no flag for a branch, and none is needed: a build takes either a
-# local checkout or the default branch, and a checkout is already on whatever
+# local checkout or `devel`, and a checkout is already on whatever
 # branch you put it on. To build against one, check it out locally and pass the
 # tree.
 #
 # Docker caches a `RUN git clone` by instruction text, which never changes, so
-# bump DEPS_REFRESH to re-clone the default branch:
+# bump DEPS_REFRESH to re-clone the tools' branches:
 # `--build-arg DEPS_REFRESH=$(date +%s)`. Every clone stage uses the base image
 # pinned below, which has git.
 ARG DEPS_REFRESH=0
 FROM ghcr.io/borrowsanitizer/bsan@sha256:56bbbfd19dec23ba518e9dc2221045b2869cc1f6aabdd8ea40174a41d860a5b2 AS wavefront-clone
 ARG DEPS_REFRESH
 RUN echo "DEPS_REFRESH=${DEPS_REFRESH}" \
-    && git clone --depth 1 https://github.com/crustify-rs/wavefront.git /src
+    && git clone --depth 1 --branch devel https://github.com/crustify-rs/wavefront.git /src
 FROM scratch AS wavefront
 COPY --from=wavefront-clone /src /
 FROM ghcr.io/borrowsanitizer/bsan@sha256:56bbbfd19dec23ba518e9dc2221045b2869cc1f6aabdd8ea40174a41d860a5b2 AS ffibox-clone
 ARG DEPS_REFRESH
 RUN echo "DEPS_REFRESH=${DEPS_REFRESH}" \
-    && git clone --depth 1 https://github.com/crustify-rs/ffibox.git /src
+    && git clone --depth 1 --branch devel https://github.com/crustify-rs/ffibox.git /src
 FROM scratch AS ffibox
 COPY --from=ffibox-clone /src /
 FROM ghcr.io/borrowsanitizer/bsan@sha256:56bbbfd19dec23ba518e9dc2221045b2869cc1f6aabdd8ea40174a41d860a5b2 AS ffimap-clone
 ARG DEPS_REFRESH
 RUN echo "DEPS_REFRESH=${DEPS_REFRESH}" \
-    && git clone --depth 1 https://github.com/crustify-rs/ffimap.git /src
+    && git clone --depth 1 --branch devel https://github.com/crustify-rs/ffimap.git /src
 FROM scratch AS ffimap
 COPY --from=ffimap-clone /src /
 # crustify's default source is the build context, so it needs no clone stage --

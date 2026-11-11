@@ -34,8 +34,10 @@ its safe API excludes them too, by whatever means it uses.
 
 ### Binding workflow › Rust tree
 
-The workspace depends on ffibox from its `feat/bidirectional` branch.
-<!-- TODO: until that branch is released. -->
+The workspace depends on ffibox by path, on the checkout of its `devel` branch that the
+host provides, `ffibox = { path = "/opt/venv/share/ffibox" }` in Crustify's image, so that
+each run records its revision among its task's `revisions`.
+<!-- TODO: a released ffibox, as a versioned dependency, once `devel` reaches `main`. -->
 
 ## Binding and porting
 

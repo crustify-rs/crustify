@@ -27,18 +27,18 @@ defaults differ:
 
 | tool | default source |
 |---|---|
-| `wavefront`, `ffibox`, `ffimap` | a shallow clone of the default branch, from the `crustify-rs` organization |
+| `wavefront`, `ffibox`, `ffimap` | a shallow clone of the `devel` branch, from the `crustify-rs` organization: the line campaigns run and the skills follow |
 | `crustify` | the build context, the checkout this Dockerfile ships in |
 
 crustify defaults to the context because the build is run from a crustify checkout, so
 the local tree is what one means by default.
 
-There is no flag for a branch. A build takes either a local checkout or the default
-branch, and a checkout is already on whatever branch you put it on: to build against
-one, check it out locally, switch to it, and pass the tree.
+There is no flag for a branch. A build takes either a local checkout or `devel`, and a
+checkout is already on whatever branch you put it on: to build against one, check it out
+locally, switch to it, and pass the tree.
 
 A `RUN git clone` is cached by its instruction text, which never changes, so bump
-`DEPS_REFRESH` to re-clone the default branch.
+`DEPS_REFRESH` to re-clone the tools' branches.
 
 Start a container per campaign, idle:
 
