@@ -97,7 +97,7 @@ the tree it lands.
 
 An unseeded scan of the unsafe and FFI surface is recorded at each batch's, wave's and
 the campaign's end, as `ffimap.json` in its artifact directory: a batch's in the run dir
-of the run that landed it, a wave's in `crustify/artifacts/waves/wave-<index>/`, and the
+of the run that landed it, a wave's in its wave's dir, as `layout` spells it, and the
 campaign's in `crustify/artifacts/`. A module's end is the scan of its last wave.
 
 ## Reviewing

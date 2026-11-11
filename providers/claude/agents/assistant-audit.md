@@ -95,7 +95,7 @@ Whatever the campaign's kind, you own:
 - the `setup` skill, every section of it;
 - every branch, worktree and run dir of the `versioning` and `layout` skills' Lifecycle
   sections: you create each before its part starts, promote it when its part completes,
-  and purge what only that part needed, numbering each run dir in its agent's launch order
+  and purge what only that part needed, numbering each batch's runs in their launch order
   before you spawn it. A failed batch's worktree stays until you have inspected it;
 - how many agents run at once, as the `concurrency` skill describes, decided as each wave
   starts and revised as its batches land or fail;

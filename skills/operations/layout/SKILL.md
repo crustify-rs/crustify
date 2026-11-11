@@ -10,10 +10,10 @@ and the campaign's scratch and reviews dirs. The repositories, branches and work
 that hold them are [`versioning`](../versioning/SKILL.md)'s.
 
 A repository holds one campaign, and its work is cumulative: a later run resumes it and
-skips what it already completed. Its artifact dirs are named from the agent that ran and
-its run number, and a batch's from its coordinates in `crustify/artifacts/schedule.json`,
-its wave index and batch index. Nothing records a path; each name below is spelled from
-those coordinates.
+skips what it already completed. Its artifact and reviews dirs are grouped by module, and
+named from a batch's coordinates in `crustify/artifacts/schedule.json`, its module, wave
+index and batch index, and a run's attempt. Nothing records a path; each name below is
+spelled from those coordinates.
 
 ## 1. Tree
 
@@ -39,13 +39,18 @@ wavefront configurations and tables and a batch item's `defined_in`, is relative
 root, `c/`, so that the plan reads as the C codebase lays itself out. Every other path is
 relative to the repository's root.
 
-## 2. Batch ids
+## 2. Ids
 
 A batch's id is the part of its branch name after `crustify/batches/`:
 `wave-<index>/batch-<index>`. It is permanent, since a started wave's index is never
 reused or renumbered (see `schedule-schema`), and its entry in `schedule.json` gives the batch's link
-unit, module, kind and worklist. A run's id is `<role>/run-<n>`, which names its
-artifact dir; a planner run's branch is named from it.
+unit, module, kind and worklist. A run's id is its batch's id followed by its attempt,
+numbered from 1 in the order the batch's runs launch: `wave-3/batch-1/run-2`. A planner
+run's is `planner/run-<n>`, numbered among the planner runs, which also names its branch.
+
+A module's dir is its branch's name after `crustify/`: `modules/<link-unit>/<module>`, or
+`foundational/<link-unit>/<module>` for a foundational module. A wave that belongs to no
+module, such as an audit's, has `waves` in its place.
 
 ## 3. Artifact dirs
 
@@ -59,18 +64,15 @@ crustify/artifacts/                             the campaign
 ├── schedule.json                               the waves and batches, and their progress
 ├── dashboard.md                                the campaign dashboard; audit-dashboard.md for an audit
 ├── planner/run-<n>/                            a planner run
-├── binder/run-<n>/                             a binder's run of a `wrap` batch
-├── translator/run-<n>/                         a translator's run of a `port` batch
-├── reviewer/run-<n>/                           a reviewer's run of a review batch
-│   ├── task.json                               its input, with the batch and run fields, and its session id
-│   ├── task.md                                 its task message
-│   └── …                                       the records its run keeps, as the tool skills name them
-└── waves/wave-<index>/                         a wave's own records, such as its scans
+└── <module dir>/wave-<index>/                  a wave's dir: its own records, such as its scans
+    └── batch-<index>/run-<n>/                  a run of a batch, a binder's, a translator's or a reviewer's
+        ├── task.json                           its input, with the batch and run fields, and its session id
+        ├── task.md                             its task message
+        └── …                                   the records its run keeps, as the tool skills name them
 ```
 
-Each agent's runs are numbered from 1 in the order they launch, so a batch that is run
-again gets a new run dir, and every attempt keeps its records. A run's `task.json` names
-its batch, and a batch's runs are those whose `task.json` names it. The run dir holds
+A batch that is run again gets a new run dir, and every attempt keeps its records. A run's
+`task.json` names its batch too. The run dir holds
 what the campaign keeps of the run: its input, with the backend, billing, model proxy and
 arguments it ran under and the session it became, and the artifacts its agent produced.
 Its transcript and pricing record are in crustify's home.
@@ -109,8 +111,8 @@ repository.
 
 ## 7. Reviews
 
-A review batch's findings sit under its reviews dir, `crustify/reviews/<batch id>/`, such
-as `crustify/reviews/wave-3/batch-1/`, in the repository the review lands in, and a planner
+A review batch's findings sit under its reviews dir, `crustify/reviews/<module dir>/<batch id>/`,
+such as `crustify/reviews/modules/libgit2/src/libgit2/refs.c/wave-3/batch-1/`, in the repository the review lands in, and a planner
 run's plan corrections under `crustify/reviews/planner/`, as
 [`reviewing`](../../verification/reviewing/SKILL.md)'s Reports and Plan corrections sections
 lay them out.

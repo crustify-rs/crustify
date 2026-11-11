@@ -64,7 +64,7 @@ charged amount.
 ## Legend
 
 - **finding** — its dir under the filing batch's reviews dir,
-  `crustify/reviews/<batch id>/`
+  `crustify/reviews/waves/<batch id>/`
 - **instrument** — the selected instrument that fired on this finding. One tag
   per row: a finding exists because something crashed or an assertion failed,
   and this names what caught it. A tag missing from the whole column is not a

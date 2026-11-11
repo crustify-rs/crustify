@@ -93,7 +93,7 @@ Implementation `<model>` on `<backend>`; review
 
 Deterministic `ffimap`, run as the `ffimap` skill's Accounting section describes; no
 model. Every counter is in the `ffimap.json` tracked in the campaign's artifact dir, in
-each wave's `waves/wave-<index>/` and in each batch run's dir. Each metric is one counter
+each wave's dir and in each batch run's dir. Each metric is one counter
 or a combination of counters, named by their dotted paths into the scan's `counts`; a `%`
 metric is a share within one record, and a `−` subtracts a share from the record it cuts.
 

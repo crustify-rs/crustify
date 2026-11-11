@@ -102,7 +102,7 @@ schedule, the other batches, and your batch's usage cells.
    `porting-symbols` skills, and, in
    a Crustify-generated batch, the Rust by the `conventions` skill. Try to break every
    contract you review, and rerun every report you revisit.
-3. **Reports.** File each finding in your reviews dir, `crustify/reviews/<batch id>/`, with
+3. **Reports.** File each finding in your reviews dir, as the `layout` skill spells it, with
    the reproducer that proves it, as the `reviewing` skill's Reports and Reproducers
    sections describe, and, under `disclose`, its disclosure notice. A defect in a tool,
    Crustify included, is filed in that tool's checkout instead.

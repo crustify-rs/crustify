@@ -73,8 +73,15 @@ planner run has none: it runs in the repository's base dir, on its branch.
 
 A batch lands its commits on the integration branch it was given, which is never checked
 out. Before committing, the diff is checked to contain no unrelated work. A commit carries
-no trailer but the co-author trailers of the campaign's [identity](#6-identity): what ties
-it to its batch is the batch's branch, whose tip it is or precedes.
+no trailer but the co-author trailers of the campaign's [identity](#6-identity), and its
+subject says what it does and which run made it. A batch's names its module's file and its
+objective and ends with its run's id, as `refs.c: wrap 12 items (wave-3/batch-1/run-2)`,
+and its body lists the items it translated by their anchors' paths, as
+`fn::git_reference_lookup`, one per line; a review batch's two commits name what they file
+and what they fix the same way, and a planner run's subject ends with its run's id. A
+progress commit is `progress: wave-<index>`, and an integration's merge, in the campaign's
+repository and on the fork's `main`, `integrate <module>`, the module written as
+[`modules-schema`](../../artifacts/modules-schema/SKILL.md) writes it.
 
 The landing operation is a local push through the Git common directory:
 

@@ -186,7 +186,8 @@ its reviews dir but the tests that fill the gaps `test-adequacy` finds.
 
 ## 4. Reports
 
-A review batch files its findings under its reviews dir, `crustify/reviews/<batch id>/`,
+A review batch files its findings under its reviews dir, as
+[`layout`](../../operations/layout/SKILL.md)'s Reviews section spells it,
 each in its own `<slug>` directory, holding its report and, when it has one, its
 reproducer, in the sub-directory of its objective:
 

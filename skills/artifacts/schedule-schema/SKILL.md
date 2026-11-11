@@ -172,5 +172,6 @@ Status section describes, and every `todo` wave is re-planned under the new kind
 ## 6. Derived paths
 
 A batch's id, `wave-<index>/batch-<index>`, names its branch and worktree, and its wave
-index the wave branch, as `versioning` spells them. Its artifact dirs are those of the
-agents that ran it, each holding a `task.json` that names the batch's wave and index.
+index the wave branch, as `versioning` spells them, and with its module its run dirs and
+reviews dir, as `layout` spells them, each run's `task.json` naming the batch's wave and
+index.

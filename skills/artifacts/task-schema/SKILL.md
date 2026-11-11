@@ -15,7 +15,7 @@ written as `task.json`: its `kind` as `objective`, its `items`, the
 [batch fields](#2-batch-fields) that place it in the schedule, and the
 [run fields](#1-run-fields).
 
-`task.json` sits in the artifact dir of the agent's run, `crustify/artifacts/<role>/run-<n>/`.
+`task.json` sits in its run's dir, as [`layout`](../../operations/layout/SKILL.md)'s Artifact dirs section spells it.
 Its `session_id` is recorded in it as soon as the run's session has one, which ties the run
 to its transcript and its records in crustify's home; a task that already holds one is not
 run again. A batch that is run again gets a new run dir and task, so every attempt keeps
@@ -123,7 +123,7 @@ landed; in an audit, modules of the crate.
 ```
 
 ```json
-{"objectives": ["revisit", "disclose", "fix"], "reports": ["crustify/reviews/<batch id>/ub_safe/<slug>"]}
+{"objectives": ["revisit", "disclose", "fix"], "reports": ["crustify/reviews/<module dir>/<batch id>/ub_safe/<slug>"]}
 ```
 
 | root field | meaning |
@@ -131,7 +131,7 @@ landed; in an audit, modules of the crate.
 | `objectives` | the review objectives to run; optional, every one that applies when absent |
 | `commits` | distinct commit ids, as they sit on its wave's branch; route `commits`: the `commits` of the batches its schedule entry `reviews`, whose `items` there list the C items they bound or ported |
 | `paths` | repo-relative source files and directories; route `paths`. An entry may instead be `{"path", "types", "trait_impls", "functions"}`, naming the parts of a module too large to review whole: types, each with its fields and inherent impls; trait impls, each `<trait> for <type>` as its impl header spells it; and free functions |
-| `reports` | repo-relative report dirs, `crustify/reviews/<batch id>/<kind>/<slug>`, to revisit |
+| `reports` | repo-relative report dirs, `<reviews dir>/<kind>/<slug>`, to revisit |
 | `wave_gates` | optional, `false` when absent: `true` on the wave's last review batch, launched once every translation batch of the wave has landed, which runs the wave's gates, as `reviewing`'s Gates section describes; only on a batch with `commits` |
 
 The batch and run fields are required, as on a translation task; the second and third

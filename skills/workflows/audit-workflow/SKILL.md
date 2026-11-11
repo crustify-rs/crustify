@@ -103,7 +103,7 @@ or any other reproducer artifact: the audit tree may be published.
 
 ## 8. Output
 
-Each reviewer files its findings under its reviews dir, `crustify/reviews/<batch id>/`. With
+Each reviewer files its findings under its reviews dir, `crustify/reviews/waves/<batch id>/`. With
 `disclose`, every finding carries a `disclosure.md` ready to send to the project's
 maintainers. After the last review wave, the dashboard summarizes the reports, by default
 `crustify/artifacts/audit-dashboard.md` from
