@@ -112,11 +112,18 @@ and, after its `<!-- WORKFLOW -->` marker, its steps.
 
 A tool is one program an agent reaches for: wavefront, ffimap, ffibox. Each has one skill,
 `skills/tools/<tool>/SKILL.md`, written as every skill is, descriptively and without naming
-agents. It opens with what the tool is, which documentation of its own is read in full
+agents. It states what a campaign uses the tool for, where the tool's state sits in a
+campaign, and how the tool's output becomes Crustify's artifacts and decisions. How the
+tool works, its configuration, tables, commands and what they mean, is its own
+documentation's, which the skill cites by document rather than restating, so that the two
+never drift; a fact that documentation lacks is added to it, on a branch of the tool's
+repository, not to the skill.
+
+A tool skill opens with what the tool is, which documentation of its own is read in full
 before its first use, and what holds in every use of it; one section per stage follows,
-each subsection named after the skill section it adds to ("Scheduling › Order") and
-stating only what the tool adds there. Its description names the stages and steps it
-serves.
+each subsection named after the skill section it adds to ("Scheduling › Order"), stating
+only what the tool adds there and naming the documents of the tool that stage reads. Its
+description names the stages and steps it serves.
 
 Every agent reads every tool skill its host offers before its first step, as
 `agents/common.md` says, so that no other skill names a tool. A tool is removed by deleting

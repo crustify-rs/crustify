@@ -1,43 +1,42 @@
 ---
 name: wavefront
-description: "Deterministic queries and dependency-ordered plans over the C codebase (CodeQL tables, ownership store, T3 cast tables). Read before planning, decomposing or scheduling, before analysing or binding an item, when packing wrap batches, and when reviewing pointer findings or lifecycles."
+description: "Deterministic queries and dependency-ordered plans over the C codebase, the first resort for any question about it: entities, uses, dependencies, pointers, lifecycles, T3 cast tables. Read before querying the C codebase, before planning, decomposing or scheduling, before analysing or binding an item, when packing wrap batches, and when reviewing pointer findings or lifecycles."
 ---
 
 # wavefront
 
-Wavefront answers deterministic queries about a C codebase: type and symbol records,
-pointer analysis, lifecycle roles, dependency closures and the source inventory, and it
-generates objective-neutral, dependency-ordered wave plans. Its own documentation, its `README.md`, its `--help` and the documents under its `docs/`,
-is read in full before its first command: `docs/scoping.md`, `docs/graph.md` and
-`docs/batching.md` describe how it selects, orders and batches; `docs/artifacts/t3.md`
-the T3 tables; and `docs/type-lifecycle.md` how a type's lifecycle primitives are
-identified.
+Wavefront answers deterministic queries about a C codebase, its entities, their uses and
+dependencies, their pointers and lifecycles, and generates dependency-ordered wave plans
+over it.
 
-Wavefront's repo root is the C root, `c/`: it is passed `<workdir>/c` as its
-`repo_root`, so that every path it reads and reports is below the C root, as the plan
-records them.
+It is the first resort for any question about the C codebase: an entity's definition,
+fields or signature, its users, callers and casts, what it depends on, and the pointer
+findings and lifecycle roles submitted on it are queried rather than searched for in the
+source, so that each answer covers every site the traced build compiles, and every query
+of one fact gets one answer. The source is read where wavefront records nothing, to read a
+body, and to judge what wavefront records.
 
-A campaign keeps its wavefront state under `crustify/wavefront/`:
+Its `README.md` and `--help` are read in full before its first command, and each section
+below names the documents under its `docs/` that its stage reads, also in full. How
+wavefront scopes, orders and batches, what its configuration, tables and records hold, and
+what each query returns are those documents', and are not restated here.
 
-- the CodeQL database and its T1/T2 tables, under `codeql/`, and wavefront's `.cache`,
-  both gitignored;
-- the configuration, `configs/wavefront-config.json`, which every query of the bindings
-  and reviews resolves through, and which orders and schedules the modules. Its `closure`
-  holds the files of every module, its `impl_files` the translation units and internal
-  headers and its `api_headers` the installed headers; its `modules` holds one record per
-  module of `modules.json`, named `<link-unit>/<name>`, with ` (foundational)` after a
-  foundational module's name, whose `files` are the module's file entries with their
-  `items`; and its `schedule_seeds` names what a planner run schedules. It uses
-  `../crustify/wavefront`, relative to the C root, as its `state_dir`, and sets
-  `"t3_dir": "t3"`;
-- the T3 tables, under `t3/`, one campaign-wide pair serving the configuration:
-  `chased_casts.csv`, whose `erased_arg` and `erased_field` rows name the type a
-  type-erased parameter or field holds and whose `base_derived` rows the base a type is
-  reached through, and `type_generators.csv`, the type-minting macros and the shapes they
-  mint; and
-- the ownership store, `ownership-store.json`, which holds the findings submitted with
-  the CLI's `--update`: pointer ownership, access, nullability, cardinality and keepalive,
-  and lifecycle roles. A finding submitted once is queried again rather than re-derived.
+## Campaign state
+
+Wavefront's repo root is the C root: it is passed `<workdir>/c`, so that every path it
+reads and reports is relative to the C root, as the plan records them. Its state sits
+under `crustify/wavefront/`, which the configuration names as its `state_dir`,
+`../crustify/wavefront`:
+
+- `codeql/`, the CodeQL database and its T1/T2 tables, and `.cache`, both gitignored;
+- `configs/wavefront-config.json`, the campaign's configuration, which every query of the
+  bindings and reviews resolves through, with `"t3_dir": "t3"`;
+- `t3/`, the T3 tables, one campaign-wide pair; and
+- `ownership-store.json`, the findings submitted with the CLI's `--update`. A finding
+  submitted once is queried again rather than re-derived.
+
+The configuration's `modules` hold one record per module of `modules.json`, named
+`<link-unit>/<name>`, with ` (foundational)` after a foundational module's name.
 
 What follows is how wavefront serves each stage: each section names the skill and section
 it adds to, and states only what wavefront adds there.
@@ -46,51 +45,39 @@ it adds to, and states only what wavefront adds there.
 
 ### Setup › Provisioning
 
-CodeQL is installed, and wavefront's query pack dependencies with `codeql pack install`
-on wavefront's `src/`: extraction fails without them. `crustify/.gitignore` lists
-`wavefront/codeql` and `wavefront/.cache`.
+CodeQL and wavefront's query pack dependencies are installed, as its README describes.
+`crustify/.gitignore` lists `wavefront/codeql` and `wavefront/.cache`.
 
 ### Setup › Artifact tree
 
-`crustify/wavefront/` is scaffolded for wavefront's artifacts.
+`crustify/wavefront/` is scaffolded for wavefront's state.
 
 ### Setup › Baseline
 
-Once the builds and the baseline are recorded, the CodeQL T1/T2 tables wavefront computes
-dependencies from are emitted. The CodeQL database is created under
-`crustify/wavefront/codeql/` from a traced build of the `plain` configuration in a fresh
-scratch dir, with `c/` as its source root, and the tables are extracted into
-`crustify/wavefront/codeql/{t1,t2}` through a configuration whose `state_dir` is
-`../crustify/wavefront`. That bootstrap configuration sits in `crustify/tmp/`; the
-campaign's own configurations are the plan's.
+Once the builds and the baseline are recorded, the CodeQL database is created from a
+traced build of the `plain` configuration in a fresh scratch dir, with `c/` as its source
+root, and its T1/T2 tables are extracted, through a bootstrap configuration in
+`crustify/tmp/`; the campaign's own configuration is the plan's.
 
 ## Planning
 
+Planning reads `docs/scoping.md`, `docs/graph.md`, `docs/batching.md`,
+`docs/type-lifecycle.md`, `docs/artifacts/t3.md` and `docs/artifacts/schedule.md`.
+
 ### Decomposition › Runs
 
-Wavefront's planning artifacts are the configuration under `crustify/wavefront/configs/`
-and the T3 tables under `crustify/wavefront/t3/`. Each planner run brings them up to date
-with the plan: it emits what is missing, updates what follows an earlier wavefront schema,
-adds what the scope adds, and corrects what is wrong. A changed configuration or T3 row
-changes the DAGs wavefront builds, so the `todo` waves whose batches it moves are
-re-planned, and the `depends_on` in `modules.json` when the configuration moves them.
+Each planner run brings the configuration and the T3 tables up to date with the plan: it
+emits what is missing, migrates what follows an earlier wavefront schema, adds what the
+scope adds and corrects what is wrong. A changed configuration or T3 row changes the graph,
+so the `todo` waves whose batches it moves are re-planned, and the `depends_on` in
+`modules.json` when it moves them.
 
 ### Decomposition › Dependencies
 
-The configuration's `modules` are authored from `modules.json`: each module's record
-lists its `translation_unit`, `internal_headers` and `api_headers` entries, each with the
-entities its `items` lists select, as `{"name", "kind"}` items, each kind what the entity
-is in C, as a planned item's. A struct tag and a function or global may share a name in
-one file, so an item names the kind it means. A
-module claims the units its files are home to, the file that defines them or, with none,
-their declaration: a shared header's types and `static inline` functions are claimed by
-listing the header with them as `included`, never by listing a header that only declares
-them, which wavefront refuses. A unit two modules claim is refused too, so every entity is
-owned by exactly one module. A file listed whole claims every unit it is home to, its
-macros included, as an entry with an `excluded` list claims every unit but those it names;
-an entry with an `included` list claims only the units it names, so a split header's
-entry names each API macro it owns there too. The configuration is verified
-against the CLI.
+The configuration's `modules` are authored from `modules.json`: each module's files, with
+the entities its `items` list select, each by the kind it is in C. Wavefront refuses an
+entry that claims what its file only declares, and a unit two modules claim, so that every
+entity is owned by exactly one module; the configuration is verified against the CLI.
 <!-- TODO: wavefront makes a unit of every macro an installed header defines, but of an
 internal header's macro only where the closure's code expands it, so an internal API macro
 no C of the closure expands is planned nowhere, and it makes units of the configuration and
@@ -100,99 +87,76 @@ macros in the modules' records, and tell a closed enum from a flags one, which t
 judges until then, as `scheduling`'s Later stages section describes. -->
 
 A module's dependency records are counted from a schedule of the whole closure, without
-`schedule_seeds`: the module's record in its `modules` gives each in-tree record's
-`outgoing_edges` as its `total_edges`, and the other module's record its
-`incoming_edges`; the items' `depends_on` give the `counters`, and their `external`
-references the out-of-tree records.
+`schedule_seeds`: its module record's `depends_on` gives its in-tree records, with their
+`unique_edges` and `total_edges`; its items give the `counters`, and their references
+whose `scope` is `external` the out-of-tree records.
 
 ### Decomposition › Foundational modules
 
-The foundational modules' candidates are selected from the configuration's
-graph, after the T3 tables are written, so that their cast edges resolve type-erased
-values: the type-erased units that no cast edge ties to a named type, and the units whose
-pointers carry the `string` property, that depend on no other module's types. Each
-candidate's body is read before it is admitted.
-
-Each member's lifecycle role (allocator or constructor, releaser, disposer, cloner) is
-submitted to the ownership store through the CLI's `--update`, as `docs/type-lifecycle.md`
-describes, so that the bindings of the foundational modules find it there.
+The foundational modules' candidates are selected from the configuration's graph, after
+the T3 tables are written, so that their cast edges resolve type-erased values: the
+type-erased units that no cast edge ties to a named type, and the units whose pointers
+carry the `string` property, that depend on no other module's types. Each candidate's body
+is read before it is admitted. Each member's lifecycle role is identified as
+`docs/type-lifecycle.md` describes and submitted with `--update`, so that the bindings of
+the foundational modules find it.
 
 ### Scheduling › Order
 
 The link units and modules are ordered from the configuration, after its T3 tables are
-written. They are reviewed in that configuration:
+written, and reviewed there:
 
-- every type-erased parameter and field (`is_erased` in `t1/params.csv` and
-  `t1/fields.csv`) with no cast in `t2/arg_casts.csv` or `t2/field_casts.csv`, followed
-  until it is read as a named type, stored, returned or lost. A hop that dispatches on a
-  tag and reads different types per branch establishes none of them;
+- every type-erased parameter and field with no cast, followed until it is read as a named
+  type, stored, returned or lost. A hop that dispatches on a tag and reads different types
+  per branch establishes none of them;
 - every cast edge wavefront derives between two public types, each that is no type
   relation dropped;
 - every public type in a cast relation, the pairs that are a hierarchy recorded as
   `base_derived` rows; and
-- the type-minting macros in `t2/macro_generated_types.csv`, the source checked for
-  invocations conditional compilation hides from the traced build.
+- the type-minting macros, the source checked for invocations that conditional
+  compilation hides from the traced build.
 
 A row wavefront warns is stale is corrected or deleted.
 
 ### Scheduling › Waves and batches
 
-- A planner run schedules once, with `wavefront schedule`: its `schedule_seeds` are the
-  files of the modules it plans, and the schedule holds them and every unit they depend
-  on, ordered over the whole closure. The output is written to `crustify/tmp/`, never
-  over `schedule.json`.
+- A planner run schedules once, with `wavefront schedule`, its `schedule_seeds` the files
+  of the modules it plans, without batch caps: the waves' batches are packed when each
+  starts. The output is written to `crustify/tmp/`, never over `schedule.json`.
 - A wrap campaign schedules with `--api-headers-only`.
-- It schedules without batch caps: the waves' batches are packed when each starts.
 - A unit wavefront warns belongs to no module, and a module it warns claims no unit, are
   gaps in the decomposition, corrected before the schedule is used.
 - Wavefront's `modules` become `schedule.json`'s, each named back to its `link_unit`,
-  `module` and `foundational`, with its `layer`, its waves and its dependency records:
-  their `unique_edges`, `total_edges` and, on a cut record, `items`.
-- A module's `depends_on.external` records are built from its units' references whose
-  `scope` is `external`, the edges from each unit's `depends_on`, grouped by the library
-  whose installed headers define the referenced entity, as `dependencies.json` names it.
-  wavefront walks an external entity's own dependencies, a function's signature and the
-  fields of a struct the closure's code touches, but those are dependencies of the
-  external entity, not of the units: the side campaign's own schedule closes over them.
+  `module` and `foundational`, with its `layer`, its waves and its dependency records. Its
+  `depends_on.external` records group its units' references whose `scope` is `external`
+  by the library whose installed headers define the referenced entity, as
+  `dependencies.json` names it; the external entity's own dependencies, which wavefront
+  walks too, are the side campaign's to schedule.
 - Wavefront numbers its waves from 0 in every run, so the `todo` waves are numbered after
-  the highest index of a started wave, in wavefront's order, their `depends_on` renumbered,
-  with their module's `layer` and their `sublayer`. A wave's `items` are those of its
-  wavefront batches, each with its `name`, `defined_in` and `kind`, a macro's
-  `type_generator_for` deciding its route, its `used_fields` as `field_users`, its
-  `typedefs`, the `home` its module gives it, its `objective`, and its
-  `opaque_after`, `memory_unmanaged_after` and `unreferenced_after`, with the later stages
-  they place, as [Scheduling › Later stages](#scheduling--later-stages) describes. An item a wave
-  that has started holds, or that a batch has landed with that objective, is dropped, and
-  a dependency on it is one on that wave.
+  the highest index of a started wave, in wavefront's order, their `depends_on`
+  renumbered. A wave's `items` are those of its wavefront batches, with their `home`, their
+  `objective`, their `used_fields` as `field_users`, a macro's `type_generator_for`
+  deciding its route, and their release points. An item a started wave holds, or that a
+  batch has landed with that objective, is dropped, and a dependency on it is one on that
+  wave.
 
 ### Scheduling › Wrap batches
 
-The units a batch's items depend on are their `depends_on`, `scheduled` and `cut`, in
-the planner run's wavefront schedule, or `query dag --name <items>`. A wrap batch's items
-are closed over their wrap dependencies on the public-signature graph,
-`query dag --name <items> --api-headers-only`, less what has landed.
+The units a batch's items depend on are their `depends_on` in the planner run's schedule,
+or `query dag --name <items>`. A wrap batch's items are closed over their wrap dependencies
+with `query dag --name <items> --api-headers-only`, less what has landed.
 
 ### Scheduling › Later stages
 
-A port campaign's schedule, which is not `--api-headers-only`, gives each scheduled item
-its release points, which `schedule.json`'s items carry as wavefront records them and which
-place its later stages: a struct's, union's or closed enum's `opaque_after` its
-`port/layout`, a struct's or union's `memory_unmanaged_after` its `port/memory`, and a
-function's, global's or function pointer's `unreferenced_after` its `port/unexport`; a
-macro's or typedef's places none. A module's C leaves at its integration, so a stage's wave
-waits for the last waves of the modules its point's `closure.modules` names, less the
-item's own; with none left, the stage is not planned. The users behind each point
-are a query away: `query structs --name <T> --layout-users` lists a struct's layout users
-with the site and kind of each use, as `query unions` and `query enums` do theirs,
-`query structs --name <T> --raw-sites` its memory users, and
-`query functions --name <F> --callers` a function's, global's or macro's referrers.
-Whether a user stays C is read from those whole lists.
-`query structs --name <T> --field-touchers` lists the functions that touch each field.
-
-The layout users are read from T2's `layout_uses.csv`, which the tables extracted before
-it lack, and the memory users from the lifecycle roles of the ownership store and T2's
-`arg_casts.csv`: without the store's raw roles, `memory_unmanaged_after` is `null`, and
-the roles are established first, as `docs/type-lifecycle.md` describes.
+A port campaign's schedule, which is not `--api-headers-only`, gives each item its release
+points, which `schedule.json`'s items carry as wavefront records them, and which place its
+later stages: `opaque_after` a `port/layout`, `memory_unmanaged_after` a `port/memory` and
+`unreferenced_after` a `port/unexport`; a macro's or a typedef's places none. A stage's
+wave waits for the last waves of the modules its point's `closure.modules` names, less the
+item's own; with none left, the stage is not planned. Whether a user stays C is read from
+the whole list of its users, as `docs/batching.md`'s Release points section queries them.
+`memory_unmanaged_after` is `null` until the ownership store holds the raw roles, so they
+are established first.
 
 ## Batches
 
@@ -204,45 +168,40 @@ worktree once it is forked.
 
 ## Binding and porting
 
+Binding and porting read `docs/pointer-properties.md`, `docs/type-lifecycle.md`,
+`docs/artifacts/findings.md` and `docs/artifacts/t3.md`.
+
 ### Analysis
 
-The configuration, `crustify/wavefront/configs/wavefront-config.json`,
-answers the queries an item's analysis needs, and the analysis's findings are submitted
-with the CLI's `--update`, to be queried again rather than re-derived.
-
-A type-erased parameter or field is looked up in the campaign's T3
-`crustify/wavefront/t3/chased_casts.csv` before it is bound: an `erased_arg` or
-`erased_field` row names the type it holds, and a `base_derived` row the base a type is
-reached through, and the binding names that type rather than a raw pointer. The instances
-of a generator in `type_generators.csv` share one generic, with per-instance aliases.
+An item's analysis queries the campaign's configuration, and its findings are submitted
+with `--update`. A type-erased parameter or field is looked up in the T3 tables before it
+is bound, and the binding names the type a row gives it rather than a raw pointer. The
+instances of a type generator share one generic, with per-instance aliases.
 
 ### Binding types › Surface
 
 A type's lifecycle primitives are identified as `docs/type-lifecycle.md` describes, and
-submitted through the CLI's `--update`.
+submitted with `--update`.
 
 ### Binding symbols › Function pointers
 
-A function pointer's record is `query function_pointers --name <name>`: one a typedef
-declares is named by it, and one written inline by its signature, as
-`int (*)(ctx *, void *)`, homed in the file that writes it. Its record's `used_by` names
-its users; the sites of an inline one, each with the field, parameter, return, global,
-local or cast that holds it, are the rows of T2's `function_pointer_uses.csv` that name
-its signature and file. An inline one's `unreferenced_after` waits for what reaches each of
-those sites: a field's struct through its layout users, a parameter's or return's function
-and a global through their referrers.
+A function pointer's record and its users are `query function_pointers --name <name>`'s,
+named as `docs/graph.md`'s Nodes section names it, and the sites of one written inline,
+and what reaches them, are as `docs/batching.md`'s Release points section describes.
+<!-- TODO: that section names the sites' table on wavefront's `docs/fp-sites` branch, not
+yet merged; no query lists an inline function pointer's sites yet. -->
 
 ### Binding symbols › Lifecycle strategies
 
 Each foundational item's lifecycle role is in the ownership store, where planning
 submitted it, and is queried for every item of the batch. A role that the item's body
-contradicts is corrected through the CLI's `--update`, and the correction named in the
-batch's commit message.
+contradicts is corrected with `--update`, and the correction named in the batch's commit
+message.
 
 ### Porting types
 
 A ported type's lifecycle primitives are identified as `docs/type-lifecycle.md`
-describes, and submitted through the CLI's `--update`.
+describes, and submitted with `--update`.
 
 ## Reviewing
 
@@ -252,14 +211,14 @@ describes, and submitted through the CLI's `--update`.
 
 Lifecycles submitted to wavefront that are incomplete: a releaser, disposer, cloner or
 constructor that the findings of the batches that bound or ported items of the type
-route, or items of the foundational modules, missed. They are checked against the
-lifecycle primitives `docs/type-lifecycle.md` identifies.
+route, or items of the foundational modules, missed, checked against the lifecycle
+primitives `docs/type-lifecycle.md` identifies.
 
 #### The submitted findings
 
-Whatever the objectives, a review checks the pointer-related findings an earlier run submitted for the
-workset: ownership, access, nullability, cardinality and keepalive. A wrong inference is a
-finding.
+Whatever the objectives, a review checks the pointer findings an earlier run submitted for
+the workset: ownership, access, nullability, cardinality and keepalive. A wrong inference
+is a finding.
 
 #### Unsafety
 
@@ -279,8 +238,8 @@ branch and worktree of the local wavefront checkout, as any tool defect is.
 
 ### Reviewing › Fixes
 
-Under `fix`, each corrected or completed set of findings is submitted again through the
-CLI's `--update`, and a completed lifecycle gets the representations the Rust is missing.
+Under `fix`, each corrected or completed set of findings is submitted again with
+`--update`, and a completed lifecycle gets the representations the Rust is missing.
 
 ### Reviewing › Plan corrections
 
