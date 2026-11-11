@@ -65,6 +65,10 @@ raw binding and the allowlist entry that reach it, once no remaining C reference
 [`scheduling`](../../../planning/scheduling/SKILL.md)'s Later stages section times it. A
 function pointer no remaining C calls or supplies by its port is native in its
 implementation too: its closure or trait alone.
+A function pointer on the target's public API keeps its closure or trait through its
+`port/unexport`, even when Rust alone implements it, so that the deferred public C API, as
+[`conventions`](../../conventions/SKILL.md)'s Exports section describes, can let C
+implement it again.
 
 ## 4. Static inline functions
 

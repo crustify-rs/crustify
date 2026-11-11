@@ -56,8 +56,9 @@ included. The exports serve that C, which reaches the module through them once i
 integrated. A function or global only the module's own C references is not exported: that
 C leaves the build with the module at its integration, and its callers are Rust from then
 on; nor are static functions and static globals, which nothing outside their TU reaches.
-<!-- TODO: how a module's functions and globals on the target's public C API are
-exported, beyond what the remaining C references, is still open. -->
+The target's public C API, for C outside the target, is deferred: exports serve the
+target's own remaining C alone, and that API is a layer of its own over the native Rust API,
+added once the modules it covers are ported.
 An export is removed, with the raw binding that reaches it, by its symbol's `port/unexport`,
 after the integration that removes the last C that calls it, takes its address or
 accesses it. A C test tied to the module that stays, using only its public API, does not
