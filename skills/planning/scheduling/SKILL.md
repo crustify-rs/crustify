@@ -68,7 +68,7 @@ when it starts, as [Batches](#3-batches) describes.
 
 Type-erased and string lifecycle primitives are units of the foundational modules.
 Typed lifecycle primitives stay in the schedule as free symbols, as
-[`binding`](../../rust/binding/SKILL.md)'s Type route section describes.
+[`binding-types`](../../rust/binding/types/SKILL.md) describes.
 
 In a wrap campaign every item is `wrap`. In a port campaign, the items of the foundational
 modules are `wrap`, and those of every other module `port`: a function, a global, a
@@ -77,8 +77,8 @@ union `wrap` there while another module's C uses its layout, and each followed b
 later stages [Later stages](#5-later-stages) describes, each a planned item of its own.
 
 Enums and macros are items as any other entity is, bound or ported as
-[`binding`](../../rust/binding/SKILL.md)'s Enums section and
-[`binding-symbols`](../../rust/binding-symbols/SKILL.md)'s Macros section, and
+[`binding-types`](../../rust/binding/types/SKILL.md)'s Enums section and
+[`binding-symbols`](../../rust/binding/symbols/SKILL.md)'s Macros section, and
 [`porting`](../../rust/porting/SKILL.md)'s, describe.
 
 ## 3. Batches
@@ -191,7 +191,7 @@ A closed enum's layout users are the C that uses its constants or values of its 
 depend on its integer form, and it has no memory users. Wavefront gives every enum an
 `opaque_after`, closed or not: the planner tells a closed enum from one whose constants C
 combines as flags, from its constants' values and how its users combine them, as
-[`binding`](../../rust/binding/SKILL.md)'s Enums section tells their forms apart, and plans
+[`binding-types`](../../rust/binding/types/SKILL.md)'s Enums section tells their forms apart, and plans
 a `port/layout` for a closed enum alone.
 
 Each kind is found in every function that mentions the type, its globals and the struct

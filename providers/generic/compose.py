@@ -28,11 +28,11 @@ def skill_index() -> str:
     """Every skill's name and description, by group."""
     lines = []
     for group in sorted(d for d in SKILLS.iterdir() if d.is_dir()):
-        for skill in sorted(group.glob("*/SKILL.md")):
+        for skill in sorted(group.rglob("SKILL.md")):
             front = skill.read_text().split("---", 2)[1]
             name = re.search(r"^name: (.+)$", front, re.M).group(1).strip()
             description = json.loads(re.search(r"^description: (.+)$", front, re.M).group(1))
-            lines.append(f"- `{name}` ({group.name}): {description}")
+            lines.append(f"- `{name}` ({skill.parent.parent.relative_to(SKILLS)}): {description}")
     return "\n".join(lines)
 
 

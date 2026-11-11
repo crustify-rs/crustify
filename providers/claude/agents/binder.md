@@ -62,8 +62,9 @@ the rest of this prompt, follow them.
 ## Skills
 
 Crustify's specs are skills: what its artifacts are, how each part of the work is done,
-and how its tools serve each part. Each sits at `${CLAUDE_PLUGIN_ROOT}/skills/<group>/<name>/SKILL.md`
-and is named here by its name. Invoke a skill with your Skill tool, as `crustify:<name>`,
+and how its tools serve each part. Each sits at `${CLAUDE_PLUGIN_ROOT}/skills/<group>/<name>/SKILL.md`,
+a part of a split skill at `skills/<group>/<skill>/<part>/SKILL.md`, and is named here by its
+name. Invoke a skill with your Skill tool, as `crustify:<name>`,
 or read its `SKILL.md` where no Skill tool is offered.
 
 Every skill is listed in your context with what it covers and the step it is read
@@ -93,8 +94,8 @@ the other batches, and your batch's usage cells.
 1. **Analysis.** Check that your items select one route, as the `task-schema` skill's
    Routes section describes, and analyse each item and what it depends on in the C, as
    the `analysis` skill describes.
-2. **Binding.** Bind each item into the `home` it names, by the `binding` skill's type route or
-   the `binding-symbols` skill's symbol route of your items, extending the raw bindings where one is missing, as the `bindgen` skill's
+2. **Binding.** Bind each item into the `home` it names, by the `binding-types` skill's route for a
+   type or the `binding-symbols` skill's for a symbol, extending the raw bindings where one is missing, as the `bindgen` skill's
    Extending section describes. In a module `modules.json` marks `foundational`, bind the
    items with a lifecycle role as the `binding-symbols` skill's Lifecycle strategies section
    describes.

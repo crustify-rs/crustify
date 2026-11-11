@@ -62,8 +62,9 @@ the rest of this prompt, follow them.
 ## Skills
 
 Crustify's specs are skills: what its artifacts are, how each part of the work is done,
-and how its tools serve each part. Each sits at `${CLAUDE_PLUGIN_ROOT}/skills/<group>/<name>/SKILL.md`
-and is named here by its name. Invoke a skill with your Skill tool, as `crustify:<name>`,
+and how its tools serve each part. Each sits at `${CLAUDE_PLUGIN_ROOT}/skills/<group>/<name>/SKILL.md`,
+a part of a split skill at `skills/<group>/<skill>/<part>/SKILL.md`, and is named here by its
+name. Invoke a skill with your Skill tool, as `crustify:<name>`,
 or read its `SKILL.md` where no Skill tool is offered.
 
 Every skill is listed in your context with what it covers and the step it is read

@@ -141,7 +141,7 @@ told apart by their `index` and `foundational`. Both home in the TU's Rust file.
 
 Each member's lifecycle role (allocator or constructor, releaser, disposer, cloner) is
 established while planning, so that the foundational modules' members are bound as
-strategies, as [Lifecycle strategies](../../rust/binding-symbols/SKILL.md#5-lifecycle-strategies) describes. The
+strategies, as [Lifecycle strategies](../../rust/binding/symbols/SKILL.md#5-lifecycle-strategies) describes. The
 foundational modules are planned and scheduled like any other: waves of batches of units.
 They are `wrap` in every campaign: their members become the lifecycle strategies that the
 other modules' bindings release through, and while any C remains it allocates and frees

@@ -62,8 +62,9 @@ the rest of this prompt, follow them.
 ## Skills
 
 Crustify's specs are skills: what its artifacts are, how each part of the work is done,
-and how its tools serve each part. Each sits at `${CLAUDE_PLUGIN_ROOT}/skills/<group>/<name>/SKILL.md`
-and is named here by its name. Invoke a skill with your Skill tool, as `crustify:<name>`,
+and how its tools serve each part. Each sits at `${CLAUDE_PLUGIN_ROOT}/skills/<group>/<name>/SKILL.md`,
+a part of a split skill at `skills/<group>/<skill>/<part>/SKILL.md`, and is named here by its
+name. Invoke a skill with your Skill tool, as `crustify:<name>`,
 or read its `SKILL.md` where no Skill tool is offered.
 
 Every skill is listed in your context with what it covers and the step it is read
@@ -215,7 +216,7 @@ You spawn four kinds of agent: planners for the planner runs, binders for the `w
 batches, translators for the `port` batches and the later stages, and reviewers for the
 review batches. Each owns its work, the regression gates of its work and its own landing
 cells. Brief them, and judge what they report, by the skills their work follows:
-`binding`, `binding-symbols` and `porting`, `testing` and `reviewing`.
+`binding`, `binding-types`, `binding-symbols` and `porting`, `testing` and `reviewing`.
 
 You own every other part of the `binding-workflow` skill, and of the `porting-workflow`
 skill in a port campaign: among them the Rust tree, the side campaigns, each module's

@@ -20,12 +20,12 @@ adds to, and states only what ffibox adds there.
 
 ## Binding and porting
 
-### Binding › Type route
+### Binding types
 
 A type that stays interoperable with C is bound through ffibox's primitives wherever they
 apply, as its documentation describes.
 
-### Binding › Type route › Safe layout
+### Binding types › Safe layout
 
 While a type keeps its C layout, `define_ctype!` mints `Foo`, `FooRef<'a>` and `FooMut<'a>`,
 and its owners are aliases of ffibox's owners over the policy that names its lifecycle
@@ -56,7 +56,7 @@ destructor.
 ### Porting › Type route › Structs
 
 Until a ported struct's `port/layout`, its handles are ffibox's, as
-[Binding › Type route › Safe layout](#binding--type-route--safe-layout) describes; from it
+[Binding types › Safe layout](#binding-types--safe-layout) describes; from it
 on, `FooRef` and `FooMut` are aliases of native borrows. Its owners stay ffibox's until its
 `port/memory`, their policy calling its lifecycle routines, C's through their raw bindings
 until each is ported, then the Rust ones.

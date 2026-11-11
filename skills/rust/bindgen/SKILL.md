@@ -58,7 +58,7 @@ campaign:
   toolchain's `rustfmt`, whose output differs between toolchains, so that a nightly build
   regenerates the bytes a stable one committed;
 - enums are generated as constants (`Consts`), without the enum name as a prefix, which
-  the safe types that bind them convert, as [`binding`](../binding/SKILL.md)'s Enums
+  the safe types that bind them convert, as [`binding-types`](../binding/types/SKILL.md)'s Enums
   section describes;
 - `Default` is derived, and layout tests are generated;
 - C comments are kept as doc comments, and the generated modules' doctests are off, since
@@ -156,7 +156,7 @@ lack extends its own link unit's input, and nothing else:
    `wrapper.h` an internal header only when one of them is declared there;
 2. a shim is added to `shims.h` and `shims.c` only for a macro whose expansion depends on
    the build's configuration, as `crustify_<NAME>`, as
-   [`binding-symbols`](../binding-symbols/SKILL.md)'s Macros section describes;
+   [`binding-symbols`](../binding/symbols/SKILL.md)'s Macros section describes;
 3. the bindings are regenerated, in campaign mode with `CRUSTIFY_BINDINGS_UPDATE` set; and
 4. the safe crate is built and tested against them.
 

@@ -62,8 +62,9 @@ the rest of this prompt, follow them.
 ## Skills
 
 Crustify's specs are skills: what its artifacts are, how each part of the work is done,
-and how its tools serve each part. Each sits at `${CLAUDE_PLUGIN_ROOT}/skills/<group>/<name>/SKILL.md`
-and is named here by its name. Invoke a skill with your Skill tool, as `crustify:<name>`,
+and how its tools serve each part. Each sits at `${CLAUDE_PLUGIN_ROOT}/skills/<group>/<name>/SKILL.md`,
+a part of a split skill at `skills/<group>/<skill>/<part>/SKILL.md`, and is named here by its
+name. Invoke a skill with your Skill tool, as `crustify:<name>`,
 or read its `SKILL.md` where no Skill tool is offered.
 
 Every skill is listed in your context with what it covers and the step it is read
@@ -96,7 +97,8 @@ schedule, the other batches, and your batch's usage cells.
    on your workset.
 2. **Review.** Look for the findings of each of your objectives, as the `reviewing`
    skill's Objectives section and the tool skills describe them. Judge raw bindings by the
-   `bindgen` skill, bindings by the `binding` and `binding-symbols` skills, ports by the `porting` skill, and, in
+   `bindgen` skill, bindings by the `binding`, `binding-types` and `binding-symbols`
+   skills, ports by the `porting` skill, and, in
    a Crustify-generated batch, the Rust by the `conventions` skill. Try to break every
    contract you review, and rerun every report you revisit.
 3. **Reports.** File each finding in your reviews dir, `crustify/reviews/<batch id>/`, with

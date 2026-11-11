@@ -53,6 +53,9 @@ description is all an agent sees of the skill before it reads it, so it says wha
 covers and before which step it is read. A skill stays under about 4,500 tokens, so that a
 host that brings an invoked skill back after compacting an agent's context brings it back
 whole; one that outgrows that is split at a section that another step needs on its own.
+The parts sit in sub-directories of the skill's own, `skills/<group>/<skill>/<part>/SKILL.md`,
+each named `<skill>-<part>`, and the skill's own `SKILL.md` keeps what they share: `binding`
+keeps its safe boundary, and `binding-types` and `binding-symbols` its routes.
 
 A skill's directory may also hold a script the skill describes, with its tests beside it,
 standard library only, so that it runs wherever the skill is read: `usage` holds
@@ -163,7 +166,9 @@ by its path. The other providers compose through it.
 The Claude Code provider, `providers/claude/`, makes Crustify's checkout a plugin, whose
 manifest is `.claude-plugin/plugin.json`:
 
-- the skills, by their group directories, invoked as `crustify:<name>`;
+- the skills, by their group directories and the directory of each part of a split skill,
+  which the manifest lists on its own since Claude Code scans a listed directory one level
+  deep, invoked as `crustify:<name>`;
 - `agents/`, one plugin agent per stage, `crustify:<stage>`, and one assistant per campaign
   kind, `crustify:assistant-translate` and `crustify:assistant-audit`. A plugin agent's
   body replaces Claude Code's own system prompt, so each body opens with that prompt,

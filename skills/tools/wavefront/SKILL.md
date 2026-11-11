@@ -216,7 +216,7 @@ A type-erased parameter or field is looked up in the campaign's T3
 reached through, and the binding names that type rather than a raw pointer. The instances
 of a generator in `type_generators.csv` share one generic, with per-instance aliases.
 
-### Binding › Type route › Surface
+### Binding types › Surface
 
 A type's lifecycle primitives are identified as `docs/type-lifecycle.md` describes, and
 submitted through the CLI's `--update`.

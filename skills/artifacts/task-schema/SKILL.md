@@ -198,7 +198,7 @@ batch mixing routes is rejected.
 
 A macro generates types when its record in the planning tools lists the instance types it
 mints: its instances share the one generic the type route writes for it, as
-[`binding-symbols`](../../rust/binding-symbols/SKILL.md)'s Macros section describes.
+[`binding-symbols`](../../rust/binding/symbols/SKILL.md)'s Macros section describes.
 
 A batch of a foundational module routes like any other. Its `module` and `foundational`
 name the module, which `modules.json` marks `foundational`, and its items with a lifecycle

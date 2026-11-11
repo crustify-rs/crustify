@@ -79,7 +79,7 @@ nor the reverse.
 
 Its handles keep the names that item gives them, `Foo`, `FooRef`, `FooMut` and its owners,
 while what they name follows its later stages, so that its consumers never change, as
-`binding`'s Safe layout section describes:
+`binding-types`' Safe layout section describes:
 
 - `port/layout`: the struct, wrapped until then, takes a Rust-native layout, its C layout
   gone with its last C layout user. `Foo` is defined in its module's native code, out of `ffi_import`, each field of the
@@ -97,7 +97,7 @@ by-value constructors, `Foo::new(…) -> Foo`, and a constructor that returns an
 builds the value and moves it into the owner, whose allocator its stage decides: C's while
 any C still frees it raw, Rust's from its `port/memory`.
 
-While C keeps its address, as `binding`'s Lifecycle section describes, a struct with a
+While C keeps its address, as `binding-types`' Lifecycle section describes, a struct with a
 native layout is `!Unpin` and its native handles are pinned: `FooMut<'a>` is an alias of
 `Pin<&'a mut Foo>` and `FooBox` of `Pin<Box<Foo>>`, and an export gateway rebuilds the
 pinned handle from the pointer C passes it. Once no remaining C keeps its address, the
@@ -106,7 +106,7 @@ their `Pin`, unchanged for its consumers.
 
 ### 2.2 Unions
 
-A union's safe API is the tagged Rust enum [`binding`](../binding/SKILL.md)'s Unions
+A union's safe API is the tagged Rust enum [`binding-types`](../binding/types/SKILL.md)'s Unions
 section presents it as, from its port. Its storage keeps the C union, with its
 discriminator beside it, while C uses its layout, and is ported as a struct's is, with the
 same later stages: its `port/layout` makes the tagged enum its storage, the discriminator
@@ -115,12 +115,12 @@ enum too, once no other C uses its layout, its referrers' tags folded into it.
 
 ### 2.3 Enums
 
-A ported enum takes the safe type [`binding`](../binding/SKILL.md)'s Enums section gives
+A ported enum takes the safe type [`binding-types`](../binding/types/SKILL.md)'s Enums section gives
 it, and its header keeps the C definition for the remaining C: the two are not linked,
 beyond the Rust type's annotation, as the [conventions](../conventions/SKILL.md)' Anchors
 section describes, and the enum is not exported.
 
-A closed enum keeps its integer form, which binding's Enums section describes, only while
+A closed enum keeps its integer form, which `binding-types`' Enums section describes, only while
 remaining C uses it, its constants or values of its type. Its later stage, `port/layout`,
 removes that form, its C layout: its `repr`, its discriminants and its conversions. A
 closed enum that no remaining C uses by its port has no integer form, and a flags enum or
@@ -131,7 +131,7 @@ the mismatch, which the next planner run corrects.
 
 ### 2.4 Typedefs
 
-A ported typedef takes the Rust form [`binding`](../binding/SKILL.md)'s Typedefs section
+A ported typedef takes the Rust form [`binding-types`](../binding/types/SKILL.md)'s Typedefs section
 gives it, which is native from its port, and its header keeps the C typedef for the
 remaining C: the two are not linked, beyond the Rust form's annotation, and the typedef is
 not exported. It has no later stage: no C form of it remains in Rust for one to remove.
@@ -145,7 +145,7 @@ behaviour preserved.
 
 ### 3.1 Functions
 
-A ported function takes the safe API [`binding-symbols`](../binding-symbols/SKILL.md)'s Functions
+A ported function takes the safe API [`binding-symbols`](../binding/symbols/SKILL.md)'s Functions
 section gives a function, or keeps its wrapper's, as [FFI boundary](#1-ffi-boundary) describes.
 
 A function that remaining C calls or takes the address of is exported, as
@@ -162,7 +162,7 @@ export, with the raw binding and the allowlist entry that reach it, once no rema
 references it.
 
 A lifecycle routine's port reimplements it behind the policy its type's port or wrap
-wrote, which it repoints at the Rust routine, and writes no API of its own, as `binding`'s
+wrote, which it repoints at the Rust routine, and writes no API of its own, as `binding-types`'
 Lifecycle section has the symbol route skip what a type batch emitted. The last of its
 type's own module's memory users to be ported moves its storage to Rust's allocator,
 unless C of other modules still allocates or frees it raw, which leaves that move to its
@@ -177,7 +177,7 @@ stage, `port/unexport`, removes the export, as a function's does.
 ### 3.3 Function pointers
 
 A ported function pointer keeps the safe callable type
-[`binding-symbols`](../binding-symbols/SKILL.md)'s Function pointers section gives it, which is its API from its port: its Rust consumers, and
+[`binding-symbols`](../binding/symbols/SKILL.md)'s Function pointers section gives it, which is its API from its port: its Rust consumers, and
 the ported code that calls it, use that type alone. While remaining C calls a function
 pointer of its type or supplies one, its C form stays beneath it: the function-pointer type
 of its raw binding, the trampolines through which a Rust closure reaches the C that calls
@@ -201,7 +201,7 @@ rustc's) would inline the export back into its C callers. -->
 
 ### 3.5 Macros
 
-A macro takes the Rust form [`binding-symbols`](../binding-symbols/SKILL.md)'s Macros section gives it,
+A macro takes the Rust form [`binding-symbols`](../binding/symbols/SKILL.md)'s Macros section gives it,
 which reaches the Rust items its expansion uses once they are ported. A macro a TU defines
 goes with its TU. A macro a header defines, internal or public API that another module's C
 may expand, also stays in its header for the remaining C, unexported, and its C and Rust

@@ -11,6 +11,8 @@
     "./skills/workflows",
     "./skills/planning",
     "./skills/rust",
+    "./skills/rust/binding/types",
+    "./skills/rust/binding/symbols",
     "./skills/verification",
     "./skills/operations",
     "./skills/artifacts",

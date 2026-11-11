@@ -6,15 +6,15 @@ description: "How a scheduled C symbol becomes a safe Rust binding, binding's sy
 # Binding symbols
 
 How a scheduled C symbol becomes a safe Rust binding: the symbol route, which follows
-[`binding`](../binding/SKILL.md)'s Safe boundary section and reaches the types its type
-route binds. [`porting`](../porting/SKILL.md)'s Symbol route starts from it.
+[`binding`](../SKILL.md)'s Safe boundary section and reaches the types
+[`binding-types`](../types/SKILL.md) binds. [`porting`](../../porting/SKILL.md)'s Symbol route starts from it.
 
 ## 1. Functions
 
 A function is bound as a `pub fn`; it is a `pub unsafe fn` only when no safe type-level
 contract can express its caller obligation. Its FFI call, and the raw pointers it
 reconstructs for it, sit in its module's `ffi_import` region, as the
-[conventions](../conventions/SKILL.md)' Unsafe regions section describes.
+[conventions](../../conventions/SKILL.md)' Unsafe regions section describes.
 
 Its signature follows the analysis's findings, each argument and return taking the safe
 form of what it names:
@@ -43,11 +43,11 @@ form of what it names:
 
 A `static inline` function a header defines is bound as an exported one is: it is
 allowlisted, and called through the raw binding generated for it, as
-[`bindgen`](../bindgen/SKILL.md)'s Generation section describes. The exception is a short
+[`bindgen`](../../bindgen/SKILL.md)'s Generation section describes. The exception is a short
 one whose whole implementation is in the header, which may be ported instead, to save the
 cost of an FFI call, unless what it does depends on the build's features or configuration.
-A reimplementation is a port, as [`porting`](../porting/SKILL.md) describes, and is
-annotated `Replaces`, as the [conventions](../conventions/SKILL.md)' Anchors section describes.
+A reimplementation is a port, as [`porting`](../../porting/SKILL.md) describes, and is
+annotated `Replaces`, as the [conventions](../../conventions/SKILL.md)' Anchors section describes.
 
 Moved (exclusively or refcounted), borrowed (immutably or mutably), nullable, scalar and
 array variants are separate functions when one signature cannot express every valid
@@ -76,7 +76,7 @@ consumers reference the symbol, its C layout and synchronization protocol are ke
 A function pointer is bound from its declaration and every site that calls it or supplies
 it, a function assigned to it or passed as it. One a typedef declares is named after its
 typedef; one written inline is named after the site that declares it, the field,
-parameter, return or global, as the [conventions](../conventions/SKILL.md)' Naming
+parameter, return or global, as the [conventions](../../conventions/SKILL.md)' Naming
 section describes, so that two inline pointers of one signature in one file are two items
 when their sites differ.
 <!-- TODO: wavefront keys an inline function pointer by its signature and home file, so
@@ -94,7 +94,7 @@ It is bound to a safe callable type that holds either of its implementations:
 
 A function pointer that crosses the boundary gets both, whichever direction its uses take
 today, since a port turns the C that calls or supplies it into Rust, as
-[`porting`](../porting/SKILL.md)'s Function pointers section describes, and its safe API
+[`porting`](../../porting/SKILL.md)'s Function pointers section describes, and its safe API
 does not change then. Its consumers see only the safe form, its closures taking and
 returning safe types: a closure borrowed for the call, `impl FnMut(…)`, where C keeps it
 for the call that receives it; an owned closure, released with its context, where C keeps
@@ -123,8 +123,8 @@ named callable type over the one C function-pointer type.
 
 A C macro is bound to a Rust form of its own:
 
-- a type-generating macro, to one generic type, through `binding`'s type route, its
-  instances aliases of it;
+- a type-generating macro, to one generic type, through [`binding-types`](../types/SKILL.md),
+  its instances aliases of it;
 - a constant macro, to a `const`, defined from its generated binding;
 - a symbol alias, through the safe wrapper of the symbol it names; and
 - a macro that implements logic, to a function, `#[inline]`, or `const` where its body
