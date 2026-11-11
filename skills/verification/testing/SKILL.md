@@ -155,4 +155,6 @@ assertions adapted to the safe Rust contract, so that what the C suites establis
 outlives them. Each names the C test case it carries over, so that before a C test
 leaves, at the module's integration or with the exports it calls, the cases none carries
 over are listed, and each is carried over or recorded as behaviour the safe API
-deliberately changes.
+deliberately changes. A `port/unexport` carries over every C test case that still references the
+export it removes, whatever its subject, as a Rust test of that subject, reaching what is
+still C through its wrappers, and removes the case from `c/`.

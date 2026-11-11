@@ -38,7 +38,7 @@ Each module carries the C tests tied to it, those whose subject it is, as
 They assert the C contract, which a safe Rust implementation may change. Those that reach
 the module's internals run while it is C and leave with it at its integration. Those that
 use only its public API stay, and check its exports, which keep that contract for the C
-that calls them, until their `port/unexport`, which they do not hold back, as the
+that calls them, until their `port/unexport` carries them over, as the
 [conventions](../../rust/conventions/SKILL.md)' Exports section describes. The tests its
 port batches write mirror their regression cases, as
 [`testing`](../../verification/testing/SKILL.md)'s C tests carried over section describes. A
@@ -47,7 +47,10 @@ wrapped.
 
 A C test that only calls a module, to set up or tear down its fixtures, is not tied to it:
 once the module is integrated, the test reaches it through its exports, so that it checks
-its own subject with the ported Rust under it, as part of the integration regression gate.
+its own subject with the ported Rust under it, as part of the integration regression gate. A
+test never keeps an export the remaining C no longer needs: the export's `port/unexport`
+carries over the test cases that still reference it, as
+[`scheduling`](../../planning/scheduling/SKILL.md)'s Later stages section describes.
 
 A test whose subject is several modules is tied to each of them, and leaves at the first
 point at which it would leave as a test of one of them alone. Each ported module's own

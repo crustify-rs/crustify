@@ -247,15 +247,14 @@ takes its address or accesses it, as the [conventions](../../rust/conventions/SK
 section describes. A function or global that remaining C never references has no export,
 and no `port/unexport`.
 
-Its referrers include the target's C tests that stay after its module's integration,
-which wavefront's release points leave out, as
-[`porting-workflow`](../../workflows/porting-workflow/SKILL.md)'s Tests follow their modules
-section times their departure: a test not tied to the module, and one tied to it through
-its internals, holds the export until it leaves; one tied to it through its public API
-alone holds nothing back. A test that would leave with an export holds no other export past
-that one's `port/unexport`; one with no point to leave at, such as the harness every test
-links, keeps the exports it reaches for good. A test case whose body the configured build
-compiles empty is out of scope, as a configured-out translation unit is, and holds nothing.
+The target's C tests are not among its referrers, as wavefront's release points leave them
+out: an export the remaining C no longer needs is not kept, with its unsafe boundary, for a
+test. Its `port/unexport` carries over the C test cases that still reference it, as
+[`testing`](../../verification/testing/SKILL.md)'s C tests carried over section describes,
+and removes them from `c/`. A carried-over case reaches what is still C through its
+wrappers, which a wrap batch binds ahead where they are missing, as
+[Wrap batches](#4-wrap-batches) describes. A test case whose body the configured build
+compiles empty is out of scope, as a configured-out translation unit is.
 
 A ported function pointer's C form, through which the remaining C calls a Rust closure or
 hands Rust a C function, is removed the same way, after its `unreferenced_after`: the
