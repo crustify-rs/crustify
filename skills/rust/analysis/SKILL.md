@@ -26,8 +26,12 @@ The analysis establishes:
 - type erasure and known element types;
 - borrow and keepalive relationships;
 - address retention: whether C keeps an object's address beyond the call that receives it,
-  to read it, call back with it or free it; and
-- construction, clone, and destruction paths.
+  to read it, call back with it or free it;
+- construction, clone, and destruction paths;
+- out-parameters: the pointer arguments a function only writes through;
+- string encodings, where a string is known to hold text or a path; and
+- failure reporting: the status or sentinel returns and the error state beside the call
+  through which a function fails, and the outcomes its callers treat as ordinary.
 
 Observed behaviour overrides names and comments. A distinction the analysis establishes is
 preserved in Rust rather than flattened into a copy of an ambiguous C signature.

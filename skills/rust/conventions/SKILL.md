@@ -56,8 +56,7 @@ their TU reaches them. The exports serve the target's remaining C, its tests and
 executables included, which reaches the module through them once it is integrated; an
 export is removed, with the raw binding that reaches it, by its symbol's `port/unexport`,
 after the integration that removes the last C that calls it, takes its address or
-accesses it. An export whose C callers read `errno`
-after the call sets it as the C function did, since the Rust behind it never does.
+accesses it.
 
 ### 1.5 Export features
 

@@ -210,8 +210,34 @@ its own: its values cross the boundary as those of the type it names do.
 ### 3.1 Functions
 
 A function is bound as a `pub fn`; it is a `pub unsafe fn` only when no safe type-level
-contract can express its caller obligation. Arguments and returns use typed wrappers, and
-raw pointers are reconstructed only at the FFI call, in a small documented unsafe block.
+contract can express its caller obligation. Its FFI call, and the raw pointers it
+reconstructs for it, sit in its module's `ffi_import` region, as the
+[conventions](../conventions/SKILL.md)' Unsafe regions section describes.
+
+Its signature follows the analysis's findings, each argument and return taking the safe
+form of what it names:
+
+- **Out-parameters.** A pointer the function only writes through, to hand back a result,
+  is part of the return, several of them a tuple, present only in the outcome in which the
+  function writes it.
+- **Buffers.** A pointer and the count that bounds it are one slice, the count taken from
+  it; a buffer the function fills returns the part it filled.
+- **Strings.** A NUL-terminated string the function borrows for the call is a borrowed C
+  string, or the Rust string or path type of the encoding the analysis establishes,
+  converted at the call, an interior NUL rejected before it. A returned string is a borrow
+  tied to what keeps it alive, or an owner over its releaser where the caller frees it.
+- **Nullability.** A nullable pointer is an `Option`.
+- **Errors.** A function that can fail returns a `Result`, its failure read from the error
+  convention the analysis establishes: a status return, a sentinel return, or error state
+  the library keeps beside the call, read immediately after it, before another call into
+  the library can replace it. A return that reports only success is not returned, and an
+  outcome its C callers treat as ordinary, such as an exhausted iteration or an absent
+  entry, is part of the success value. Each error convention has one error type, carrying
+  what the convention reports, `errno`'s being `std::io::Error`.
+- **Variadics.** A variadic function is bound through fixed-arity forms: one that formats
+  its arguments takes the formatted message, passed to a `"%s"` format, and any other is
+  one function per argument list its callers use. A `va_list` function is reached only
+  through its variadic sibling.
 
 A `static inline` function a header defines is bound as an exported one is: it is
 allowlisted, and called through the raw binding generated for it, as
@@ -225,20 +251,8 @@ Moved (exclusively or refcounted), borrowed (immutably or mutably), nullable, sc
 array variants are separate functions when one signature cannot express every valid
 contract. A function taking or returning type-erased arguments is generic.
 
-Ownership is stateless; runtime state is carried only when destruction or cloning requires
-it.
-
 A method is emitted in an `impl T` block on the type it implements, taking `&self` or
 `&mut self` as its first argument. A free function stays free.
-
-The exposed public interface carries no unsafe and no raw pointer: raw and unsafe logic
-stays internal, behind safe translated dependencies. A documented raw pointer remains only
-for an unavailable higher-layer wrapper, and a lower-layer raw surface is updated when the
-new safe contract replaces it.
-
-Lifecycle primitives for typed, type-erased or string handles may be scheduled as symbols
-although a previous run already emitted the release, clone or construct strategy that calls
-them; they get no second wrapper.
 
 ### 3.2 Globals
 

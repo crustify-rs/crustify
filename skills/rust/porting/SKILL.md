@@ -145,8 +145,19 @@ behaviour preserved.
 
 ### 3.1 Functions
 
+A ported function takes the safe API [`binding`](../binding/SKILL.md)'s Functions section
+gives a function, or keeps its wrapper's, as [FFI boundary](#1-ffi-boundary) describes.
+
 A function that remaining C calls or takes the address of is exported, as
-[FFI boundary](#1-ffi-boundary) describes. Its later stage, `port/unexport`, removes the
+[FFI boundary](#1-ffi-boundary) describes. Its gateway undoes what the safe API converted,
+so that its C callers see what the C function did: it rebuilds the safe arguments from the
+C ones, writes the out-parameters and buffers through the pointers C passed, and reports a
+failure through the function's C error convention, its return and the error state the C
+function set, `errno` included, which the Rust behind it never sets. A panic is caught at
+the gateway and reported as a failure, or aborts where the function cannot fail: none
+unwinds into C. A variadic function's export cannot be defined on stable Rust, so a shim
+keeps its C signature, as [`bindgen`](../bindgen/SKILL.md)'s shims are compiled, and calls
+a fixed-arity export with the arguments it formats or unpacks. Its later stage, `port/unexport`, removes the
 export, with the raw binding and the allowlist entry that reach it, once no remaining C
 references it.
 
