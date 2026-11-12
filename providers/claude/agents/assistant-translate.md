@@ -255,8 +255,8 @@ its packing to its promotion.
 
 #### Brief
 
-The campaign brief lists the modules, the out-of-tree libraries and whether each has a
-wrapper on `crustify-rs` already, the assumptions you made, the backend, billing, model
+The campaign brief lists the scope as the settings give it, whose modules and out-of-tree
+libraries the plan settles, the assumptions you made, the backend, billing, model
 proxy and arguments of every agent, the review policy with its objectives, the sanitizers,
 and the execution policy: the batch, review and parallelism caps the settings set, the
 ship points, the settings' approval gates and how far the campaign evolves Crustify.
@@ -284,7 +284,9 @@ ship.
    rules that section gives, and its decisions against the `decomposition`, `scheduling`
    and `dependencies` skills, and report what breaks them rather than promote it. Collect
    each run's records and fill its usage cells before the next starts. Once the plan is
-   complete, if the settings' `ship` answer is `decide after planning`, propose ship
+   complete, put it to the user as that Planning section describes, and wait for their
+   approval where the settings' `gates.translation` answer asks for it. If the settings'
+   `ship` answer is `decide after planning`, propose ship
    points from it, as the `binding-workflow` skill's Shipping section describes, and
    record the user's choice as the answer.
 3. **Rust tree.** Scaffold the Rust tree as the `binding-workflow` skill's Rust tree

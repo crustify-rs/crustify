@@ -31,6 +31,13 @@ but for its progress; no index reused or renumbered; the `depends_on.scheduled` 
 module's `modules.json` record holds in its `schedule.json` record's `scheduled` or
 `cut`.
 
+The complete plan is put to the user before the Rust tree is scaffolded: its link units
+and modules with their objectives, the dependencies its order cuts, the out-of-tree
+libraries with the route each is recommended and whether a wrapper of it exists already,
+and its unit and wave counts. The campaign waits for the user's approval of it where the
+settings' `gates.translation` answer asks for one, and goes on otherwise. A plan the user
+sends back is corrected by a further planner run.
+
 A changed `scope` answer re-plans the modules that are not frozen
 and the waves that are `todo`, through further planner runs under the new answers. Landed
 work is never re-planned. A changed `workload` or `review-workload` answer re-plans

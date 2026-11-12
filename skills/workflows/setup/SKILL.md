@@ -109,4 +109,4 @@ Once the plan exists and before the first wave launches:
    printing their values;
 4. an unsupported combination of backend, billing and model proxy is rejected;
 5. a dummy run of each selected backend answers a trivial task; and
-6. the plan's unit, wave and batch counts match the approved plan.
+6. the plan's unit and wave counts match those of the plan as it was put to the user.

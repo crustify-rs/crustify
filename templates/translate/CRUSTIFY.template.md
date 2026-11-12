@@ -119,8 +119,8 @@ Answer these approval-gate questions only if question 6 is answered `no`.
 
 16. **Should I wait for your approval before starting the setup phase?** (`id: gates.setup`)
     - Answer: `<yes | no>`
-17. **Should I wait for your approval before starting the translation phase?**
-    (`id: gates.translation`)
+17. **Should I wait for your approval of the plan, its modules, cuts and out-of-tree
+    libraries, before starting the translation phase?** (`id: gates.translation`)
     - Answer: `<yes | no>`
 18. **Should I wait for your approval before integrating each module into the working
     branch?** (`id: gates.module`)
