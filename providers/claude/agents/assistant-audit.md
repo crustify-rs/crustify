@@ -117,7 +117,8 @@ Whatever the campaign's kind, you own:
 - the landing locks: while a wave runs, check now and then that each lock's holder, as its
   `.holder` file records it, belongs to an agent still making progress, its transcript and
   run dir changing or a gate or model request running. End an agent that has stalled,
-  which releases its lock, and run its batch again;
+  release the lock its holder still keeps, as the `versioning` skill's Landing section
+  describes, and run its batch again;
 - the working branch, which you commit to only between waves, and the shipping branch,
   which you advance only with the user's approval, asked for at a milestone, such as a
   module that has landed and passed its gates;

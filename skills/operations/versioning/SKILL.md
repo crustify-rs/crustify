@@ -121,7 +121,7 @@ The waiter blocks in `flock` itself, so the kernel wakes it the moment the lock 
 and nothing polls. Once it holds the lock, it hands the locked descriptor to a process of
 its own, detached from the shell that started it and bound to the lifetime of the agent's
 CLI: a `flock` lock belongs to the open file, so that process keeps it after the command
-that took it exits, until the agent ends, however it ends, and the kernel releases it. The
+that took it exits, until that CLI ends, however it ends, and the kernel releases it. The
 holder records itself beside the lock, in `<integration branch>.lock.holder`, as its own pid
 and the CLI's. A waiter bounds each wait, to stay within the time a single command may run,
 and waits again when it expires. For example, with `$CLI_PID` the agent CLI's pid, found by
@@ -146,8 +146,10 @@ The holder file is removed before the holder is ended, while the lock is still h
 that a release never removes the next holder's record.
 
 The lock has no timeout: the regression gates it covers vary in length. A holder that has
-stopped making progress keeps it until its agent is ended, which releases it; the batch is
-then run again, as any failed batch is.
+stopped making progress keeps it until its agent is ended. That releases it where the
+agent ran in a CLI of its own. An agent that shared its CLI with others leaves its holder
+running: the holder is then ended as a release ends it, by the pid its record names, the
+record removed first. The batch is then run again, as any failed batch is.
 
 ### 4.2 Commits
 
