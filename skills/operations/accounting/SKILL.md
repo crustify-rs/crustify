@@ -14,6 +14,9 @@ The dashboard, `crustify/artifacts/dashboard.md` unless the settings name anothe
 campaign's record of what each planner run, batch, wave and module did and cost. It is
 filled from `templates/translate/dashboard.template.md`, an audit's from
 `templates/audit/dashboard.template.md`, and keeps the template's format exactly.
+When an adopted Crustify change adds a table or a column to the template, the assistant
+adds it to the dashboard on the working branch before it launches the next batch: a batch
+fills the rows of the tables in place, and never adds one.
 
 It is tracked in the campaign's tree, so every agent's worktree holds a copy, and it is
 filled as the work lands rather than at the end. Each figure is measured once, where it is
