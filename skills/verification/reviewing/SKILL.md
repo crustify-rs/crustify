@@ -22,7 +22,7 @@ once its translation batches and their reviews have landed. An audit's review wa
 [`audit-workflow`](../../workflows/audit-workflow/SKILL.md)'s.
 
 Review is tiered. Each landing is reviewed within its wave, to the depth
-[Depth](#11-depth) gives it. Before a module's integration in a port, and at its end in a
+[Depth](#11-depth) gives it. Before a module's switch in a port, and at its end in a
 wrap, a module pass reviews the module whole, across its batches: its unsafe regions, its
 exports and its tests. It is the last review batch of the last wave of the module's `wrap`
 and `port` items, not of a port's later stages, marked
@@ -129,7 +129,7 @@ workset adds; a workset that made no API item unsafe has none.
 ### 3.4 Equivalence (`equiv`)
 
 Functional equivalence defects in the workset's API that its equivalence tests missed,
-while the C it translates exists: in a port, until the module's integration. A divergence is a defect only when it is unintended: a doc comment, a `CHANGELOG`
+while the C it translates exists: in a port, until the module's switch. A divergence is a defect only when it is unintended: a doc comment, a `CHANGELOG`
 entry, a named test asserting the new behaviour or a commit message explaining it marks it
 deliberate, and one that corrects a C defect on purpose is no finding.
 

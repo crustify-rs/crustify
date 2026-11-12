@@ -18,7 +18,7 @@ inside it.
 | campaign | repository | the C, under `c/` |
 |---|---|---|
 | wrap | `<repo>-crustify` | a submodule of the source, pinned at the campaign's revision, which the campaign never changes |
-| port | `<repo>-crustify` | a submodule of the campaign's fork of the source, `<repo>-fork`, on its `main` branch, which integrations trim as their modules leave C |
+| port | `<repo>-crustify` | a submodule of the campaign's fork of the source, `<repo>-fork`, on its `main` branch, which the modules' switches trim as they leave C |
 
 `<repo>` is the source repository's name: a campaign on libgit2 is `libgit2-crustify`,
 and a port's fork `libgit2-fork`. A wrap and a port campaign share the name, since wrapping a
@@ -196,7 +196,7 @@ record, and the working branch still moves only by fast-forward.
 2. The merge's tree passes the gates of
    [`testing-gates`](../../verification/testing/gates/SKILL.md)'s Regressions section, and in
    a port campaign, in the run that holds the last wave of the module's `wrap` and `port`
-   items, the module's integration from C, which happens once, as
+   items, the module's switch from C to Rust, which happens once, as
    [`porting-workflow`](../../workflows/porting-workflow/SKILL.md)'s Builds section describes:
    its export feature is deleted, and the C test cases none of its `unit_pub` tests carries
    over are listed before its C tests leave.
@@ -204,7 +204,7 @@ record, and the working branch still moves only by fast-forward.
 
 Modules integrate one at a time, and nothing else is committed on the working branch while
 one does, so that its fast-forward cannot be rejected. A port's later-stage waves come after
-their module's integration, are promoted to the working branch, and integrate nothing, as
+their module's switch, are promoted to the working branch, and integrate nothing, as
 the porting workflow's Later stages section describes.
 
 ## 5. Lifecycle
@@ -239,14 +239,14 @@ whose waves the order splits, such as one that wraps a cut dependency ahead of i
 consumer, or one whose wave waits for an item another module's run holds, as
 [`scheduling`](../../planning/scheduling/SKILL.md)'s Wrap batches section describes, runs once per contiguous run of its waves, each run on a branch forked anew
 from the working branch. In a port campaign, only the run that holds the last wave of the
-module's `wrap` and `port` items integrates it from C; an earlier run's integration merges
+module's `wrap` and `port` items switches it from C; an earlier run's integration merges
 its Rust alone, the module still C. Once a run has been integrated, its branch and worktree
 are purged; its end state is the working branch's commit its last run integrates into.
 
 ### 5.4 Waves
 
 A wave's integration branch is forked from its module's branch's tip, or, for a port's
-later-stage wave, which runs after its module's integration, from the working branch's tip,
+later-stage wave, which runs after its module's switch, from the working branch's tip,
 before any of its batches launch, so that it exists before the first landing, as [Branches](#2-branches)
 requires; that commit is the wave's base.
 Once every batch has landed, the wave is promoted, as [Promotion](#43-promotion)

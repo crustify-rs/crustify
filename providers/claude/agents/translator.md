@@ -121,7 +121,7 @@ Port only your items: what they depend on that is not ported is bound, by a `wra
 2. **Porting.** Port each item into the `home` it names, as the `porting-types` or
    `porting-symbols` skill describes for your route, extending the raw bindings where one is missing, as the `bindgen`
    skill's Extending section describes. Before you write an export, or anything else your
-   module's integration depends on, read the `porting-workflow` skill's Principles and
+   module's switch from C depends on, read the `porting-workflow` skill's Principles and
    Builds sections. A later stage works on items that have already landed, as the
    `porting-types` or `porting-symbols` skill describes for their kind.
 3. **Testing.** Write the tests the `testing` skill describes for every item, close the

@@ -1,6 +1,6 @@
 ---
 name: porting-workflow
-description: "The principles a port campaign follows and where it differs from binding: Rust consumers, tests tied to modules, one language per module, integration builds. Read before porting a module or integrating one."
+description: "The principles a port campaign follows and where it differs from binding: Rust consumers, tests tied to modules, one language per module, a module's switch from C to Rust and its builds. Read before porting a module or integrating one."
 ---
 
 # Porting workflow
@@ -36,7 +36,7 @@ definition in an installed header: the C consumers it would serve are outside th
 Each module carries the C tests tied to it, those whose subject it is, as
 [`decomposition`](../../planning/decomposition/SKILL.md)'s Bundling section describes.
 They assert the C contract, which a safe Rust implementation may change. Those that reach
-the module's internals run while it is C and leave with it at its integration. Those that
+the module's internals run while it is C and leave with it at its switch. Those that
 use only its public API stay, and check its exports, which keep that contract for the C
 that calls them, until their `port/unexport` carries them over, as the
 [conventions](../../rust/conventions/SKILL.md)' Exports section describes. The tests its
@@ -46,7 +46,7 @@ test's access to a module's internals is a use within that module, so it never k
 wrapped.
 
 A C test that only calls a module, to set up or tear down its fixtures, is not tied to it:
-once the module is integrated, the test reaches it through its exports, so that it checks
+once the module has switched, the test reaches it through its exports, so that it checks
 its own subject with the ported Rust under it, as part of the integration regression gate. A
 test never keeps an export the remaining C no longer needs: the export's `port/unexport`
 carries over the test cases that still reference it, as
@@ -67,12 +67,12 @@ on disjoint modules, never the same code in both.
 
 While the waves of a module's `wrap` and `port` items run, its C is the reference its
 ports are tested against, and the target is built and linked from C alone.
-Once the last of them has landed, the module is integrated, once, as [Builds](#3-builds)
+Once the last of them has landed, the module switches to Rust, once, as [Builds](#3-builds)
 describes: the Rust module replaces the TU in the target's link, its C is removed from the
 build and from the tree, and its tests switch with it. The removal is made on the working branch; the shipping branch keeps the C until
 the user approves shipping the module. From then on the module is Rust's: what it still
 keeps for the remaining C, its types' C layouts and storage and its exports, its later
-stages remove after the integration, as [Later stages](#4-later-stages) describes.
+stages remove after the switch, as [Later stages](#4-later-stages) describes.
 
 The headers bundled with the module stay while remaining C includes them, declaring the
 module's exports, its `static inline` functions included, as
@@ -84,7 +84,7 @@ they established is kept by its unit tests. The raw bindings of its
 exported functions and globals then reach its exports, so that a consumer's raw calls keep
 working, and an allowlist entry goes with the export it reaches. Those of its functions and
 globals that have no export, which only its own C referenced, are removed with their
-allowlist entries at the integration.
+allowlist entries at the switch.
 
 A ported module's items therefore reach the rest of its module natively from the start:
 an edge within a module needs neither a `wrap` binding nor an export, only the edges that
@@ -109,11 +109,11 @@ feature, as the [conventions](../../rust/conventions/SKILL.md)' Exports and Expo
 describe, which stays off, so its bare-named exports never collide with the C the tests
 link. Native Rust items carry mangled names and cannot collide with it.
 
-The C stays until integration: the target's other C still calls the module's symbols, which
+The C stays until the switch: the target's other C still calls the module's symbols, which
 only the exports could define, and the module's equivalence tests and its cut cycles still
 run through it.
 
-Once the last wave of the module's `wrap` and `port` items has landed, it is integrated
+Once the last wave of the module's `wrap` and `port` items has landed, it switches
 in one step, with concurrent modules as part of its branch's integration into the working
 branch, as [`versioning`](../../operations/versioning/SKILL.md)'s Integration section
 describes: its export feature is deleted, so that its gateway compiles from then on, its TU
@@ -137,14 +137,14 @@ as C and as Rust, nor its Rust twice:
 
 The C tests that remain run over that second link as the integration regression gate, as
 [`testing-gates`](../../verification/testing/gates/SKILL.md)'s Regressions section describes.
-For that link, the first integration changes the fork's C build so that the remaining C's
+For that link, the first switch changes the fork's C build so that the remaining C's
 tests and executables link the safe crate's Rust library, static or shared, in the build
-system's own idiom, and each later integration takes its module's C out of that build.
+system's own idiom, and each later switch takes its module's C out of that build.
 
 ## 4. Later stages
 
-A module is integrated once. Its later-stage waves, `port/layout`, `port/memory` and
-`port/unexport`, run after its integration, each once the integrations its release point
+A module switches once. Its later-stage waves, `port/layout`, `port/memory` and
+`port/unexport`, run after its switch, each once the switches its release point
 waits for have landed, as [`scheduling`](../../planning/scheduling/SKILL.md)'s Later stages
 section times them: as the remaining C stops using its types' layouts and storage and
 calling its exports, they nativize the types and remove the exports. They belong to no run

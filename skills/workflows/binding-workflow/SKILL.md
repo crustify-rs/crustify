@@ -137,8 +137,8 @@ Progress section times them.
 
 Once the last wave of a module's run has been promoted, the module is integrated into the
 working branch, as [`versioning`](../../operations/versioning/SKILL.md)'s Integration section
-describes. In a port campaign a module is integrated from C once, and its later-stage waves
-run after that, as [`porting-workflow`](../porting-workflow/SKILL.md)'s Later stages section
+describes. In a port campaign a module switches from C to Rust once, at the integration of the last
+run of its `wrap` and `port` items, and its later-stage waves run after that, as [`porting-workflow`](../porting-workflow/SKILL.md)'s Later stages section
 describes.
 
 ## 5. Review batches
@@ -147,7 +147,8 @@ When review is enabled, each wave's landed batches are reviewed before it is pro
 review batches of the same wave, packed as the batches they review land, as
 [`reviewing`](../../verification/reviewing/SKILL.md)'s Review batches section
 describes, or one per translation batch when the settings ask for that, and a module pass
-reviews each module whole before its integration, or at its end in a wrap campaign.
+reviews each module whole, before its switch in a port campaign and at its end in a wrap
+campaign.
 
 Each review batch's `task.json` holds the `commits` of the batches it reviews and the
 approved objectives, as [`task-schema`](../../artifacts/task-schema/SKILL.md)'s Review batches

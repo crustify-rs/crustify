@@ -99,7 +99,7 @@ schedule holds, each naming the last users, their waves and their `modules`, as 
 planning tools compute them. An entity's planned items carry the same release points. The
 wave of a later stage lists, among its `depends_on.scheduled`, the last wave of each module
 its release point's `closure.modules` names but the item's own, so that it runs once those
-modules are integrated: `opaque_after` for `port/layout`, `memory_unmanaged_after` for
+modules have switched: `opaque_after` for `port/layout`, `memory_unmanaged_after` for
 `port/memory`, and `unreferenced_after` for `port/unexport`.
 
 A `port/unexport` item's `carries_over` records what of the target's C tests its stage
@@ -108,7 +108,7 @@ carries over and removes from `c/`, as `scheduling`'s Later stages section descr
 | `carries_over` field | meaning |
 |---|---|
 | `cases` | the test cases still referencing the export when the wave runs, each `{path, tests}`: the test file and its test case names |
-| `if_still_in_c` | the cases, shaped as `cases`, that reference the export but that the plan's order removes before the wave, by an integration or another wave's carry-over it does not depend on: the stage carries over those still in `c/` when it runs |
+| `if_still_in_c` | the cases, shaped as `cases`, that reference the export but that the plan's order removes before the wave, by a module's switch or another wave's carry-over it does not depend on: the stage carries over those still in `c/` when it runs |
 | `harness` | the functions of the test harness, as `file:function`, that reference the export, which the stage adapts |
 
 The plan's order on disk decides which wave carries over a case several of them

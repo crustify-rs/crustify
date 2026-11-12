@@ -1,6 +1,6 @@
 ---
 name: testing-gates
-description: "The regression gates work lands through, by event: a batch's scoped gates, a wave's, a module's end or integration and a ship point's; campaign mode and packaging, sanitizers, BSan and Miri, rebases under the landing lock, and a port batch's export checks. Read before running a batch's gates, landing, integrating a module or shipping."
+description: "The regression gates work lands through, by event: a batch's scoped gates, a wave's, a module's end or switch from C and a ship point's; campaign mode and packaging, sanitizers, BSan and Miri, rebases under the landing lock, and a port batch's export checks. Read before running a batch's gates, landing, integrating a module or shipping."
 ---
 
 # Testing gates
@@ -30,7 +30,7 @@ them to its own depth:
   sanitizer its items call for, such as TSan where it asserts `Send` or `Sync` or adds a
   threaded callback, or MSan where C leaves memory it hands over partly unwritten;
 - a wave's end: the workspace's tests, and the Miri gate below;
-- a module's end, its integration in a port: every test under every available sanitizer,
+- a module's end, its switch in a port: every test under every available sanitizer,
   and BSan as below; and
 - a ship point: every gate over the whole workspace under every available sanitizer, with
   the coverage measurement.
@@ -90,7 +90,7 @@ gateway without linking it, and each export is checked at compile time against t
 binding of the C declaration it replaces, so that a signature that drifts from C's fails
 to build.
 
-A module's integration removes its translation unit, and the C tests tied to it that reach
+A module's switch removes its translation unit, and the C tests tied to it that reach
 its internals, from `c/`, rebuilds the variants from the C that remains and deletes the
 module's export feature, as
 [`porting-workflow`](../../../workflows/porting-workflow/SKILL.md)'s Builds section

@@ -64,7 +64,7 @@ The cells known only once an agent has ended, from its usage: its cost, tokens a
 the per-unit costs derived from them, and their `Σ` cells. A batch's are filled on the
 working branch once its row is there, once its module is integrated, as
 [`versioning`](../versioning/SKILL.md) describes, or, for a port's later-stage batch, which
-runs after its module's integration, once its wave is promoted. A planner run's are filled once the run is
+runs after its module's switch, once its wave is promoted. A planner run's are filled once the run is
 promoted. A batch run more than once costs the sum of its runs.
 
 ### 2.3 Campaign cells

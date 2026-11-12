@@ -32,7 +32,7 @@ ffimap <workdir> --ffibox --sys-crates <the -sys crates> --regions ffi_import,ff
 ```
 
 In a port campaign, a scan names with `--features` the export feature of every module not
-yet integrated, as the [conventions](../../rust/conventions/SKILL.md)' Export features section
+yet switched, as the [conventions](../../rust/conventions/SKILL.md)' Export features section
 names them, so that the `ffi_export` gateways compiled under them are counted. Every scan
 names the module's unsafe regions, as the conventions' Unsafe regions section names them,
 with `--regions`.

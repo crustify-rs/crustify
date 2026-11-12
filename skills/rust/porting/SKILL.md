@@ -16,7 +16,7 @@ A port gives an item its native safe API at once, and that API does not change a
 An item the remaining C still uses keeps a C form behind it, its C layout, its storage in
 C's allocator, its export or its integer values, so that the C keeps working while its
 Rust consumers stay agnostic of which form implements it. The later stages its kind
-describes below migrate that form to Rust, part by part, once the integrations that free
+describes below migrate that form to Rust, part by part, once the switches that free
 it have landed, as [`scheduling`](../../planning/scheduling/SKILL.md)'s Later stages
 section schedules them. An item no C uses is native in its API and its implementation from
 its port.
@@ -43,7 +43,7 @@ While C consumers remain, a ported item is re-exported to C as the
 - The raw gateway, its module's `ffi_export` region, reconstructs safe wrappers and calls
   the native function.
 - The gateway is compiled only under its module's export feature, which stays off until
-  the module is integrated, so that the exports never collide with the C they replace.
-- At integration, the Rust static library is linked in place of the TU through the actual
+  the module switches, so that the exports never collide with the C they replace.
+- At the switch, the Rust static library is linked in place of the TU through the actual
   build system, without assuming link mechanics, and the TU is deleted, as
   [`porting-workflow`](../../workflows/porting-workflow/SKILL.md)'s Builds section describes.

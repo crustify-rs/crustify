@@ -172,12 +172,12 @@ the campaign's own schedule.
 
 In a port campaign, part of an entity's work waits until the remaining C no longer needs
 its C form. Each such stage is a planned item of its own, with the stage as its objective,
-in a wave that depends on the last waves of the modules whose integration frees it, so
-that it runs once they are integrated and the entity takes its Rust form as soon as the C
-lets it. The later stages the same integrations free share a wave, whose batches are
+in a wave that depends on the last waves of the modules whose switch frees it, so
+that it runs once they have switched and the entity takes its Rust form as soon as the C
+lets it. The later stages the same switches free share a wave, whose batches are
 packed when it starts, as [Batches](#3-batches) describes, a stage's
 items forming batches of their own, by its objective. A later-stage wave runs after its own
-module's integration, as [`porting-workflow`](../../workflows/porting-workflow/SKILL.md)'s
+module's switch, as [`porting-workflow`](../../workflows/porting-workflow/SKILL.md)'s
 Later stages section describes; a stage whose release point the item's own port already
 passes is not planned, its change part of the port.
 
@@ -209,7 +209,7 @@ a `port/layout` for a closed enum alone.
 Each kind is found in every function that mentions the type, its globals and the struct
 fields declared with it, macro expansions included. Three kinds of C are no users, as
 [`porting-workflow`](../../workflows/porting-workflow/SKILL.md)'s Principles section describes: the
-type's own module, which switches to Rust in one integration; the tests, which are tied to
+type's own module, which switches to Rust in one step; the tests, which are tied to
 the modules whose subject they are; and C outside the target, so that a definition in an
 installed header is no user either. Of the users of other modules, the last are those no
 other user depends on, over the order's scheduled dependencies: every other user's module
@@ -248,7 +248,7 @@ and none of its consumers.
 
 A ported function's or global's export, through which the remaining C reaches it, is
 removed with the raw binding that reaches it by a `port/unexport` item, after its
-`unreferenced_after`: the integration of its last referrers, the remaining C that calls it,
+`unreferenced_after`: the switch of its last referrers, the remaining C that calls it,
 takes its address or accesses it, as the [conventions](../../rust/conventions/SKILL.md)' Exports
 section describes. A function or global that neither remaining C nor a C test that stays
 references has no export, and no `port/unexport`.
@@ -263,8 +263,8 @@ wrappers, which a wrap batch binds ahead where they are missing, as
 compiles empty is out of scope, as a configured-out translation unit is.
 
 An export whose release point its own port passes, but which C test cases or the test
-harness still reference once its module is integrated, is exported for them at that
-integration; its `port/unexport` is planned in a wave freed by that integration alone, and
+harness still reference once its module has switched, is exported for them at that
+switch; its `port/unexport` is planned in a wave freed by that switch alone, and
 carries them over. A case has left by then when it reaches the internals of the item's
 module or of a module ordered before it. The harness's own references, those of the code
 every C test links rather than of a test case, are adapted by the `port/unexport` that
@@ -276,6 +276,6 @@ wave carries over every case still in `c/` and removes the harness with them. Ea
 
 A ported function pointer's C form, through which the remaining C calls a Rust closure or
 hands Rust a C function, is removed the same way, after its `unreferenced_after`: the
-integration of its last referrers, the remaining C that names it or calls through it, and
+switch of its last referrers, the remaining C that names it or calls through it, and
 for one written inline the C that reaches a site that writes it, as
 [`porting-symbols`](../../rust/porting/symbols/SKILL.md)'s Function pointers section describes.

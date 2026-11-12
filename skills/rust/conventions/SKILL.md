@@ -52,15 +52,15 @@ Each ported module has one raw ABI gateway, its `ffi_export` region, as
 [Unsafe regions](#21-unsafe-regions) describes, whose exports use `#[unsafe(no_mangle)] extern "C"` under the bare C names: the
 module's functions and globals that C outside the module references, another module's TU
 or a C test or executable that stays, the `static inline` functions its headers define
-included. The exports serve that C, which reaches the module through them once it is
-integrated. A function or global only the module's own C references is not exported: that
-C leaves the build with the module at its integration, and its callers are Rust from then
+included. The exports serve that C, which reaches the module through them once it has
+switched. A function or global only the module's own C references is not exported: that
+C leaves the build with the module at its switch, and its callers are Rust from then
 on; nor are static functions and static globals, which nothing outside their TU reaches.
 The target's public C API, for C outside the target, is deferred: exports serve the
 target's own remaining C alone, and that API is a layer of its own over the native Rust API,
 added once the modules it covers are ported.
 An export is removed, with the raw binding that reaches it, by its symbol's `port/unexport`,
-after the integration that removes the last C that calls it, takes its address or
+after the switch that removes the last C that calls it, takes its address or
 accesses it. A C test tied to the module that stays, using only its public API, does not
 hold an export back: it checks the export while other C needs it, and leaves with it.
 
@@ -68,8 +68,8 @@ hold an export back: it checks the export while other C needs it, and leaves wit
 
 Each module's `ffi_export` is compiled only under the safe crate's Cargo feature
 `ffi-export-<tu>`, with `<tu>` its translation unit's path below the C root, every character
-that is not an ASCII letter or digit replaced by `-`. The feature is off until the module is
-integrated, so that its exports never collide with the C they replace, and the integration
+that is not an ASCII letter or digit replaced by `-`. The feature is off until the module
+switches, so that its exports never collide with the C they replace, and the switch
 deletes it, its gateway compiling unconditionally from then on.
 
 ## 2. Crates, modules, and TUs

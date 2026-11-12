@@ -81,7 +81,7 @@ types it owns and its static functions and static globals, and each module whose
 results or effects its assertions check. A test's uses are what its own code does, macro
 expansions included. A module the test only calls to set up or tear down its fixtures, or
 whose enums it only uses, their constants and values alike, is no subject of it: the test
-is not tied to that module, and keeps running after the module's integration, through its
+is not tied to that module, and keeps running after the module's switch to Rust, through its
 exports. A test file whose subject is several modules is listed by each of them. A test
 file whose tests divide between modules is split with its entries' `items` lists, by test
 function.

@@ -85,7 +85,7 @@ code; once it reaches neither, as a port's later stages bring about, Miri covers
   `"calls C"`, `"reads a C global"`, and so on. A test is marked only after it was run
   alone under Miri and seen to stop there; never to silence a Miri report of undefined
   behaviour, a panic or a failed assertion, which are findings. The mark goes once what it
-  names no longer stops the test, as an integration or a later stage brings about. Neither
+  names no longer stops the test, as a module's switch or a later stage brings about. Neither
   `#[cfg(not(miri))]` nor test-name filters stand in for the attribute: with it in place,
   Miri runs every other test.
 
@@ -134,7 +134,7 @@ linkage, is compared through the functions that call it.
 
 In a port, equivalence tests are the evidence of a module's migration. While its waves run,
 the variants still build its C, which they reach through the raw bindings while the ported
-Rust runs under its own names; at its integration they are retired with the C, and the
+Rust runs under its own names; at its switch they are retired with the C, and the
 module evolves as Rust from then on, as
 [`porting-workflow`](../../workflows/porting-workflow/SKILL.md)'s Principles section
 describes. Only its exports still keep the C contract, which the C tests that stay check.
@@ -158,7 +158,7 @@ The `unit_pub` tests the port batches write for a module's items mirror the regr
 cases of the C tests tied to it: their inputs, edge cases and call sequences, with the
 assertions adapted to the safe Rust contract, so that what the C suites established
 outlives them. Each names the C test case it carries over, so that before a C test
-leaves, at the module's integration or with the exports it calls, the cases none carries
+leaves, at the module's switch or with the exports it calls, the cases none carries
 over are listed, and each is carried over or recorded as behaviour the safe API
 deliberately changes. A `port/unexport` carries over every C test case that still references the
 export it removes, whatever its subject, as a Rust test of that subject, reaching what is

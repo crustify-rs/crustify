@@ -42,7 +42,7 @@ unless C of other modules still allocates or frees it raw, which leaves that mov
 
 A ported global takes the safe API [`binding-symbols`](../../binding/symbols/SKILL.md)'s
 Globals section gives a global, or keeps its wrapper's. Rust holds its storage from its
-port, beside its module's C, which keeps its own copy until the integration; from then on
+port, beside its module's C, which keeps its own copy until the switch; from then on
 the Rust's is the only one. A global that remaining C accesses
 is exported, as a function is, and keeps the C layout and the synchronization protocol
 those accesses rely on while it is. Its later stage, `port/unexport`, removes the export, as
@@ -75,7 +75,7 @@ implement it again.
 A `static inline` function a header defines is internal API of the module the
 decomposition gives it, and is ported as its other functions are. Its C callers expand its
 body in their own TUs, so an export alone does not reach them: at the module's
-integration, the header's definition is replaced by its prototype, and the remaining C
+switch, the header's definition is replaced by its prototype, and the remaining C
 calls the Rust module's export, under the function's bare name, where it inlined the body.
 <!-- TODO: cross-language LTO (`-Clinker-plugin-lto`, with a clang whose LLVM matches
 rustc's) would inline the export back into its C callers. -->

@@ -32,7 +32,7 @@ A translation campaign works in a repository of its own, named and laid out as
 [`layout`](../../operations/layout/SKILL.md)'s Tree section describes. It is initialized with
 the source added under `c/` as a submodule, at the revision the settings' `source` answer
 names: of the source itself for a wrap campaign, and of the campaign's fork of it for a
-port campaign, with the fork's `main` at that revision; until the first integration, the
+port campaign, with the fork's `main` at that revision; until the first module's switch to Rust, the
 submodule may point at the source itself. The safe crate is named after the repository,
 and its Rust tree is scaffolded once the plan is complete. The repository is created under
 the `crustify-rs` organization, which publishes it, once the user approves.

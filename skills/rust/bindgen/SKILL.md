@@ -41,7 +41,7 @@ The `ffi` module is public: a consumer reaches the C that is not translated yet 
 it, under its C names.
 
 `c/` is the C that remains: in a wrap campaign the whole source, and in a port campaign
-the fork's `main`, which each integration trims of the module it ports, as
+the fork's `main`, which each switch trims of the module it ports, as
 [`porting-workflow`](../../workflows/porting-workflow/SKILL.md)'s Builds section describes. A build of
 the crate therefore never holds both a module's C and the Rust that replaces it: the
 remaining C reaches a ported module through the safe crate's exports, under their bare C
@@ -118,8 +118,8 @@ as a cdylib already does; the libraries are found beside the binary, through an 
 rpath, and ship with it.
 
 System mode serves a crate whose `c/` is still the whole source: once a port campaign has
-integrated a module, an install of the library would hold that module's C beside the Rust
-that replaces it, and the build fails, naming the integrated modules. It checks the
+switched a module, an install of the library would hold that module's C beside the Rust
+that replaces it, and the build fails, naming the switched modules. It checks the
 version: the library found must be the one the bindings were generated from, as its build
 system reports it (`pkg-config --modversion`), or, for an out-of-tree library's wrapper, a
 release ABI-compatible with it, which shares its soname. Another version fails the build
@@ -149,7 +149,7 @@ what the remaining C resolves to, as shared mode does.
 
 No build links two copies of a module: a mode links either a module's C or the Rust that
 replaces it, never both, and the Rust static library that the target's remaining C links
-from a module's integration on carries no C of its own, as the porting workflow's Builds
+from a module's switch on carries no C of its own, as the porting workflow's Builds
 section describes.
 
 ## 4. Extending
