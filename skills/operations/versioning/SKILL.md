@@ -162,6 +162,9 @@ become the batch's `commits` in `schedule.json`.
 The integration branch is never reset, force-updated or moved backward, and nothing is
 pushed to a remote. The worktree stays after landing, until it is purged as [Lifecycle](#5-lifecycle)
 describes.
+<!-- TODO: when the working and shipping branches, and a wrapper's, are pushed to their
+remotes is not specified yet, though a wrapper's reuse and a Git-pinned dependency need
+it. -->
 
 ### 4.3 Promotion
 

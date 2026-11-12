@@ -100,6 +100,8 @@ A wave starts once the waves it depends on have been promoted, to its module's b
 to the working branch. Its integration branch is created first, the wave's base recorded, and the agent memory every agent reads at
 startup is curated: duplicate and overlapping notes merged, and the notes the campaign has
 made stale corrected or removed. The wave's `status` becomes `wip`.
+<!-- TODO: what the agent memory is, where it sits and how its revisions are recorded is
+not specified yet, so a run's notes cannot be reproduced. -->
 
 Its batches are then packed from its items, and from those of the waves it shares batches
 with, as [`scheduling`](../../planning/scheduling/SKILL.md)'s Batches section

@@ -34,6 +34,8 @@ them to its own depth:
   and BSan as below; and
 - a ship point: every gate over the whole workspace under every available sanitizer, with
   the coverage measurement.
+<!-- TODO: a wave's end and a module's end are run by the wave's last review batch and the
+module pass, so a campaign without review runs neither: they need an owner there. -->
 
 BSan, when available, is run for every batch and at module end:
 
