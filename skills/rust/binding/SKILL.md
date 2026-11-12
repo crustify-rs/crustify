@@ -30,6 +30,17 @@ guaranteed by ffibox or the standard library, never by data the native code can 
 change. It exposes no field its unsafe code relies on, and no `unsafe fn` beyond the
 public ones whose obligation no type expresses.
 
+A confirmed C defect, a behaviour that departs from the C's specification as
+[`reviewing`](../../verification/reviewing/SKILL.md)'s `logic` objective orders it, is not
+carried into the safe API. Where Rust can tell the defect's input before the call, the
+binding refuses it, with the error the C gives an invalid input; where it cannot, it
+composes the item from the routines its C calls, through their own bindings and in the
+C's order, correcting the defect, and its anchor is `Replaces`, as a port's is, its alias
+kept. A lifecycle primitive that is defective only on a failure path is composed so,
+while its policy still calls the primitives that are not. Each divergence is documented
+on the item, and kept by a unit test, as [`testing`](../../verification/testing/SKILL.md)'s
+Equivalence tests section describes.
+
 A dependency on a module that runs later, cut from a cycle, is reached through the safe
 wrappers a wrap batch adds before its consumer, never through raw bindings. A wrapper over
 the items of a module that will be ported is written as that module's API: the names,
