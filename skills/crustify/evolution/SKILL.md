@@ -150,10 +150,12 @@ is to be made. The run is run again once the fix has landed, as a failed batch i
 
 ## 9. Adoption
 
-A run uses the revisions of Crustify and the tools that its `task.json` records, as
-[`task-schema`](../../artifacts/task-schema/SKILL.md)'s Run fields section describes. A
-change that lands on `devel` takes effect from the next wave, as a settings change does,
-and what landed before it under the old rules stays, unless the change fixes a soundness
+Every run's `task.json` records the revisions of Crustify and the tools it launched
+under, as [`task-schema`](../../artifacts/task-schema/SKILL.md)'s Run fields section
+describes. A change that lands on `devel` takes effect as it lands: the runs launched
+after it record its revision, and a run under way when it lands, which its recorded
+revisions and its landing's date tell, may have followed either. What landed before it
+under the old rules stays, unless the change fixes a soundness
 defect: then the landings it affects are reviewed again, by a review batch with
 `revisit`.
 

@@ -141,7 +141,8 @@ doing their work yourself: do a stage's work only where it is too small to brief
 never a batch's.
 
 Spawn each run in the background, as its stage's agent, with its task message, the batches
-of a wave together, and record each agent's session id as its task's `session_id`. A run
+of a wave together, with the revisions of Crustify and each tool in its task's
+`revisions`, and record each agent's session id as its task's `session_id`. A run
 whose `task.json` names another backend, billing or model proxy than this session's runs as
 a process of its own.
 

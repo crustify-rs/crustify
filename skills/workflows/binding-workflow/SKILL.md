@@ -19,7 +19,7 @@ Builds and Baseline, and its waves start after Preflight.
 The plan is produced by planner runs, one after another, as
 [`decomposition`](../../planning/decomposition/SKILL.md)'s Runs section describes: as many as the settings'
 `plan-agent` answer asks for, by default two, under the translation run fields. Each
-run's `task.json`, `{"backend": "<backend>", "billing": "<billing>"}`, sits in its artifact dir.
+run's `task.json`, its backend, billing and revisions, sits in its artifact dir.
 
 The plan is complete when every run has committed and been promoted, and when the
 schedule covers the approved scope: every translation unit the build compiles in scope
