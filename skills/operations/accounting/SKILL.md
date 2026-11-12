@@ -101,6 +101,10 @@ as its agent ends, because the CLIs move and prune their own files. Its usage is
 from the copy, as [`usage`](../usage/SKILL.md) describes, with the backend and model proxy its
 `task.json` names.
 
+An evolution review is a run like any other: its `task.json` sits in its artifact dir, and
+its transcript is collected and priced the same way, its cost counted with the sessions that
+orchestrate the campaign.
+
 The sessions that orchestrate the campaign are collected the same way: at the start of each session, the
 transcripts of the sessions before it. A resumed session keeps its id while its transcript
 grows: its transcript is copied again after each run, replacing the earlier copy. The

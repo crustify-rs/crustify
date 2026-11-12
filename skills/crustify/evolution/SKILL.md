@@ -113,9 +113,11 @@ campaign's.
 
 - A change to the spec follows `authoring`: written once, in the place its kind belongs,
   as generally as the evidence allows.
-- A change to a tool comes with a regression test, whatever it changes: the reproducer of
-  a defect becomes one, a new behaviour gets one that fails without it, and the tool's
-  whole suite passes.
+- A change to what a tool does comes with a regression test: the reproducer of a defect
+  becomes one, and a new behaviour gets one that fails without it. A change to its
+  documentation alone adds none. A packaging defect's reproducer becomes a test too, run
+  against a build installed as a dependent installs it. The tool's whole suite passes, its
+  opt-in tests included wherever the change touches what they cover.
 - A new tool is drafted and tested where it serves a repeated procedure, preferably as a
   subcommand of an existing tool within that tool's goals, or as a script in the skill
   that describes its use, as `authoring` places one; a tool of its own repository is
@@ -148,11 +150,27 @@ that:
 - the change serves a goal, and a tool's stays within the tool's own goals;
 - it is placed and written as [`authoring`](../authoring/SKILL.md) describes, and states
   no rule in the target's names;
-- its validation was run, and shows what the proposal says; and
+- its validation was run, and shows what the proposal says;
+- its entry of [Record](#11-record), which the change or its proposal drafts, names a
+  recurrence signal a campaign would observe, and `test` only where its test checks all of
+  it; and
 - it weakens no check.
 
-The verdict is recorded in the proposal: approved, or rejected, with why, which leaves the
-proposal open for another change or for the user.
+A review runs under the campaign's working branch of the component, never under the change
+it reviews, and reads the change from its branch. Its task pins the commit it reviews, and
+only that commit lands, by a fast-forward of the working branch: a commit added after the
+verdict, or one a rebase or cherry-pick makes, is reviewed again. Its checks are this section's and its
+role's; the task message of the run that asks for it adds to them, and never relaxes them.
+A review reads as deeply as the change reaches: a change to documentation alone is read; a
+tool's code, a check, a soundness fix and every rule of the spec are reviewed with their
+validation run again.
+
+The verdict is recorded in the proposal's Review section, approved or rejected, with its
+reasons; a rejection leaves the proposal open for another change or for the user.
+
+What only records what was decided, a status of [Record](#11-record) a check changes or a
+proposal's status, verdict and review, changes no rule and is not reviewed; an entry is
+reviewed with its change.
 
 A change that weakens a check, a gate, a test, a lint, a review objective, a tool's
 detection or a rule of this skill, is marked so in the verdict and in its entry of the
@@ -203,7 +221,7 @@ defect: then the landings it affects are reviewed again, by a review batch with
 At each module's end, the campaign's evolution is consolidated: recurring lessons are
 proposed for the spec, open proposals are landed as the autonomy allows, the working
 branches are offered to the user for `devel`, the revisit batches a soundness fix calls for are scheduled, and the watched changes
-of the record are checked against the module.
+of the record are checked against the module, as an audit checks them at its end.
 
 ## 11. Record
 
@@ -211,7 +229,12 @@ Every change that lands is recorded in Crustify's own repository, in
 [`EVOLUTION.md`](../../../EVOLUTION.md), whatever component it changed, so that a later
 campaign can tell whether it held. An entry gives the campaign and proposal the change
 came from, the component and commit it landed as, the signal it answered, its recurrence
-signal and its status.
+signal and its status, with a change that weakens a check marked so in its status. A change
+no proposal filed names its campaign and `no proposal` in its place, with where it came
+from. The entry is drafted with its change, in the change itself for a
+change to Crustify and in its proposal for a change to a tool, so that the review reads it,
+and is committed on Crustify's working branch as the change lands. The record holds every
+change landed since it began, on 2026-11-12; what landed before is not recorded.
 
 The recurrence signal is what a campaign would observe if the issue were back, in what a
 campaign produces anyway: a review finding of a category, a run that fails for a cause, a
@@ -219,8 +242,8 @@ tool's error, a correction the user repeats. A change whose regression test chec
 it has `test` in its place and is not watched. One with no signal a campaign could observe
 has `none`, with why, and is not watched either.
 
-A watched change is checked at each module's end, in every campaign, against that module's
-findings, failed runs, proposals and corrections. It is:
+A watched change is checked at each module's end, and at an audit's end, in every campaign,
+against that module's or audit's findings, failed runs, proposals and corrections. It is:
 
 - `watched` from its landing;
 - `recurred` once its signal is met again, with the evidence, which opens a proposal that
@@ -231,13 +254,20 @@ findings, failed runs, proposals and corrections. It is:
 
 The record is committed on Crustify's working branch, each entry with its change and each
 check at its module's end, and reaches `devel` with it.
+Under `propose`, where no component changes, the check still runs: the statuses it changes
+are put to the user with the campaign's proposals, and recorded in the record with the
+user's answer as the working branch next takes a change. Under `off`, it does not run.
 
 ## 12. Evolving evolution
 
 Evolution evolves from its own record, as everything else does from a campaign's. At a
 campaign's end the record and the campaign's proposals are read for what repeats: changes
 that recurred; changes the review rejected or the user declined, by cause; signals a run
-met that no proposal answered; and how long a blocking defect held its run. Each is a
+met that no proposal answered; how long a blocking defect held its run; and what the
+reviews bought for what they cost: per change, the findings each round made that held, those
+its author's own validation had already caught, the rounds it took and their cost. How deep
+a review reads, and how many rounds a kind of change gets, follow from that evidence, not
+from a fixed rule. Each is a
 signal of this guidance, as [Signals](#2-signals) lists them, and its proposal is on this
 skill, on the agents' evolution rules or on what the review checks.
 

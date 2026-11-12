@@ -231,8 +231,9 @@ campaign's evolution as a whole, within the settings' `evolution` answer:
   worktrees: land each change on its working branch once its review approves it, as the
   `evolution` skill's Review and Autonomy sections describe, never in campaign commits,
   and advance a component's `devel` only with the user's approval. Spawn a reviewer for
-  each change, your own included, with its task as the `task-schema` skill's Evolution
-  reviews section describes, and record its verdict in the proposal;
+  each change, your own included, under the component's working branch, with its task as
+  the `task-schema` skill's Evolution reviews section describes, and record its verdict
+  and its reasons in the proposal;
 - the proposals the agents file: reconcile those that overlap, land or decline them, and
   put to the user, together, at a module's end, what the working branches hold for
   `devel`;
@@ -240,10 +241,10 @@ campaign's evolution as a whole, within the settings' `evolution` answer:
   another campaign records them again;
 - the consolidation at each module's end, as the `evolution` skill's Adoption section
   describes, and the revisit batches a soundness fix calls for; and
-- the record of what landed, `EVOLUTION.md`: add each change as it lands, check the
-  watched ones at each module's end, and at the campaign's end read it for what evolution
-  itself gets wrong, as the `evolution` skill's Record and Evolving evolution sections
-  describe.
+- the record of what landed, `EVOLUTION.md`: add each change's entry as the change lands,
+  check the watched ones at each module's end, or an audit's, and at the campaign's end read
+  it for what evolution itself gets wrong, as the `evolution` skill's Record and Evolving
+  evolution sections describe.
 
 ### Campaign
 

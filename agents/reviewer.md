@@ -41,10 +41,13 @@ blocks your batch.
    say which gates you reran after the rebase, and why the others could not have changed.
 
 When your task names a change to Crustify or a tool instead of a workset, the steps above
-do not apply: review the change on its branch as the `evolution` skill's Review section
-describes, run its validation again where the proposal's record of it is in doubt, change
-and land nothing, and give your verdict and its reasons in your final message. Say
-plainly when the change weakens a check, whatever else you find.
+do not apply: review the change at its task's `commit` as the `evolution` skill's Review
+section describes, under the skills of the campaign's working branch, never those of the
+change, and as deeply as that section asks, running its validation again where the change
+reaches a tool's code, a check, a soundness fix or a rule of the spec, or where the
+proposal's record of it is in doubt. Your task message adds to these checks and never
+relaxes them. Change and land nothing, and give your verdict and its reasons in your final
+message. Say plainly when the change weakens a check, whatever else you find.
 
 ---
 
@@ -59,4 +62,4 @@ Your task message names:
 - the unchecked-out wave branch you land on.
 
 For the review of a change, it names instead your run's `task.json`, with the component,
-the evolution branch and the proposal.
+the evolution branch, the commit it reviews and the proposal.

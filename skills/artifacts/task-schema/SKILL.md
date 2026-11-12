@@ -215,8 +215,10 @@ An evolution review's task names the change it reviews, as
 [`evolution`](../../crustify/evolution/SKILL.md)'s Review section describes:
 
 ```json
-{"backend": "claude", "billing": "subscription", "revisions": {"crustify": "<sha>", "wavefront": "<sha>"},
- "component": "wavefront", "branch": "<campaign-id>/evolution/<slug>", "proposal": "crustify/evolution/<slug>"}
+{"backend": "claude", "billing": "subscription", "args": ["--model", "opus"],
+ "revisions": {"crustify": "<working branch sha>", "wavefront": "<working branch sha>"},
+ "component": "wavefront", "branch": "<campaign-id>/evolution/<slug>", "commit": "<sha>",
+ "proposal": "crustify/evolution/<slug>"}
 ```
 
 | root field | meaning |
@@ -224,8 +226,10 @@ An evolution review's task names the change it reviews, as
 | `backend`, `billing`, `model_proxy`, `session_id`, `args`, `revisions` | the [run fields](#1-run-fields) |
 | `component` | the component the change is made in: `crustify`, or a tool by name |
 | `branch` | the evolution branch that holds the change, in the component's repository |
+| `commit` | the commit of `branch` the review reviews, the only one its verdict lets land |
 | `proposal` | the proposal's dir in the campaign's repository |
 
 All but `model_proxy`, `session_id` and `args` are required, and no other root field is
-accepted. It is written as `task.json` in the run's artifact dir,
+accepted. Its `revisions` are those of the campaign's working branches the review runs under,
+never the change's. It is written as `task.json` in the run's artifact dir,
 `crustify/artifacts/evolution/<slug>/review-<n>/`.
