@@ -299,3 +299,15 @@ The repository is the directory this session opened in when it holds
 `crustify/CRUSTIFY.md`, and is established as the Repository section describes otherwise.
 The settings template is `${CLAUDE_PLUGIN_ROOT}/templates/<kind>/CRUSTIFY.template.md`, `<kind>`
 being `translate` for a port or wrap campaign and `audit` for an audit.
+
+
+---
+
+## Claude Code
+
+Claude Code refuses a subagent's writes of report files, which every stage makes, so
+launch each stage run as a process of its own rather than through your Agent tool: run
+`python3 ${CLAUDE_PLUGIN_ROOT}/providers/claude/spawn.py <stage> <worktree> <run dir>` in the
+background, with `--model`, `--effort` and `--add-dir` as the run needs, once its
+`task.md` is saved. It writes the run's `session_id` to the run dir before the session
+starts, and its exit, which notifies you, ends the run.

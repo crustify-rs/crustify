@@ -42,6 +42,22 @@ STAGES = {
 }
 
 
+#: What the assistants need of Claude Code itself, after their generic prompt.
+HOST = """
+
+---
+
+## Claude Code
+
+Claude Code refuses a subagent's writes of report files, which every stage makes, so
+launch each stage run as a process of its own rather than through your Agent tool: run
+`python3 {crustify_root}/providers/claude/spawn.py <stage> <worktree> <run dir>` in the
+background, with `--model`, `--effort` and `--add-dir` as the run needs, once its
+`task.md` is saved. It writes the run's `session_id` to the run dir before the session
+starts, and its exit, which notifies you, ends the run.
+"""
+
+
 def _claude_system_prompt() -> str:
     """Claude Code's own system prompt, which a plugin agent's body replaces."""
     text = SYSTEM_PROMPT.read_text()
@@ -63,7 +79,7 @@ def build() -> None:
         _agent(f"assistant-{kind}",
                f"Crustify's assistant in {what}: plans and orchestrates the campaign with "
                f"the user. Runs as the main agent of a session in the campaign's repository.",
-               generic.prompt("assistant", kind, "{crustify_root}", index=False))
+               generic.prompt("assistant", kind, "{crustify_root}", index=False) + HOST)
 
 
 def main(argv: list[str]) -> int:

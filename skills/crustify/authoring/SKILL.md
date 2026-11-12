@@ -195,8 +195,11 @@ manifest is `.claude-plugin/plugin.json`:
 - `system-prompt.md`, Claude Code's own system prompt, captured from a real request by
   `dump-system-prompt.py`, less its one project's `# Memory` section, and dumped again
   when Claude Code is upgraded;
+- `spawn.py`, which launches a stage run as a Claude Code process of its own, since Claude
+  Code refuses a subagent's writes of report files, and copies its transcript into
+  Crustify's home; the assistants' prompts end with how they launch through it;
 - `hooks.json`: a `SubagentStop` hook, `transcripts.py`, which copies each stage agent's
-  transcript into Crustify's home; and
+  transcript into Crustify's home, for a stage run a host launches as a subagent; and
 - `compose.py`, which generates the agents (`compose.py build`).
 
 The generated files are committed, and regenerated whenever `agents/` or
