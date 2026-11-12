@@ -202,8 +202,8 @@ no memory user, since it reaches them as any other function, but a routine that 
 or frees it raw is one, as any other C is, its own lifecycle routines included.
 
 A closed enum's layout users are the C that uses its constants or values of its type, which
-depend on its integer form, and it has no memory users. Wavefront gives every enum an
-`opaque_after`, closed or not: the planner tells a closed enum from one whose constants C
+depend on its integer form, and it has no memory users. Every enum has an
+`opaque_after`, closed or not: planning tells a closed enum from one whose constants C
 combines as flags, from its constants' values and how its users combine them, as
 [`binding-types`](../../rust/binding/types/SKILL.md)'s Enums section tells their forms apart, and plans
 a `port/layout` for a closed enum alone.
@@ -255,7 +255,7 @@ takes its address or accesses it, as the [conventions](../../rust/conventions/SK
 section describes. A function or global that neither remaining C nor a C test that stays
 references has no export, and no `port/unexport`.
 
-The target's C tests are not among its referrers, as wavefront's release points leave them
+The target's C tests are not among its referrers, which the release points leave
 out: an export the remaining C no longer needs is not kept, with its unsafe boundary, for a
 test. Its `port/unexport` carries over the C test cases that still reference it, as
 [`testing`](../../verification/testing/SKILL.md)'s C tests carried over section describes,

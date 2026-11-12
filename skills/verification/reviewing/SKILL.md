@@ -6,7 +6,7 @@ description: "How landed work is reviewed: tiered review batches and module pass
 # Reviewing
 
 Review inspects work that has already landed, for a set of objectives, and files a report
-for every defect it finds. In a translation campaign, reviewers inspect what each
+for every defect it finds. In a translation campaign, it inspects what each
 translation batch landed before the waves that build on it start; in an audit, the modules of a crate
 that Crustify did not generate (see [`audit-workflow`](../../workflows/audit-workflow/SKILL.md)); and planner runs review the
 plan that earlier runs committed (see [Plan corrections](#9-plan-corrections)).

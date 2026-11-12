@@ -8,8 +8,8 @@ description: "How an audit of an existing Rust crate proceeds: its review waves,
 An audit campaign hunts undefined behaviour reachable from safe code in a Rust repository,
 especially a crate that wraps C, and, when the `equivalence` instrument is selected,
 functional drift between the safe wrapper and the C library it binds. It needs no earlier
-Crustify campaign: the target is any repository. It runs the same reviewers a translation
-campaign does, and each reviewer files a report and a reproducer for every finding it
+Crustify campaign: the target is any repository. It runs the same review batches a translation
+campaign does, and each files a report and a reproducer for every finding it
 confirms.
 
 ## 1. Running one
@@ -33,7 +33,7 @@ An audit runs the [setup workflow](../setup/SKILL.md), with two differences in i
   each sanitizer variant only when its sanitizer is selected. Miri and `equivalence` need
   no build.
 
-The variants are rebuilt after a review wave whose reviewers changed the Rust or C sources.
+The variants are rebuilt after a review wave whose batches changed the Rust or C sources.
 
 ## 3. Objectives
 
@@ -63,9 +63,9 @@ spell them, with the type's batch unless they are worth a batch of their own. Th
 of an impl are never named as functions.
 
 For `revisit`, the reports are divided into their own batches, grouped so that reports
-needing the same instrument or the same build share a reviewer.
+needing the same instrument or the same build share a batch.
 
-Each round of reviewers, as many as [`concurrency`](../../operations/concurrency/SKILL.md) describes, is
+Each round of review batches, as many as [`concurrency`](../../operations/concurrency/SKILL.md) describes, is
 one review wave: a wave of no link unit or module, each of its batches a `review` batch
 holding its `paths` or `reports`. `schedule.json` does not record an audit's review waves:
 each batch's `task.json` is its record.
@@ -78,7 +78,7 @@ each, the settings are reread and their changes applied, and the agent memory ev
 reads at startup is curated. Each review batch's `task.json` holds its workset, its
 objectives, its batch fields, its review wave branch and its run fields, as
 [`task-schema`](../../artifacts/task-schema/SKILL.md)'s Review batches section describes,
-with a `null` `link_unit` and `module`. The wave's reviewers run concurrently.
+with a `null` `link_unit` and `module`. The wave's batches run concurrently.
 
 Each reviewer lands its reports and fixes on the review wave branch as
 [`versioning`](../../operations/versioning/SKILL.md)'s Landing section describes. A reviewer that fails keeps its branch and

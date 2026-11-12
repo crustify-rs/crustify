@@ -37,7 +37,7 @@ crates offer. How a campaign reaches these libraries is
 The assessment fields, `resolved`, `source`, `candidates`, `c_entities` but for each
 entity's `confirmation`, and `recommendation`, are the plan's; the `decision` is the
 user's; and the `crustify_campaign.pin`, each fork's `pin` and each entity's
-`confirmation` are progress, which the assistant records as the side campaign, the forks
+`confirmation` are progress, recorded as the side campaign, the forks
 and the batches advance.
 
 ## 2. libraries[*].candidates
@@ -52,7 +52,7 @@ standard library left out: it is never assessed, and appears only in `c_entities
 | `license` | its SPDX license expression |
 | `kind` | `ported` for a crate that reimplements the library in Rust, `bindings` for one that puts a safe Rust API over the C library itself |
 | `sys` | for `bindings`, the raw `-sys` crate it builds on, or `null` when it binds the library itself; `null` for `ported` |
-| `quality_assessment` | free text: the planner's reasoning on whether the crate is fit to adopt, by the criteria of `dependencies`' Adopted crates section, with what it read and ran, citing `file:line`, advisory ids and release dates |
+| `quality_assessment` | free text: the plan's reasoning on whether the crate is fit to adopt, by the criteria of `dependencies`' Adopted crates section, with what it read and ran, citing `file:line`, advisory ids and release dates |
 
 A crate that wraps the library but exposes raw pointers or `unsafe` to its users is not
 safe bindings; a `-sys` crate alone is no candidate, but may be a local route's

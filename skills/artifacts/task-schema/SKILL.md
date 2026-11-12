@@ -149,7 +149,7 @@ objectives, and an absent `objectives` includes `revisit` exactly when `reports`
 The optional `wave_gates` and `module_pass` are the only other root fields accepted.
 
 The objectives are those `reviewing`'s Objectives section describes and those the
-installed tools' skills add, such as wavefront's `lifecycle`. A batch naming an objective
+installed tools' skills add. A batch naming an objective
 neither offers is rejected.
 
 ## 5. Planner tasks

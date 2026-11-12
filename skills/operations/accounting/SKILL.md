@@ -14,8 +14,8 @@ The dashboard, `crustify/artifacts/dashboard.md` unless the settings name anothe
 campaign's record of what each planner run, batch, wave and module did and cost. It is
 filled from `templates/translate/dashboard.template.md`, an audit's from
 `templates/audit/dashboard.template.md`, and keeps the template's format exactly.
-When an adopted Crustify change adds a table or a column to the template, the assistant
-adds it to the dashboard on the working branch before it launches the next batch: a batch
+When an adopted Crustify change adds a table or a column to the template, it is
+added to the dashboard on the working branch before the next batch launches: a batch
 fills the rows of the tables in place, and never adds one.
 
 It is tracked in the campaign's tree, so every agent's worktree holds a copy, and it is
@@ -42,7 +42,7 @@ The cells measured on the tree a landing commits:
 They are filled in the landing's last commit, and measured against the integration branch
 tip it was rebased onto: coverage as [`testing-builds`](../../verification/testing/builds/SKILL.md)'s Coverage section measures
 it, the safety audit columns as the changes in the dashboard's Safety audit metrics, and
-the API stability columns as `ffimap api` classifies the landing's items. A
+the API stability columns as the changes to the API of the landing's items are classified. A
 rebase that conflicts in the dashboard keeps every row both sides added, and the landing's
 cells, `Σ` rows included, are measured again where the gates its rebase reruns cover them;
 the others stand as measured on the batch's base.
@@ -92,16 +92,16 @@ An audit's dashboard follows the same kinds over its own tables.
 Every run's `task.json` records how its agent ran: its backend, billing, model proxy and
 the arguments its CLI was given, and, once it starts, its `session_id`, which ties the run
 to its session. The session's transcript, which its CLI keeps by session id, is the
-agent's full log and the source of its accounting. An agent spawned as a subagent of the
-assistant's session has no session of its own: its session id is `agent-<agent id>`, the
-name Claude Code gives its transcript, under the spawning session's `subagents/`.
+agent's full log and the source of its accounting. An agent spawned as a subagent of
+another session has no session of its own: its session id is `agent-<agent id>`, the
+name its host gives its transcript, under the spawning session's `subagents/`.
 
 A transcript is copied into crustify's home, as `transcripts/<session id>.jsonl`, as soon
 as its agent ends, because the CLIs move and prune their own files. Its usage is derived
 from the copy, as [`usage`](../usage/SKILL.md) describes, with the backend and model proxy its
 `task.json` names.
 
-The assistant's sessions are collected the same way: at the start of each session, the
+The sessions that orchestrate the campaign are collected the same way: at the start of each session, the
 transcripts of the sessions before it. A resumed session keeps its id while its transcript
 grows: its transcript is copied again after each run, replacing the earlier copy. The
 records, transcripts and rates stay in crustify's home.

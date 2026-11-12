@@ -208,7 +208,7 @@ crustify campaign's.
 An entity's route is a recommendation made before any of its uses was translated. The first
 batch that binds or ports one of its users checks the route against the code it translates,
 by the uses the entity's `match` and note describe, and reports what it found in its final
-message; the assistant records it as the entity's `confirmation`. Each later batch takes
+message, which is recorded as the entity's `confirmation`. Each later batch takes
 the confirmed route.
 
 When the route does not hold, the batch reaches the entity through another route the
@@ -218,5 +218,5 @@ decision adopts for the library; the decision's `uncovered` route. A `crustify-c
 route that the library's crustify campaign does not yet cover is reported, and advanced as
 [Side campaigns](#3-side-campaigns) describes, before the batch runs again. Where no route
 the decision allows serves the entity, because the library leaves nothing `uncovered` or
-only a crate the user has not adopted would, the batch reports it, and the assistant puts
-it to the user, whose answer is recorded among the decision's `overrides`.
+only a crate the user has not adopted would, the batch reports it, and it is put
+to the user, whose answer is recorded among the decision's `overrides`.

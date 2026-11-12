@@ -123,7 +123,7 @@ unsafe regions, so that the rest of the file, its native code, holds none:
 
 Unsafe code is every `unsafe` block, `unsafe fn`, `unsafe impl`, `unsafe extern` block and
 `#[unsafe(…)]` attribute, and every invocation of another crate's macro that expands to
-one, such as ffibox's `define_ctype!`, which the compiler's `unsafe_code` lint does not
+one, such as one that mints a type over a C layout, which the compiler's `unsafe_code` lint does not
 see. Outside the regions, only the raw bindings hold any. The regions take the lint back as
 [`toolchain`](../toolchain/SKILL.md)'s Unsafe code section describes.
 

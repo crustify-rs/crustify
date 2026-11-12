@@ -26,7 +26,7 @@ They sit in their module's unsafe regions, as the [conventions](../conventions/S
 Unsafe regions section lays them out, and a region's soundness rests on the region alone:
 each item it exposes is sound for every input the rest of its module can give it, the
 invariants its unsafe code relies on being held in the region's own private fields or
-guaranteed by ffibox or the standard library, never by data the native code can build or
+guaranteed by the library the bindings hold C memory through or the standard library, never by data the native code can build or
 change. It exposes no field its unsafe code relies on, and no `unsafe fn` beyond the
 public ones whose obligation no type expresses.
 

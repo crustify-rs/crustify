@@ -35,7 +35,7 @@ own, cloned beside it as `../<source>-crustify`, as [`dependencies`](../../plann
 describes.
 
 Every path into the C that the plan records, in `modules.json`, `schedule.json`, the
-wavefront configurations and tables and a batch item's `defined_in`, is relative to the C
+tools' configurations and tables and a batch item's `defined_in`, is relative to the C
 root, `c/`, so that the plan reads as the C codebase lays itself out. Every other path is
 relative to the repository's root.
 
