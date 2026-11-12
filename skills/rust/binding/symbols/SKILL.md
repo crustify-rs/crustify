@@ -160,4 +160,8 @@ not also exposed as an ordinary safe function. The module's other items follow t
 route.
 
 Singleton and array handles have separate policies, each in its primitive's home. A
-family's allocator, releaser and cloner form one policy.
+family's allocator, releaser and cloner form one policy. A releaser that frees a container together with its
+elements is no policy of the container: where its body only releases each element and then
+the container, the owner holds its elements as their own owners, under the container's
+allocator's policy, and releases as the releaser does without calling it; where it does
+more, the owner is hand-written, as ffibox's `docs/hand-written.md` describes.
