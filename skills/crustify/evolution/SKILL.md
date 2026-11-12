@@ -115,7 +115,8 @@ campaign's.
   as generally as the evidence allows.
 - A change to what a tool does comes with a regression test: the reproducer of a defect
   becomes one, and a new behaviour gets one that fails without it. A change to its
-  documentation alone adds none. A packaging defect's reproducer becomes a test too, run
+  documentation alone adds none, unless the defect it fixes has a reproducer, which becomes
+  a test or a doctest. A packaging defect's reproducer becomes a test too, run
   against a build installed as a dependent installs it. The tool's whole suite passes, its
   opt-in tests included wherever the change touches what they cover.
 - A new tool is drafted and tested where it serves a repeated procedure, preferably as a
@@ -154,7 +155,7 @@ that:
 - its entry of [Record](#11-record), which the change or its proposal drafts, names a
   recurrence signal a campaign would observe, and `test` only where its test checks all of
   it; and
-- it weakens no check.
+- whether it weakens a check, which the verdict marks.
 
 A review runs under the campaign's working branch of the component, never under the change
 it reviews, and reads the change from its branch. Its task pins the commit it reviews, and
@@ -198,7 +199,9 @@ the user's approval, asked for at each module's end and at the campaign's end, w
 record's entries since the last advance, those the review marked as weakening a check
 first. Where `devel` has moved meanwhile, the working branch takes it by merge before it
 is offered. What the user declines is reverted on the working branch or stays there, as
-they say, and is recorded so. Merging a component's `devel` into its `main`, and merging a
+they say, and is recorded so; where it weakened a check, what landed under it is reviewed
+again, by review batches with `revisit`, as [Adoption](#10-adoption) schedules them for a
+soundness fix. Merging a component's `devel` into its `main`, and merging a
 new tool upstream, need the user's approval too.
 
 A run that a defect blocks does not work around it. Where the answer lets fixes land, it
@@ -233,7 +236,7 @@ signal and its status, with a change that weakens a check marked so in its statu
 no proposal filed names its campaign and `no proposal` in its place, with where it came
 from. The entry is drafted with its change, in the change itself for a
 change to Crustify and in its proposal for a change to a tool, so that the review reads it,
-and is committed on Crustify's working branch as the change lands. The record holds every
+and is committed on Crustify's working branch of the campaign as the change lands. The record holds every
 change landed since it began, on 2026-11-12; what landed before is not recorded.
 
 The recurrence signal is what a campaign would observe if the issue were back, in what a
@@ -252,11 +255,13 @@ against that module's or audit's findings, failed runs, proposals and correction
 - `confirmed` once a campaign other than the one it came from has ended, having exercised
   it, without the signal.
 
-The record is committed on Crustify's working branch, each entry with its change and each
-check at its module's end, and reaches `devel` with it.
-Under `propose`, where no component changes, the check still runs: the statuses it changes
-are put to the user with the campaign's proposals, and recorded in the record with the
-user's answer as the working branch next takes a change. Under `off`, it does not run.
+The record is committed on Crustify's working branch of the campaign, each entry with its
+change and each check at its module's end, and reaches `devel` with it. Rows are appended
+in landing order and statuses edited in place, so that a merge of two campaigns' working
+branches keeps both campaigns' rows, ordered by their landing.
+Under `propose`, where no component changes, the check still runs and its statuses are
+committed all the same, since a record commit changes no rule, and they are put to the user
+with the campaign's proposals. Under `off`, it does not run.
 
 ## 12. Evolving evolution
 

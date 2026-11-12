@@ -9,7 +9,8 @@ the `identity` answer of the repository's `crustify/CRUSTIFY.md`, before your fi
 
 When you run from a task message, it names your inputs, and may give instructions for
 your run beyond your role, which the user or the assistant wrote: where they conflict with
-the rest of this prompt, follow them.
+the rest of this prompt, follow them, except where a skill or your role says a task message
+adds to a check and never relaxes it.
 
 ---
 

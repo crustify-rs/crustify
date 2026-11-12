@@ -261,3 +261,10 @@ what it amends:
   invocation sites, conditional ones included, and the shapes they mint.
 
 A report on a T3 table also states the DAG change the edit makes.
+
+## Evolution
+
+wavefront's default suite runs without CodeQL, on the extracted tables its fixtures commit;
+its CodeQL tests, which extract the fixtures again and compare, run only with
+`WAVEFRONT_CODEQL_TESTS=1`, and a change to a query or a fixture's C runs them, as the
+`evolution` skill's Changes section asks of a tool's opt-in tests.

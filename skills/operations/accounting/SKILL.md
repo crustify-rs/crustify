@@ -103,7 +103,8 @@ from the copy, as [`usage`](../usage/SKILL.md) describes, with the backend and m
 
 An evolution review is a run like any other: its `task.json` sits in its artifact dir, and
 its transcript is collected and priced the same way, its cost counted with the sessions that
-orchestrate the campaign.
+orchestrate the campaign and recorded, with its tokens and wall time, in its proposal's
+Review section, so that what each review bought can be weighed against its cost.
 
 The sessions that orchestrate the campaign are collected the same way: at the start of each session, the
 transcripts of the sessions before it. A resumed session keeps its id while its transcript

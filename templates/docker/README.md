@@ -27,7 +27,7 @@ defaults differ:
 
 | tool | default source |
 |---|---|
-| `wavefront`, `ffibox`, `ffimap` | a shallow clone of the `devel` branch, from the `crustify-rs` organization: the line campaigns run and the skills follow |
+| `wavefront`, `ffibox`, `ffimap` | a shallow clone of the `devel` branch, from the `crustify-rs` organization, from which each campaign forks its working branch |
 | `crustify` | the build context, the checkout this Dockerfile ships in |
 
 crustify defaults to the context because the build is run from a crustify checkout, so

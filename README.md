@@ -49,7 +49,8 @@ dashboard.
 
 Crustify runs on 64-bit Linux and translates targets built there, against glibc. It needs
 Claude Code or Codex, and Python 3.13. Clone the components side by side and install the
-tools, each on its `devel` branch, the line campaigns run; `ffibox` is a crate the
+tools, each on its `devel` branch, from which each campaign forks its working branch;
+`ffibox` is a crate the
 generated Rust depends on, so it is only cloned.
 
 ```bash
