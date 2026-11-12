@@ -21,13 +21,13 @@ Every scan names the crate's seams, the functions that hand a value between its 
 its raw form, so that each counter's `of_which.seam` share tells that plumbing apart from
 the pointer management a consumer of the safe API faces: ffibox's handle seams `as_ptr`,
 `as_mut_ptr`, `as_void_ptr`, `from_ptr` and `from_void_ptr`, the ownership hand-offs
-`from_raw_parts`, `into_raw_parts`, `from_c`, `into_c` and `as_c_ptr`, the adoption of a raw C
+`from_raw_parts`, `into_raw_parts`, `into_raw`, `from_c`, `into_c` and `as_c_ptr`, the adoption of a raw C
 value, `from_raw`, and the view of a C object as another, `as_object`. A crate built on
 ffibox is scanned with `--ffibox`, and its `-sys` crates are named with `--sys-crates`:
 
 ```bash
 ffimap <workdir> --ffibox --sys-crates <the -sys crates> --regions ffi_import,ffi_export \
-    --seams as_ptr,as_mut_ptr,as_void_ptr,from_ptr,from_void_ptr,from_raw_parts,into_raw_parts,from_c,into_c,as_c_ptr,from_raw,as_object \
+    --seams as_ptr,as_mut_ptr,as_void_ptr,from_ptr,from_void_ptr,from_raw_parts,into_raw_parts,into_raw,from_c,into_c,as_c_ptr,from_raw,as_object \
     > <file>.json
 ```
 
