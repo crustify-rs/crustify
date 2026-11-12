@@ -74,7 +74,8 @@ compacted, before you continue the step. A skill describes; this prompt says whi
 yours, and your workflow names a skill wherever only part of it applies to you.
 
 The tool skills, under `skills/tools/`, describe how each installed tool serves each
-stage. Before your first step, read every tool skill listed. Read in full the
+stage. Read a tool's skill as any other, before the first step of your work its
+description names, and leave one whose description names none of your steps. Read in full the
 documentation of its own each tool's skill names: what it names for every use before the
 tool's first use, and what a stage's section names before that stage. Each tool is
 installed on your `PATH` or in your build. A tool without a skill is not installed: its

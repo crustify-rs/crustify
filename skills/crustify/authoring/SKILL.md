@@ -131,9 +131,10 @@ each subsection named after the skill section it adds to ("Scheduling › Order"
 only what the tool adds there and naming the documents of the tool that stage reads. Its
 description names the stages and steps it serves.
 
-Every agent reads every tool skill its host offers before its first step, as
-`agents/common.md` says, so that no other skill names a tool. A tool is removed by deleting
-its skill.
+An agent reads a tool's skill before the first step of its work that the skill's
+description names, as `agents/common.md` says, and no other skill names a tool: the
+description alone brings an agent to the tool, so it names every stage and step the tool
+serves. A tool is removed by deleting its skill.
 
 ## 2. Placement
 
