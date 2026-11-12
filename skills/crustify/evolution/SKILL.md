@@ -185,7 +185,7 @@ The settings' `evolution` answer sets how far a campaign evolves the harness:
 | answer | what lands on the campaign's working branches |
 |---|---|
 | `off` | nothing: no proposal, no lesson |
-| `propose` | nothing but the record's statuses: proposals and lessons are filed, and no other component changes |
+| `propose` | nothing but the record's statuses: proposals and lessons are filed, and no rule changes |
 | `repair` | each fix of a defect |
 | `evolve` | also each improvement and discovery |
 
@@ -259,7 +259,7 @@ The record is committed on Crustify's working branch of the campaign, each entry
 change and each check at its module's end, and reaches `devel` with it. Rows are appended
 in landing order and statuses edited in place, so that a merge of two campaigns' working
 branches keeps both campaigns' rows, ordered by their landing.
-Under `propose`, where no component changes, the check still runs and its statuses are
+Under `propose`, where no rule changes, the check still runs and its statuses are
 committed all the same, since a record commit changes no rule, and they are put to the user
 with the campaign's proposals. Under `off`, it does not run.
 
