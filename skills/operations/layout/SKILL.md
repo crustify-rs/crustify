@@ -25,7 +25,7 @@ section names it, is laid out as:
 ├── Cargo.toml          the safe crate, and the workspace
 ├── src/                the safe crate's modules, as the conventions lay them out
 ├── tests/              the safe crate's integration test suites
-├── ffi/                the raw bindings' generator input and generated bindings, one dir per link unit
+├── sys/                the raw bindings' generator input and generated bindings, one dir per link unit
 ├── c/                  the C codebase, the C root, which the safe crate bundles
 └── crustify/           the campaign: its settings, artifacts and analysis state
 ```

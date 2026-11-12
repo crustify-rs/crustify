@@ -308,7 +308,7 @@ was drawn from. Give the defining files' and the whole target's raw totals
 beside it for scale.
 
 `Rust LoC` is counted from source over the authored `.rs` files of the workspace, `src/`,
-`tests/` and the hand-written parts of `ffi/`, excluding anything generated into `target/`,
+`tests/` and the hand-written parts of `sys/`, excluding anything generated into `target/`,
 and split by
 `#[cfg(test)]` module.
 

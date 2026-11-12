@@ -64,10 +64,10 @@ once the exception is no longer needed.
 ### 3.3 Generated code
 
 The raw bindings' bindgen output follows C's names and shapes, so it is exempt from the
-workspace's lints: `src/ffi.rs` allows every lint and lint group the workspace sets over
+workspace's lints: `src/sys.rs` allows every lint and lint group the workspace sets over
 each generated module, under one `#[expect(clippy::allow_attributes, reason = "…")]`
 naming the generated code, and the formatter skips the generated modules. The
-hand-written parts of the raw bindings, such as `build.rs`, `src/ffi.rs` itself and the
+hand-written parts of the raw bindings, such as `build.rs`, `src/sys.rs` itself and the
 macro shims, follow the rest of this spec.
 
 ## 4. Formatting

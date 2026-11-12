@@ -24,7 +24,7 @@ below.
 
 ### 1.1 Functions
 
-A C function's raw binding is `ffi::<name>`. Its safe wrapper is a free function homed in
+A C function's raw binding is `sys::<name>`. Its safe wrapper is a free function homed in
 the owning module, named by the rules above. When one C function has several valid
 ownership contracts, each safe variant has a distinct, descriptive name.
 
@@ -82,7 +82,7 @@ out, all relative to the repository's root:
 - `Cargo.toml` - the safe crate's manifest, which also declares the workspace.
 - `src/lib.rs` - the safe crate's root, with one `cfg`-gated module per link unit.
 - `src/<link-unit>/` - one sub-dir per link unit.
-- `src/ffi.rs` and `ffi/<link-unit>/` - the raw bindings, one public module per link unit,
+- `src/sys.rs` and `sys/<link-unit>/` - the raw bindings, one public module per link unit,
   laid out as [`bindgen`](../bindgen/SKILL.md) describes.
 
 The safe crate is named after its repository, `<repo>-crustify`, as

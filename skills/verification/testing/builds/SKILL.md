@@ -58,7 +58,7 @@ alike, and count the code under test only:
   The attributes are added in a scratch copy of the measured tree under `crustify/tmp/`,
   which is measured in its place, so that the measured crates are not changed. Integration
   test crates, examples, benches, the crate root's build script and the generated raw
-  bindings under `ffi/` are left out of the report by path. Test code that is not an item, such as a `#[cfg(test)]`
+  bindings under `sys/` are left out of the report by path. Test code that is not an item, such as a `#[cfg(test)]`
   block inside a library function, stays instrumented, and is reported with the figures.
 - **Objects.** C coverage is read from the objects the tests load: the variant's shared
   libraries, or the object files a crate links statically, every TU compiled into them

@@ -12,7 +12,7 @@ is placed where the conventions' Testing section places tests of its kind:
   triggering sanitizer or Miri crashes, or by failing to compile for a given illegal path;
 - UB tests on the unsafe public interface target UB there: each public `unsafe fn` or
   method a workset adds, called within its stated `# Safety` contract, edge cases
-  included. Raw `ffi::` round-trips are not UB tests on the unsafe interface; they are unit
+  included. Raw `sys::` round-trips are not UB tests on the unsafe interface; they are unit
   or equivalence tests;
 - equivalence tests show that the Rust behaves as the C it translates, mainly by passing
   equivalence assertions: `equiv_pub` on the module's exported API, `equiv_priv` on its
