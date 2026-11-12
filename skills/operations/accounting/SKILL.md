@@ -44,6 +44,17 @@ rebase that conflicts in the dashboard keeps every row both sides added, and the
 cells, `Σ` rows included, are measured again where the gates its rebase reruns cover them;
 the others stand as measured on the batch's base.
 
+An integration merge, and any merge of one branch into another, keeps every row both
+sides added, and settles the rest so: an additive `Σ` cell is the sum over the merged
+rows, ours plus theirs less the merge base's, and so are the Overview's `Rust LoC`
+figures; a usage `Σ` cell, its per-unit cells included, sums only the rows that carry
+usage, so that it is filled again with theirs; a coverage `Σ` cell, and the Overview's
+`C LoC`, are the later landing's; and `Coverage stats` takes the merged suites' counts,
+with the later landing's percentages until a gate measures the merged tree, which the
+merge commit's message says. A table or section the template holds once is kept once,
+with the rows of every copy, whether or not the merge conflicts there, and the merged
+dashboard is checked for repeated headings before it is committed.
+
 ### 2.2 Usage cells
 
 The cells known only once an agent has ended, from its usage: its cost, tokens and wall,
