@@ -28,7 +28,9 @@ exports and its tests. It is the last review batch of the last wave of the modul
 and `port` items, not of a port's later stages, marked
 `module_pass`, launched once every other batch of that wave has landed; its worklist is
 the module's paths, and it runs the wave's gates and the module's end gates, as
-[Gates](#7-gates) describes.
+[Gates](#7-gates) describes. A module whose run landed a single translation batch is
+reviewed by its module pass alone, whose workset is that batch's whole: a review of the
+batch before it would read the same code twice.
 
 Review batches are packed eagerly, as the batches they review land: one launches as soon as
 the landed batches not yet reviewed fill it, and the last once every translation batch of
