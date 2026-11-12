@@ -30,8 +30,8 @@ much of their building and testing overlaps, the memory and disk each one's tree
 the rate the provider allows.
 
 The number of agents in flight follows from those, for each wave as it starts and again as
-its batches land or fail. A `parallelism` number in the settings' `workload` answer is a
-cap on it; the default, `assistant's choice`, sets none. When the waves of several modules, campaigns,
+its batches land or fail. A `parallelism` number in the settings' `workload` answer, or an
+audit's `parallelism` answer, is a cap on it; the default, `assistant's choice`, sets none. When the waves of several modules, campaigns,
 or of a campaign and its side campaigns, run at once, they share the host as one workload.
 
 One unit of work may be given priority over another by suspending the other's agents, with

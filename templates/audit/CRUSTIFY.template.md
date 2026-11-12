@@ -7,12 +7,15 @@ Optional answers may be left unresolved for Crustify to decide.
 **Which campaign is this?** (`id: campaign`)
 - Answer: `audit`
 
+**Which crate and revision should this audit review?** (`id: source`)
+- Answer: `<repository URL or local path>, <commit or tag>`
+
 # Mandatory questions
 
 ## Audit
 
 1. **Should the reviewers hunt for new defects, revisit reports an earlier audit
-   filed, or both, and should they fix what they confirm?**
+   filed, or both, and should they fix what they confirm?** (`id: tasks`)
    - Answer: `<any of: audit, revisit, fix>`, with `audit`, `revisit` or both
    - `audit` hunts for new defects in the crate.
    - `fix` patches what `audit` confirms and what `revisit` still reproduces;
@@ -21,17 +24,18 @@ Optional answers may be left unresolved for Crustify to decide.
      earlier audit filed, which is what you want after a fix lands or an
      instrument that can now decide one is added. Name the reports, or leave
      them to the assistant to take every report filed so far.
-2. **How many reviewers should run at once?**
+2. **How many reviewers should run at once?** (`id: parallelism`)
    - Answer: `<N>`
 3. **What is the maximum spend, in USD? Once the audit's priced usage reaches
-   it, the assistant launches no further reviewers.**
+   it, the assistant launches no further reviewers.** (`id: max-spend`)
    - Answer: `<USD>`
 4. **Which agent CLI should the reviewers use, with which of its arguments?**
+   (`id: review-agent`)
    - Answer: `<claude | codex>[, proxy: openrouter][, args: <the CLI's own
      arguments, such as --model opus>]`
-5. **Which billing mode should agentic stages use?**
+5. **Which billing mode should agentic stages use?** (`id: billing`)
    - Answer: `<api | subscription>`
-6. **Which instruments should the reviewers hunt with?**
+6. **Which instruments should the reviewers hunt with?** (`id: instruments`)
    - Answer: `<miri | asan/ubsan | bsan (borrowsanitizer) | msan (memorysanitizer) | tsan (threadsanitizer) | equivalence | and-separated combination>`
    - `miri`: Rust-side memory, value-validity, alignment, aliasing, intrinsic,
      and data-race UB in code Miri can execute.
@@ -65,6 +69,7 @@ Unanswered optional questions are decided by the assistant.
 8. **Which objectives should the reviewers review for? By default, the objective above
    decides: `ub`, `contracts`, `equiv` when `equivalence` is an instrument, and
    `disclose` for `audit`; `revisit` and `disclose` for `revisit`; plus `fix` for `fix`.**
+   (`id: review-objectives`)
    - Answer: `<default | any of: unsafety, contracts, ub, equiv, logic, ergonomics, idiom,
      misc, test-adequacy, revisit, disclose, fix>`
 
@@ -72,6 +77,7 @@ Unanswered optional questions are decided by the assistant.
 
 9. **Where and in what format should the dashboard be recorded? By default, at
    `crustify/artifacts/audit-dashboard.md`, from `templates/audit/dashboard.template.md`.**
+   (`id: dashboard`)
    - Answer: `<default | <dashboard path>, <templates/audit/dashboard.template.md | custom template>>`
 
 ## Evolution
@@ -98,7 +104,7 @@ Unanswered optional questions are decided by the assistant.
 
 Unless otherwise stated, match the structure of the given dashboard exactly.
 
-If the user provided a centralized audit tracker at `optcrustify-audit-tracker`,
+If the user provided a centralized audit tracker at `/opt/crustify-audit-tracker`,
 then copy into it all the artifacts that are not gitignored from
 `<target repo>/crustify/reviews/` and `<target repo>/crustify/artifacts/`
 into `<tracker>/targets/<target>/`

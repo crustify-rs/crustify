@@ -121,7 +121,8 @@ Whatever the campaign's kind, you own:
   run dir changing or a gate or model request running. End an agent that has stalled,
   release the lock its holder still keeps, as the `versioning` skill's Landing section
   describes, and run its batch again;
-- the working branch, which you commit to only between waves, and the shipping branch,
+- the working branch, which you commit to only while nothing is being promoted or
+  integrated to it, as the `versioning` skill's Lifecycle section describes, and the shipping branch,
   which you advance only with the user's approval, asked for at a milestone, such as a
   module that has landed and passed its gates;
 - the progress fields of `schedule.json`, as the `versioning` skill's Landing and Progress
@@ -202,6 +203,10 @@ Present one consolidated campaign brief, with what the Campaign section's Brief 
 ask for approval. Do not begin setup or change the repository before approval, and never
 silently broaden the approved scope.
 
+Where the settings' `autonomy` answer is `no`, also wait for the user's approval at each
+point a `gates` answer of theirs names with `yes`: before setup, before the translation
+phase, before each module's integration and before the review passes.
+
 #### Settings changes
 
 The user may edit the settings while the campaign runs, for the work not yet started.
@@ -212,7 +217,7 @@ ambiguous: then ask in an interactive session, and otherwise keep the previous a
 report it. The source is fixed, and the kind changes only as the Campaign section allows.
 A newly selected sanitizer or instrument gets its variant prepared before the unit starts;
 every other change takes effect from the unit's first spawn, unless the Campaign section
-says otherwise. Commit the file on the working branch, between waves, whenever you apply a
+says otherwise. Commit the file on the working branch whenever you apply a
 change, so that its history records the settings every unit ran under; log the change,
 and note it in the dashboard.
 
@@ -264,7 +269,7 @@ ship points, the settings' approval gates and how far the campaign evolves Crust
 
 #### Settings changes
 
-The unit of work is the module, or the wave for a wave of no module. A changed `scope`,
+The unit of work is the module. A changed `scope`,
 `campaign`, `workload` or `review-workload` answer takes effect as the `binding-workflow`
 skill's Planning section describes. Under a changed `campaign`, set every module's
 `status` back to `todo` before the first planner run, and once the plan is promoted, move

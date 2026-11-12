@@ -80,8 +80,8 @@ branch, `crustify/devel`.
 |---|---|
 | `wave` | the `index` of the batch's wave in `schedule.json` |
 | `batch` | the batch's `index` within that wave |
-| `link_unit` | its wave's `link_unit`; `null` when the campaign has no decomposition |
-| `module` | its wave's `module`, the module's `name`; `null` when the wave belongs to no module |
+| `link_unit` | its wave's `link_unit`; `null` in an audit, which has no decomposition |
+| `module` | its wave's `module`, the module's `name`; `null` in an audit |
 | `foundational` | its wave's `foundational` |
 
 `wave` and `batch` form the batch id, `wave-<wave>/batch-<batch>`, which names the batch's

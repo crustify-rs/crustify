@@ -71,9 +71,9 @@ started keep their records, as [Re-planning](#5-re-planning) describes.
 | field | meaning |
 |---|---|
 | `index` | the wave's id, from zero; see [Indices](#4-indices) |
-| `link_unit` | the `link_units[*].name` of `modules.json` its units belong to; `null` when the wave belongs to no module |
-| `module` | the module's `name` within that link unit; `null` when the wave belongs to no module, in a campaign with no decomposition |
-| `foundational` | the module's `foundational`; `false` when the wave belongs to no module |
+| `link_unit` | the `link_units[*].name` of `modules.json` its units belong to |
+| `module` | the module's `name` within that link unit |
+| `foundational` | the module's `foundational` |
 | `layer` | its module's `layer`; `null` when the campaign has no decomposition |
 | `sublayer` | its place among its module's waves, from 0; `null` when the campaign has no decomposition |
 | `status` | `todo`, `wip` or `done` |

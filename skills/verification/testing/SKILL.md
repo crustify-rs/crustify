@@ -59,8 +59,7 @@ and `bsan` BSan. A sanitizer without a variant is not available, so no test is w
 it and none runs under it. Miri needs no C build and is always available.
 
 A target that ships its own sanitizers, because the standard ones cannot run against it,
-is tested with those instead: the Linux kernel's KASAN, KMSAN, KCSAN and kernel UBSAN each
-stand for the sanitizer they implement.
+is tested with those instead, each standing for the sanitizer it implements.
 
 Each available sanitizer is a separate obligation of an item while it reaches C or unsafe
 code; once it reaches neither, as a port's later stages bring about, Miri covers it alone:

@@ -87,8 +87,7 @@ A session may run every wave left, or the waves of the part of the scope it was 
 
 Before a module's first wave starts, the settings are reread and their changes applied,
 and its `.rs` file is scaffolded, both committed on the working branch: that commit is the
-module's base, and records the settings the module runs under. A wave of no module
-rereads the settings the same way before it starts. The module is frozen in
+module's base, and records the settings the module runs under. The module is frozen in
 `modules.json` in the same commit, as
 [`modules-schema`](../../artifacts/modules-schema/SKILL.md)'s Status section describes. The
 module's branch is then forked from its base, as

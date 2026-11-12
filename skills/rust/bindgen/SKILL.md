@@ -108,7 +108,7 @@ names another variant, or is set empty to build as a dependent would.
 In every mode, `shims.c` and `static_fns.c` are compiled against the headers the bindings
 match, with the instrumentation of the C they link, and the bindings are the committed
 ones unless the `bindgen` feature regenerates them into `OUT_DIR` from the headers of that
-C. Campaign mode always regenerates.
+C. Campaign mode's tests and gates always regenerate them.
 
 Bundled mode links the C statically, so that the bindings and the C they call always come
 from the same revision; it sets no rpath. Shared mode leaves the remaining C's references

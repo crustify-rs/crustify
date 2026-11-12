@@ -38,7 +38,9 @@ reached through raw bindings: what a module uses of one is wrapped before it, as
 [Wrap batches](#4-wrap-batches) describes.
 
 The plan holds only the link units and modules the campaign's scope includes.
-The foundational modules depend on no other, so they run first.
+The foundational modules depend on no other but through the few dependencies the order
+cuts, as [`decomposition`](../decomposition/SKILL.md)'s Foundational modules section
+describes, so they run first.
 
 ## 2. Waves and batches
 
@@ -57,7 +59,7 @@ starts once the waves of other modules that its waves depend on have been integr
 [`versioning`](../../operations/versioning/SKILL.md) describes, so that each
 module is finished, and can be shipped, as early as its dependencies allow.
 
-A wave belongs to no module when the campaign has no decomposition. The batches of a wave
+The batches of a wave
 execute concurrently, as many at once as
 [`concurrency`](../../operations/concurrency/SKILL.md) describes.
 

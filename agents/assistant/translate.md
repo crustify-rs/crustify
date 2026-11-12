@@ -29,7 +29,7 @@ ship points, the settings' approval gates and how far the campaign evolves Crust
 
 #### Settings changes
 
-The unit of work is the module, or the wave for a wave of no module. A changed `scope`,
+The unit of work is the module. A changed `scope`,
 `campaign`, `workload` or `review-workload` answer takes effect as the `binding-workflow`
 skill's Planning section describes. Under a changed `campaign`, set every module's
 `status` back to `todo` before the first planner run, and once the plan is promoted, move
