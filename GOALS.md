@@ -1,6 +1,6 @@
 # Goals
 
-What Crustify is for, and what every change to it, its skills, its agents and its tools,
+What Crustify is for, how it evolves, and what every change to it, its skills, its agents and its tools,
 is judged against. A rule that serves none of these goals is removed; two goals in tension
 are weighed for the case at hand, and the weighing is stated.
 
