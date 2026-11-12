@@ -1,6 +1,6 @@
 ---
 name: wavefront
-description: "Deterministic queries and dependency-ordered plans over the C codebase, the first resort for any question about it: entities, uses, dependencies, pointers, lifecycles, T3 cast tables. Read before querying the C codebase, before planning, decomposing or scheduling, before analysing or binding an item, when packing wrap batches, and when reviewing pointer findings or lifecycles."
+description: "Deterministic queries and dependency-ordered plans over the C codebase, the first resort for any question about it: entities, uses, dependencies, pointers, lifecycles, T3 cast tables. Read before querying the C codebase, before planning, decomposing or scheduling, before analysing or binding an item, when packing wrap batches, when reviewing pointer findings or lifecycles, and before changing wavefront itself."
 ---
 
 # wavefront
@@ -264,7 +264,6 @@ A report on a T3 table also states the DAG change the edit makes.
 
 ## Evolution
 
-wavefront's default suite runs without CodeQL, on the extracted tables its fixtures commit;
-its CodeQL tests, which extract the fixtures again and compare, run only with
-`WAVEFRONT_CODEQL_TESTS=1`, and a change to a query or a fixture's C runs them, as the
-`evolution` skill's Changes section asks of a tool's opt-in tests.
+A change to wavefront reads its README's Tests section, which names its opt-in CodeQL
+tests: a change to a query or a fixture's C runs them, as the `evolution` skill's Changes
+section asks of a tool's opt-in tests.

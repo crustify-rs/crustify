@@ -95,8 +95,8 @@
 # same flag for every one of the four. What differs is only the default:
 #
 #   wavefront, ffibox, ffimap   a shallow clone of the `devel` branch, from the
-#                               crustify-rs organization: the line campaigns run
-#                               and the skills follow
+#                               crustify-rs organization, from which each campaign
+#                               forks its working branch
 #   crustify                    the build context -- the checkout this
 #                               Dockerfile ships in, which is the tree you are
 #                               building from

@@ -185,7 +185,7 @@ The settings' `evolution` answer sets how far a campaign evolves the harness:
 | answer | what lands on the campaign's working branches |
 |---|---|
 | `off` | nothing: no proposal, no lesson |
-| `propose` | nothing: proposals and lessons are filed, and no component changes |
+| `propose` | nothing but the record's statuses: proposals and lessons are filed, and no other component changes |
 | `repair` | each fix of a defect |
 | `evolve` | also each improvement and discovery |
 
@@ -223,7 +223,7 @@ defect: then the landings it affects are reviewed again, by a review batch with
 
 At each module's end, the campaign's evolution is consolidated: recurring lessons are
 proposed for the spec, open proposals are landed as the autonomy allows, the working
-branches are offered to the user for `devel`, the revisit batches a soundness fix calls for are scheduled, and the watched changes
+branches are offered to the user for `devel`, the revisit batches a soundness fix or a declined weakening calls for are scheduled, and the watched changes
 of the record are checked against the module, as an audit checks them at its end.
 
 ## 11. Record

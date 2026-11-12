@@ -87,7 +87,8 @@ handle itself.
 
 Every agent's prompt opens with `agents/common.md`: that every commit takes the identity
 [`versioning`](../../operations/versioning/SKILL.md)'s Identity section gives, that a task
-message's instructions take precedence over the rest of the prompt, and how skills and
+message's instructions take precedence over the rest of the prompt, but where a skill or a
+role says a task message adds to a check and never relaxes it, and how skills and
 tool skills are read. Every agent sees every skill, with its description:
 its host lists them, or, for a host that does not, the provider fills the index of every
 skill at common's `<!-- SKILL INDEX -->` marker from the skills' names and descriptions, so
