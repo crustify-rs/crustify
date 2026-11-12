@@ -104,7 +104,12 @@ Safety contracts that are incorrect, incomplete or ambiguous:
 - an obligation stated on code that C calls once a value is handed to it, such as the
   members of a callback table a safe constructor builds for C to install: C, not the Rust
   caller, then chooses the arguments, often from data it reads, so no caller can honour it.
-  What the obligation excludes is refused in Rust, in front of the C, instead.
+  What the obligation excludes is refused in Rust, in front of the C, instead, where Rust
+  can test it, such as a value, a range, a null or a length. One Rust cannot test, such as
+  a pointer's liveness or family, or a string's terminator, is kept by whoever hands the
+  value to C: the C declaration's own contract, which the code it calls trusts as an
+  export does, or an `unsafe` installer whose Rust caller vouches for it. Only an
+  obligation neither covers, and Rust can test, is a finding.
 
 A contract is tested by trying to break it: an input, a call sequence or an interleaving
 that honours the obligation, or reaches the block through safe code, and still violates
