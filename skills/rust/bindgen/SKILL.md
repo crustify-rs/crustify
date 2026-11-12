@@ -70,6 +70,14 @@ campaign:
 - macro shims are bound like the functions they wrap; and
 - an empty allowlist generates nothing.
 
+An internal header's declarations are generated, and the wrappers of its `static inline`
+functions compiled, as the link unit's own translation units see them: with the include
+dirs and preprocessor definitions the build of the C a mode links records for them, its
+generated headers and its out-of-tree libraries' include dirs among them, and the source
+dirs taken from the checkout's `c/`. An item whose declaration depends on a definition that
+differs between the variants is generated from the `plain` variant's configuration in every
+mode, so that the committed bindings are those of every variant.
+
 A type that another link unit's bindings own is blocklisted, as `external.txt` lists it,
 and re-exported from that link unit's module under its C name, so that each C type has one
 Rust type across the crate. A type an out-of-tree library's wrapper publishes is
@@ -131,6 +139,13 @@ unit's module exports the version the bindings match as `C_VERSION`. `<LIB>_DIR`
 install prefix: the build reads the headers under its `include/`, links the library under
 its `lib/`, and takes the version from `lib/pkgconfig/<lib>.pc`. Without it, `pkg-config`
 finds the library, which is linked as `pkg-config` resolves it, with no rpath.
+
+An install carries neither the internal headers nor the functions its shared library does
+not export, whichever header declares them, public or internal. Once the bindings reach
+either, system mode cannot serve the crate: the build fails in it, naming what the install
+lacks, as it fails for a switched module, and bundled mode, whose build in `OUT_DIR` has
+both, becomes the crate's default. The `bindgen` feature then regenerates from that build's
+headers, never from an install's.
 
 Campaign mode serves the campaign while it extends the bindings: batches add allowlist
 entries and shims, and the bindings follow from them. It needs bindgen, which the safe
