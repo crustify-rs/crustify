@@ -150,11 +150,17 @@ that the base it embeds is not brought in: its module extends it with that base 
 ports it. The closure stops at what has landed, and may reach into further modules that
 run later.
 
-A wrap batch ahead of its consumer holds only what has not landed, so that no item is
-wrapped twice and an item no consumer needs is never wrapped. Its items keep their homes
-in the modules that own them, and it lands on its consumer's wave branch before the
-consumer's batches launch. A type that a `port` module owns and wraps first, as
-[Later stages](#5-later-stages) describes, is that module's own work, in its own waves.
+A wrap batch ahead of its consumer holds only what no batch of `schedule.json` holds
+already, on any branch, a failed batch aside, so that no item is wrapped twice and an item
+no consumer needs is never wrapped. Its items keep their homes in the modules that own
+them, and it lands on its consumer's wave branch before the consumer's batches launch.
+Modules that run at once do not see each other's landings: an item a batch of another
+module's run holds, landed or not, is neither wrapped again nor reached through raw
+bindings. The wave that needs it waits for that run's integration, and starts in a run of
+its own module forked after it, as
+[`versioning`](../../operations/versioning/SKILL.md)'s Lifecycle section describes. A type
+that a `port` module owns and wraps first, as [Later stages](#5-later-stages) describes, is
+that module's own work, in its own waves.
 
 What a wave's items need through an out-of-tree library's wrapper is wrapped first in the
 library's side campaign, before the wave starts, as [`dependencies`](../dependencies/SKILL.md)'s

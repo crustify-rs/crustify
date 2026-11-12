@@ -99,7 +99,8 @@ Its batches are then packed from its items, and from those of the waves it share
 with, as [`scheduling`](../../planning/scheduling/SKILL.md)'s Batches section
 describes, and recorded in its `schedule.json` entry. Before a batch whose items depend on
 units that have not landed, a wrap batch binds them, as its Wrap batches section
-describes, and lands first.
+describes, and lands first; each module it homes an item in is frozen when it launches, as
+[`modules-schema`](../../artifacts/modules-schema/SKILL.md)'s Status section describes.
 
 Each batch then gets:
 

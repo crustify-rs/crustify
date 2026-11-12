@@ -146,7 +146,7 @@ A row wavefront warns is stale is corrected or deleted.
 
 The units a batch's items depend on are their `depends_on` in the planner run's schedule,
 or wavefront's dependency query over them. A wrap batch's items are closed over their wrap
-dependencies by that query in API mode, less what has landed.
+dependencies by that query in API mode, less what that section leaves out.
 
 ### Scheduling › Later stages
 

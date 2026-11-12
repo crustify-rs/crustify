@@ -169,8 +169,9 @@ through the Git common directory, which rejects anything but a fast-forward.
 
 ### 4.4 Progress
 
-The progress recorded while waves run, in `schedule.json` and the dashboard's usage and
-campaign cells, is committed on the working branch whenever no module is integrating. No agent writes
+The progress recorded while waves run, in `schedule.json`, the dashboard's usage and
+campaign cells, and the `status` of a module in `modules.json` that a wrap batch ahead of
+its consumer freezes, is committed on the working branch whenever no module is integrating. No agent writes
 `schedule.json`, and no module branch changes it.
 
 ### 4.5 Integration
@@ -183,8 +184,10 @@ record, and the working branch still moves only by fast-forward.
 
 1. The working branch's tip is merged into the module's branch. The files every module
    adds to, the dashboard's rows, the raw bindings' allowlists, `src/lib.rs`'s module
-   declarations and the safe crate's export features, conflict additively: each conflict
-   keeps both sides, and the generated bindings are regenerated from the merged input. Any other conflict is a defect of the integration, resolved without
+   declarations and the safe crate's export features, conflict additively, and so does a
+   module's file in which two runs homed different items ahead of their consumers, with
+   the declarations of the modules on its path: each conflict
+   keeps both sides, a file's items in one of each of its regions, and the generated bindings are regenerated from the merged input. Any other conflict is a defect of the integration, resolved without
    discarding either side. No merge is committed while its tree holds a conflict marker,
    here or wherever a branch takes another by merge, such as a wave's branch taking the
    working branch, so that every branch forked from it starts from a tree that builds.
@@ -231,7 +234,8 @@ the settings it runs under, committed before its first wave.
 A module's branch is forked from its base before its first wave,
 once the waves of other modules that its waves depend on have been integrated. A module
 whose waves the order splits, such as one that wraps a cut dependency ahead of its
-consumer, runs once per contiguous run of its waves, each run on a branch forked anew
+consumer, or one whose wave waits for an item another module's run holds, as
+[`scheduling`](../../planning/scheduling/SKILL.md)'s Wrap batches section describes, runs once per contiguous run of its waves, each run on a branch forked anew
 from the working branch. In a port campaign, only the run that holds the last wave of the
 module's `wrap` and `port` items integrates it from C; an earlier run's integration merges
 its Rust alone, the module still C. Once a run has been integrated, its branch and worktree

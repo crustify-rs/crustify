@@ -43,8 +43,9 @@ modules of string lifecycle routines after those of the type-erased allocators t
 ## 2. Status
 
 A module's `status` is its decomposition's: `todo` while it may still change, and
-`frozen` from the launch of its first wave, of any kind, or earlier when the user freezes
-it, since that wave homes items in the module's file. A frozen module's decomposition, its
+`frozen` from the launch of the first batch that homes an item in its file, in its first
+wave, of any kind, or in a wrap batch that binds its items ahead of another module's
+consumer, or earlier when the user freezes it. A frozen module's decomposition, its
 file entries and the homes of its items, and its place in the order, change only when the
 user asks: a re-plan neither re-decomposes nor re-homes it, and moves no item into or out
 of it. What is derived from the code and the current rules, its `tests`, `depends_on`,
