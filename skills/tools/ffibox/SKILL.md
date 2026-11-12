@@ -43,8 +43,8 @@ revision. -->
 
 ## Binding and porting
 
-Binding reads `docs/ownership.md`, `docs/borrows.md`, `docs/patterns.md` and
-`docs/hand-written.md`; porting reads `docs/outbound.md` too.
+Binding reads `docs/ownership.md`, `docs/borrows.md`, `docs/patterns.md`,
+`docs/vtables.md` and `docs/hand-written.md`; porting reads `docs/outbound.md` too.
 
 ### Binding types
 
@@ -72,8 +72,10 @@ is a closure, a `CClosure` or a `CPayload`, which C reaches through its trampoli
 half is a C function with its context, a `CFn` or a `CFnBox`, which Rust calls, built only
 inside the crate through its `unsafe` constructor. A trampoline is the panic barrier,
 `callback::barrier`, which also guards an export's body.
-<!-- TODO: ffibox has no primitive yet for a struct of function pointers a library calls
-into, bound to a trait the Rust side implements: a binding hand-writes it until it does. -->
+A struct of function pointers a library calls into, implemented by a Rust trait, is a
+`CTable` whose slots `impl_cvtable!` mints, over the binding's own `unsafe impl CVtable`, as
+`docs/vtables.md` describes; a table C implements is held as any other C object. A family of
+hooks that carries no context is trampolines over `callback::barrier`, not a table.
 
 ### Binding symbols › Lifecycle strategies
 
