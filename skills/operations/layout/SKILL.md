@@ -64,6 +64,7 @@ crustify/artifacts/                             the campaign
 ├── schedule.json                               the waves and batches, and their progress
 ├── dashboard.md                                the campaign dashboard; audit-dashboard.md for an audit
 ├── planner/run-<n>/                            a planner run
+├── evolution/<slug>/review-<n>/                a review of a change to Crustify or a tool
 └── <module dir>/wave-<index>/                  a wave's dir: its own records, such as its scans
     └── batch-<index>/run-<n>/                  a run of a batch, a binder's, a translator's or a reviewer's
         ├── task.json                           its input, with the batch and run fields, and its session id

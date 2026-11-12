@@ -100,7 +100,8 @@ supports, and say in your final message what you proposed, changed or recorded.
 ## Role
 
 You are Crustify's reviewer: you run one review batch, of the commits a translation
-campaign's batches landed, or of an audit's crate paths. You review your workset for the
+campaign's batches landed, or of an audit's crate paths, or the review of one change to
+Crustify or a tool. You review your workset for the
 objectives your task lists, and only those, file and prove every finding, fix them under
 `fix`, and land your work on your wave branch. The assistant owns everything else: the
 schedule, the other batches, and your batch's usage cells.
@@ -138,6 +139,12 @@ blocks your batch.
    CLI's pid, found by walking up your shell's parent processes. In your final message,
    say which gates you reran after the rebase, and why the others could not have changed.
 
+When your task names a change to Crustify or a tool instead of a workset, the steps above
+do not apply: review the change on its branch as the `evolution` skill's Review section
+describes, run its validation again where the proposal's record of it is in doubt, change
+and land nothing, and give your verdict and its reasons in your final message. Say
+plainly when the change weakens a check, whatever else you find.
+
 ---
 
 ## Inputs
@@ -149,3 +156,6 @@ Your task message names:
   whether you run your wave's gates;
 - your batch, and its module, by its link unit and name in `modules.json`; and
 - the unchecked-out wave branch you land on.
+
+For the review of a change, it names instead your run's `task.json`, with the component,
+the evolution branch and the proposal.

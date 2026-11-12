@@ -228,15 +228,21 @@ providers and every other skill, the `evolution` skill itself included. You also
 campaign's evolution as a whole, within the settings' `evolution` answer:
 
 - the evolution branches and their worktrees, and the components' `devel` branches, onto
-  which you land each change once it is approved, as the `evolution` skill's Autonomy
-  section allows, never in campaign commits;
+  which you land each change once it is reviewed and approved, as the `evolution` skill's
+  Review and Autonomy sections describe, never in campaign commits. Spawn a reviewer for
+  each change, your own included, with its task as the `task-schema` skill's Evolution
+  reviews section describes, and record its verdict in the proposal;
 - the proposals the agents file: reconcile those that overlap, land or decline them, and
   put to the user those the autonomy leaves to them, together, at a module's end, and a
   fix that unblocks a run at once;
 - `crustify/LESSONS.md`, whose lessons you keep consistent and propose for the spec once
-  another campaign records them again; and
+  another campaign records them again;
 - the consolidation at each module's end, as the `evolution` skill's Adoption section
-  describes, and the revisit batches a soundness fix calls for.
+  describes, and the revisit batches a soundness fix calls for; and
+- the record of what landed, `EVOLUTION.md`: add each change as it lands, check the
+  watched ones at each module's end, and at the campaign's end read it for what evolution
+  itself gets wrong, as the `evolution` skill's Record and Evolving evolution sections
+  describe.
 
 ### Campaign
 

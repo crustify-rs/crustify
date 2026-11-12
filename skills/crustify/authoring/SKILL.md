@@ -153,6 +153,7 @@ serves. A tool is removed by deleting its skill.
 | what one run needs beyond its role | its task message, `task.md` |
 | what Crustify is for, which every change is judged against | `GOALS.md`, at Crustify's root |
 | how Crustify repairs and improves itself | [`evolution`](../evolution/SKILL.md) |
+| which changes landed, and whether each held | `EVOLUTION.md`, at Crustify's root |
 | a rule that holds for one target alone | that campaign's `crustify/LESSONS.md` |
 
 A rule that two agents share goes in a skill both read, not in both agents. A rule that

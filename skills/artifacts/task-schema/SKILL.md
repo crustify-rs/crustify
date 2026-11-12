@@ -208,3 +208,24 @@ mints: its instances share the one generic the type route writes for it, as
 A batch of a foundational module routes like any other. Its `module` and `foundational`
 name the module, which `modules.json` marks `foundational`, and its items with a lifecycle
 role are bound as strategies (`binding-symbols`, Lifecycle strategies).
+
+## 8. Evolution reviews
+
+An evolution review's task names the change it reviews, as
+[`evolution`](../../crustify/evolution/SKILL.md)'s Review section describes:
+
+```json
+{"backend": "claude", "billing": "subscription", "revisions": {"crustify": "<sha>", "wavefront": "<sha>"},
+ "component": "wavefront", "branch": "<campaign-id>/evolution/<slug>", "proposal": "crustify/evolution/<slug>"}
+```
+
+| root field | meaning |
+|---|---|
+| `backend`, `billing`, `model_proxy`, `session_id`, `args`, `revisions` | the [run fields](#1-run-fields) |
+| `component` | the component the change is made in: `crustify`, or a tool by name |
+| `branch` | the evolution branch that holds the change, in the component's repository |
+| `proposal` | the proposal's dir in the campaign's repository |
+
+All but `model_proxy`, `session_id` and `args` are required, and no other root field is
+accepted. It is written as `task.json` in the run's artifact dir,
+`crustify/artifacts/evolution/<slug>/review-<n>/`.
