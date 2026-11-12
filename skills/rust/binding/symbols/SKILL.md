@@ -128,7 +128,10 @@ A C macro is bound to a Rust form of its own:
 - a type-generating macro, to one generic type, through [`binding-types`](../types/SKILL.md),
   its instances aliases of it;
 - a constant macro, to a `const`, defined from its generated binding;
-- a symbol alias, through the safe wrapper of the symbol it names; and
+- a symbol alias, through the safe wrapper of the symbol it names, each of whose stand-ins
+  stands in for the alias too and carries its anchor beside the symbol's own: where the
+  symbol is a lifecycle primitive, the strategy methods that call it, as
+  [Lifecycle strategies](#5-lifecycle-strategies) describes; and
 - a macro that implements logic, to a function, `#[inline]`, or `const` where its body
   computes on its arguments alone, which reimplements the body and reaches C only for the
   symbols its expansion uses, through their safe wrappers, and for the fields it accesses,
