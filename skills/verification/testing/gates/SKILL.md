@@ -57,6 +57,15 @@ polled nor read while it runs. BSan reports false positives at the foreign bound
 only a true positive, a report that reproduces through the Rust side as a single test or
 standalone reproducer, becomes a UB finding.
 
+Every translation and review batch measures the consumer-facing API of its items against
+the tip it rebased onto, as [`ffimap`](../../../tools/ffimap/SKILL.md)'s Accounting › API
+stability section describes. An item's API is fixed by its first landing: a later landing
+that changes or removes it, a port, a later stage, a rebind or a review fix alike, breaks
+its consumers, and is kept only with its reason recorded in the batch's notes, such as a
+soundness fix; the measure does not fail the gate. A module's integration measures every
+item of the module against the module's base, and a ship point the whole crate against the
+previous ship point.
+
 When C changed, the configured C build and baseline run. A wrap-only batch with no C
 change does not need the full C baseline.
 

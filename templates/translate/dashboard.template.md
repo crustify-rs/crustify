@@ -42,6 +42,7 @@ and in Notes.
 - `+lifecycle` … `+misc`, `total` — the reports a review batch filed, by the reviews dir's
   sub-directory
 - safety audit columns — the Safety audit's metrics, as a landing changed them
+- API stability columns — the landing's items by how `ffimap api` classifies their consumer-facing API against its base: `kept`, `extended`, `changed`, `removed`, `new`, and `→Replaces` for the anchors a port moved; `unattributed` the crate's public items no anchor reaches, by module; `reasons` the changed and removed items with the reason the batch recorded
 - `cost` / `review cost` / `total` — a module's translation, review and combined cost;
   `module wall` — first launch to final gate; `Σ recorded agents` leaves the assistant
   out, `Σ campaign` adds it, without per-unit cells
@@ -185,6 +186,16 @@ Deterministic `ffimap`; no model.
 | **Σ first** |  |  |  |  | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>` pp** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>` pp** | **`±<n>`** |
 | **Σ review** |  |  |  |  | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>` pp** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>` pp** | **`±<n>`** |
 
+### Batches: API stability
+
+Deterministic `ffimap api`; no model.
+
+| module | wave | batch | objective | pass | kept | extended | changed | removed | new | →Replaces | unattributed | reasons |
+|---|---|---|---|---|---:|---:|---:|---:|---:|---:|---|---|
+| `<link-unit>/<module>` | `<n>` | `<n>` | wrap | first | `<n>` | `<n>` | `<n>` | `<n>` | `<n>` | `<n>` | `<modules changed>` | `<item>: <reason>` |
+| **Σ first** |  |  |  |  | **`<n>`** | **`<n>`** | **`<n>`** | **`<n>`** | **`<n>`** | **`<n>`** |  |  |
+| **Σ review** |  |  |  |  | **`<n>`** | **`<n>`** | **`<n>`** | **`<n>`** | **`<n>`** | **`<n>`** |  |  |
+
 ### Batches — review: PoC + reports
 
 `<model>` on `<backend>`.
@@ -230,6 +241,16 @@ Deterministic `ffimap`; no model.
 | `<link-unit>/<module>` | `<n>` | `<n>` | wrap | review | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` pp | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` | `±<n>` pp | `±<n>` |
 | **Σ first** |  |  |  |  | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>` pp** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>` pp** | **`±<n>`** |
 | **Σ review** |  |  |  |  | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>` pp** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>`** | **`±<n>` pp** | **`±<n>`** |
+
+### Batches: API stability
+
+Deterministic `ffimap api`; no model.
+
+| module | wave | batch | objective | pass | kept | extended | changed | removed | new | →Replaces | unattributed | reasons |
+|---|---|---|---|---|---:|---:|---:|---:|---:|---:|---|---|
+| `<link-unit>/<module>` | `<n>` | `<n>` | wrap | first | `<n>` | `<n>` | `<n>` | `<n>` | `<n>` | `<n>` | `<modules changed>` | `<item>: <reason>` |
+| **Σ first** |  |  |  |  | **`<n>`** | **`<n>`** | **`<n>`** | **`<n>`** | **`<n>`** | **`<n>`** |  |  |
+| **Σ review** |  |  |  |  | **`<n>`** | **`<n>`** | **`<n>`** | **`<n>`** | **`<n>`** | **`<n>`** |  |  |
 
 ### Batches — review: PoC + reports
 

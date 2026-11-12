@@ -29,7 +29,7 @@ The cells measured on the tree a landing commits:
 
 - for a batch, under the route its items' `kind` selects, as
   [`task-schema`](../../artifacts/task-schema/SKILL.md)'s Routes section gives it: its rows
-  in that route's `Batches`, tests and `Batches: safety audit` tables, and for a review batch in
+  in that route's `Batches`, tests, `Batches: safety audit` and `Batches: API stability` tables, and for a review batch in
   `Batches — review: PoC + reports`, each placed in module, wave and batch order under
   its `pass`, and for a module pass, which spans both routes, in `Module passes`; those
   tables' `Σ` rows; and the `Coverage stats` table and the Overview's LoC
@@ -38,7 +38,8 @@ The cells measured on the tree a landing commits:
 
 They are filled in the landing's last commit, and measured against the integration branch
 tip it was rebased onto: coverage as [`testing-builds`](../../verification/testing/builds/SKILL.md)'s Coverage section measures
-it, and the safety audit columns as the changes in the dashboard's Safety audit metrics. A
+it, the safety audit columns as the changes in the dashboard's Safety audit metrics, and
+the API stability columns as `ffimap api` classifies the landing's items. A
 rebase that conflicts in the dashboard keeps every row both sides added, and the landing's
 cells, `Σ` rows included, are measured again where the gates its rebase reruns cover them;
 the others stand as measured on the batch's base.

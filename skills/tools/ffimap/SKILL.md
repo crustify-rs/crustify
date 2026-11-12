@@ -102,6 +102,29 @@ A batch's row in the dashboard's `Batches: safety audit` table is the change in 
 the Safety audit's metrics, from a scan of the tip its landing rebased onto to a scan of
 the tree it lands.
 
+### Accounting › API stability
+
+`ffimap api` measures a safe crate's consumer-facing API per C item, from rustdoc JSON, as
+its `docs/api.md` describes, read in full before its first use. A C item is the
+`<kind>::<path>` of a `Wraps` or `Replaces` anchor, its surface every stand-in the anchor
+names and the handles and owners tied to it, each judged by the contract
+[`binding-types`](../../rust/binding/types/SKILL.md)' Safe layout section gives a consumer:
+the methods every form offers, its reborrows and dereferences, and the traits a consumer
+can use, never a form's raw access or seams. A batch generates the safe crate's rustdoc
+JSON on the tip its landing rebased onto and on the tree it lands, with a nightly whose
+`format_version` the tool supports, and ffibox's, with private items, for the contracts of
+the forms it defines:
+
+```bash
+cargo +<nightly> rustdoc -p <crate> --lib -- -Z unstable-options --output-format json
+ffimap api diff <base>.json <tree>.json --dep <ffibox>.json --items "<the worklist's keys>" --format json
+```
+
+Each item comes out `kept`, `extended`, `changed`, `removed` or `new`, with its anchor's
+move from `Wraps` to `Replaces` where a port made it. The batch's row in the dashboard's
+`Batches: API stability` table counts them over its worklist, and over the crate's
+unattributed public items, compared per module.
+
 ### Accounting › Records
 
 An unseeded scan of the unsafe and FFI surface is recorded at each batch's, wave's and
