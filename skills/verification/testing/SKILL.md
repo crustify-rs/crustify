@@ -115,6 +115,11 @@ built from one description, and compare:
 They use multi-call sequences and compare after each step; single calls are only a
 baseline.
 
+The C side of a test meets the preconditions the C sets its callers, as the wrapper meets
+them before its own calls: a library's global initialisation, which writes state its
+routines read without synchronisation, runs before the test's first call that reads it,
+since the harness runs other tests beside it on other threads.
+
 They compare what the C specifies, through the mapping the safe API applies to it, such as
 its status returns as errors and its null pointers as absent values, and not what it leaves
 unspecified, such as an iteration order, a message's text, a pointer's value or an
