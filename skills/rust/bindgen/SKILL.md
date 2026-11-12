@@ -99,7 +99,7 @@ The build script runs in one of four modes:
 | bundled | by default, but for a wrapper whose `c/` is still its whole library | `c/`, built statically into `OUT_DIR` by the target's own build system, in the configuration of the `plain` variant |
 | shared | the `shared` feature | `c/`, built as shared libraries into `OUT_DIR`, the same way |
 | system | the `system` feature, and by default for a wrapper whose `c/` is still its whole library | an install, found through `<LIB>_DIR`, then `pkg-config` |
-| campaign | `CRUSTIFY_BUILD_VARIANT` names a variant, or `CRUSTIFY_BUILD_DIR` a private build | the variant's build, recorded in `crustify/artifacts/build.json` |
+| campaign | `CRUSTIFY_BUILD_VARIANT` names a variant, or `CRUSTIFY_BUILD_DIR` a private build | the variant's build, recorded in `crustify/artifacts/build.json`: its static archive, when it records one, else its shared libraries |
 
 The campaign's repository sets `CRUSTIFY_BUILD_VARIANT` to `plain` in its
 `.cargo/config.toml`, so that every build there runs in campaign mode unless the variable
@@ -137,10 +137,15 @@ the committed bindings. A build that does not enable the feature, such as the cr
 documentation, uses the committed bindings unchecked; the tests and gates always enable it.
 The bindings it generates are compared with the committed ones: a difference fails the
 build, naming the regenerated file, unless `CRUSTIFY_BINDINGS_UPDATE` is set, in which case
-they are written over `bindings.rs` and `static_fns.c`. It links the variant's shared
-libraries with an rpath to them, so that every test runs against the instrumented C it
-was built for, and has its test binaries export what the remaining C resolves to, as
-shared mode does.
+they are written over `bindings.rs` and `static_fns.c`. It links the C the variant built,
+so that every test runs against the instrumented C it was built for. A variant that
+records a `static` archive, as [`setup`](../../workflows/setup/SKILL.md)'s Builds section
+describes, has it linked statically, with the libraries its shared library links, so that
+the Rust reaches the internal functions the shared library does not export, and the
+remaining C resolves the exports within the same link, as bundled mode's does; only the
+out-of-tree libraries' installs of the same variant take an rpath. A variant that records
+none has its shared libraries linked with an rpath to them, and the test binaries export
+what the remaining C resolves to, as shared mode does.
 
 No build links two copies of a module: a mode links either a module's C or the Rust that
 replaces it, never both, and the Rust static library that the target's remaining C links

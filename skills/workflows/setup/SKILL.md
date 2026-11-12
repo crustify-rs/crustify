@@ -72,6 +72,17 @@ command changes. The commands carry no job count, which each build takes as
 each is smoke-tested once built. The shared variants are rebuilt after a landing changes
 the compiled target.
 
+Every symbol a batch binds or ports links from each variant. A target whose library
+exports only its public API, through hidden visibility or a symbol map, exports none of
+its internal functions, which are most of what a port campaign binds. Each of its variants
+then also archives the objects of every link unit's library into a static archive, by the
+last step of its `build` command, and records it as the variant's `static`, a path
+relative to its `dir`, which campaign mode links instead of the shared library, as
+[`bindgen`](../../rust/bindgen/SKILL.md)'s Build modes section describes. Hidden visibility
+keeps a symbol linkable within one link, so the archive reaches every function the C
+defines with external linkage, in the target's own configuration, which stays as it is;
+the target's own C consumers still link its shared library.
+
 A campaign's target is the host's: Linux, with glibc, on a 64-bit architecture. Each variant links the
 out-of-tree libraries the target uses from their side campaigns' local installs of the
 same variant, as [`dependencies`](../../planning/dependencies/SKILL.md)'s Sources section describes,
