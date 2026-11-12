@@ -100,7 +100,11 @@ Safety contracts that are incorrect, incomplete or ambiguous:
   caller who honours it can still reach undefined behaviour, or it asks for something the
   implementation does not need;
 - the `// SAFETY:` justification of an `unsafe` block: the invariant it claims does not
-  hold on every path that reaches the block, or no comment justifies the block at all.
+  hold on every path that reaches the block, or no comment justifies the block at all;
+- an obligation stated on code that C calls once a value is handed to it, such as the
+  members of a callback table a safe constructor builds for C to install: C, not the Rust
+  caller, then chooses the arguments, often from data it reads, so no caller can honour it.
+  What the obligation excludes is refused in Rust, in front of the C, instead.
 
 A contract is tested by trying to break it: an input, a call sequence or an interleaving
 that honours the obligation, or reaches the block through safe code, and still violates
