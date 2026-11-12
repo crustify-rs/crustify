@@ -129,6 +129,13 @@ entry, not a copy, so a mount redirects it with no re-install. Re-run
 `uv pip install -e /crustify-rs/<tool>` only when the mounted tree adds a console script,
 adds a dependency, or moves its package out of `src/`.
 
+A campaign that evolves Crustify or a tool commits to a working branch of its own in
+each, `<campaign-id>/devel`, and runs from those checkouts. Give such a campaign a
+workspace of its own, a clone of each of the four repositories, rather than the checkouts
+you work in: two campaigns cannot share a checkout, and a clone, unlike a Git worktree,
+carries its repository with it into the container. Fetch its working branches back from
+the clones when you take them into `devel`.
+
 Crustify itself is in the workspace with the other three, at `/crustify-rs/crustify`, and
 `/opt/crustify`, the plugin directory the assistant is opened with, is a symlink to it. So
 a mounted workspace supplies all four, and the plugin is the same tree you edit.

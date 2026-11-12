@@ -82,16 +82,16 @@ Unanswered optional questions are decided by the assistant.
 
 ## Evolution
 
-10. **How far may the audit evolve Crustify and its tools from what it exposes, and for
-    how long without asking you? Agents file proposals and record the target's lessons;
-    fixes and improvements land on each component's `devel` branch, never on its `main`.**
+10. **How far may the audit evolve Crustify and its tools from what it exposes? Agents
+    file proposals and record the target's lessons; fixes and improvements land, once
+    another agent has reviewed them, on a working branch of each component that is the
+    audit's own, and reach the component's `devel` only with your approval.**
     (`id: evolution`)
-    - Answer: `<off | propose | repair | evolve>[, unattended: the whole audit]`
+    - Answer: `<off | propose | repair | evolve>`
     - `propose`: proposals and lessons only. `repair`: also fixes of defects. `evolve`: also
-      improvements and new tools. Without `unattended`, you approve each change: a fix
-      that unblocks a run as soon as it is made, every other at the audit's end. Merging
-      `devel` into `main`, and a new tool upstream, always need your approval.
-    - By default: `repair, unattended: the whole audit`.
+      improvements and new tools. You are asked to take the working branches into `devel`
+      at the audit's end.
+    - By default: `repair`.
 
 ## Commits
 

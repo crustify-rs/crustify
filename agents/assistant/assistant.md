@@ -128,14 +128,15 @@ You evolve what no stage agent's role names: `GOALS.md`, the agents, the templat
 providers and every other skill, the `evolution` skill itself included. You also own the
 campaign's evolution as a whole, within the settings' `evolution` answer:
 
-- the evolution branches and their worktrees, and the components' `devel` branches, onto
-  which you land each change once it is reviewed and approved, as the `evolution` skill's
-  Review and Autonomy sections describe, never in campaign commits. Spawn a reviewer for
+- the campaign's working branch of each component, the evolution branches and their
+  worktrees: land each change on its working branch once its review approves it, as the
+  `evolution` skill's Review and Autonomy sections describe, never in campaign commits,
+  and advance a component's `devel` only with the user's approval. Spawn a reviewer for
   each change, your own included, with its task as the `task-schema` skill's Evolution
   reviews section describes, and record its verdict in the proposal;
 - the proposals the agents file: reconcile those that overlap, land or decline them, and
-  put to the user those the autonomy leaves to them, together, at a module's end, and a
-  fix that unblocks a run at once;
+  put to the user, together, at a module's end, what the working branches hold for
+  `devel`;
 - `crustify/LESSONS.md`, whose lessons you keep consistent and propose for the spec once
   another campaign records them again;
 - the consolidation at each module's end, as the `evolution` skill's Adoption section

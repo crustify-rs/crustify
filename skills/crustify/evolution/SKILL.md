@@ -98,11 +98,16 @@ generalized into the spec, by a proposal citing both.
 
 ## 6. Changes
 
-A change is made on a branch of the component's repository named
-`<campaign-id>/evolution/<slug>`, the campaign id being the name of the campaign's
-repository, from the component's `devel`, in a worktree beside that repository that lives
-only while the change is made. A branch holds one concern. Once the change lands on
-`devel`, the worktree is purged and the branch deleted. Its commits take the identity
+A campaign evolves each component, Crustify or a tool, on a working branch of its own in
+that component's repository, `<campaign-id>/devel`, the campaign id being the name of the
+campaign's repository. It is forked from the component's `devel` when the campaign first
+needs it, and the campaign's runs read and run the component from its checkout, so that a
+campaign runs on what it has changed and no other campaign does.
+
+A change is made on a branch named `<campaign-id>/evolution/<slug>`, forked from that
+working branch, in a worktree beside the repository that lives only while the change is
+made. A branch holds one concern. Once the change lands on the working branch, by a
+fast-forward, the worktree is purged and the branch deleted. Its commits take the identity
 [`versioning`](../../operations/versioning/SKILL.md)'s Identity section gives the
 campaign's.
 
@@ -117,7 +122,7 @@ campaign's.
   merged upstream only with the user's approval.
 
 A fix that unblocks the campaign, or that would prevent a defect in later campaigns, is
-landed on `devel` as soon as the autonomy allows, rather than batched.
+landed on the working branch as soon as it is reviewed, rather than batched.
 
 ## 7. Validation
 
@@ -150,40 +155,45 @@ The verdict is recorded in the proposal: approved, or rejected, with why, which 
 proposal open for another change or for the user.
 
 A change that weakens a check, a gate, a test, a lint, a review objective, a tool's
-detection or a rule of this skill, is not approved by the review alone, whatever the
-autonomy: it is put to the user with the review's reading, since a run that could loosen
-what judges it would pass by loosening it.
+detection or a rule of this skill, is marked so in the verdict and in its entry of the
+record, since a run that can loosen what judges it passes by loosening it: the user reads
+each such change on its own before `devel` takes it, as [Autonomy](#9-autonomy) describes.
 
 ## 9. Autonomy
 
 The settings' `evolution` answer sets how far a campaign evolves the harness:
 
-| answer | what lands |
+| answer | what lands on the campaign's working branches |
 |---|---|
 | `off` | nothing: no proposal, no lesson |
-| `propose` | proposals and lessons; nothing of Crustify or a tool changes |
-| `repair` | also each fix of a defect, on its component's `devel`, once approved |
-| `evolve` | also each improvement and discovery, on `devel`, once approved |
+| `propose` | nothing: proposals and lessons are filed, and no component changes |
+| `repair` | each fix of a defect |
+| `evolve` | also each improvement and discovery |
 
-Its `unattended` part says how long a change lands on `devel` without the user's approval:
-until the next ship point, across a number of modules, or for the whole campaign: the
-review's approval then stands in for the user's. Without
-it, the user approves each change: a fix that unblocks a run as soon as it is made, and
-every other at the next module's end, or at an audit's end. Merging a component's `devel`
-into its `main`, merging a new tool upstream, and changing `GOALS.md` or this skill always
-need the user's approval.
+A change lands on its component's working branch as soon as its review approves it,
+without the user's approval: the working branch is the campaign's own, and nothing else
+runs on it. `GOALS.md` is the exception: a change to it is proposed, never made, since it
+is what every other change is judged against.
+
+A component's `devel` is the user's gate. It takes a campaign's working branch only with
+the user's approval, asked for at each module's end and at the campaign's end, with the
+record's entries since the last advance, those the review marked as weakening a check
+first. Where `devel` has moved meanwhile, the working branch takes it by merge before it
+is offered. What the user declines is reverted on the working branch or stays there, as
+they say, and is recorded so. Merging a component's `devel` into its `main`, and merging a
+new tool upstream, need the user's approval too.
 
 A run that a defect blocks does not work around it. Where the answer lets fixes land, it
 makes the fix on its evolution branch; under `propose` it files the proposal, with its
-reproducer; and it ends, reporting which. The fix is reviewed, and lands at once where
-`unattended` covers it. Otherwise the user is asked at once: to approve the fix, or, under `propose`, whether it
-is to be made. The run is run again once the fix has landed, as a failed batch is.
+reproducer, and the user is asked at once whether the fix is to be made; and it ends,
+reporting which. The fix is reviewed and lands, and the run is run again, as a failed
+batch is.
 
 ## 10. Adoption
 
 Every run's `task.json` records the revisions of Crustify and the tools it launched
 under, as [`task-schema`](../../artifacts/task-schema/SKILL.md)'s Run fields section
-describes. A change that lands on `devel` takes effect as it lands: the runs launched
+describes. A change that lands on a working branch takes effect as it lands: the runs launched
 after it record its revision, and a run under way when it lands, which its recorded
 revisions and its landing's date tell, may have followed either. What landed before it
 under the old rules stays, unless the change fixes a soundness
@@ -191,8 +201,8 @@ defect: then the landings it affects are reviewed again, by a review batch with
 `revisit`.
 
 At each module's end, the campaign's evolution is consolidated: recurring lessons are
-proposed for the spec, open proposals are landed as the autonomy allows or put to the
-user, the revisit batches a soundness fix calls for are scheduled, and the watched changes
+proposed for the spec, open proposals are landed as the autonomy allows, the working
+branches are offered to the user for `devel`, the revisit batches a soundness fix calls for are scheduled, and the watched changes
 of the record are checked against the module.
 
 ## 11. Record
@@ -219,7 +229,8 @@ findings, failed runs, proposals and corrections. It is:
 - `confirmed` once a campaign other than the one it came from has ended, having exercised
   it, without the signal.
 
-The record is committed on `devel` at each module's end, in a commit of its own.
+The record is committed on Crustify's working branch, each entry with its change and each
+check at its module's end, and reaches `devel` with it.
 
 ## 12. Evolving evolution
 
@@ -230,6 +241,6 @@ met that no proposal answered; and how long a blocking defect held its run. Each
 signal of this guidance, as [Signals](#2-signals) lists them, and its proposal is on this
 skill, on the agents' evolution rules or on what the review checks.
 
-Such a proposal is validated and reviewed as any other, and lands only with the user's
-approval, as [Autonomy](#9-autonomy) describes, so that the mechanism never loosens what
-checks it.
+Such a proposal is validated and reviewed as any other, and is marked as one that changes
+what checks the rest, so that the user reads it on its own before `devel` takes it, as
+[Autonomy](#9-autonomy) describes.
