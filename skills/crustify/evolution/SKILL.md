@@ -64,6 +64,15 @@ Each signal goes to one destination:
   the evidence shows one wrong or improvable and another role owns it. Its owner applies
   the proposal or declines it, a plan's at the next planner run.
 
+A rule an agent cannot follow because its host refuses it, a write or a tool call
+blocked, or a launch mode that withholds what the role needs, is a defect of that host's
+provider, not of the rule: the provider prevents it with whatever its host offers, its
+agents' definitions, the settings and permissions it installs, its hooks, the mode it
+launches runs in, or the host's memory, and the spec is not bent around one host. Until
+the provider's change lands, a run that meets the refusal neither works around it nor drops
+what it could not do: it hands that to the assistant, in its final message, and the
+assistant carries it out.
+
 The test between a lesson and the spec is generality: a rule that can only be stated in
 the target's own names is a lesson, and one the spec takes is stated without them, as it
 would hold for any C codebase.
