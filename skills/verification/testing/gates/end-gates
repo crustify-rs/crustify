@@ -1,0 +1,359 @@
+#!/usr/bin/env python3
+"""end-gates: run a wave's or a module's end gates over a snapshot of a tree.
+
+    end-gates <tree> --logs <dir> [--stages plain,asan-ubsan,tsan,miri,bsan]
+              [--rev <rev> | --working-tree] [--package <name>] [--runner <cmd>]
+              [--link <path>]... [--skip-file <file>] [--stage-env <stage>:<K>=<V>]...
+              [--timeout <seconds>] [--parallel <n>] [--nightly <toolchain>]
+
+The gates of testing-gates' Regressions section, run exactly so:
+
+1. The tree's commit (`--rev`, HEAD by default), or its working tree with
+   `--working-tree`, is copied to a snapshot, `<tree>/crustify/tmp/gates-<label>`, so that
+   work goes on in the tree while the gates run. Each submodule, and each `--link` path
+   (such as the variants' builds dir), is symlinked from the tree into it, and the snapshot
+   is made a git repository, since a test may discover the repository it runs in.
+2. Each skip of `--skip-file` is checked against its test binary's `--list` before any
+   stage runs: a skip that names no test, or that would also skip another, since libtest
+   skips by substring, fails the run.
+3. The stages run in the order given:
+   - a variant (`plain` and each sanitizer but `bsan`): the workspace's tests,
+     `<runner> <variant> test --workspace --no-fail-fast`, with that stage's skips;
+   - `miri`: the package's test binaries built once on the pinned nightly, then one
+     `cargo miri test` per test binary, side by side, each skipping `compile_fail`;
+   - `bsan`: the test binaries built once, then one invocation per test binary, side by
+     side, each under `--timeout`, with that stage's skips.
+4. Each run writes `<logs>/<stage>[-<binary>].log`; `<logs>/summary.json` and
+   `summary.txt` record each run's command, exit status, duration, test-result lines and
+   failed tests. A run that exceeds its timeout reports `timed_out`.
+
+The skip file holds one skip per line, `<stage> <binary> <exact test name>`, the binary
+being `lib` or an integration test's name; `#` starts a comment. A variant stage's skips
+apply to every binary of the workspace.
+
+The job count is the environment's: `CARGO_BUILD_JOBS` for builds, `RUST_TEST_THREADS` for
+each binary's tests, as concurrency describes. The exit status is 0 when every run
+passed, 1 when any failed, and 2 when the run could not start.
+
+Standard library only.
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import shlex
+import shutil
+import subprocess
+import sys
+import time
+from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
+
+PER_BINARY = {"miri", "bsan"}
+
+
+class Refused(Exception):
+    """The run cannot start: a bad argument, tree or skip."""
+
+
+def git(tree: Path, *args: str) -> str:
+    return subprocess.run(["git", "-C", str(tree), *args], check=True,
+                          capture_output=True, text=True).stdout
+
+
+def snapshot(tree: Path, dest: Path, rev: str | None, links: list[str]) -> None:
+    """Copy `rev`, or the working tree when it is None, to `dest`, a fresh git repository."""
+    if dest.exists():
+        shutil.rmtree(dest)
+    dest.mkdir(parents=True)
+    if rev is not None:
+        with subprocess.Popen(["git", "-C", str(tree), "archive", rev],
+                              stdout=subprocess.PIPE) as archive:
+            subprocess.run(["tar", "-x", "-C", str(dest)], stdin=archive.stdout, check=True)
+        if archive.returncode != 0:
+            raise Refused(f"git archive {rev} failed")
+    else:
+        files = git(tree, "ls-files", "-co", "--exclude-standard", "-z")
+        names = [f for f in files.split("\0") if f and (tree / f).exists()
+                 and not (tree / f).is_dir()]
+        packed = subprocess.run(["tar", "-c", "-C", str(tree), "--null", "-T", "-", "-f", "-"],
+                                input="\0".join(names).encode(), check=True,
+                                capture_output=True).stdout
+        subprocess.run(["tar", "-x", "-C", str(dest), "-f", "-"], input=packed, check=True)
+    submodules = [line.split("\t", 1)[1] for line in
+                  git(tree, "ls-files", "-s").splitlines() if line.startswith("160000 ")]
+    for rel in submodules + links:
+        src, dst = tree / rel, dest / rel
+        if not src.exists():
+            raise Refused(f"{rel} is not in {tree}")
+        if dst.is_dir() and not dst.is_symlink() and not any(dst.iterdir()):
+            dst.rmdir()
+        elif dst.exists() or dst.is_symlink():
+            raise Refused(f"{rel} is tracked in the snapshot; link only what git leaves out")
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        dst.symlink_to(src.resolve())
+    subprocess.run(["git", "init", "-q", str(dest)], check=True)
+
+
+def package_binaries(snap: Path, package: str | None) -> tuple[str, list[str]]:
+    """The package to test and its test binaries: `lib`, then each integration test."""
+    meta = json.loads(subprocess.run(
+        ["cargo", "metadata", "--no-deps", "--format-version", "1", "--offline"],
+        cwd=snap, check=True, capture_output=True, text=True).stdout)
+    pkgs = meta["packages"]
+    if package is None:
+        root = [p for p in pkgs if Path(p["manifest_path"]).parent.resolve() == snap.resolve()]
+        if len(root) != 1:
+            raise Refused("the workspace has no root package: name one with --package")
+        pkg = root[0]
+    else:
+        named = [p for p in pkgs if p["name"] == package]
+        if not named:
+            raise Refused(f"no package {package} in the workspace")
+        pkg = named[0]
+    bins = []
+    for t in pkg["targets"]:
+        if "lib" in t["kind"] or "rlib" in t["kind"]:
+            bins.insert(0, "lib")
+        elif "test" in t["kind"]:
+            bins.append(t["name"])
+    return pkg["name"], bins
+
+
+def selector(binary: str) -> list[str]:
+    return ["--lib"] if binary == "lib" else ["--test", binary]
+
+
+def read_skips(path: Path | None) -> dict[str, dict[str, list[str]]]:
+    skips: dict[str, dict[str, list[str]]] = {}
+    if path is None:
+        return skips
+    for n, raw in enumerate(path.read_text().splitlines(), 1):
+        line = raw.split("#", 1)[0].strip()
+        if not line:
+            continue
+        parts = line.split(None, 2)
+        if len(parts) != 3:
+            raise Refused(f"{path}:{n}: expected `<stage> <binary> <test name>`")
+        stage, binary, name = parts
+        skips.setdefault(stage, {}).setdefault(binary, []).append(name)
+    return skips
+
+
+class Gates:
+    def __init__(self, a: argparse.Namespace, snap: Path, logs: Path):
+        self.a, self.snap, self.logs = a, snap, logs
+        self.runner = shlex.split(a.runner)
+        self.results: list[dict] = []
+        self.stage_env: dict[str, dict[str, str]] = {}
+        for spec in a.stage_env:
+            stage, _, kv = spec.partition(":")
+            k, eq, v = kv.partition("=")
+            if not (stage and k and eq):
+                raise Refused(f"--stage-env {spec}: expected <stage>:<K>=<V>")
+            self.stage_env.setdefault(stage, {})[k] = v
+
+    def env(self, stage: str, **extra: str) -> dict[str, str]:
+        env = dict(os.environ)
+        if stage == "miri":
+            # Miri's builds kept apart from the variants', in the snapshot's target dir.
+            env.setdefault("CARGO_TARGET_DIR", str(self.snap / "target" / "miri"))
+        env.update(self.stage_env.get(stage, {}))
+        env.update(extra)
+        return env
+
+    def cargo(self, stage: str) -> list[str]:
+        """The command that runs cargo for `stage`, up to its subcommand."""
+        if stage == "miri":
+            return ["cargo", f"+{self.a.nightly}", "miri"]
+        return [*self.runner, stage]
+
+    def run(self, stage: str, name: str, cmd: list[str], env: dict[str, str],
+            timeout: int | None = None) -> dict:
+        log = self.logs / f"{name}.log"
+        start = time.monotonic()
+        timed_out = False
+        with open(log, "w") as out:
+            out.write(f"$ {shlex.join(cmd)}\n")
+            out.flush()
+            proc = subprocess.Popen(cmd, cwd=self.snap, env=env, stdout=out,
+                                    stderr=subprocess.STDOUT, start_new_session=True)
+            try:
+                rc = proc.wait(timeout=timeout)
+            except subprocess.TimeoutExpired:
+                timed_out = True
+                os.killpg(proc.pid, 9)
+                rc = proc.wait()
+        text = log.read_text(errors="replace")
+        result = {
+            "stage": stage, "run": name, "command": shlex.join(cmd), "exit": rc,
+            "timed_out": timed_out, "seconds": round(time.monotonic() - start, 1),
+            "results": [l for l in text.splitlines() if l.startswith("test result:")],
+            "failed": sorted({l[5:-len(" ... FAILED")] for l in text.splitlines()
+                              if l.startswith("test ") and l.endswith(" ... FAILED")}),
+            "log": str(log),
+        }
+        self.results.append(result)
+        self.write_summary()
+        return result
+
+    def write_summary(self) -> None:
+        (self.logs / "summary.json").write_text(json.dumps(self.results, indent=1) + "\n")
+        lines = []
+        for r in self.results:
+            state = "timed out" if r["timed_out"] else f"exit {r['exit']}"
+            lines.append(f"{r['run']}: {state}, {r['seconds']} s")
+            lines += [f"  {l}" for l in r["results"]]
+            lines += [f"  FAILED {t}" for t in r["failed"]]
+        (self.logs / "summary.txt").write_text("\n".join(lines) + "\n")
+
+    def listed(self, stage: str, package: str, binary: str) -> set[str]:
+        cmd = [*self.cargo(stage), "test", "-p", package, *selector(binary), "--",
+               "--list", "--format", "terse"]
+        out = subprocess.run(cmd, cwd=self.snap, env=self.env(stage), capture_output=True,
+                             text=True)
+        if out.returncode != 0:
+            raise Refused(f"{shlex.join(cmd)} failed:\n{out.stderr[-4000:]}")
+        return {l.rsplit(": ", 1)[0] for l in out.stdout.splitlines()
+                if l.endswith(": test") or l.endswith(": bench")}
+
+    def check_skips(self, skips, package: str, bins: list[str]) -> None:
+        stages = self.a.stages
+        for stage in skips:
+            if stage not in stages:
+                continue
+            for binary, names in skips[stage].items():
+                if binary not in bins:
+                    raise Refused(f"skip of {stage}: {package} has no test binary {binary}")
+                listed = self.listed("plain" if stage not in PER_BINARY else stage,
+                                     package, binary)
+                missing = [n for n in names if n not in listed]
+                if missing:
+                    raise Refused(f"skips of {stage} name no test of {binary}: "
+                                  + ", ".join(missing))
+                # libtest skips by substring unless `--exact`, which would also make
+                # exact any substring skip the runner adds, such as `compile_fail`:
+                # a skip is taken only where it names its test alone.
+                wider = {n: sorted(t for t in listed if n in t and t != n) for n in names}
+                wider = {n: ts for n, ts in wider.items() if ts}
+                if wider:
+                    raise Refused(f"skips of {stage} in {binary} would also skip: "
+                                  + "; ".join(f"{n} -> {', '.join(ts)}"
+                                              for n, ts in wider.items()))
+
+    @staticmethod
+    def skip_args(names: list[str]) -> list[str]:
+        return [a for n in names for a in ("--skip", n)]
+
+    def variant(self, stage: str, skips) -> None:
+        names = sorted({n for ns in skips.get(stage, {}).values() for n in ns})
+        cmd = [*self.cargo(stage), "test", "--workspace", "--no-fail-fast"]
+        extra = self.skip_args(names)
+        self.run(stage, stage, cmd + (["--", *extra] if extra else []), self.env(stage))
+
+    def per_binary(self, stage: str, package: str, bins: list[str], skips) -> None:
+        env = self.env(stage)
+        build = self.run(stage, f"{stage}-build",
+                         [*self.cargo(stage), "test", "-p", package, "--no-run"], env)
+        if build["exit"] != 0:
+            return
+        timeout = self.a.timeout if stage == "bsan" else None
+
+        def one(binary: str) -> None:
+            names = list(skips.get(stage, {}).get(binary, []))
+            tail = self.skip_args(names)
+            if stage == "miri":
+                tail += ["--skip", "compile_fail"]
+            cmd = [*self.cargo(stage), "test", "-p", package, *selector(binary)]
+            self.run(stage, f"{stage}-{binary}", cmd + (["--", *tail] if tail else []), env,
+                     timeout)
+
+        with ThreadPoolExecutor(max_workers=self.a.parallel or len(bins)) as pool:
+            list(pool.map(one, bins))
+
+
+def main(argv: list[str] | None = None) -> int:
+    p = argparse.ArgumentParser(prog="end-gates", description=__doc__,
+                                formatter_class=argparse.RawDescriptionHelpFormatter)
+    p.add_argument("tree", type=Path, nargs="?")
+    p.add_argument("--logs", type=Path, help="the dir each run's log and the summary go to")
+    p.add_argument("--stages", default="plain,asan-ubsan,tsan,miri,bsan",
+                   help="comma-separated, run in this order (default: %(default)s)")
+    src = p.add_mutually_exclusive_group()
+    src.add_argument("--rev", default="HEAD", help="the commit to snapshot (default: HEAD)")
+    src.add_argument("--working-tree", action="store_true",
+                     help="snapshot the working tree, tracked and untracked files git keeps")
+    p.add_argument("--label", help="the snapshot's name under crustify/tmp (default: the rev)")
+    p.add_argument("--package", help="the package whose test binaries run per binary "
+                                     "(default: the workspace's root package)")
+    p.add_argument("--runner", default="crustify/scripts/cargo-variant.sh",
+                   help="the command that runs cargo against a variant, given the variant "
+                        "first (default: %(default)s, from the snapshot)")
+    p.add_argument("--link", action="append", default=[],
+                   help="a path git leaves out, symlinked from the tree (repeatable); "
+                        "submodules are linked always")
+    p.add_argument("--skip-file", type=Path, help="lines of `<stage> <binary> <test name>`")
+    p.add_argument("--stage-env", action="append", default=[],
+                   help="<stage>:<K>=<V>, set for that stage's runs (repeatable)")
+    p.add_argument("--timeout", type=int, default=3600,
+                   help="seconds each BSan binary may run (default: %(default)s)")
+    p.add_argument("--parallel", type=int, default=0,
+                   help="test binaries run side by side (default: all)")
+    p.add_argument("--nightly", help="Miri's toolchain (default: the workspace's "
+                                     "`nightly` key, else the rust-toolchain file's)")
+    a = p.parse_args(argv)
+    if a.tree is None or a.logs is None:
+        p.error("the tree and --logs are required")
+    try:
+        tree = a.tree.resolve()
+        a.stages = [s for s in a.stages.split(",") if s]
+        rev = None if a.working_tree else a.rev
+        label = a.label or ("working-tree" if rev is None
+                            else git(tree, "rev-parse", "--short", rev).strip())
+        snap = tree / "crustify" / "tmp" / f"gates-{label}"
+        logs = a.logs.resolve()
+        logs.mkdir(parents=True, exist_ok=True)
+        snapshot(tree, snap, rev, a.link)
+        if a.nightly is None and "miri" in a.stages:
+            a.nightly = nightly_of(snap)
+        gates = Gates(a, snap, logs)
+        skips = read_skips(a.skip_file)
+        unknown = set(skips) - set(a.stages)
+        if unknown:
+            print(f"end-gates: skips of stages not run, ignored: {sorted(unknown)}",
+                  file=sys.stderr)
+        package, bins = package_binaries(snap, a.package)
+        gates.check_skips(skips, package, bins)
+    except (Refused, subprocess.CalledProcessError) as e:
+        print(f"end-gates: {e}", file=sys.stderr)
+        return 2
+    print(f"end-gates: snapshot {snap}, logs {logs}", file=sys.stderr)
+    for stage in a.stages:
+        if stage in PER_BINARY:
+            gates.per_binary(stage, package, bins, skips)
+        else:
+            gates.variant(stage, skips)
+    gates.write_summary()
+    return 0 if all(r["exit"] == 0 for r in gates.results) else 1
+
+
+def nightly_of(snap: Path) -> str:
+    manifest = (snap / "Cargo.toml").read_text()
+    for line in manifest.splitlines():
+        k, _, v = line.partition("=")
+        if k.strip() == "nightly" and v.strip().startswith('"'):
+            return v.strip().strip('"')
+    for name in ("rust-toolchain.toml", "rust-toolchain"):
+        f = snap / name
+        if f.exists():
+            for line in f.read_text().splitlines():
+                k, _, v = line.partition("=")
+                if k.strip() == "channel":
+                    return v.strip().strip('"')
+            return f.read_text().strip()
+    raise Refused("no nightly named: pass --nightly")
+
+
+if __name__ == "__main__":
+    sys.exit(main())
