@@ -132,7 +132,7 @@ describes.
 A binding serves the code that consumes it, so what a batch's items use is wrapped right
 before the batch, and only what they use. Before a batch launches, every unit its items
 depend on has landed: in an earlier wave, or in a wrap batch of the batch's own wave that
-lands before it. What has not landed is wrapped by such a batch:
+lands before it. What has not landed, and no other batch holds, is wrapped by such a batch:
 
 - a cut dependency, which the order puts after its user: it is bound before its consumer,
   by a `wrap` batch, rather than reached through raw bindings, and its own wave ports it later
@@ -147,8 +147,8 @@ signature names, those of the fields its consumers access, and theirs in turn, c
 over the public-signature graph, which has no function bodies. A type none of whose
 fields its consumers access is wrapped opaque, with its lifecycle primitives only, so
 that the base it embeds is not brought in: its module extends it with that base when it
-ports it. The closure stops at what has landed, and may reach into further modules that
-run later.
+ports it. The closure stops at what has landed or another batch holds, and may reach
+into further modules that run later.
 
 A wrap batch ahead of its consumer holds only what no batch of `schedule.json` holds
 already, on any branch, a failed batch aside, so that no item is wrapped twice and an item
