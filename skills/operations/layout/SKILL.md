@@ -107,7 +107,9 @@ records, or, for an agent its host runs inside another session, by the agent's i
 
 `crustify/tmp/` is gitignored and holds anything residual that is no artifact: downloads,
 scratch builds and experiments, intermediate outputs. Residual files go nowhere else in the
-repository.
+repository. An agent's scratch is its own: its worktree's `crustify/tmp/`, never a
+directory the host hands every agent of a session, such as a scratchpad its subagents
+share, where another agent's run can overwrite it.
 
 ## 7. Reviews
 

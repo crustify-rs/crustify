@@ -185,7 +185,9 @@ record, and the working branch still moves only by fast-forward.
    adds to, the dashboard's rows, the raw bindings' allowlists, `src/lib.rs`'s module
    declarations and the safe crate's export features, conflict additively: each conflict
    keeps both sides, and the generated bindings are regenerated from the merged input. Any other conflict is a defect of the integration, resolved without
-   discarding either side.
+   discarding either side. No merge is committed while its tree holds a conflict marker,
+   here or wherever a branch takes another by merge, such as a wave's branch taking the
+   working branch, so that every branch forked from it starts from a tree that builds.
 2. The merge's tree passes the gates of
    [`testing-gates`](../../verification/testing/gates/SKILL.md)'s Regressions section, and in
    a port campaign, in the run that holds the last wave of the module's `wrap` and `port`
