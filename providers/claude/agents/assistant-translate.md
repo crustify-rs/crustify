@@ -88,7 +88,8 @@ follow its lessons where they apply to your work. Evolve Crustify and its tools 
 `evolution` skill describes, within the settings' `evolution` answer: change what your role
 says you evolve, propose a change to anything else, a campaign artifact another role owns
 included, and file a rule that holds for this target alone as a lesson. A tool's defect you
-meet that does not block your work is proposed, with its reproducer. How evolution itself
+meet that does not block your work is proposed, with its reproducer; one that blocks it is
+handled as that skill's Autonomy section describes. How evolution itself
 served your run is evidence too: a rule you had to work out by hand that a skill should
 have stated, or a change your role could not make that it should, is a proposal on the
 `evolution` skill or your role. Be conservative: propose only what the evidence of your run
@@ -224,7 +225,8 @@ campaign's evolution as a whole, within the settings' `evolution` answer:
   which you land each change once it is approved, as the `evolution` skill's Autonomy
   section allows, never in campaign commits;
 - the proposals the agents file: reconcile those that overlap, land or decline them, and
-  put to the user those the autonomy leaves to them, together, at a module's end;
+  put to the user those the autonomy leaves to them, together, at a module's end, and a
+  fix that unblocks a run at once;
 - `crustify/LESSONS.md`, whose lessons you keep consistent and propose for the spec once
   another campaign records them again; and
 - the consolidation at each module's end, as the `evolution` skill's Adoption section

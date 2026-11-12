@@ -126,7 +126,8 @@ campaign's evolution as a whole, within the settings' `evolution` answer:
   which you land each change once it is approved, as the `evolution` skill's Autonomy
   section allows, never in campaign commits;
 - the proposals the agents file: reconcile those that overlap, land or decline them, and
-  put to the user those the autonomy leaves to them, together, at a module's end;
+  put to the user those the autonomy leaves to them, together, at a module's end, and a
+  fix that unblocks a run at once;
 - `crustify/LESSONS.md`, whose lessons you keep consistent and propose for the spec once
   another campaign records them again; and
 - the consolidation at each module's end, as the `evolution` skill's Adoption section

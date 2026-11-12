@@ -82,10 +82,10 @@ Unanswered optional questions are decided by the assistant.
     (`id: evolution`)
     - Answer: `<off | propose | repair | evolve>[, unattended: the whole audit]`
     - `propose`: proposals and lessons only. `repair`: also fixes of defects. `evolve`: also
-      improvements and new tools. Without `unattended`, you approve each change at the
-      audit's end. Merging `devel` into `main`, and a new tool upstream, always need your
-      approval.
-    - By default: `propose`.
+      improvements and new tools. Without `unattended`, you approve each change: a fix
+      that unblocks a run as soon as it is made, every other at the audit's end. Merging
+      `devel` into `main`, and a new tool upstream, always need your approval.
+    - By default: `repair, unattended: the whole audit`.
 
 ## Commits
 

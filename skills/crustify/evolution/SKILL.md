@@ -136,10 +136,17 @@ The settings' `evolution` answer sets how far a campaign evolves the harness:
 | `evolve` | also each improvement and discovery, on `devel`, once approved |
 
 Its `unattended` part says how long a change lands on `devel` without the user's approval:
-until the next ship point, across a number of modules, or for the whole campaign; without
-it, the user approves each at the next module's end, or at an audit's end. Merging a component's `devel` into
-its `main`, merging a new tool upstream, and changing `GOALS.md` always need the user's
+until the next ship point, across a number of modules, or for the whole campaign. Without
+it, the user approves each change: a fix that unblocks a run as soon as it is made, and
+every other at the next module's end, or at an audit's end. Merging a component's `devel`
+into its `main`, merging a new tool upstream, and changing `GOALS.md` always need the user's
 approval.
+
+A run that a defect blocks does not work around it. Where the answer lets fixes land, it
+makes the fix on its evolution branch; under `propose` it files the proposal, with its
+reproducer; and it ends, reporting which. The fix lands at once where `unattended` covers
+it. Otherwise the user is asked at once: to approve the fix, or, under `propose`, whether it
+is to be made. The run is run again once the fix has landed, as a failed batch is.
 
 ## 9. Adoption
 
