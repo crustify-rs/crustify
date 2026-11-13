@@ -61,14 +61,17 @@ campaign:
   the safe types that bind them convert, as [`binding-types`](../binding/types/SKILL.md)'s Enums
   section describes;
 - `Default` is derived, and layout tests are generated;
-- C comments are kept as doc comments, and the generated modules' doctests are off, since
-  they hold C;
+- C comments are kept as doc comments, and no doctest is collected from them, since they
+  hold C: the generated modules are modules of the safe crate, which rustdoc cannot exempt
+  one by one, so its doctests are collected from a copy of the bindings whose C comments
+  are plain comments, which the build script writes beside the bindings it uses;
 - each allowlisted `static inline` function gets a compiled wrapper, `<name>__extern`, in
   `static_fns.c`, and is bound under its own name through
   `#[link_name = "<name>__extern"]`, so that it is called as an exported function is:
   bindgen's `wrap_static_fns`;
 - macro shims are bound like the functions they wrap; and
-- an empty allowlist generates nothing.
+- an empty allowlist generates no item: `bindings.rs` holds only bindgen's banner, and
+  `static_fns.c` stays, empty, so that every link unit has the files the Layout lists.
 
 An internal header's declarations are generated, and the wrappers of its `static inline`
 functions compiled, as the link unit's own translation units see them: with the include
@@ -127,7 +130,10 @@ ones unless the `bindgen` feature regenerates them into `OUT_DIR` from the heade
 C. Campaign mode's tests and gates always regenerate them.
 
 Bundled mode links the C statically, so that the bindings and the C they call always come
-from the same revision; it sets no rpath. Shared mode leaves the remaining C's references
+from the same revision; it sets no rpath. It builds `c/` against the out-of-tree libraries
+its configuration uses as the target's build system finds them on the building host; a
+dependent whose host lacks one supplies it through that build system's own search paths,
+such as `CMAKE_PREFIX_PATH` and `PKG_CONFIG_PATH`. Shared mode leaves the remaining C's references
 to ported modules undefined in its shared libraries, and the build script has the final
 binary export what resolves them (`-Wl,--export-dynamic-symbol=<name>` for each export),
 as a cdylib already does; the libraries are found beside the binary, through an `$ORIGIN`
@@ -146,11 +152,22 @@ its `lib/`, and takes the version from `lib/pkgconfig/<lib>.pc`. Without it, `pk
 finds the library, which is linked as `pkg-config` resolves it, with no rpath.
 
 An install carries neither the internal headers nor the functions its shared library does
-not export, whichever header declares them, public or internal. Once the bindings reach
-either, system mode cannot serve the crate: the build fails in it, naming what the install
-lacks, as it fails for a switched module, and bundled mode, whose build in `OUT_DIR` has
-both, becomes the crate's default. The `bindgen` feature then regenerates from that build's
+not export, whichever header declares them, public or internal, and the shared libraries
+shared mode builds lack the same functions, since the target's own configuration builds
+them. Once the bindings reach either, system mode cannot serve the crate, nor shared mode
+once they reach a function a shared library hides: the build fails in each, naming what
+the library lacks, as system mode fails for a switched module, and bundled mode, whose
+build in `OUT_DIR` has both, becomes the crate's default. The `bindgen` feature then regenerates from that build's
 headers, never from an install's.
+
+A link unit the target links as an executable, such as a command-line tool, has no
+library. Bundled mode compiles its translation units as the target's build system records
+them, without linking the executable, archives their objects and links the archive;
+campaign mode links them from the variant's static archive, which holds them, as
+[`setup`](../../workflows/setup/SKILL.md)'s Builds section describes; shared and system
+modes, which link libraries, refuse its feature, naming the modes that serve it. An archive
+member is linked only where it is referenced, so the executable's `main` enters a link only
+through a reference to its own translation unit, or to what only that unit defines.
 
 Campaign mode serves the campaign while it extends the bindings: batches add allowlist
 entries and shims, and the bindings follow from them. It needs bindgen, which the safe
@@ -178,7 +195,9 @@ section describes.
 ## 4. Extending
 
 The bindings grow with the batches: a batch whose items need a raw binding the bindings
-lack extends its own link unit's input, and nothing else:
+lack extends its own link unit's input, and nothing else, but where its link unit's
+headers name a type another link unit owns: that type joins `external.txt`, and the owning
+link unit's `allowlist.txt` too while its bindings lack it, so that it can be re-exported:
 
 1. its link unit's `allowlist.txt` gains only the FFI items its items need, and
    `wrapper.h` an internal header only when one of them is declared there;
@@ -202,4 +221,5 @@ their input. The gates that check it, and that the crate packages, are
 
 The safe crate is published with its raw bindings and the C it bundles. The packaged crate
 holds the layout above, `src/` and the files of `c/` that the bundled build reads, and
-nothing else of the repository.
+nothing else of the repository but its README and the files the package manager adds to
+every package, such as its manifest's original and its lockfile.

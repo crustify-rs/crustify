@@ -75,7 +75,8 @@ the compiled target.
 Every symbol a batch binds or ports links from each variant. A target whose library
 exports only its public API, through hidden visibility or a symbol map, exports none of
 its internal functions, which are most of what a port campaign binds. Each of its variants
-then also archives the objects of every link unit's library into a static archive, by the
+then also archives the objects of every link unit, a library's or an executable's, into
+one static archive, each object once, by the
 last step of its `build` command, and records it as the variant's `static`, a path
 relative to its `dir`, which campaign mode links instead of the shared library, as
 [`bindgen`](../../rust/bindgen/SKILL.md)'s Build modes section describes. Hidden visibility
