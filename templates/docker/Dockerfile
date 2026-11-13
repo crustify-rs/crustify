@@ -185,7 +185,8 @@ ENV DEBIAN_FRONTEND=noninteractive \
 # BorrowSanitizer supplies its matched Rust/Clang/LLVM toolchain. Add the
 # remaining generic build tools; `nasm`/`yasm` avoid a source build before a
 # crypto audit can start. libclang-dev supports ordinary bindgen builds; bsan
-# selects its own matched libclang when it instruments a build.
+# selects its own matched libclang when it instruments a build, which a
+# campaign's raw bindings override with the LLVM their manifest pins.
 RUN apt-get update && apt-get install -y --no-install-recommends \
         ca-certificates unzip xz-utils file lld libclang-dev \
         jq ripgrep \

@@ -29,7 +29,7 @@ translated yet through the raw bindings. How the safe crate uses them is
 │   ├── shims.c           the `crustify_<NAME>` macro shims
 │   ├── bindings.rs       generated, committed
 │   └── static_fns.c      generated wrappers of the allowlisted `static inline` functions, committed
-└── src/sys.rs            the `sys` module: one public module per link unit, including its committed or regenerated bindings
+└── src/sys.rs            the `sys` module: one public module per link unit, including its committed or regenerated bindings, or their doctest copy, and the re-exports of the types other link units own
 ```
 
 Everything a build reads sits inside the crate, so that the packaged crate builds on its
@@ -50,7 +50,8 @@ names, as the conventions' Exports section describes.
 ## 2. Generation
 
 The bindings follow from the headers at the `c/` revision, the allowlists, the generator
-settings below and the bindgen version, pinned exactly in `Cargo.toml`, so that generating
+settings below, the bindgen version, pinned exactly in `Cargo.toml`, and the LLVM pinned
+below, so that generating
 twice from the same input gives the same bytes. The settings are the same for every
 campaign:
 
@@ -63,15 +64,17 @@ campaign:
 - `Default` is derived, and layout tests are generated;
 - C comments are kept as doc comments, and no doctest is collected from them, since they
   hold C: the generated modules are modules of the safe crate, which rustdoc cannot exempt
-  one by one, so its doctests are collected from a copy of the bindings whose C comments
-  are plain comments, which the build script writes beside the bindings it uses;
+  one by one, so its doctests are collected from a copy of whichever bindings the build
+  uses, committed or regenerated, whose C comments are plain comments: the build script
+  writes it into `OUT_DIR`, and `src/sys.rs` includes it in their place under
+  `cfg(doctest)`;
 - each allowlisted `static inline` function gets a compiled wrapper, `<name>__extern`, in
   `static_fns.c`, and is bound under its own name through
   `#[link_name = "<name>__extern"]`, so that it is called as an exported function is:
   bindgen's `wrap_static_fns`;
 - macro shims are bound like the functions they wrap; and
 - an empty allowlist generates no item: `bindings.rs` holds only bindgen's banner, and
-  `static_fns.c` stays, empty, so that every link unit has the files the Layout lists.
+  `static_fns.c` stays, empty, so that every link unit has both generated files.
 
 An internal header's declarations are generated, and the wrappers of its `static inline`
 functions compiled, as the link unit's own translation units see them: with the include
@@ -103,7 +106,8 @@ those force-include it too, so that their C calls the same copy.
 
 The LLVM that generates the bindings, its libclang and the clang bindgen asks for the
 system include dirs, is pinned with the bindgen version: its install prefix and version, in
-the workspace manifest's `[workspace.metadata.crustify]`. Campaign mode generates with it
+the workspace manifest's `[workspace.metadata.crustify]`, as `bindgen-llvm` and
+`bindgen-llvm-version`. Campaign mode generates with it
 whatever drives the build, a sanitizer's or Miri's cargo driver included, which may name
 another libclang of its own, and fails, naming both versions, when the pinned one is
 missing or reports another version. A dependent's regeneration into `OUT_DIR`, compared
@@ -166,8 +170,12 @@ them, without linking the executable, archives their objects and links the archi
 campaign mode links them from the variant's static archive, which holds them, as
 [`setup`](../../workflows/setup/SKILL.md)'s Builds section describes; shared and system
 modes, which link libraries, refuse its feature, naming the modes that serve it. An archive
-member is linked only where it is referenced, so the executable's `main` enters a link only
-through a reference to its own translation unit, or to what only that unit defines.
+member is linked only where one of its symbols is referenced, so a test that references
+the translation unit defining the executable's `main`, directly or through another member
+that references it, links a second `main` beside its harness's and fails to link. That
+unit's other symbols are therefore ported to exports first, so that the members which
+reference them stop pulling it in, and until then the units that pull it in are tested
+through the variant's executable, run as a child process.
 
 Campaign mode serves the campaign while it extends the bindings: batches add allowlist
 entries and shims, and the bindings follow from them. It needs bindgen, which the safe
@@ -195,9 +203,7 @@ section describes.
 ## 4. Extending
 
 The bindings grow with the batches: a batch whose items need a raw binding the bindings
-lack extends its own link unit's input, and nothing else, but where its link unit's
-headers name a type another link unit owns: that type joins `external.txt`, and the owning
-link unit's `allowlist.txt` too while its bindings lack it, so that it can be re-exported:
+lack extends its own link unit's input, and nothing else:
 
 1. its link unit's `allowlist.txt` gains only the FFI items its items need, and
    `wrapper.h` an internal header only when one of them is declared there;
@@ -206,6 +212,11 @@ link unit's `allowlist.txt` too while its bindings lack it, so that it can be re
    [`binding-symbols`](../binding/symbols/SKILL.md)'s Macros section describes;
 3. the bindings are regenerated, in campaign mode with `CRUSTIFY_BINDINGS_UPDATE` set; and
 4. the safe crate is built and tested against them.
+
+Where its link unit's headers name a type another link unit owns, the batch also extends
+what the re-export needs, and only that: the type joins its own link unit's `external.txt`,
+the owning link unit's `allowlist.txt` too while its bindings lack the type, and the link
+unit's module in `src/sys.rs` re-exports it from the owner's, under its C name.
 
 An allowlist or `wrapper.h` change alone leaves the C library as it is, so it reuses a
 prebuilt variant; a shim compiles with the crate, as [Build modes](#3-build-modes) describes.
@@ -220,6 +231,6 @@ their input. The gates that check it, and that the crate packages, are
 ## 6. Publishing
 
 The safe crate is published with its raw bindings and the C it bundles. The packaged crate
-holds the layout above, `src/` and the files of `c/` that the bundled build reads, and
-nothing else of the repository but its README and the files the package manager adds to
-every package, such as its manifest's original and its lockfile.
+holds the layout above, `src/`, the files of `c/` that the bundled build reads and the
+C's license files, and nothing else of the repository but its README and the files the
+package manager adds to every package, such as its manifest's original and its lockfile.
