@@ -130,14 +130,15 @@ Crustify's assistant talks to you and launches four kinds of agent:
 | planner | Decomposes the codebase into modules, one per translation unit, and schedules them into waves by their dependencies. |
 | binder | Wraps a batch: keeps its C and puts a safe Rust API in front of it. |
 | translator | Ports a batch to safe Rust. |
-| reviewer | Reviews what a wave landed for unsafety, undefined behavior and equivalence with the C, files a report and reproducer per finding, and fixes it. |
+| reviewer | Reviews what a wave landed, or an audited crate, for undefined behavior, unsafe contracts, equivalence with the C and the other review objectives, files a report and reproducer per finding, and fixes it when asked. |
 
 Agents run in parallel, each in its own Git worktree and seeing only its own batch. Every
 batch gets coverage-guided tests for equivalence with the C and for undefined behavior
 under ASan, UBSan, TSan, MSan, Miri and BorrowSanitizer, and, where it changes C, passes the
 target's own test suite before it lands; independent, adversarial reviewers then check each wave before its
 dependents start. The assistant reconciles the results and repairs what fails. An audit
-runs the reviewers alone over an existing crate.
+runs the reviewers alone over an existing crate, for every review objective its settings
+select, within a spending cap, and drafts disclosures without ever sending one.
 
 Deterministic tools ground the agents' judgement:
 

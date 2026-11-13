@@ -60,7 +60,17 @@ docker exec -it -w /target crustify-libgit2 \
 ```
 
 `crustify:assistant-audit` opens an audit's, in a container started the same way, with its
-own `/work` volume. The assistant waits for your instructions; ask it to start the campaign,
+own `/work` volume and the crate's checkout as `/target`. To run one headless from filled
+settings, copy [`audit/CRUSTIFY.template.md`](../audit/CRUSTIFY.template.md) to the
+checkout's `crustify/CRUSTIFY.md`, answer it, its `max-spend` included, and start it:
+
+```sh
+docker exec -w /target crustify-<crate> \
+    claude -p "Start the audit." --plugin-dir /opt/crustify \
+    --agent crustify:assistant-audit --dangerously-skip-permissions
+```
+
+The assistant waits for your instructions; ask it to start the campaign,
 or pass that as the first prompt with `-p` to run it headless, which a session without a
 terminal (`docker exec` without `-it`) needs.
 
@@ -113,7 +123,7 @@ paths unrelated to each other or to anything on your machine. The image carries
 a build-time clone of each, so leaving the mount off is fine; a workspace
 mounted here must carry a directory per tool and a crustify checkout, since each is
 reached through a path inside it that otherwise dangles — Crustify included.
-An audit run uses only ffimap.
+An audit needs none of the tools: ffimap, when it is present, only gives it hints.
 
 `/target` stays its own mount even when the target fork lives in the workspace:
 Crustify works in `/target`, and a target that is also under `/crustify-rs` is

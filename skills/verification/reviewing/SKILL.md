@@ -1,15 +1,15 @@
 ---
 name: reviewing
-description: "How landed work is reviewed: tiered review batches and module passes, depth by how long code lasts, worklists, objectives, reports, reproducers, fixes, gates and plan corrections. Read before reviewing a batch, filing a finding or correcting an earlier plan."
+description: "How landed work is reviewed: tiered review batches and module passes, depth by how long code lasts, worklists, objectives, fixes, gates and plan corrections; reviewing-reports gives the reports, reproducers and disclosures. Read before reviewing a batch or correcting an earlier plan."
 ---
 
 # Reviewing
 
 Review inspects work that has already landed, for a set of objectives, and files a report
-for every defect it finds. In a translation campaign, it inspects what each
+for every defect it finds, as [`reviewing-reports`](reports/SKILL.md) describes. In a translation campaign, it inspects what each
 translation batch landed before the waves that build on it start; in an audit, the modules of a crate
 that Crustify did not generate (see [`audit-workflow`](../../workflows/audit-workflow/SKILL.md)); and planner runs review the
-plan that earlier runs committed (see [Plan corrections](#9-plan-corrections)).
+plan that earlier runs committed (see [Plan corrections](#7-plan-corrections)).
 
 ## 1. Review batches
 
@@ -18,7 +18,8 @@ promoted, so that no wave builds on unreviewed work. A review batch is a batch o
 it reviews, in `schedule.json`, that `reviews` some of its landed translation batches, and
 lands on the same integration branch, as [`versioning`](../../operations/versioning/SKILL.md)
 names it. The wave is promoted
-once its translation batches and their reviews have landed. An audit's review waves are
+once its translation batches and their reviews have landed. An audit's review waves, and
+the crate pass that stands in for its module pass, are
 [`audit-workflow`](../../workflows/audit-workflow/SKILL.md)'s.
 
 Review is tiered. Each landing is reviewed within its wave, to the depth
@@ -28,7 +29,7 @@ exports and its tests. It is the last review batch of the last wave of the modul
 and `port` items, not of a port's later stages, marked
 `module_pass`, launched once every other batch of that wave has landed; its worklist is
 the module's paths, and it runs the wave's gates and the module's end gates, as
-[Gates](#7-gates) describes. A module whose run landed a single translation batch is
+[Gates](#5-gates) describes. A module whose run landed a single translation batch is
 reviewed by its module pass alone, whose workset is that batch's whole: a review of the
 batch before it would read the same code twice.
 
@@ -72,7 +73,7 @@ A review batch has one route:
 
 | route | worklist | workset |
 |---|---|---|
-| `commits` | commits that translation batches landed | the code they add or change, and what it reaches |
+| `commits` | commits that translation batches landed, or, in an audit, commits of the crate's own history | the code they add or change, and what it reaches |
 | `paths` | source files and directories of a crate, or named types, trait impls and functions in one | everything they define, or the named parts |
 | `reports` | none: the batch only revisits reports | the code the reports name |
 
@@ -86,6 +87,10 @@ type with its fields and its inherent impls, wherever they are; a trait impl, na
 `<trait> for <type>` as its header spells it, with its methods and associated items; a
 free function with nothing else. What they call and what implements their traits is read,
 but only the workset is reported on.
+
+A workset is reviewed from its source, to the depth [Depth](#11-depth) gives it. What a
+tool lists of it shows where the reading may start and cross-checks what the reading
+found; it never bounds the review, and code no tool flagged is reviewed all the same.
 
 ## 3. Objectives
 
@@ -184,86 +189,20 @@ shows the delta.
 The reports an earlier review filed, each rerun through its reproducer on the current
 tree. One that still reproduces stays a finding of its objective; one that no longer does
 has its report updated with the commit that changed the verdict; one that was never a
-defect is removed, with the reason in the commit message.
+defect is removed, with the reason in the commit message. Each report's class, and its
+disclosure's status, are checked again with it.
 
 ### 3.12 Disclosure (`disclose`)
 
-A `disclosure.md` beside each report that the user can send to the affected project's
-maintainers unchanged: under 450 words, following the project's conventions for
-disclosing security and UB issues, in an email-friendly format naming the maintainers when
-it goes by email first. It includes a small snippet and the sanitizer crash or failing
-assertion, offers the reproducer on request, and offers patches only under `fix`. It ends
-with: `Found by [Crustify](https://github.com/crustify-rs/crustify), an experimental
-UB/soundness auditing agent developed at UC Berkeley and running on <model name>, then
-manually reviewed and independently reproduced.`
+A `disclosure.md` beside each report that is worth sending to the affected project's
+maintainers, as [`reviewing-reports`](reports/SKILL.md)'s Disclosure section describes.
 
 ### 3.13 Fix (`fix`)
 
 Whether a review patches what it finds. Without it, a review changes nothing outside
 its reviews dir but the tests that fill the gaps `test-adequacy` finds.
 
-## 4. Reports
-
-A review batch files its findings under its reviews dir, as
-[`layout`](../../operations/layout/SKILL.md)'s Reviews section spells it,
-each in its own `<slug>` directory, holding its report and, when it has one, its
-reproducer, in the sub-directory of its objective:
-
-| objective | sub-directory |
-|---|---|
-| `unsafety` | `unsafe/` |
-| `contracts`, of a gateway | `contracts/ffi_export/` |
-| `contracts`, of other unsafe code | `contracts/ffi_import/` |
-| `ub`, on the safe interface | `ub_safe/` |
-| `ub`, on the unsafe interface | `ub_unsafe/` |
-| `ub`, through an export | `ub_export/` |
-| `equiv` | `equiv/` |
-| `logic` | `logic/` |
-| `ergonomics` | `ergonomics/` |
-| `idiom` | `idiom/` |
-| `conventions` | `conventions/` |
-| `misc` | `misc/` |
-
-A tool may add sub-directories for findings on its own output. A defect in a tool
-rather than in the reviewed codebase, Crustify included, is no finding: it is a proposal,
-with its reproducer, as [`evolution`](../../crustify/evolution/SKILL.md)'s Proposals
-section describes.
-
-A report states what is wrong, where, the evidence that proves it, and, under `fix`, how it
-was fixed. It names the tier that caught the finding, and the tiers that had the same code
-in scope before it and passed it. The tiers are a batch's own gates, a review batch, a
-module pass, a switch, a later stage's review, a revisit, a ship point's gates and a
-consumer. A finding caught by a later tier than the first that had it in scope is an
-escape. A finding of `ub` or `contracts` also names the pattern of
-[`soundness`](../../rust/soundness/SKILL.md) it is an instance of, or `new`. A finding that a switch, a ship point's gates or a consumer catches is filed by the
-review batch it is handed to, which names that tier. It carries everything needed to rerun
-its reproducer from a clean checkout: the exact command and the sanitizer output or failing
-assertion it produced. Neither a report nor a reproducer carries an API key, in a core dump
-or anywhere else: a reviews dir may be published.
-
-## 5. Reproducers
-
-A `ub`, `equiv` or `logic` candidate becomes a finding only once a reproducer proves it,
-and so does a `contracts` candidate that claims a contract can be broken. A contract that merely
-asks for more than the implementation needs, or a missing justification, is a finding
-without one.
-
-- A UB reproducer triggers one of the available sanitizers from Rust, and its report
-  carries the sanitizer's trace. One targeting the safe public API carries
-  `#[forbid(unsafe_code)]`; one targeting the unsafe API, or breaking a contract, honours
-  the `# Safety` obligation. One reaching an export calls it as C would, through its raw
-  binding, within the C declaration's contract.
-- An equivalence reproducer fails one of [`testing`](../testing/SKILL.md)'s equivalence
-  comparisons while running the raw C and the public Rust API, and its report carries the
-  failing assertion. Once the C is gone, a behaviour finding is a `logic` one.
-- A logic reproducer fails a Rust assertion of what the specification it cites requires,
-  and its report carries the failing assertion.
-
-Each reproducer is a standalone Cargo package: its `Cargo.toml` declares an empty
-`[workspace]` table and depends on the affected crate through a relative `path`, and its
-`src/main.rs` runs one scenario, so that running it exits non-zero on the affected commit.
-
-## 6. Fixes
+## 4. Fixes
 
 Under `fix`, every finding of the batch's objectives is patched:
 
@@ -285,7 +224,7 @@ outside one, the repository's contributor instructions. Every test a review adds
 describes and placed where the conventions place tests of its kind, or, outside a
 Crustify-generated batch, in the reviewed crate's own suite for that kind.
 
-## 7. Gates
+## 5. Gates
 
 The gates [`testing-gates`](../testing/gates/SKILL.md)'s Regressions section gives a wave's
 end run in its last review batch, which launches once every translation batch of the wave
@@ -298,13 +237,13 @@ finds in the reviewed codebase is a finding of the batch, filed as a UB report a
 batch's, and a report it leaves to no one is lost. A BSan report on an earlier wave's items belongs to the last wave's
 review.
 
-## 8. Landing
+## 6. Landing
 
 A review batch lands two commits, as [`versioning`](../../operations/versioning/SKILL.md)'s Landing section describes: first its
 `crustify/reviews/` changes, so the reproducers run on the affected commit, then its
 changes to the Rust tree, if any.
 
-## 9. Plan corrections
+## 7. Plan corrections
 
 A planner run that corrects what an earlier run decided files each correction as a finding
 under `crustify/reviews/planner/`: `modules/` for `modules.json` and

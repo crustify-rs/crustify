@@ -117,8 +117,9 @@ share, where another agent's run can overwrite it.
 A review batch's findings sit under its reviews dir, `crustify/reviews/<module dir>/<batch id>/`,
 such as `crustify/reviews/modules/libgit2/src/libgit2/refs.c/wave-3/batch-1/`, in the repository the review lands in, and a planner
 run's plan corrections under `crustify/reviews/planner/`, as
-[`reviewing`](../../verification/reviewing/SKILL.md)'s Reports and Plan corrections sections
-lay them out.
+[`reviewing-reports`](../../verification/reviewing/reports/SKILL.md)'s Reports section and
+[`reviewing`](../../verification/reviewing/SKILL.md)'s Plan corrections section lay them out. An audit's one note of nits sits at
+`crustify/reviews/notes.md`.
 
 ## 8. Evolution
 

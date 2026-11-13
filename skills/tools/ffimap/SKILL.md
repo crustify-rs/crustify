@@ -1,6 +1,6 @@
 ---
 name: ffimap
-description: "Deterministic counts and sites of a Rust crate's unsafe and FFI surface. Read before a batch lands (its safe-boundary scan and safety-audit cells), before planning an audit's worksets, and when reviewing for unsafety, contracts or UB."
+description: "Deterministic counts and sites of a Rust crate's unsafe and FFI surface. Read before a batch lands (its safe-boundary scan and safety-audit cells), when reviewing for unsafety, contracts or UB, and, as a hint only, when planning an audit's scope and worksets."
 ---
 
 # ffimap
@@ -147,7 +147,9 @@ campaign's in `crustify/artifacts/`. A module's end is the scan of the last wave
 
 A review locates the sites of its objectives with a scan, `--sites` with their counters,
 and keeps those in its workset: the code its commits add or change, or its modules and
-the types, trait impls and functions they name.
+the types, trait impls and functions they name. The sites are where the reading starts,
+as [`reviewing`](../../verification/reviewing/SKILL.md)'s Worklists section describes; an
+audit's review is the same review with no scan at all.
 
 - `unsafety`: `fn.unsafe.pub`, `raw_ptr.field.pub`, `raw_ptr.fn_sig_arg.safe.pub` and
   `raw_ptr.fn_sig_ret.safe.pub`.
@@ -176,19 +178,22 @@ the types, trait impls and functions they name.
 
 ## Audit
 
+### Audit workflow › Scope and priority
+
+In an audit a scan is a hint. Where the settings' `tool-hints` answer allows one, it is
+run once each build configuration is in place, with `--sites` over the counters of the
+audit's objectives, and set beside the reading of the crate: a site the reading missed is
+read, and a module the scan reports nothing in is planned and reviewed from its source
+like any other. A scan decides neither what is in scope nor its order, and no workset is
+dropped, deferred or reviewed more lightly for having no sites.
+
+A scan that fails, that covers part of the crate, such as the files of one configuration,
+or that the source contradicts stops nothing: the plan stands on the reading, and the
+failure is proposed as ffimap's defect.
+
 ### Audit workflow › Worksets
 
-The audit's worksets are planned from a scan of the crate, run once each build
-configuration it audits is in place, with `--sites` over the counters of its objectives.
-A file outside every configuration scanned has no sites, and is planned from its source.
-
-For `ub`, the modules that hold the smells ffimap's review guidance lists for `ub` are
-reviewed first, in that order; for `contracts`, those that hold the crate's unsafe API and
-its justifications, the `contracts` counters above. The rest of the crate
-follows the smells.
-
-The modules are batched by their sites, and a module that is split keeps a type, trait
-impl or function with its sites in one batch. A site of `ty.storing_raw_ptr.of_which.impl_drop`,
-`.impl_clone`, `ty.impl_trait.of_which.std.send` or `.sync`, at either leaf, is a trait impl, named
-`Drop for <type>`, `Clone for <type>`, `Send for <type>` or `Sync for <type>`. Each review
-runs the same scan over its own modules, so the sites are not passed on.
+A site of `ty.storing_raw_ptr.of_which.impl_drop`, `.impl_clone`,
+`ty.impl_trait.of_which.std.send` or `.sync`, at either leaf, is a trait impl, named
+`Drop for <type>`, `Clone for <type>`, `Send for <type>` or `Sync for <type>`. A review
+that scans does so over its own modules, so the sites are not passed on.

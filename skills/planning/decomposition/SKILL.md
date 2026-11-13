@@ -33,7 +33,7 @@ the same plan: modules and link units with the next free indices, and the `todo`
 numbered after the highest index of a started wave. What is frozen, or has started, is kept as
 [`modules-schema`](../../artifacts/modules-schema/SKILL.md) and
 [`schedule-schema`](../../artifacts/schedule-schema/SKILL.md) describe. A run that corrects an earlier decision files a report on it, as
-[`reviewing`](../../verification/reviewing/SKILL.md#9-plan-corrections) describes.
+[`reviewing`](../../verification/reviewing/SKILL.md#7-plan-corrections) describes.
 
 ## 2. Modules
 

@@ -101,7 +101,8 @@ task.
 
 A review batch carries, instead of `objective`, an optional `objectives` array, and a Rust
 worklist instead of `items`: in a translate campaign, the commits its translation batches
-landed; in an audit, modules of the crate.
+landed; in an audit, modules of the crate, commits of its history or reports to revisit, as
+[`audit-workflow`](../../workflows/audit-workflow/SKILL.md)'s Worksets section gives them.
 
 ```json
 {
@@ -130,17 +131,21 @@ landed; in an audit, modules of the crate.
 {"objectives": ["revisit", "disclose", "fix"], "reports": ["crustify/reviews/<module dir>/<batch id>/ub_safe/<slug>"]}
 ```
 
+```json
+{"objectives": ["ub", "contracts", "logic"], "paths": ["src", "tests"], "module_pass": true, "wave_gates": true}
+```
+
 | root field | meaning |
 |---|---|
 | `objectives` | the review objectives to run; optional, every one that applies when absent |
-| `commits` | distinct commit ids, as they sit on its wave's branch; route `commits`: the `commits` of the batches its schedule entry `reviews`, whose `items` there list the C items they bound or ported |
+| `commits` | distinct commit ids, as they sit on its wave's branch; route `commits`: the `commits` of the batches its schedule entry `reviews`, whose `items` there list the C items they bound or ported, or, in an audit, commits of the crate's own history |
 | `paths` | repo-relative source files and directories; route `paths`. An entry may instead be `{"path", "types", "trait_impls", "functions"}`, naming the parts of a module too large to review whole: types, each with its fields and inherent impls; trait impls, each `<trait> for <type>` as its impl header spells it; and free functions |
 | `reports` | repo-relative report dirs, `<reviews dir>/<kind>/<slug>`, to revisit |
-| `wave_gates` | optional, `false` when absent: `true` on the wave's last review batch, launched once every translation batch of the wave has landed, which runs the wave's gates, as `reviewing`'s Gates section describes; only on a batch with `commits`, or on a module pass |
-| `module_pass` | optional, `false` when absent: `true` on a module pass, whose `paths` are its module's Rust file and its test files in each suite, and which carries `wave_gates` |
+| `wave_gates` | optional, `false` when absent: `true` on the wave's last review batch, launched once every translation batch of the wave has landed, which runs the wave's gates, as `reviewing`'s Gates section describes; only on a batch with `commits`, or on a module pass; in an audit, only on the crate pass |
+| `module_pass` | optional, `false` when absent: `true` on a module pass, whose `paths` are its module's Rust file and its test files in each suite, or, on an audit's crate pass, the crate's source and test roots, and which carries `wave_gates` |
 
-The batch and run fields are required, as on a translation task; the second and third
-examples leave them out. An audit's batch has a `null` `link_unit` and `module`, and a `false`
+The batch and run fields are required, as on a translation task; the examples after the
+first leave them out, and the last is an audit's crate pass. An audit's batch has a `null` `link_unit` and `module`, and a `false`
 `foundational`.
 A batch carries `commits` or `paths`, not both, and needs one of them or `reports`; one
 with only `reports` has route `reports`. A module path appears once, and a module object
