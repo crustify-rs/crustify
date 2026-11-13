@@ -57,7 +57,10 @@ planned, and the two stages come in either order. A `port/memory` before the str
 `port/layout` keeps its C layout and its handles, and moves its owners to Rust's allocator
 alone: they stay the C-layout owners, over a policy of Rust's allocator, since remaining
 C still holds pointers into the object and reads its fields, which a native owner's claim
-to sole access would break. Its `port/layout` then makes them the native ones.
+to sole access would break. Its `port/layout` then makes them the native ones. A
+`port/layout` before the struct's `port/memory` makes them the standard owners over C's
+allocator, `Box` and `Vec` with that allocator as their parameter, as the `ffibox` tool skill
+describes, and its `port/memory` then makes them `Box<Foo>` and `Vec<Foo>`.
 
 From its native layout on, from its port or its `port/layout`, a struct has by-value
 constructors, `Foo::new(…) -> Foo`, and a constructor that returns an owner builds the

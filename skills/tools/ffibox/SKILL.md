@@ -111,9 +111,17 @@ until each is ported, then the Rust ones. A `port/memory` before its `port/layou
 them ffibox's and changes their policy to `RustAlloc` alone: `FooBox` becomes
 `CBox<Foo, RustAlloc>`, its handles unchanged, until its `port/layout` makes it
 `Box<Foo>`, or `Pin<Box<Foo>>` while C keeps its address.
-<!-- TODO: ffibox's owners hold only `CCell` layout types, so an owner over C's allocator
-of a struct whose layout is native, between its `port/layout` and its `port/memory`, is
-hand-written until ffibox has one. -->
+
+Between a struct's `port/layout` and its `port/memory`, its storage is still allocated or
+freed in C's allocator, while its layout is native: `FooBox` is then the standard owner over
+that allocator, `Box<Foo, CAllocator<P>>`, `P` the policy of the family C allocates and
+frees it with, declared once by `impl_clenalloc!` and `impl_clendrop!`, and a counted run of
+them `Vec<Foo, CAllocator<P>>`; its `port/memory` makes them `Box<Foo>` and `Vec<Foo>`. C
+then frees the storage with the family's free alone and runs none of the struct's drop, so
+this holds only while the native type needs no drop, and C frees it otherwise through an
+exported release. A struct C keeps the address of stays on ffibox's owners until C no longer
+does, since a `Box` lets safe code move its value; and an owner ffibox already holds becomes
+a `Box` only through `CBox::into_box`, under its safety contract.
 
 ## Testing
 
