@@ -312,10 +312,12 @@ RUN if [ "${INSTALL_CLAUDE}" = "1" ]; then \
 # of the crustify checkout rather than three unrelated paths. One bind mount
 # there replaces all three, and the agents read the same tree the user edits.
 #
-# `/opt/venv/share/<name>` is the path a campaign's Cargo manifest names ffibox
-# by, so each is a symlink into the workspace. Both routes therefore land in
-# the mount when there is one: the symlink for ffibox, and the editable
-# installs below, which record /crustify-rs paths, for the commands.
+# A campaign's Cargo manifest names ffibox by its canonical checkout,
+# /crustify-rs/ffibox, never through a symlink, whose path compile-fail
+# snapshots would not normalize. `/opt/venv/share/<name>` stays a symlink into
+# the workspace for older manifests. Both routes land in the mount when there
+# is one, as do the editable installs below, which record /crustify-rs paths,
+# for the commands.
 #
 # wavefront and ffimap are Python distributions installed editable, so their
 # commands (`wavefront`, `ffimap`) land in /opt/venv/bin, on PATH, and run

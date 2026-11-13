@@ -35,7 +35,7 @@ its safe API excludes them too, by whatever means it uses.
 ### Binding workflow › Rust tree
 
 The workspace depends on ffibox by path, on the checkout the host provides, which is on
-the campaign's working branch of it, `ffibox = { path = "/opt/venv/share/ffibox" }` in Crustify's image, so that
+the campaign's working branch of it, `ffibox = { path = "/crustify-rs/ffibox" }` in Crustify's image, so that
 each run records its revision among its task's `revisions`. The path is the checkout's
 canonical one, with no symbolic link on it, and a `[patch]` that redirects another source of
 ffibox names the same: compile-fail snapshots normalize a path dependency only where the

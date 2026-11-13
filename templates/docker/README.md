@@ -123,8 +123,9 @@ for its builds and CodeQL data, say — while the toolchains stay in the
 workspace.
 
 `wavefront` and `ffimap` are installed editable from their workspace paths, so the
-commands on `PATH` run the mounted code. `/opt/venv/share/<tool>`, the path a campaign's
-manifest names ffibox by, is a symlink into the workspace. An editable install is a path
+commands on `PATH` run the mounted code. A campaign's manifest names ffibox by its canonical
+checkout, `/crustify-rs/ffibox`, never through a symlink, whose path compile-fail snapshots
+would not normalize; `/opt/venv/share/<tool>` stays a symlink into the workspace. An editable install is a path
 entry, not a copy, so a mount redirects it with no re-install. Re-run
 `uv pip install -e /crustify-rs/<tool>` only when the mounted tree adds a console script,
 adds a dependency, or moves its package out of `src/`.
