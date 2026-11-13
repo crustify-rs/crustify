@@ -58,9 +58,12 @@ planned, and the two stages come in either order. A `port/memory` before the str
 alone: they stay the C-layout owners, over a policy of Rust's allocator, since remaining
 C still holds pointers into the object and reads its fields, which a native owner's claim
 to sole access would break. Its `port/layout` then makes them the native ones. A
-`port/layout` before the struct's `port/memory`, where C releases the storage with its
-allocator's free alone, makes its boxes and runs the standard ones with that allocator as
-their parameter, and its `port/memory` then makes them `Box<Foo>` and `Vec<Foo>`.
+`port/layout` before the struct's `port/memory` makes its boxes and runs the standard ones
+with C's allocator as their parameter, where C releases the storage with that allocator's
+free alone, the native type is not zero-sized and needs no drop, and C keeps no pointer
+into it; its `port/memory` then makes them `Box<Foo>` and `Vec<Foo>`. A struct that meets
+none of those has no such owner: its owner is hand-written, or its `port/memory` comes no
+later than its `port/layout`.
 
 From its native layout on, from its port or its `port/layout`, a struct has by-value
 constructors, `Foo::new(…) -> Foo`, and a constructor that returns an owner builds the

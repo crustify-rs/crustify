@@ -106,24 +106,28 @@ with the Rust it reaches:
 Until a ported struct's `port/layout`, its handles are ffibox's, as
 [Binding types › Safe layout](#binding-types--safe-layout) describes; from it
 on, `FooRef` and `FooMut` are aliases of native borrows. Its owners stay ffibox's until its
-`port/memory`, or until its `port/layout` where that comes first, as below, their policy calling its lifecycle routines, C's through their raw bindings
-until each is ported, then the Rust ones. A `port/memory` before its `port/layout` keeps
-them ffibox's and changes their policy to `RustAlloc` alone: `FooBox` becomes
-`CBox<Foo, RustAlloc>`, its handles unchanged, until its `port/layout` makes it
-`Box<Foo>`, or `Pin<Box<Foo>>` while C keeps its address.
+`port/memory`, or until its `port/layout` where that comes first, as below, their policy
+calling its lifecycle routines, C's through their raw bindings until each is ported, then
+the Rust ones. A `port/memory` before its `port/layout` keeps them ffibox's and changes their
+policy to `RustAlloc` alone: `FooBox` becomes `CBox<Foo, RustAlloc>`, its handles unchanged,
+until its `port/layout` makes it `Box<Foo>`, or `Pin<Box<Foo>>` while C keeps its address.
 
 Between a struct's `port/layout` and its `port/memory`, its layout is native while C still
-allocates or frees its storage, and ffibox's owners, which hold only C-layout types, cannot
-hold it. Where C releases it with its allocation family's free alone, and the native type
-is not zero-sized, needs no drop (`!core::mem::needs_drop::<Foo>()`, asserted at compile
-time) and C does not keep its address, `FooBox` is `Box<Foo, CAllocator<P>>` and a counted
-run of them `Vec<Foo, CAllocator<P>>`, `P` the family's `Copy` policy with the alignment the
-family guarantees: an existing `CLenAlloc` policy of the family, or one declared with
-`impl_clenalloc!`'s `align =`. A box is built with `CAllocator::try_box`, which refuses an
-over-aligned type at compile time and returns C's out-of-memory failure, handed to C with
-`Box::into_raw_with_allocator`, and a run through `CVec::try_from`; a pointer C hands back
-is adopted with `Box::from_raw_in`, under the conditions `CBox::into_box`'s documentation
-lists. Its `port/memory` makes them `Box<Foo>` and `Vec<Foo>`.
+allocates or frees its storage, and ffibox's single-object owners, which hold only C-layout
+types, cannot hold it. Where C releases it with its allocation family's free alone, and the
+native type is not zero-sized and needs no drop (`size_of::<Foo>() != 0` and
+`!core::mem::needs_drop::<Foo>()`, both asserted at compile time), and C does not keep its
+address, `FooBox` is `Box<Foo, CAllocator<P>>` and a counted run of them `Vec<Foo,
+CAllocator<P>>`, `P` the family's `Copy` policy with the alignment the family guarantees: an
+existing `CLenAlloc` policy of the family, or one declared with `impl_clenalloc!`'s `align
+=`. A box is built with `CAllocator::try_box`, which refuses an over-aligned type at compile
+time and returns C's out-of-memory failure, and handed to C with
+`Box::into_raw_with_allocator`; a run grows with `Vec::try_reserve`, keeping C's
+out-of-memory failure, and is handed to C through `CVec::try_from` and `into_raw_parts`. A
+pointer C hands back is adopted with `Box::from_raw_in`, under the conditions
+`CBox::into_box`'s documentation lists, and a run with `Vec::from_raw_parts_in`, its length
+as its capacity, under the allocator's fit rule. Its `port/memory` makes them `Box<Foo>` and
+`Vec<Foo>`.
 <!-- TODO: a native-layout struct, between its `port/layout` and its `port/memory`, that C
 releases through a lifecycle routine of its own, that needs drop, whose address C keeps
 (`Pin<Box<Foo, A>>` needs an allocator std does not accept yet) or that is reference-counted
