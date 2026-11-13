@@ -98,8 +98,13 @@ so that the Rust names stay C's. The crate passes the header's path to the C bui
 crates that depend on it through its build script's metadata, under its `links` key, and
 those force-include it too, so that their C calls the same copy.
 
-<!-- TODO: the libclang that generates the bindings is not pinned yet, though a regenerated
-binding must match the committed one byte for byte. -->
+The LLVM that generates the bindings, its libclang and the clang bindgen asks for the
+system include dirs, is pinned with the bindgen version: its install prefix and version, in
+the workspace manifest's `[workspace.metadata.crustify]`. Campaign mode generates with it
+whatever drives the build, a sanitizer's or Miri's cargo driver included, which may name
+another libclang of its own, and fails, naming both versions, when the pinned one is
+missing or reports another version. A dependent's regeneration into `OUT_DIR`, compared
+with nothing, takes the LLVM its host finds.
 
 ## 3. Build modes
 
