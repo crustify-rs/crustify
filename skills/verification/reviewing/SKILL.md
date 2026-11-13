@@ -291,9 +291,11 @@ end run in its last review batch, which launches once every translation batch of
 has landed, and whose task's `wave_gates` says so. A module's end's
 run in its module pass, when the wave is the module's last: no other translation wave in
 `schedule.json` belongs to its module and runs after it. Each runs on the wave's tip
-before any change, and again on the landed tree under `fix`. Without
-`fix`, each true positive a gate finds is filed as a UB report. A BSan report on an earlier
-wave's items belongs to the last wave's review.
+before any change, and again on the landed tree under `fix`. Each true positive a gate
+finds in the reviewed codebase is a finding of the batch, filed as a UB report and, under
+`fix`, patched, whether or not the workset holds the code it reaches: the gate is the
+batch's, and a report it leaves to no one is lost. A BSan report on an earlier wave's items belongs to the last wave's
+review.
 
 ## 8. Landing
 
