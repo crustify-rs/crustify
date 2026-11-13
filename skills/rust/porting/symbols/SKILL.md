@@ -25,7 +25,11 @@ C ones, writes the out-parameters and buffers through the pointers C passed, and
 failure through the function's C error convention, its return and the error state the C
 function set, `errno` included, which the Rust behind it never sets. A panic is caught at
 the gateway and reported as a failure, or aborts where the function cannot fail: none
-unwinds into C. A variadic function's export cannot be defined on stable Rust, so a shim
+unwinds into C. The gateway checks each export against the raw binding of the C declaration
+it replaces, as [`testing-gates`](../../../verification/testing/gates/SKILL.md)' Regressions
+section asks, in a constant the compiler evaluates, `const _: () = { let _ = [sys::<name>,
+<name>]; };`, whose two function items coerce to one function-pointer type only where their
+signatures agree; the binding is allowlisted for it where the bindings lack it. A variadic function's export cannot be defined on stable Rust, so a shim
 keeps its C signature, as [`bindgen`](../../bindgen/SKILL.md)'s shims are compiled, and calls
 a fixed-arity export with the arguments it formats or unpacks. Its later stage, `port/unexport`, removes the
 export, with the raw binding and the allowlist entry that reach it, once no remaining C
