@@ -109,7 +109,10 @@ Each kind of field is expressed as follows:
   [Unions](#5-unions) describes.
 - Scalar and array variants have separate typed forms.
 - A type-erased field takes a generic element type when it is known, and the discovered
-  untyped lifetime strategy otherwise.
+  untyped lifetime strategy otherwise. One whose pointee's type a sibling field selects,
+  as a kind tag does, is presented as a union is: one tagged enum over the tag and the
+  pointer, each variant holding its type's safe form, read from both and written together,
+  so that no setter writes the tag alone.
 - `Send` and `Sync` are implemented only with a specific synchronization or immutability
   proof.
 
