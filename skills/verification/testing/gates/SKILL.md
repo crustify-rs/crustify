@@ -56,6 +56,11 @@ BSan, when available, is run for every batch, at a wave's end and at a module's 
   slow list, one invocation per test binary, as many side by side as
   [`concurrency`](../../../operations/concurrency/SKILL.md) describes, each under a `timeout`.
 
+The slow list keeps a slow test out of the ends, not out of a full run, which a test BSan
+cannot finish within that `timeout` fails every time. Such a test is sized for BSan: in the
+configuration BSan's build sets, it runs fewer inputs, chosen to keep reaching every path
+it checks, while every other build runs it whole.
+
 A batch runs the tests it wrote under Miri. Miri is also run at every wave's and module's
 end, as a gate over the whole workspace, less its slow list: one Miri run on the pinned
 nightly per test binary, the library's and each integration suite's, as many side by side as
