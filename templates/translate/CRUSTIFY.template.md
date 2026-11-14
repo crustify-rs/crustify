@@ -102,7 +102,8 @@ Unanswered optional questions use their defaults.
     - Answer: `<off | propose | repair | evolve>`
     - `propose`: proposals and lessons only. `repair`: also fixes of defects. `evolve`: also
       improvements and new tools. You are asked to take the working branches into `devel`
-      at each module's end and the campaign's end.
+      at each module's end and the campaign's end. A change to what judges the work, the
+      protected paths the `evolution` skill lists, waits for your approval at any level.
     - By default: `repair`.
 
 ## Commits

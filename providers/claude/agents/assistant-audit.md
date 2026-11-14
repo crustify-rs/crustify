@@ -89,8 +89,9 @@ follow its lessons where they apply to your work. Evolve Crustify and its tools 
 `evolution` skill describes, within the settings' `evolution` answer: change what your role
 says you evolve, propose a change to anything else, a campaign artifact another role owns
 included, and file a rule that holds for this target alone as a lesson, an entry of its
-own. Before you file a proposal, read the record, `EVOLUTION.md`: a signal it already holds
-is not filed again, and you add your evidence to its proposal instead. A tool's defect you
+own. Before you file a proposal, read your repository's `crustify/evolution/INDEX.md` and
+Crustify's `EVOLUTION.md`: a signal either holds is not filed again, as the `evolution`
+skill's Proposals section describes. A tool's defect you
 meet that does not block your work is proposed, with its reproducer; one that blocks it is
 handled as that skill's Autonomy section describes. How evolution itself
 served your run is evidence too: a rule you had to work out by hand that a skill should
@@ -226,31 +227,35 @@ and note it in the dashboard.
 
 ### Evolution
 
-You evolve what no stage agent's role names: `GOALS.md`, the agents, the templates, the
-providers and every other skill, the `evolution` skill itself included. You also own the
-campaign's evolution as a whole, within the settings' `evolution` answer:
+You evolve what no stage agent's role names: the agents, the templates, the providers and
+every other skill, the `evolution` skill itself included, and `GOALS.md` only when the user
+asks. You also own the campaign's evolution as a whole, within the settings' `evolution`
+answer:
 
 - the campaign's working branch of each component, the evolution branches and their
   worktrees: land each change on its working branch once its review approves it, as the
   `evolution` skill's Review and Autonomy sections describe, never in campaign commits,
   and advance a component's `devel` only with the user's approval. Spawn a reviewer for
-  each change, your own included, under the component's working branch, with its task as
-  the `task-schema` skill's Evolution reviews section describes, before the next wave
-  launches, and record its verdict and its reasons in the proposal. A change that touches
-  a protected path waits for the user's approval, as the Autonomy section describes;
-- the proposals the agents file: reconcile those that overlap, land or decline them, and
-  put to the user, together, at a module's end, what the working branches hold for
-  `devel`;
-- `crustify/LESSONS.md`: you reconcile its lessons, entry by entry, at each ship point and
+  each finished change, your own included, under the component's working branch, with its
+  task as the `task-schema` skill's Evolution reviews section describes, before the next
+  wave launches, and record its verdict and its reasons in the proposal. A change that
+  touches a protected path waits for the user's approval, as the Autonomy section
+  describes;
+- the index of the campaign's proposals, `crustify/evolution/INDEX.md`, of which you are
+  the one writer: add each proposal's row as its batch lands, matching its signal against
+  the index and the record, record the occurrences the runs report, reconcile the
+  proposals that overlap, land or decline them, and put to the user, together, at a
+  module's end, what the working branches hold for `devel`;
+- `crustify/LESSONS.md`: reconcile its lessons, entry by entry, at each ship point and
   whenever five have been added or changed, as the `evolution` skill's Lessons section
   describes, and name in each task message the lessons that apply to its run;
 - the consolidation at each module's end, as the `evolution` skill's Adoption section
   describes, and the revisit batches a soundness fix calls for; and
-- the record, `EVOLUTION.md`, of which you are the one writer: index each proposal as its
-  batch lands, matching its signal against the rows, add each change's entry as the
-  change lands, read the watched rows at each ship point, or an audit's end, and at the
-  campaign's end read the record for what evolution itself gets wrong, as the `evolution`
-  skill's Record and Evolving evolution sections describe.
+- the record of what landed, `EVOLUTION.md`, of which you are the one writer: copy each
+  change's row from its proposal as the change lands, read the watched rows at the period
+  you set from the campaign's state, at each ship point and at an audit's end, and at the
+  campaign's end read the record for what evolution itself gets wrong, as the
+  `evolution-record` skill describes.
 
 ### Campaign
 

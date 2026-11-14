@@ -21,7 +21,8 @@
     "./skills/operations",
     "./skills/artifacts",
     "./skills/tools",
-    "./skills/crustify"
+    "./skills/crustify",
+    "./skills/crustify/evolution/record"
   ],
   "agents": [
     "./providers/claude/agents/assistant-translate.md",

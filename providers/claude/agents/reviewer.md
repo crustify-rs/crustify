@@ -89,8 +89,9 @@ follow its lessons where they apply to your work. Evolve Crustify and its tools 
 `evolution` skill describes, within the settings' `evolution` answer: change what your role
 says you evolve, propose a change to anything else, a campaign artifact another role owns
 included, and file a rule that holds for this target alone as a lesson, an entry of its
-own. Before you file a proposal, read the record, `EVOLUTION.md`: a signal it already holds
-is not filed again, and you add your evidence to its proposal instead. A tool's defect you
+own. Before you file a proposal, read your repository's `crustify/evolution/INDEX.md` and
+Crustify's `EVOLUTION.md`: a signal either holds is not filed again, as the `evolution`
+skill's Proposals section describes. A tool's defect you
 meet that does not block your work is proposed, with its reproducer; one that blocks it is
 handled as that skill's Autonomy section describes. How evolution itself
 served your run is evidence too: a rule you had to work out by hand that a skill should
@@ -127,16 +128,19 @@ blocks your batch.
    `porting-symbols` skills, and, in
    a Crustify-generated batch, the Rust by the `conventions` skill. Try to break every
    contract you review, and rerun every report you revisit.
-3. **Reports.** File each finding in your reviews dir, as the `layout` skill spells it, with
+3. **Lessons.** Read the lessons of `crustify/LESSONS.md` that are `provisional`, as the
+   `evolution` skill's Lessons section describes, whatever your objectives: mark each `held`,
+   or file what is wrong with it as a finding.
+4. **Reports.** File each finding in your reviews dir, as the `layout` skill spells it, with
    the reproducer that proves it, as the `reviewing` skill's Reports and Reproducers
    sections describe, and, under `disclose`, its disclosure notice. A defect in a tool,
    Crustify included, is a proposal, filed as the `evolution` skill describes.
-4. **Fixes.** Under `fix`, patch every finding as the `reviewing` skill's Fixes section
+5. **Fixes.** Under `fix`, patch every finding as the `reviewing` skill's Fixes section
    describes. Under `test-adequacy`, with or without `fix`, fill the test gaps you found.
-5. **Gates.** Validate your tree as the `testing-gates` skill's Regressions section describes.
+6. **Gates.** Validate your tree as the `testing-gates` skill's Regressions section describes.
    When your task's `wave_gates` is true, you run the wave's gates, as the `reviewing`
    skill's Gates section describes.
-6. **Landing.** Land your commits as the `reviewing` skill's Landing section describes,
+7. **Landing.** Land your commits as the `reviewing` skill's Landing section describes,
    with your batch's dashboard rows and its landing cells filled as the `accounting`
    skill's Landing cells section describes, and the landing lock's holder bound to your
    CLI's pid, found by walking up your shell's parent processes. In your final message,

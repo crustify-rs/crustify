@@ -1,6 +1,6 @@
 ---
 name: evolution
-description: "How Crustify repairs and improves itself from what its campaigns expose: goals, signals, proposals, lessons, evolution branches, validation, review, autonomy, adoption, the record of what landed and how evolution itself evolves. Read before filing a defect in Crustify or a tool, proposing or making a change to either, or recording a campaign's lesson."
+description: "How Crustify repairs and improves itself from what its campaigns expose: goals, signals, proposals, lessons, evolution branches, validation, review, autonomy, adoption, and where the record of what landed is kept. Read before filing a defect in Crustify or a tool, proposing or making a change to either, or recording a campaign's lesson; `evolution-record` holds the record and how evolution itself evolves."
 ---
 
 # Evolution
@@ -87,39 +87,58 @@ A proposal is filed in the campaign's repository under `crustify/evolution/<slug
 - its destination;
 - the change, or the patch;
 - how it was validated;
+- the row the record takes when the change lands, as [`evolution-record`](record/SKILL.md) describes;
 - its review's verdict; and
 - its status: `open`; `deferred`, with what it waits for; `landed`, with the commit it
   landed as; `declined`, with why; or `superseded`, with the proposal that replaces it.
 
-A signal is filed once. Before a run files a proposal, it reads the [record](#11-record).
-Where a row already holds its signal, the run adds its evidence to that row's proposal, as
-an occurrence, and files nothing new. A lesson is not filed as a proposal: `LESSONS.md`
-records it.
+The campaign keeps an index of its proposals, `crustify/evolution/INDEX.md`, one row per
+proposal: its slug, its signal in a line, its status, the runs that met the signal, and the
+row of the record it matches, if any. The index has one writer per campaign, so that two
+runs never write a row at once. It is written as each batch's proposals land, and holds
+every proposal of the campaign before a wave launches.
 
-A defect in a tool found while reviewing is such a proposal, not a finding on the reviewed
-code, and is filed with its reproducer.
+A signal is filed once. Before a run files a proposal, it reads the index, in its worktree,
+and the record, in Crustify's checkout. Where neither holds its signal, it files the
+proposal. Where one does, it files nothing new:
+
+- when the proposal the index names is in the run's own repository, the run adds its
+  evidence to that proposal, as an occurrence;
+- otherwise, the run reports the occurrence in its final message, and the index's writer
+  records it.
+
+A lesson is not filed as a proposal: `LESSONS.md` records it. A defect in a tool found
+while reviewing is a proposal, not a finding on the reviewed code, and is filed with its
+reproducer.
 
 ## 5. Lessons
 
 The campaign's lessons sit in `crustify/LESSONS.md`, read by every run of the campaign
-before its first step. Each lesson is one entry: an id, a status, one rule, the evidence it
-rests on, and, on a line of its own, its scope: the modules, items or stages it holds for.
+before its first step. Each lesson is one entry, under a heading that is its id: a short
+slug no other lesson of the file has. An entry holds a status, one rule, the evidence the
+rule rests on, and, on a line of its own, its scope: the modules, items or stages it holds
+for.
 
-A lesson steers every later run, as a rule of the spec does, so it is reviewed as one is:
+A lesson steers every later run, as a rule of the spec does, so it is reviewed:
 
-- a new or changed lesson is `provisional` until a review batch of its wave has read it,
-  against its evidence, its scope and the generality test of
-  [Destinations](#3-destinations). It is `held` from then on;
-- a lesson the code no longer supports is `retired`. It stays in the file, marked, with
-  why;
-- an edit changes one entry. The file is never rewritten whole, since a rewrite drops what
+- A new or changed lesson is `provisional`. The first review batch whose worklist holds the
+  commit that added or changed it reads it, against its evidence, its scope and the
+  generality test of [Destinations](#3-destinations). A lesson no worklist holds, such as
+  one a wave's last review batch adds, is read by the next review batch the campaign
+  launches.
+- The review batch that reads a lesson marks it `held` in its landing. A lesson it judges
+  wrong, or one that belongs in the spec, is a finding of that batch: under `fix`, the
+  batch corrects the entry, retires it, or files the proposal it should have been.
+- A lesson the code no longer supports is `retired`. It stays in the file, marked, with
+  why.
+- An edit changes one entry. The file is never rewritten whole, since a rewrite drops what
   its writer did not think to keep.
 
 The lessons are reconciled at each ship point, and whenever five have been added or changed
 since the last pass: duplicates are merged, stale lessons are retired, scopes are checked,
-and a lesson that can be stated without the target's names is proposed for the spec. The
-next review batch reads the pass's edits. A lesson a second campaign records again is
-generalized into the spec, by a proposal citing both.
+and a lesson that can be stated without the target's names is proposed for the spec, as is
+one a second campaign records again, by a proposal citing both. A lesson the pass changes
+is `provisional` again.
 
 ## 6. Changes
 
@@ -164,13 +183,14 @@ prompted, such as a rule loosened or a waste removed, is validated the same way 
 effect is in doubt, on the item its evidence came from.
 
 A rerun shows that a change answers the case that exposed it, not that it holds: that is
-watched in the campaigns after it lands, as [Record](#11-record) describes.
+watched in the campaigns after it lands, as [`evolution-record`](record/SKILL.md) describes.
 
 ## 8. Review
 
 Every change is reviewed before it lands, on its evolution branch, by a run other than the
-one that made it. A finished change is reviewed before the next wave of its campaign
-launches, so that later runs work on the fix rather than around it. The review reads the proposal, the change and its validation, and checks
+one that made it. A change is finished once its proposal names its commit. A finished
+change is reviewed before the next wave of its campaign launches, so that later runs work on
+the fix rather than around it. The review reads the proposal, the change and its validation, and checks
 that:
 
 - the proposal's evidence shows the signal, and the change answers it;
@@ -178,9 +198,8 @@ that:
 - it is placed and written as [`authoring`](../authoring/SKILL.md) describes, and states
   no rule in the target's names;
 - its validation was run, and shows what the proposal says;
-- its entry of [Record](#11-record), which the change or its proposal drafts, names a
-  recurrence signal a campaign would observe, and `test` only where its test checks all of
-  it; and
+- the row its proposal drafts for the record, as [`evolution-record`](record/SKILL.md) describes, names a recurrence
+  signal a campaign would observe, and `test` only where its test checks all of it; and
 - whether it weakens a check, which the verdict marks.
 
 A review runs under the campaign's working branch of the component, never under the change
@@ -195,9 +214,9 @@ validation run again.
 The verdict is recorded in the proposal's Review section, approved or rejected, with its
 reasons; a rejection leaves the proposal open for another change or for the user.
 
-What only records what was decided, a status of [Record](#11-record) a check changes or a
-proposal's status, verdict and review, changes no rule and is not reviewed; an entry is
-reviewed with its change.
+What only records what was decided changes no rule and is not reviewed: a row of the index,
+a status of the record, or a proposal's status, verdict and review. A row of the record is
+reviewed in its proposal, with its change.
 
 A change that weakens a check, a gate, a test, a lint, a review objective, a tool's
 detection or a rule of this skill, is marked so in the verdict and in its entry of the
@@ -211,7 +230,7 @@ The settings' `evolution` answer sets how far a campaign evolves the harness:
 | answer | what lands on the campaign's working branches |
 |---|---|
 | `off` | nothing: no proposal, no lesson |
-| `propose` | nothing but the record's statuses: proposals and lessons are filed, and no rule changes |
+| `propose` | nothing but the index's rows and the record's statuses: proposals and lessons are filed, and no rule changes |
 | `repair` | each fix of a defect |
 | `evolve` | also each improvement and discovery |
 
@@ -219,21 +238,30 @@ A change lands on its component's working branch as soon as its review approves 
 the user's approval: the working branch is the campaign's own, and nothing else runs on it.
 
 The protected paths are the exception. They hold what judges the work, and a run that can
-loosen what judges it passes by loosening it:
+loosen what judges it passes by loosening it. In Crustify's repository they are:
 
 - `GOALS.md`;
-- this skill, `reviewing`, `testing`, `testing-builds` and `testing-gates`, with the
-  scripts beside them;
-- the reviewer's role;
-- the lints and their configuration; and
-- the permission settings a provider installs.
+- `skills/crustify/evolution/**` and `skills/verification/**`, the scripts beside those
+  skills included;
+- `skills/artifacts/task-schema/SKILL.md`;
+- the Lints section of `skills/rust/toolchain/SKILL.md`;
+- the Testing, Reviewing and Audit sections of `skills/tools/*/SKILL.md`;
+- `agents/common.md`, `agents/reviewer.md` and the Evolution section of
+  `agents/assistant/assistant.md`; and
+- `providers/generic/compose.py` and, under `providers/claude/`, `compose.py`, `spawn.py`,
+  `system-prompt.md`, `hooks.json` and `agents/reviewer.md`.
 
-A change that touches a protected path lands on the working branch only with the user's
-approval, whatever its review says. One case lands without it: the repair of a defect that
-blocks the campaign, once its review approves it and finds that it weakens no check. It is
-put to the user at the next ship point, with the changes that weaken a check. A change to
-`GOALS.md` is proposed and never made, unless the user asks for it, since it is what every
-other change is judged against.
+In a tool's repository, they are the code whose output a gate or a review reads.
+<!-- TODO: the tool skills do not list that code yet. -->
+
+A change whose diff touches a protected path lands on the working branch only with the
+user's approval, whatever its review says, and so does the removal of a `weakens a check`
+mark from the record. One case lands without that approval: the repair of a defect that
+blocks the campaign, once its review approves it and finds three things. The repair weakens
+no check. Every existing test of the check it touches is unchanged. The repair adds a
+regression test of its own. Such a repair is put to the user at the next module's end. A
+change to `GOALS.md` is proposed and never made, unless the user asks for it, since
+`GOALS.md` is what every other change is judged against.
 
 A component's `devel` is the user's gate. It takes a campaign's working branch only with
 the user's approval, asked for at each module's end and at the campaign's end, with the
@@ -265,69 +293,10 @@ defect: then the landings it affects are reviewed again, by a review batch with
 At each module's end, the campaign's evolution is consolidated: open proposals are landed
 as the autonomy allows, the working branches are offered to the user for `devel`, and the
 revisit batches a soundness fix or a declined weakening calls for are scheduled. The
-lessons are reconciled when [Lessons](#5-lessons) times it, and the record is kept as
-[Record](#11-record) describes.
+lessons are reconciled when [Lessons](#5-lessons) times it, and the record's rows are read
+when [`evolution-record`](record/SKILL.md) times it.
 
-## 11. Record
+## 11. The record
 
-Every signal a campaign files, and what became of it, is recorded in Crustify's own
-repository, in [`EVOLUTION.md`](../../../EVOLUTION.md), whatever component it concerns. A
-run reads it to tell whether a signal is new, and a later campaign to tell whether a change
-held. A row is written when a proposal is first filed, and kept through the proposal's
-life. It gives:
-
-- the campaign and proposal it came from. A change no proposal filed names its campaign and
-  `no proposal`, with where it came from;
-- the signal, and its occurrences: the runs that met it;
-- once the change lands, the component and commit it landed as, and its recurrence signal;
-  and
-- its status, with a change that weakens a check marked so.
-
-Until its change lands, a row's status is its proposal's: `open`, `deferred`, `declined` or
-`superseded`. From the landing it is `watched`, and then:
-
-- `recurred` once its signal is met again, with the evidence, which opens a proposal that
-  cites the row: the change was wrong or partial, or the validation and review that passed
-  it were; and
-- `confirmed` once a campaign other than the one it came from has ended, having exercised
-  it, without the signal.
-
-The recurrence signal is what a campaign would observe if the issue were back, in what a
-campaign produces anyway: a review finding of a category, a run that fails for a cause, a
-tool's error, a correction the user repeats. A change whose regression test checks all of
-it has `test` in its place and is not watched. One with no signal a campaign could observe
-has `none`, with why, and is not watched either.
-
-Each new signal is matched against the rows when it is indexed, as its batch lands. A
-signal a row already holds adds an occurrence to that row. A signal that matches a landed
-row's recurrence signal marks that row `recurred`. The rows still `watched` are read
-against the campaign's findings, failed runs and corrections at each ship point, and at an
-audit's end.
-
-A change's row is drafted with the change, in the change itself for a change to Crustify
-and in its proposal for a change to a tool, so that the review reads it. The record is
-committed on Crustify's working branch of the campaign, by one writer, so that two runs
-never write a row at once, and reaches `devel` with the branch. Rows are appended in filing
-order and statuses edited in place, so that a merge of two campaigns' working branches
-keeps both campaigns' rows. The record holds every change landed since 2026-11-12 and every
-signal filed since 2026-11-14; what came before is not recorded. Under `propose`, where no
-rule changes, the rows are still written and read, since a record commit changes no rule,
-and they are put to the user with the campaign's proposals. Under `off`, the record is not
-kept.
-
-## 12. Evolving evolution
-
-Evolution evolves from its own record, as everything else does from a campaign's. At a
-campaign's end the record and the campaign's proposals are read for what repeats: changes
-that recurred; changes the review rejected or the user declined, by cause; signals a run
-met that no proposal answered; how long a blocking defect held its run; and what the
-reviews bought for what they cost: per change, the findings each round made that held, those
-its author's own validation had already caught, the rounds it took and their cost. How deep
-a review reads, and how many rounds a kind of change gets, follow from that evidence, not
-from a fixed rule. Each is a
-signal of this guidance, as [Signals](#2-signals) lists them, and its proposal is on this
-skill, on the agents' evolution rules or on what the review checks.
-
-Such a proposal is validated and reviewed as any other, and is marked as one that changes
-what checks the rest, so that the user reads it on its own before `devel` takes it, as
-[Autonomy](#9-autonomy) describes.
+The record of what landed, `EVOLUTION.md`, and how evolution itself evolves from it are
+[`evolution-record`](record/SKILL.md)'s.

@@ -122,6 +122,7 @@ lay them out.
 
 ## 8. Evolution
 
-The campaign's lessons sit in `crustify/LESSONS.md`, and its proposals for Crustify and its
-tools under `crustify/evolution/<slug>/`, as [`evolution`](../../crustify/evolution/SKILL.md)
+The campaign's lessons sit in `crustify/LESSONS.md`, its proposals for Crustify and its
+tools under `crustify/evolution/<slug>/`, and the index of those proposals in
+`crustify/evolution/INDEX.md`, as [`evolution`](../../crustify/evolution/SKILL.md)
 describes.

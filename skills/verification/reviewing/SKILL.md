@@ -32,8 +32,9 @@ the module's paths, and it runs the wave's gates and the module's end gates, as
 reviewed by its module pass alone, whose workset is that batch's whole: a review of the
 batch before it would read the same code twice.
 
-A review batch also reads the lessons its wave's commits add or change, as
-[`evolution`](../../crustify/evolution/SKILL.md)'s Lessons section describes.
+A review batch also reads the campaign's lessons that are `provisional`, as
+[`evolution`](../../crustify/evolution/SKILL.md)'s Lessons section describes: those its
+worklist's commits add or change, and those no worklist holds.
 
 Review batches are packed eagerly, as the batches they review land: one launches as soon as
 the landed batches not yet reviewed fill it, and the last once every translation batch of
@@ -230,13 +231,14 @@ section describes.
 
 A report states what is wrong, where, the evidence that proves it, and, under `fix`, how it
 was fixed. It names the tier that caught the finding, and the tiers that had the same code
-in scope before it and passed it. The tiers are a batch's own gates, a wave's review, a
+in scope before it and passed it. The tiers are a batch's own gates, a review batch, a
 module pass, a switch, a later stage's review, a revisit, a ship point's gates and a
 consumer. A finding caught by a later tier than the first that had it in scope is an
-escape. It carries everything needed to rerun its reproducer from a clean checkout: the
-exact command and the sanitizer output or failing assertion it produced. Neither a report
-nor a reproducer carries an API key, in a core dump or anywhere else: a reviews dir may be
-published.
+escape. A finding that a switch, a ship point's gates or a consumer catches is filed by the
+review batch it is handed to, which names that tier. It carries everything needed to rerun
+its reproducer from a clean checkout: the exact command and the sanitizer output or failing
+assertion it produced. Neither a report nor a reproducer carries an API key, in a core dump
+or anywhere else: a reviews dir may be published.
 
 ## 5. Reproducers
 
