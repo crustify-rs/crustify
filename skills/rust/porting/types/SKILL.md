@@ -95,7 +95,10 @@ section describes, and the enum is not exported.
 
 A closed enum keeps its integer form, which `binding-types`' Enums section describes, only while
 remaining C uses it, its constants or values of its type. Its later stage, `port/layout`,
-removes that form, its C layout: its `repr`, its discriminants and its conversions. A
+removes that form, its C layout: its `repr`, its discriminants and its conversions. Since
+that stage leaves the safe API its consumers use as it is, as [`porting`](../SKILL.md)
+requires, the conversions a port writes for an enum no wrapper gave a safe API are
+crate-private: the module's unsafe regions convert through them, and no consumer does. A
 closed enum that no remaining C uses by its port has no integer form, and a flags enum or
 an enum without a name has no later stage. Which enums are closed is the plan's judgment,
 as [`scheduling`](../../../planning/scheduling/SKILL.md)'s Later stages section describes: a
