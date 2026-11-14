@@ -30,6 +30,12 @@ guaranteed by the library the bindings hold C memory through or the standard lib
 change. It exposes no field its unsafe code relies on, and no `unsafe fn` beyond the
 public ones whose obligation no type expresses.
 
+The obligation of an `unsafe fn` that stores a value C keeps, such as a pointer a later
+call follows, lasts as long as C holds it, in the object or in any copy C makes of it: until
+a setter replaces it or a call clears it, the contract naming which, or else as long as its
+holders live. It is never bounded by the calls that use the value, since safe code makes
+those after the `unsafe` call has returned.
+
 A confirmed C defect, a behaviour that departs from the C's specification as
 [`reviewing`](../../verification/reviewing/SKILL.md)'s `logic` objective orders it, is not
 carried into the safe API. Where Rust can tell the defect's input before the call, the
