@@ -150,7 +150,11 @@ section times them: as the remaining C stops using its types' layouts and storag
 calling its exports, they nativize the types and remove the exports. They belong to no run
 of the module and integrate nothing: each forks from the working branch and is promoted
 back to it, as [`versioning`](../../operations/versioning/SKILL.md)'s Lifecycle section
-describes, and changes no C, since the C that held it back has left the build.
+describes. A stage changes no C, since the C that held it back has left the build, but for
+what still names the export a `port/unexport` removes. That
+change is a commit on the fork's `main`, which the stage's commit records, as a switch's
+is, and the stage's C tests run over variants built from the C it leaves, as
+[Builds](#3-builds) describes for a switch.
 
 ## 5. Scope
 

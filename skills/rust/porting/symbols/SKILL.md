@@ -32,8 +32,12 @@ section asks, in a constant the compiler evaluates, `const _: () = { let _ = [sy
 signatures agree; the binding is allowlisted for it where the bindings lack it. A variadic function's export cannot be defined on stable Rust, so a shim
 keeps its C signature, as [`bindgen`](../../bindgen/SKILL.md)'s shims are compiled, and calls
 a fixed-arity export with the arguments it formats or unpacks. Its later stage, `port/unexport`, removes the
-export, with the raw binding and the allowlist entry that reach it, once no remaining C
-references it.
+export, with the raw binding and the allowlist entry that reach it and its declaration in its
+header, once no remaining C references it. C that only a configuration the target is built
+without compiles, such as another platform's, is no remaining C: like a test case
+configured out, as [`porting-workflow`](../../../workflows/porting-workflow/SKILL.md)'s Tests
+follow their modules section describes, it holds no export back, and a build under that
+configuration meets the function undeclared where it calls it.
 
 A lifecycle routine's port reimplements it behind the policy its type's port or wrap
 wrote, which it repoints at the Rust routine, and writes no API of its own, as `binding-types`'

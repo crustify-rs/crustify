@@ -264,7 +264,7 @@ A batch's branch and worktree, forked from its wave branch's tip, are created be
 launches, with its run dir, as [`layout`](../layout/SKILL.md) describes. The gitignored state its tree needs and does
 not build itself, such as shared analysis databases, is symlinked from the base checkout,
 and its `c/` is a worktree of the base checkout's submodule at the commit the superproject
-records, since no batch changes the C.
+records.
 Once the batch has landed, its worktree is purged; its branch stays until its commits are
 recorded in `schedule.json`, since they are derived from it, as
 [Landing](#4-landing) describes. A batch that fails keeps its branch and worktree for
