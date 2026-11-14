@@ -15,8 +15,10 @@ The gates of testing-gates' Regressions section, run exactly so:
    (such as the variants' builds dir), is symlinked from the tree into it, and the snapshot
    is made a git repository, since a test may discover the repository it runs in.
 2. Each skip of `--skip-file` is checked against its test binary's `--list` before any
-   stage runs: a skip that names no test, or that would also skip another, since libtest
-   skips by substring, fails the run.
+   stage runs: a skip that names no test fails the run. A run with skips passes libtest
+   `--exact`, so that a skip takes its one test and no other whose name holds it. A variant
+   stage's skip must also name one test of the whole workspace, since that stage runs
+   every binary with the same arguments: a name another binary holds too fails the run.
 3. The stages run in the order given:
    - `lint`: the workspace's format check, `cargo +<nightly> fmt --all --check`, then its
      lints with warnings denied, `<runner> plain clippy --workspace --all-targets
@@ -34,8 +36,7 @@ The gates of testing-gates' Regressions section, run exactly so:
    failed tests. A run that exceeds its timeout reports `timed_out`.
 
 The skip file holds one skip per line, `<stage> <binary> <exact test name>`, the binary
-being `lib` or an integration test's name; `#` starts a comment. A variant stage's skips
-apply to every binary of the workspace.
+being `lib` or an integration test's name; `#` starts a comment.
 
 The job count is the environment's: `CARGO_BUILD_JOBS` for builds, `RUST_TEST_THREADS` for
 each binary's tests, as concurrency describes. The exit status is 0 when every run
@@ -149,6 +150,7 @@ def read_skips(path: Path | None) -> dict[str, dict[str, list[str]]]:
 
 class Gates:
     def __init__(self, a: argparse.Namespace, snap: Path, logs: Path):
+        self.lists: dict[tuple[str, str], set[str]] = {}
         self.a, self.snap, self.logs = a, snap, logs
         self.runner = shlex.split(a.runner)
         self.results: list[dict] = []
@@ -242,19 +244,36 @@ class Gates:
                 if missing:
                     raise Refused(f"skips of {stage} name no test of {binary}: "
                                   + ", ".join(missing))
-                # libtest skips by substring unless `--exact`, which would also make
-                # exact any substring skip the runner adds, such as `compile_fail`:
-                # a skip is taken only where it names its test alone.
-                wider = {n: sorted(t for t in listed if n in t and t != n) for n in names}
-                wider = {n: ts for n, ts in wider.items() if ts}
-                if wider:
-                    raise Refused(f"skips of {stage} in {binary} would also skip: "
-                                  + "; ".join(f"{n} -> {', '.join(ts)}"
-                                              for n, ts in wider.items()))
+                self.lists[stage, binary] = listed
+            if stage not in PER_BINARY and stage != "lint":
+                # A variant stage hands every binary of the workspace the same skips.
+                names = sorted({n for ns in skips[stage].values() for n in ns})
+                counts = self.workspace_counts(stage)
+                shared = [n for n in names if counts.get(n, 0) != 1]
+                if shared:
+                    raise Refused(f"skips of {stage} name a test more than one binary of "
+                                  "the workspace holds: " + ", ".join(shared))
+
+    def workspace_counts(self, stage: str) -> dict[str, int]:
+        """How many test binaries of the workspace hold each test name."""
+        cmd = [*self.cargo(stage), "test", "--workspace", "--no-fail-fast", "--",
+               "--list", "--format", "terse"]
+        out = subprocess.run(cmd, cwd=self.snap, env=self.env(stage), capture_output=True,
+                             text=True)
+        if out.returncode != 0:
+            raise Refused(f"{shlex.join(cmd)} failed:\n{out.stderr[-4000:]}")
+        counts: dict[str, int] = {}
+        for l in out.stdout.splitlines():
+            if l.endswith(": test") or l.endswith(": bench"):
+                name = l.rsplit(": ", 1)[0]
+                counts[name] = counts.get(name, 0) + 1
+        return counts
 
     @staticmethod
     def skip_args(names: list[str]) -> list[str]:
-        return [a for n in names for a in ("--skip", n)]
+        """libtest skips by substring unless `--exact`: a run with skips is exact, so
+        that each skip takes the one test it names."""
+        return ["--exact", *(a for n in names for a in ("--skip", n))] if names else []
 
     def variant(self, stage: str, skips) -> None:
         names = sorted({n for ns in skips.get(stage, {}).values() for n in ns})
@@ -285,8 +304,12 @@ class Gates:
 
         def one(binary: str) -> None:
             names = list(skips.get(stage, {}).get(binary, []))
+            if stage == "miri" and names:
+                # `--exact` would make `compile_fail` exact too: name its tests.
+                names += sorted(t for t in self.lists[stage, binary]
+                                if "compile_fail" in t and t not in names)
             tail = self.skip_args(names)
-            if stage == "miri":
+            if stage == "miri" and not names:
                 tail += ["--skip", "compile_fail"]
             cmd = [*self.cargo(stage), "test", "-p", package, *selector(binary)]
             self.run(stage, f"{stage}-{binary}", cmd + (["--", *tail] if tail else []), env,

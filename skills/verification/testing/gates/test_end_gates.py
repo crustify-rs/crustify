@@ -144,10 +144,27 @@ class EndGates(unittest.TestCase):
         self.assertEqual(rc, 2)
         self.assertFalse((self.logs / "plain.log").exists())
 
-    def test_a_skip_that_would_skip_another_test_fails(self) -> None:
-        rc = self.gates("--stages", "plain", skips="plain lib tests::one\n")
+    def test_a_skip_whose_name_begins_another_tests_skips_it_alone(self) -> None:
+        rc = self.gates("--stages", "plain,bsan", "--stage-env", "bsan:RUST_TEST_THREADS=1",
+                        skips="plain lib tests::one\nplain it slow\n"
+                              "bsan lib tests::one\nbsan it slow\n")
+        self.assertEqual(rc, 0)
+        s = self.summary()
+        for run in ("plain", "bsan-lib"):
+            self.assertIn("--exact", s[run]["command"], run)
+            self.assertIn("--skip tests::one", s[run]["command"], run)
+            log = Path(s[run]["log"]).read_text()
+            self.assertIn("tests::one_more ... ok", log, run)
+            self.assertNotIn("tests::one ... ok", log, run)
+
+    def test_a_variant_skip_two_binaries_hold_fails(self) -> None:
+        (self.tree / "tests/other.rs").write_text("#[test]\nfn quick() {}\n")
+        sh(self.tree, "git", "add", "-A")
+        sh(self.tree, "git", "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "o")
+        rc = self.gates("--stages", "plain", skips="plain it quick\n")
         self.assertEqual(rc, 2)
         self.assertFalse((self.logs / "plain.log").exists())
+        self.assertEqual(self.gates("--stages", "bsan", skips="bsan it quick\nbsan it slow\n"), 0)
 
     def test_a_skip_of_an_unknown_binary_fails(self) -> None:
         rc = self.gates("--stages", "plain", skips="plain nope tests::one_more\n")
@@ -162,7 +179,7 @@ class EndGates(unittest.TestCase):
         self.assertEqual(set(list(s)[2:]), {"bsan-lib", "bsan-it"})
         self.assertNotEqual(s["plain"]["exit"], 0)
         self.assertEqual(s["plain"]["failed"], ["tests::fails_on_demand"])
-        self.assertIn("--skip slow", s["plain"]["command"])
+        self.assertIn("--exact --skip slow", s["plain"]["command"])
         for run in ("bsan-build", "bsan-lib", "bsan-it"):
             self.assertEqual(s[run]["exit"], 0, run)
         self.assertIn("--skip slow", s["bsan-it"]["command"])
