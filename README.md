@@ -4,24 +4,38 @@
 and Codex that turns LLMs into specialized translators that plan, run and review
 whole-repository campaigns. It can:
 
-- **Generate safe Rust bindings over C.**
-- **Migrate C to safe Rust.**
-- **Audit Rust for UB and memory-safety bugs.**
+- **Generate safe Rust bindings over C**
+- **Migrate C to safe Rust**
+- **Audit Rust for UB and memory-safety bugs**
 
 You set the goals and a few settings; Crustify does the rest, on its own or with you in
 the loop.
 
 ## Why Crustify
 
-- Driven by a generic, human-reviewed specification, not only a prompt.
-- Whole repositories, in parallel.
-- Grounded in deterministic tools: [wavefront](https://github.com/crustify-rs/wavefront),
+- **Follows a specification, not only a prompt.** A generic, human-reviewed specification
+  describes how the work is done.
+- **Takes a whole repository.** It breaks the repository into small workloads and
+  processes them in parallel.
+- **Is grounded in deterministic tools:**
+  [wavefront](https://github.com/crustify-rs/wavefront),
   [ffibox](https://github.com/crustify-rs/ffibox) and
   [ffimap](https://github.com/crustify-rs/ffimap).
-- Validated before it lands, with coverage-guided tests and adversarial review.
-- You choose the translator's autonomy.
-- Any agent harness, any billing.
-- Fine-grained cost tracking.
+- **Validates everything before it lands,** with coverage-guided tests and adversarial
+  review.
+- **Lets you choose its autonomy.** It runs on its own, or it waits for your approval at
+  the points you name.
+- **Runs on any agent harness, under any billing.**
+- **Tracks cost** for each batch, module and campaign.
+- **Improves itself as it works.** Each change to its specification or its tools is
+  validated and reviewed before it lands.
+
+Each kind of campaign has a short guide to why to run it with Crustify, and how:
+
+| campaign | guide | offers |
+|---|---|---|
+| generate bindings (`wrap`) or migrate C (`port`) | [Translating C to Rust](docs/translate.md) | planning, parallel batches, tests and regression gates with every batch, adversarial review, shipping with your approval |
+| audit an existing crate | [Auditing a Rust crate](docs/audit.md) | objectives for each bug class, proof under Miri and the sanitizers, optional fixing, regression checks, disclosure drafts, a spending cap |
 
 ## Results
 
@@ -115,6 +129,9 @@ anything. To answer up front, fill in a settings template,
 [`templates/audit/`](templates/audit/CRUSTIFY.template.md). The settings live in the
 campaign's repository as `crustify/CRUSTIFY.md`, which you can edit while it runs.
 
+The guides give the steps of each kind of campaign and where its results land:
+[Translating C to Rust](docs/translate.md) and [Auditing a Rust crate](docs/audit.md).
+
 ## How it works
 
 Every agent follows the same written specification, as skills: how the codebase is
@@ -132,13 +149,15 @@ Crustify's assistant talks to you and launches four kinds of agent:
 | translator | Ports a batch to safe Rust. |
 | reviewer | Reviews what a wave landed, or an audited crate, for undefined behavior, unsafe contracts, equivalence with the C and the other review objectives, files a report and reproducer per finding, and fixes it when asked. |
 
-Agents run in parallel, each in its own Git worktree and seeing only its own batch. Every
-batch gets coverage-guided tests for equivalence with the C and for undefined behavior
-under ASan, UBSan, TSan, MSan, Miri and BorrowSanitizer, and, where it changes C, passes the
-target's own test suite before it lands; independent, adversarial reviewers then check each wave before its
-dependents start. The assistant reconciles the results and repairs what fails. An audit
-runs the reviewers alone over an existing crate, for every review objective its settings
-select, within a spending cap, and drafts disclosures without ever sending one.
+Agents run in parallel. Each works in its own Git worktree and sees only its own batch.
+Every batch gets coverage-guided tests for equivalence with the C, and for undefined
+behavior under ASan, UBSan, TSan, MSan, Miri and BorrowSanitizer. Where a batch changes C,
+it also passes the target's own test suite before it lands. Independent, adversarial
+reviewers then check each wave before its dependents start. The assistant reconciles the
+results and repairs what fails.
+
+An audit runs the reviewers alone over an existing crate, for every review objective that
+its settings select and within a spending cap. It drafts disclosures and never sends one.
 
 Deterministic tools ground the agents' judgement:
 
@@ -149,12 +168,18 @@ Deterministic tools ground the agents' judgement:
 - [ffimap](https://github.com/crustify-rs/ffimap) measures the unsafe and FFI surface per
   batch, wave, module and campaign.
 
-You choose how much control to keep: run a campaign end to end, or approve its brief, plan
-one module and stop, and decide as questions come up; edit its settings mid-campaign to
-change course. Each stage runs on Claude Code, Codex or any other agent harness, with its
-own model, under a subscription or an API key, directly or through OpenRouter. A
-dashboard tracks tokens, cost and time per batch, module and campaign, next to coverage
-and the unsafe surface.
+You choose how much control to keep. Run a campaign end to end, or approve its brief,
+plan one module and stop, and decide as questions come up. To change course, edit its
+settings mid-campaign. Each stage runs on Claude Code, Codex or any other agent harness,
+with its own model, under a subscription or an API key, directly or through OpenRouter. A
+dashboard tracks tokens, cost and time for each batch, module and campaign, next to
+coverage and the unsafe surface.
+
+Crustify also evolves from what its campaigns expose. An agent that meets a defect or a
+missing rule in the specification or a tool files a proposal. You set how far a campaign
+may act on its proposals: not at all, by proposing only, by repairing defects, or by
+making improvements too. Each change is validated and reviewed by another agent before it
+lands, and reaches `devel` only with your approval.
 
 ## Repository
 
@@ -168,6 +193,10 @@ and the unsafe surface.
   other host
 - [`templates/`](templates/README.md): the settings and dashboard templates, an example
   of each artifact, and the Dockerfile
+- [`docs/`](docs/): a guide to each kind of campaign, [translation](docs/translate.md)
+  and [audit](docs/audit.md)
+- [`GOALS.md`](GOALS.md) and [`EVOLUTION.md`](EVOLUTION.md): what Crustify is for, and the
+  record of how it has changed
 
 ## Maintainers
 
