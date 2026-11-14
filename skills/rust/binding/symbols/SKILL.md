@@ -134,6 +134,12 @@ once. Four cases shape the type further:
   function is stored only from C, or through an `unsafe` setter whose contract carries the
   object's context, and is read back as its address, no callable.
 
+A function that calls a callback with an object it is working on lends that object to the
+callback. The analysis establishes which of the object's routines C allows from within the
+callback. One it does not allow, such as the function itself or one that resets the state
+the function resumes from, is refused there by the binding, since the callback holds an
+exclusive handle the borrow checker cannot tell from any other.
+
 When its sites hand ownership across differently, each distribution has its own distinctly
 named callable type over the one C function-pointer type.
 

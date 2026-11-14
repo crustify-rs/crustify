@@ -29,7 +29,8 @@ The analysis establishes:
   to read it, call back with it or free it;
 - construction, clone, and destruction paths;
 - states and transitions: the states each type's objects pass through, and the calls that
-  move them between states, in the orders C allows;
+  move them between states, in the orders C allows, with the calls a callback may make on
+  the object its caller lends it, and those that would corrupt the caller's state;
 - out-parameters: the pointer arguments a function only writes through;
 - string encodings, where a string is known to hold text or a path; and
 - failure reporting: the status or sentinel returns and the error state beside the call
