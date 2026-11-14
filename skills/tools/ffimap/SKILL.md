@@ -31,6 +31,15 @@ ffimap <workdir> --ffibox --sys-crates <the -sys crates> --regions ffi_import,ff
     > <file>.json
 ```
 
+Raw bindings that are a module of the crate, not a crate of their own, laid out and
+generated as [`bindgen`](../../rust/bindgen/SKILL.md) describes, are named to `--sys-crates`
+by their path, `crate::<path>`, beside the `-sys` crates that remain. A named module joins
+the inventory and leaves every other counter, as a `-sys` crate does. Left unnamed, its C
+types and functions are in no inventory, the cells that read it are taken over the other
+crates' alone, and the generated code counts as the crate's own, all with no error. A module
+that holds hand-written code beside its declarations is left unnamed, since naming it would
+take that code out of the scan.
+
 In a port campaign, a scan names with `--features` the export feature of every module not
 yet switched, as the [conventions](../../rust/conventions/SKILL.md)' Export features section
 names them, so that the `ffi_export` gateways compiled under them are counted. Every scan
