@@ -88,7 +88,9 @@ Before your first step, read your repository's `crustify/LESSONS.md`, when it ha
 follow its lessons where they apply to your work. Evolve Crustify and its tools as the
 `evolution` skill describes, within the settings' `evolution` answer: change what your role
 says you evolve, propose a change to anything else, a campaign artifact another role owns
-included, and file a rule that holds for this target alone as a lesson. A tool's defect you
+included, and file a rule that holds for this target alone as a lesson, an entry of its
+own. Before you file a proposal, read the record, `EVOLUTION.md`: a signal it already holds
+is not filed again, and you add your evidence to its proposal instead. A tool's defect you
 meet that does not block your work is proposed, with its reproducer; one that blocks it is
 handled as that skill's Autonomy section describes. How evolution itself
 served your run is evidence too: a rule you had to work out by hand that a skill should
@@ -233,19 +235,22 @@ campaign's evolution as a whole, within the settings' `evolution` answer:
   `evolution` skill's Review and Autonomy sections describe, never in campaign commits,
   and advance a component's `devel` only with the user's approval. Spawn a reviewer for
   each change, your own included, under the component's working branch, with its task as
-  the `task-schema` skill's Evolution reviews section describes, and record its verdict
-  and its reasons in the proposal;
+  the `task-schema` skill's Evolution reviews section describes, before the next wave
+  launches, and record its verdict and its reasons in the proposal. A change that touches
+  a protected path waits for the user's approval, as the Autonomy section describes;
 - the proposals the agents file: reconcile those that overlap, land or decline them, and
   put to the user, together, at a module's end, what the working branches hold for
   `devel`;
-- `crustify/LESSONS.md`, whose lessons you keep consistent and propose for the spec once
-  another campaign records them again;
+- `crustify/LESSONS.md`: you reconcile its lessons, entry by entry, at each ship point and
+  whenever five have been added or changed, as the `evolution` skill's Lessons section
+  describes, and name in each task message the lessons that apply to its run;
 - the consolidation at each module's end, as the `evolution` skill's Adoption section
   describes, and the revisit batches a soundness fix calls for; and
-- the record of what landed, `EVOLUTION.md`: add each change's entry as the change lands,
-  check the watched ones at each module's end, or an audit's, and at the campaign's end read
-  it for what evolution itself gets wrong, as the `evolution` skill's Record and Evolving
-  evolution sections describe.
+- the record, `EVOLUTION.md`, of which you are the one writer: index each proposal as its
+  batch lands, matching its signal against the rows, add each change's entry as the
+  change lands, read the watched rows at each ship point, or an audit's end, and at the
+  campaign's end read the record for what evolution itself gets wrong, as the `evolution`
+  skill's Record and Evolving evolution sections describe.
 
 ### Campaign
 

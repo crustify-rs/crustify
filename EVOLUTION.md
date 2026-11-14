@@ -1,11 +1,14 @@
 # Evolution record
 
-Every change to Crustify and its tools that landed, and whether it held, as the
-`evolution` skill's Record section describes. One entry per change, newest last. A status
-is `watched`, `recurred`, with the evidence, or `confirmed`, with the campaign that
-confirmed it; a change with `test` or `none` as its recurrence signal has no status. A change
-that weakens a check says so in its status; one no proposal filed names its campaign and
-`no proposal`, with where it came from.
+Every signal a campaign filed about Crustify and its tools, and what became of it, as the
+`evolution` skill's Record section describes. One row per signal, in filing order, newest
+last. Until its change lands, a row is `open`, `deferred`, `declined` or `superseded`, as
+its proposal is, and names the runs that met its signal where more than one did. From the
+landing it is `watched`, `recurred`, with the evidence, or `confirmed`, with the campaign
+that confirmed it; a change with `test` or `none` as its recurrence signal has no status. A
+change that weakens a check says so in its status; one no proposal filed names its campaign
+and `no proposal`, with where it came from. The rows before 2026-11-14 are landed changes
+alone.
 
 | change | from | landed as | signal answered | recurrence signal | status |
 |---|---|---|---|---|---|
@@ -59,3 +62,4 @@ that weakens a check says so in its status; one no proposal filed names its camp
 | a ported struct with a native layout and storage still in C's allocator is owned by `Box` / `Vec` over `CAllocator` | `libgit2-crustify`, `ffibox-allocator-api` | crustify (this commit) | the `ffibox` skill's porting TODO: such an owner was hand-written until ffibox had one, which it has since ffibox `4fa703c` | an owner of a native-layout struct in C's allocator hand-written after this landed for a struct the rule covers; or a finding of a `Box<Foo, CAllocator<P>>` whose `Foo` needs drop when C frees it, that aborts on the family's alignment, that hands C a zero-sized box's pointer, whose drop skipped a C lifecycle routine, or over a struct whose address C keeps | watched |
 | `CAllocator::try_box` refuses a zero-sized `T`; the zero-size claim is scoped to ffibox's own paths | `libgit2-crustify`, `ffibox-allocator-api` (follow-up) | ffibox `801e06c`, `9c22a73` | review-4 found `try_box(())` handing C's `free` a dangling pointer, against the docs' "every path" | a finding of C handed the dangling pointer of a zero-sized `Box`, or of an empty `Vec`, over `CAllocator` | watched |
 | each goal names its fitness, what a campaign measures to tell how far it is met, each measure worse work could improve paired with the one that catches it, and each no artifact holds yet marked not taken yet; Fidelity is named Equivalence; Determinism and attribution, goal 11 until then, is Attribution, goal 12, and goal 11 is Consistency, the one pattern a kind of item takes | `libgit2-crustify`, `goal-fitness-functions` | crustify `bca1d35`, `ac41d76`, `754e2ce` | the user's direction, from a pilot whose results were judged goal by goal with no measure named: soundness defects counted without where they were caught, coverage read without the faults its tests miss, cost without what was redone | a measure not marked as not taken yet that a module's end cannot take from the campaign's artifacts, or a measure found to improve under worse work with no pair named | watched |
+| the record holds every signal from its filing, with its occurrences, one writer per campaign; a proposal names its goal and the measure it expects to move, and is filed once; lessons are entries with an id, a status and a scope, read by a review and reconciled at ship points; a finished change is reviewed before the next wave; a review report names the tier that caught its finding; the protected paths change only with the user's approval, a blocking defect's repair apart | `libgit2-crustify`, `evolution-record-and-lessons` | crustify (this commit) | a pilot of 40 runs: 48 of 50 proposals left open, three signals filed two or three times, eight finished changes unreviewed while later runs worked around what they fixed, 49 rows never read at a module's end, and lessons every run reads that no review read | a signal filed twice under two slugs; a wave launched while a finished change waited for its review; a lesson changed by a run and read by no review; a finding whose report names no tier | watched; changes what checks the rest |
