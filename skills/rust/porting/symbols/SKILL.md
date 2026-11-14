@@ -109,3 +109,12 @@ function or global Rust owns through its export, a type through its C layout. An
 expansion site is a use by the function that holds it, so it holds back the later stages
 of what it reaches, as [`scheduling`](../../../planning/scheduling/SKILL.md)'s Later stages
 section counts its users.
+
+A macro whose expansion depends on the build's configuration is ported once where every
+configuration's expansion computes the same result for every input, and its documentation
+names the branches the build does not take. Only one whose branches differ in what they
+compute keeps the shim `binding-symbols` gives it: a port reimplements the body, and a shim
+over the C's expansion would make it a binding. A symbol alias of an out-of-tree library's
+entity is ported as that entity's route reaches it, as
+[`dependencies`](../../../planning/dependencies/SKILL.md)'s Confirmation section checks it:
+through the standard library, it is a native function.
