@@ -159,7 +159,11 @@ A C macro is bound to a Rust form of its own:
   symbols its expansion uses, through their safe wrappers, and for the fields it accesses,
   through their accessors. A `macro_rules!` takes its place only where a function cannot
   express it: control flow that leaves its caller, token pasting or stringification, an
-  argument used as a place, or one evaluated lazily or more than once.
+  argument used as a place, or one evaluated lazily or more than once. One evaluated
+  more than once calls for a `macro_rules!` only where a caller depends on it: where every expansion site
+  passes an argument without side effects, whose result is the same evaluated once, the
+  macro is a function, its documentation naming the difference, as a `MIN` or `MAX` of the
+  usual form is.
 
 A macro whose expansion depends on the build's configuration, which the Rust does not see,
 is the exception: it is reached through a shim, `crustify_<NAME>`, bound and wrapped.
