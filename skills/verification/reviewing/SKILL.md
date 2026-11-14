@@ -234,7 +234,8 @@ was fixed. It names the tier that caught the finding, and the tiers that had the
 in scope before it and passed it. The tiers are a batch's own gates, a review batch, a
 module pass, a switch, a later stage's review, a revisit, a ship point's gates and a
 consumer. A finding caught by a later tier than the first that had it in scope is an
-escape. A finding that a switch, a ship point's gates or a consumer catches is filed by the
+escape. A finding of `ub` or `contracts` also names the pattern of
+[`soundness`](../../rust/soundness/SKILL.md) it is an instance of, or `new`. A finding that a switch, a ship point's gates or a consumer catches is filed by the
 review batch it is handed to, which names that tier. It carries everything needed to rerun
 its reproducer from a clean checkout: the exact command and the sanitizer output or failing
 assertion it produced. Neither a report nor a reproducer carries an API key, in a core dump
