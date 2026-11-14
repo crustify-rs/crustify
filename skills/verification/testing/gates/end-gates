@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """end-gates: run a wave's or a module's end gates over a snapshot of a tree.
 
-    end-gates <tree> --logs <dir> [--stages plain,asan-ubsan,tsan,miri,bsan]
+    end-gates <tree> --logs <dir> [--stages lint,plain,asan-ubsan,tsan,miri,bsan]
               [--rev <rev> | --working-tree] [--package <name>] [--runner <cmd>]
               [--link <path>]... [--skip-file <file>] [--stage-env <stage>:<K>=<V>]...
-              [--timeout <seconds>] [--parallel <n>] [--nightly <toolchain>]
+              [--lint-features <features>]... [--timeout <seconds>] [--parallel <n>]
+              [--nightly <toolchain>]
 
 The gates of testing-gates' Regressions section, run exactly so:
 
@@ -17,13 +18,18 @@ The gates of testing-gates' Regressions section, run exactly so:
    stage runs: a skip that names no test, or that would also skip another, since libtest
    skips by substring, fails the run.
 3. The stages run in the order given:
+   - `lint`: the workspace's format check, `cargo +<nightly> fmt --all --check`, then its
+     lints with warnings denied, `<runner> plain clippy --workspace --all-targets
+     [--features <features>] -- -D warnings`, once with no feature and once for each
+     `--lint-features`, such as the export features of the modules not yet switched;
    - a variant (`plain` and each sanitizer but `bsan`): the workspace's tests,
      `<runner> <variant> test --workspace --no-fail-fast`, with that stage's skips;
    - `miri`: the package's test binaries built once on the pinned nightly, then one
      `cargo miri test` per test binary, side by side, each skipping `compile_fail`;
    - `bsan`: the test binaries built once, then one invocation per test binary, side by
      side, each under `--timeout`, with that stage's skips.
-4. Each run writes `<logs>/<stage>[-<binary>].log`; `<logs>/summary.json` and
+4. Each run writes `<logs>/<stage>[-<binary>].log`, a lint run
+   `<logs>/lint-fmt.log` and `<logs>/lint-clippy[-<features>].log`; `<logs>/summary.json` and
    `summary.txt` record each run's command, exit status, duration, test-result lines and
    failed tests. A run that exceeds its timeout reports `timed_out`.
 
@@ -167,6 +173,10 @@ class Gates:
         """The command that runs cargo for `stage`, up to its subcommand."""
         if stage == "miri":
             return ["cargo", f"+{self.a.nightly}", "miri"]
+        if stage == "lint":
+            # The lints read no build of the C's but the bindings', which every variant
+            # links alike: plain's.
+            return [*self.runner, "plain"]
         return [*self.runner, stage]
 
     def run(self, stage: str, name: str, cmd: list[str], env: dict[str, str],
@@ -252,6 +262,19 @@ class Gates:
         extra = self.skip_args(names)
         self.run(stage, stage, cmd + (["--", *extra] if extra else []), self.env(stage))
 
+    def lint(self) -> None:
+        """The format check and the lints, on the snapshot's committed tree, once with no
+        feature and once per `--lint-features`."""
+        env = self.env("lint")
+        self.run("lint", "lint-fmt", ["cargo", f"+{self.a.nightly}", "fmt", "--all", "--check"],
+                 env)
+        for features in ["", *self.a.lint_features]:
+            name = "lint-clippy" + (f"-{features.replace(',', '+')}" if features else "")
+            cmd = [*self.cargo("lint"), "clippy", "--workspace", "--all-targets"]
+            if features:
+                cmd += ["--features", features]
+            self.run("lint", name, [*cmd, "--", "-D", "warnings"], env)
+
     def per_binary(self, stage: str, package: str, bins: list[str], skips) -> None:
         env = self.env(stage)
         build = self.run(stage, f"{stage}-build",
@@ -278,7 +301,7 @@ def main(argv: list[str] | None = None) -> int:
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("tree", type=Path, nargs="?")
     p.add_argument("--logs", type=Path, help="the dir each run's log and the summary go to")
-    p.add_argument("--stages", default="plain,asan-ubsan,tsan,miri,bsan",
+    p.add_argument("--stages", default="lint,plain,asan-ubsan,tsan,miri,bsan",
                    help="comma-separated, run in this order (default: %(default)s)")
     src = p.add_mutually_exclusive_group()
     src.add_argument("--rev", default="HEAD", help="the commit to snapshot (default: HEAD)")
@@ -296,11 +319,14 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--skip-file", type=Path, help="lines of `<stage> <binary> <test name>`")
     p.add_argument("--stage-env", action="append", default=[],
                    help="<stage>:<K>=<V>, set for that stage's runs (repeatable)")
+    p.add_argument("--lint-features", action="append", default=[],
+                   help="features the lint stage also lints the workspace with, comma-"
+                        "separated within one run (repeatable)")
     p.add_argument("--timeout", type=int, default=3600,
                    help="seconds each BSan binary may run (default: %(default)s)")
     p.add_argument("--parallel", type=int, default=0,
                    help="test binaries run side by side (default: all)")
-    p.add_argument("--nightly", help="Miri's toolchain (default: the workspace's "
+    p.add_argument("--nightly", help="Miri's and the formatter's toolchain (default: the workspace's "
                                      "`nightly` key, else the rust-toolchain file's)")
     a = p.parse_args(argv)
     if a.tree is None or a.logs is None:
@@ -315,7 +341,7 @@ def main(argv: list[str] | None = None) -> int:
         logs = a.logs.resolve()
         logs.mkdir(parents=True, exist_ok=True)
         snapshot(tree, snap, rev, a.link)
-        if a.nightly is None and "miri" in a.stages:
+        if a.nightly is None and ("miri" in a.stages or "lint" in a.stages):
             a.nightly = nightly_of(snap)
         gates = Gates(a, snap, logs)
         skips = read_skips(a.skip_file)
@@ -330,7 +356,9 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     print(f"end-gates: snapshot {snap}, logs {logs}", file=sys.stderr)
     for stage in a.stages:
-        if stage in PER_BINARY:
+        if stage == "lint":
+            gates.lint()
+        elif stage in PER_BINARY:
             gates.per_binary(stage, package, bins, skips)
         else:
             gates.variant(stage, skips)

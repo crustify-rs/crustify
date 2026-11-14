@@ -66,9 +66,11 @@ it, and any other Miri error is a UB candidate of the item it touches.
 
 `end-gates`, beside this skill and documented by its `--help`, runs a wave's and a
 module's end gates so, over a snapshot of the tree, so that work goes on in the tree while
-they run: the workspace under each variant, Miri and BSan per test binary, and the slow
-list's tests skipped by name, each skip checked against its binary's test list before
-anything runs.
+they run: the format check and the lints with warnings denied, once per export-feature set
+the batch checks, the workspace under each variant, Miri and BSan per test binary, and the
+slow list's tests skipped by name, each skip checked against its binary's test list before
+anything runs. A batch's own format and lint gates run the same way, over the commit it
+lands, so that the result it records is that tree's.
 
 Each gate run starts in the background and is waited on to exit; its output is neither
 polled nor read while it runs. BSan reports false positives at the foreign boundary, so

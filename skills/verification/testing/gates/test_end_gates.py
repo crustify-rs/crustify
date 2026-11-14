@@ -46,6 +46,23 @@ fn sees_its_builds() {
 }
 """
 
+# A library and a test that format and lint clean, but for `two` under the feature `extra`.
+LINT_LIB = """pub fn one() -> u32 {
+    1
+}
+
+#[cfg(feature = "extra")]
+pub fn two() -> u32 {
+    return 2;
+}
+"""
+
+LINT_IT = """#[test]
+fn quick() {
+    assert_eq!(demo::one(), 1);
+}
+"""
+
 # A runner that takes the variant first, as a campaign's does, and runs plain cargo.
 RUNNER = """#!/bin/sh
 echo "variant $1" >&2
@@ -162,6 +179,35 @@ class EndGates(unittest.TestCase):
         self.assertTrue(s["bsan-it"]["timed_out"])
         self.assertFalse(s["bsan-lib"]["timed_out"])
         self.assertEqual(s["bsan-lib"]["exit"], 0)
+
+    def test_lint_checks_the_commit_once_per_feature_set(self) -> None:
+        # A tree that formats and lints clean with no feature, whose feature `extra` adds a
+        # lint `-D warnings` refuses; the working tree's unformatted edit is not the commit's.
+        cargo = self.tree / "Cargo.toml"
+        cargo.write_text(cargo.read_text() + "\n[features]\nextra = []\n")
+        (self.tree / "src/lib.rs").write_text(LINT_LIB)
+        (self.tree / "tests/it.rs").write_text(LINT_IT)
+        sh(self.tree, "git", "add", "-A")
+        sh(self.tree, "git", "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "lint")
+        (self.tree / "src/lib.rs").write_text(LINT_LIB + "pub fn   three() -> u32 { 3 }\n")
+        rc = self.gates("--stages", "lint", "--lint-features", "extra", "--nightly", "stable")
+        self.assertEqual(rc, 1)
+        s = self.summary()
+        self.assertEqual(list(s), ["lint-fmt", "lint-clippy", "lint-clippy-extra"])
+        self.assertEqual(s["lint-fmt"]["exit"], 0)
+        self.assertEqual(s["lint-clippy"]["exit"], 0)
+        self.assertNotEqual(s["lint-clippy-extra"]["exit"], 0)
+        self.assertIn("--features extra", s["lint-clippy-extra"]["command"])
+        self.assertTrue(s["lint-clippy"]["command"].endswith("-- -D warnings"))
+        self.assertIn("variant plain", Path(s["lint-clippy"]["log"]).read_text())
+        self.assertIn("needless_return", Path(s["lint-clippy-extra"]["log"]).read_text())
+        # Committed, the edit fails the format check.
+        sh(self.tree, "git", "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qam", "fmt")
+        rc = self.gates("--stages", "lint", "--nightly", "stable")
+        self.assertEqual(rc, 1)
+        s = self.summary()
+        self.assertNotEqual(s["lint-fmt"]["exit"], 0)
+        self.assertEqual(s["lint-clippy"]["exit"], 0)
 
 
 if __name__ == "__main__":
