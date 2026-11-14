@@ -98,14 +98,19 @@ row of the record it matches, if any. The index has one writer per campaign, so 
 runs never write a row at once. It is written as each batch's proposals land, and holds
 every proposal of the campaign before a wave launches.
 
-A signal is filed once. Before a run files a proposal, it reads the index, in its worktree,
-and the record, in Crustify's checkout. Where neither holds its signal, it files the
-proposal. Where one does, it files nothing new:
+A signal is filed once while its proposal waits. Before a run files a proposal, it reads the
+index, in its worktree, and the record, in Crustify's checkout. Campaigns that share a
+component's working branch, as a side campaign does with its parent, read each other's index
+too:
 
-- when the proposal the index names is in the run's own repository, the run adds its
-  evidence to that proposal, as an occurrence;
-- otherwise, the run reports the occurrence in its final message, and the index's writer
-  records it.
+- where the index holds its signal in a proposal that is `open` or `deferred`, the run files
+  nothing new. When that proposal is in the run's own repository, the run adds its evidence
+  to it, as an occurrence; otherwise, the run reports the occurrence in its final message,
+  and the index's writer records it;
+- where its signal meets the recurrence signal of a row of the record, the change that
+  landed did not hold: the run files a new proposal that cites the row, as
+  [`evolution-record`](record/SKILL.md)'s Record section describes; and
+- otherwise, the run files the proposal.
 
 A lesson is not filed as a proposal: `LESSONS.md` records it. A defect in a tool found
 while reviewing is a proposal, not a finding on the reviewed code, and is filed with its
@@ -244,22 +249,25 @@ loosen what judges it passes by loosening it. In Crustify's repository they are:
 - `skills/crustify/evolution/**` and `skills/verification/**`, the scripts beside those
   skills included;
 - `skills/artifacts/task-schema/SKILL.md`;
-- the Lints section of `skills/rust/toolchain/SKILL.md`;
-- the Testing, Reviewing and Audit sections of `skills/tools/*/SKILL.md`;
+- the Lints and Unsafe code sections of `skills/rust/toolchain/SKILL.md`;
+- the Testing, Reviewing and Audit sections of `skills/tools/*/SKILL.md`, and every section
+  of one that describes a scan a landing passes, such as `ffimap`'s Binding › Safe boundary;
 - `agents/common.md`, `agents/reviewer.md` and the Evolution section of
-  `agents/assistant/assistant.md`; and
+  `agents/assistant/assistant.md`;
+- the `evolution` question of `templates/*/CRUSTIFY.template.md`;
+- `.claude-plugin/plugin.json`, which decides the skills and hooks a run loads; and
 - `providers/generic/compose.py` and, under `providers/claude/`, `compose.py`, `spawn.py`,
-  `system-prompt.md`, `hooks.json` and `agents/reviewer.md`.
-
-In a tool's repository, they are the code whose output a gate or a review reads.
-<!-- TODO: the tool skills do not list that code yet. -->
+  `system-prompt.md`, `hooks.json` and `agents/*.md`. A generated agent that changes only as
+  its sources outside this list changed is not a change to a protected path.
 
 A change whose diff touches a protected path lands on the working branch only with the
 user's approval, whatever its review says, and so does the removal of a `weakens a check`
-mark from the record. One case lands without that approval: the repair of a defect that
-blocks the campaign, once its review approves it and finds three things. The repair weakens
-no check. Every existing test of the check it touches is unchanged. The repair adds a
-regression test of its own. Such a repair is put to the user at the next module's end. A
+mark from the record. One case lands without that approval: the repair of a defect in
+protected code, a script or a provider's program, that blocks the campaign, once its review
+approves it and finds three things. The repair weakens no check. Every existing test of the
+code it touches is unchanged. The repair adds a regression test of its own. Such a repair is
+put to the user at the next module's end. A change to a protected text always waits for the
+user. A
 change to `GOALS.md` is proposed and never made, unless the user asks for it, since
 `GOALS.md` is what every other change is judged against.
 

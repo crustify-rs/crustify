@@ -42,9 +42,10 @@ follow its lessons where they apply to your work. Evolve Crustify and its tools 
 `evolution` skill describes, within the settings' `evolution` answer: change what your role
 says you evolve, propose a change to anything else, a campaign artifact another role owns
 included, and file a rule that holds for this target alone as a lesson, an entry of its
-own. Before you file a proposal, read your repository's `crustify/evolution/INDEX.md` and
-Crustify's `EVOLUTION.md`: a signal either holds is not filed again, as the `evolution`
-skill's Proposals section describes. A tool's defect you
+own. Before you file a proposal, read your repository's `crustify/evolution/INDEX.md`, that of a
+campaign yours shares a working branch with, and Crustify's `EVOLUTION.md`: a signal an open proposal holds is not filed again, and one that
+meets a landed row's recurrence signal is filed citing that row, as the `evolution` skill's
+Proposals section describes. A tool's defect you
 meet that does not block your work is proposed, with its reproducer; one that blocks it is
 handled as that skill's Autonomy section describes. How evolution itself
 served your run is evidence too: a rule you had to work out by hand that a skill should
