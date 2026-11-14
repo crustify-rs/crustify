@@ -71,6 +71,13 @@ discipline follows from every C access:
 - thread-local: a handle borrowed for a closure on the current thread, neither `Send` nor
   `Sync`.
 
+The accesses that decide are those the C declaration's contract allows, not only those the
+campaign's C makes, since the crate cannot see every program it is linked into. A global
+the library documents as one a program may set, such as libc's standard streams, is
+otherwise mutable, however the C the campaign sees uses it. Where such a global holds a
+pointer, the C that closes or reassigns it may free what it pointed to, so the accessor is
+`unsafe`, its caller vouching for the lifetime it chooses.
+
 A lock counts only if every access takes it and it rejects same-thread re-entry. A global
 C sets up in a routine, rather than in its definition, is reached through the safe API only
 once that routine has run, however the binding ensures it.
