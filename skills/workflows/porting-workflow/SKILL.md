@@ -122,8 +122,22 @@ remaining C reaches the module through its exports. The C side of the
 step is a commit on the fork's `main`, as
 [`versioning`](../../operations/versioning/SKILL.md)'s Repositories section
 describes, and the campaign's commit records the submodule at it: integrations run one at a
-time, so the two repositories move together. The shared variants are rebuilt from the C
-that remains once the integration lands.
+time, so the two repositories move together.
+
+The step's parts run in this order, both sides before the builds:
+
+1. The Rust side, in one commit. The module's export feature is deleted, the allowlist
+   entries of its functions and globals that have no export are removed, and the bindings
+   are regenerated against the builds in use, whose headers the switch does not change.
+   Deleting the feature removes or rewrites every mention of its name in the crate, in its
+   sources, its tests, its manifest and its build script, a `cfg_attr` or a `cfg(any(…))`
+   as much as the gateway's attribute: an unknown `cfg`, or a lint expectation left unmet,
+   fails the lints with warnings denied.
+2. The C side: the module's TU and its tied C tests leave the fork.
+3. The builds, from the C that remains. Each variant is configured, the Rust library is
+   built, then the C is built and linked: the C that remains links the module's exports,
+   which the Rust library holds only once the export feature is deleted.
+4. The gates, over those builds.
 
 From then on, the C that remains is linked in two ways, and no process holds a module both
 as C and as Rust, nor its Rust twice:
