@@ -18,6 +18,12 @@ behaviour preserved.
 A ported function takes the safe API [`binding-symbols`](../../binding/symbols/SKILL.md)'s Functions
 section gives a function, or keeps its wrapper's, as [`porting`](../SKILL.md)'s FFI boundary section describes.
 
+A function no wrapper gives an API yet, whose body only reads or writes one member, or only
+returns a value an existing item of its own module's safe API already gives, is ported as
+that item, so that the port writes no second API: the accessor or method carries the
+function's `Replaces` anchor and alias beside its own. Its export, where remaining C calls
+it, is written in the module's gateway, over that item.
+
 A function that remaining C calls or takes the address of is exported, as
 [`porting`](../SKILL.md)'s FFI boundary section describes. Its gateway undoes what the safe API converted,
 so that its C callers see what the C function did: it rebuilds the safe arguments from the
