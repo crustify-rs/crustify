@@ -109,11 +109,10 @@ gateway without linking it, and each export is checked at compile time against t
 binding of the C declaration it replaces, so that a signature that drifts from C's fails
 to build.
 
-A module's switch removes its translation unit, and the C tests tied to it that reach
-its internals, from `c/`, rebuilds the variants from the C that remains and deletes the
-module's export feature, as
+A module's switch runs as
 [`porting-workflow`](../../../workflows/porting-workflow/SKILL.md)'s Builds section
-describes. Its gates are a module's end's, in campaign mode over the rebuilt variants, and
+describes. Its gates are a module's end's, in campaign mode over the variants built from
+the C that remains, and
 the target's remaining C tests, which link the remaining C and the safe crate's Rust static
 library, so that the C reaches the ported module through its exports: the module's tied C
 tests that use only its public API among them, as the porting workflow's Tests follow
