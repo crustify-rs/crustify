@@ -1,6 +1,6 @@
 ---
 name: authoring
-description: "How Crustify itself is organized: skills, roles, tool skills and the plugin, and where each kind of text goes. Read before changing Crustify or writing a task message for an agent."
+description: "How Crustify itself is organized: skills, roles, tool skills and the plugin, where each kind of text goes, and the language every text is written in. Read before changing Crustify, filing a proposal or a lesson, or writing a task message for an agent."
 ---
 
 # Authoring
@@ -206,3 +206,12 @@ manifest is `.claude-plugin/plugin.json`:
 
 The generated files are committed, and regenerated whenever `agents/` or
 `system-prompt.md` changes.
+
+## 5. Language
+
+Programmers and agents read Crustify's texts and a campaign's, so they are written plainly,
+as the [Google developer documentation style guide](https://developers.google.com/style)
+describes: one term per thing, short sentences, a condition before its consequence, lists for
+parallel items. A rule keeps its reason, since agents generalize from reasons. A rewrite keeps
+every fact of the old text, which its review checks. The voice rules of [Layers](#1-layers)
+stay: a skill describes, an agent instructs.
