@@ -288,8 +288,7 @@ Crustify-generated batch, in the reviewed crate's own suite for that kind.
 
 The gates [`testing-gates`](../testing/gates/SKILL.md)'s Regressions section gives a wave's
 end run in its last review batch, which launches once every translation batch of the wave
-has landed, and whose task's `wave_gates` says so: Miri in every wave. A module's end's,
-every test under every available sanitizer and BSan over everything the module landed,
+has landed, and whose task's `wave_gates` says so. A module's end's
 run in its module pass, when the wave is the module's last: no other translation wave in
 `schedule.json` belongs to its module and runs after it. Each runs on the wave's tip
 before any change, and again on the landed tree under `fix`. Without

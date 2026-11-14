@@ -29,26 +29,36 @@ them to its own depth:
 - a batch: the tests above, plain and under ASan/UBSan, and its own tests under each other
   sanitizer its items call for, such as TSan where it asserts `Send` or `Sync` or adds a
   threaded callback, or MSan where C leaves memory it hands over partly unwritten;
-- a wave's end: the workspace's tests, and the Miri gate below;
-- a module's end, its switch in a port: every test under every available sanitizer,
-  and BSan as below; and
-- a ship point: every gate over the whole workspace under every available sanitizer, with
-  the coverage measurement.
+- a wave's end, and a module's end, its switch in a port: the workspace's tests, plain,
+  under every available sanitizer, under Miri and under BSan as below, less each stage's
+  slow list;
+- a full run: every test of the workspace under every stage, the slow lists not applied.
+  It runs in the background, beside the campaign's work, by default after every fifth
+  module the campaign integrates; and
+- a ship point: a full run, with the coverage measurement.
 <!-- TODO: a wave's end and a module's end are run by the wave's last review batch and the
 module pass, so a campaign without review runs neither: they need an owner there. -->
 
-BSan, when available, is run for every batch and at module end:
+The slow list is the campaign's skip file, which holds, per stage, the tests that take over a
+minute under that stage, each by its exact name with the time measured. A test on it is
+skipped at a wave's and a module's end and runs in every full run, so that the ends stay
+short enough to run each time and no test goes unrun for long. A test joins the list when
+an end's run measures it over the minute, and leaves when a full run measures it under. A
+skip weakens a gate: the list's changes since the last ship point are put to the user at
+each ship point.
+
+BSan, when available, is run for every batch, at a wave's end and at a module's end:
 
 - For a batch, it runs only on the individual tests or reproducers the batch expects to
   trigger it, each by exact name and alone; never on a whole test binary, a suite or the
   workspace.
-- At module end, it runs as a gate over everything the module landed: the
-  whole workspace, one invocation per test binary, as many side by side as
+- At a wave's and a module's end, it runs as a gate over the whole workspace, less its
+  slow list, one invocation per test binary, as many side by side as
   [`concurrency`](../../../operations/concurrency/SKILL.md) describes, each under a `timeout`.
 
-A batch runs the tests it wrote under Miri. Miri is also run after every wave, as a gate
-over the whole workspace: one Miri run on the pinned nightly per test binary, the library's
-and each integration suite's, as many side by side as
+A batch runs the tests it wrote under Miri. Miri is also run at every wave's and module's
+end, as a gate over the whole workspace, less its slow list: one Miri run on the pinned
+nightly per test binary, the library's and each integration suite's, as many side by side as
 [`concurrency`](../../../operations/concurrency/SKILL.md) describes, each skipping the
 compile-fail tests. The gate passes only
 with no Miri error: a test that stops at the foreign boundary without the attribute gets
@@ -56,9 +66,9 @@ it, and any other Miri error is a UB candidate of the item it touches.
 
 `end-gates`, beside this skill and documented by its `--help`, runs a wave's and a
 module's end gates so, over a snapshot of the tree, so that work goes on in the tree while
-they run: the workspace under each variant, Miri and BSan per test binary, and the BSan
-tests known never to finish skipped by name, each skip checked against its binary's test
-list before anything runs.
+they run: the workspace under each variant, Miri and BSan per test binary, and the slow
+list's tests skipped by name, each skip checked against its binary's test list before
+anything runs.
 
 Each gate run starts in the background and is waited on to exit; its output is neither
 polled nor read while it runs. BSan reports false positives at the foreign boundary, so

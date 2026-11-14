@@ -93,6 +93,11 @@ ship.
    cases nothing carries over; hand any other conflict, or a gate that fails, to an agent of the
    module's batch kind, whose task message asks it to resolve them in the module's
    worktree.
+
+   Start the full run of the `testing-gates` skill's Regressions section yourself, in the
+   background, when its period comes, and keep the slow list: add what an end's run measured
+   over the bound, and remove what a full run measured under it. Hand a full run's failures
+   to a review batch, and list the slow list's changes for the user at each ship point.
 3. **Shipping.** At each point the settings' `ship` answer names, ask the user whether to
    advance the shipping branch, and the shipping branches of the wrappers it pins, as the
    `binding-workflow` skill's Shipping section describes.
