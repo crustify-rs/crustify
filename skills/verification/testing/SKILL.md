@@ -129,7 +129,13 @@ corrected-behaviour regression is a unit test.
 `equiv_pub` holds the module's exported API to the C strictly. `equiv_priv` compares an
 internal routine with its C counterpart only where one exists, since an idiomatic port may
 restructure the internals; a C function the raw bindings do not reach, one with internal
-linkage, is compared through the functions that call it.
+linkage, is compared through the functions that call it. A macro that implements
+logic is compared where it expands, through the functions that hold its expansions, since a
+test of their callers compares the callers' logic, not the macro's. When no function the
+raw bindings reach runs any of its expansions, directly or through the functions it calls,
+no equivalence test compares it: its unit tests check it against the replacement list at
+each expansion site's arguments, and the batch reports the sites as unreached, until the
+port of the module that holds them compares them.
 
 In a port, equivalence tests are the evidence of a module's migration. While its waves run,
 the variants still build its C, which they reach through the raw bindings while the ported
