@@ -44,7 +44,7 @@ it measures is judged, not measured.
      pointers and obligations handed to callers, and the ergonomics and idiom findings
      reviews file, per item reviewed. Paired with those findings a later tier, or a
      consumer, makes on an item an earlier review passed, since a review that reads less
-     finds less.
+     finds less; which tier made a finding is *not taken yet*.
 4. **Performance.** The emitted Rust costs no more than native Rust would, and the harness
    spends tokens and time where they buy accuracy.
    - *Fitness, the harness:* cost and wall time per translated item, reviews and switches
@@ -61,7 +61,8 @@ it measures is judged, not measured.
    assertions, rather than left to an agent's judgement.
    - *Fitness:* the line coverage of the ported Rust. Paired with the share of deliberate
      faults its tests catch, since code that runs is not code that is checked, and with
-     the gate results a run reported that its landed tree does not reproduce. The seeded
+     the gate results a run reported that its landed tree does not reproduce, which a
+     review files among its reports. The seeded
      faults, taken only where a review happens to seed them, the regions, and the states
      and transitions the tests reach, are *not taken yet*.
      <!-- TODO: seeding faults is not a step of any stage yet. -->
@@ -73,8 +74,8 @@ it measures is judged, not measured.
      them; and library entities reached through the standard library or an adopted crate
      rather than a new binding, as the plan records each one's route. A procedure worked
      out by hand a second time, and a proposal that repeats another's signal, count
-     against it. Paired with Least constraint's measure: reuse that bends the work around
-     a primitive or a rule that does not fit is counted there.
+     against it. Paired with Least constraint's measure: reuse a rule forces where what it
+     reuses does not fit is counted there.
 7. **Interoperability.** C and Rust work together soundly in both directions for as long
    as both remain, each reaching the other through the boundary in its own conventions,
    and the Rust works with the Rust ecosystem: the standard library's types and traits,
@@ -95,8 +96,9 @@ it measures is judged, not measured.
      serves no one.
    - *Fitness, the order:* the batches that met a dependency not yet landed, and waited
      for it, rewrote around it or reached past its wrapper. Items land after what they
-     depend on, which is how this goal is met, and Safety's and Performance's with it: a
-     consumer written once, over a boundary written once. *Not taken yet.*
+     depend on, or after its binding where the order cuts a cycle, which is how this goal
+     is met, and Safety's and Performance's with it: a consumer written once, over a
+     boundary written once. *Not taken yet.*
 9. **Generality.** The rules hold for any C codebase: what holds for one target alone is
    that target's lesson, not a rule.
    - *Fitness:* of what a campaign's evidence taught, the share stated as rules without
@@ -114,11 +116,13 @@ it measures is judged, not measured.
     departure states its reason. A pattern a skill gives is a how that must hold, in Least
     constraint's terms, and is given only where translating the same thing two ways costs
     a consumer or a reviewer; where the skills give none, the agent chooses, and a choice
-    met twice is proposed as the pattern rather than left to converge.
-    - *Fitness:* the conventions findings reviews file, per item, and the departures that
-      state their reason against those a review had to find. The items a later batch or
-      review reshaped, and whether an item translated twice took the same shape both
-      times, are *not taken yet*.
+    met twice, where two ways would cost, is proposed as the pattern rather than left to
+    converge.
+    - *Fitness:* the conventions findings reviews file, per item. Paired with the items a
+      later batch or review reshaped and the conventions findings a later tier makes on an
+      item an earlier review passed, since a review that reads less finds less. Those, the
+      departures that state their reason against those a review had to find, and whether
+      an item translated twice took the same shape both times, are *not taken yet*.
 12. **Attribution.** Every fact a decision rests on can be reproduced, and every change
     traces back to the run, and the revisions, that made it.
     - *Fitness:* the landed commits, dashboard cells and decisions that trace to a run, its
