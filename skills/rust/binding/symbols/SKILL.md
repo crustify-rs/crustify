@@ -118,14 +118,21 @@ Its trampoline is a panic barrier, which maps a panic to the C's error conventio
 refuses a re-entrant call, which would alias an `FnMut` closure, unless the analysis shows
 that C re-enters it, which takes an `Fn` closure instead. A function pointer C calls from
 another thread takes a `Send` closure, and a `Sync` one when C may call it from several at
-once. Three cases shape the type further:
+once. Four cases shape the type further:
 
 - one without a context parameter carries no captured state: its Rust implementation is a
   closure without captures, each closure type its own trampoline, or a plain function;
 - one C reads as absent when null, where it uses a default or calls nothing, is an
-  `Option` of the callable type; and
+  `Option` of the callable type;
 - one C compares with a known function, such as its default implementation, keeps in its C
-  variant the pointer it was made from, so that the comparison still holds.
+  variant the pointer it was made from, so that the comparison still holds; and
+- one whose context C reaches through another argument, such as the object it is handed,
+  has a C half only for functions sound with any such argument. A C function that reads its
+  context there is reached only through the object that holds it, by the routine that
+  dispatches it with that object, bound or ported, which calls it through its raw binding,
+  and never as the callable type, whose safe call could hand it another object. Such a
+  function is stored only from C, or through an `unsafe` setter whose contract carries the
+  object's context, and is read back as its address, no callable.
 
 When its sites hand ownership across differently, each distribution has its own distinctly
 named callable type over the one C function-pointer type.
