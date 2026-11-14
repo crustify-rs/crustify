@@ -80,7 +80,10 @@ module's exports, its `static inline` functions included, as
 file that includes them.
 
 The module's equivalence tests, which need the C, are retired with it, and the behaviour
-they established is kept by its unit tests. The raw bindings of its
+they established is kept by its unit tests. Before the module's equivalence tests are
+retired, each that needs no C is carried over to the module's unit tests, where what it
+compares with stays after the switch, such as the constants of a header that remaining C
+still includes. The raw bindings of its
 exported functions and globals then reach its exports, so that a consumer's raw calls keep
 working, and an allowlist entry goes with the export it reaches. Those of its functions and
 globals that have no export, which only its own C referenced, are removed with their
@@ -126,9 +129,10 @@ time, so the two repositories move together.
 
 The step's parts run in this order, both sides before the builds:
 
-1. The Rust side, in one commit. The module's export feature is deleted, the allowlist
-   entries of its functions and globals that have no export are removed, and the bindings
-   are regenerated against the builds in use, whose headers the switch does not change.
+1. The Rust side, in one commit. The module's export feature is deleted, its equivalence
+   tests are retired, those that need no C carried over first, the allowlist entries of its
+   functions and globals that have no export are removed, and the bindings are regenerated
+   against the builds in use, whose headers the switch does not change.
    Deleting the feature removes or rewrites every mention of its name in the crate, in its
    sources, its tests, its manifest and its build script, a `cfg_attr` or a `cfg(any(…))`
    as much as the gateway's attribute: an unknown `cfg`, or a lint expectation left unmet,
