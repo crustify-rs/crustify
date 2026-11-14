@@ -91,7 +91,8 @@ Unanswered optional questions are decided by the assistant.
     - `propose`: proposals and lessons only. `repair`: also fixes of defects. `evolve`: also
       improvements and new tools. You are asked to take the working branches into `devel`
       at the audit's end. A change to what judges the work, the
-      protected paths the `evolution` skill lists, waits for your approval at any level.
+      protected paths the `evolution` skill lists, waits for your approval, as that skill's
+      Autonomy section describes.
     - By default: `repair`.
 
 ## Commits

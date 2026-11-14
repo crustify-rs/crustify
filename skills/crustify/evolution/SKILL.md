@@ -107,8 +107,8 @@ too:
   nothing new. When that proposal is in the run's own repository, the run adds its evidence
   to it, as an occurrence; otherwise, the run reports the occurrence in its final message,
   and the index's writer records it;
-- where its signal meets the recurrence signal of a row of the record, the change that
-  landed did not hold: the run files a new proposal that cites the row, as
+- otherwise, where its signal meets the recurrence signal of a row of the record, the change
+  that landed did not hold: the run files a new proposal that cites the row, as
   [`evolution-record`](record/SKILL.md)'s Record section describes; and
 - otherwise, the run files the proposal.
 
