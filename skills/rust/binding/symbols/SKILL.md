@@ -32,7 +32,9 @@ form of what it names:
 - **Errors.** A function that can fail returns a `Result`, its failure read from the error
   convention the analysis establishes: a status return, a sentinel return, or error state
   the library keeps beside the call, read immediately after it, before another call into
-  the library can replace it. A return that reports only success is not returned, and an
+  the library can replace it. Error state a failure sets and only a caller clears, such as
+  a sticky error flag, tells the call's failure by its change alone, with nothing else able
+  to change it in between. A return that reports only success is not returned, and an
   outcome its C callers treat as ordinary, such as an exhausted iteration or an absent
   entry, is part of the success value. Each error convention has one error type, carrying
   what the convention reports, `errno`'s being `std::io::Error`.
