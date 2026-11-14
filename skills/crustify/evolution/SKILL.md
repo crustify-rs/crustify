@@ -210,7 +210,11 @@ that:
 A review runs under the campaign's working branch of the component, never under the change
 it reviews, and reads the change from its branch. Its task pins the commit it reviews, and
 only that commit lands, by a fast-forward of the working branch: a commit added after the
-verdict, or one a rebase or cherry-pick makes, is reviewed again. Its checks are this section's and its
+verdict, or one a rebase or cherry-pick makes, is reviewed again. A rebase of a change to
+the text of skills, agents or templates alone, no script or program among its files, is the
+exception, where each file the commit changes is the same in the rebased commit and its
+parent as in the reviewed commit and its parent: the review then read the same diff against
+the same text. Its checks are this section's and its
 role's; the task message of the run that asks for it adds to them, and never relaxes them.
 A review reads as deeply as the change reaches: a change to documentation alone is read; a
 tool's code, a check, a soundness fix and every rule of the spec are reviewed with their
