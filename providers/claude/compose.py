@@ -55,7 +55,9 @@ launch each stage run as a process of its own rather than through your Agent too
 `python3 {crustify_root}/providers/claude/spawn.py <stage> <worktree> <run dir>` in the
 background, with `--model`, `--effort` and `--add-dir` as the run needs, once its
 `task.md` is saved. It writes the run's `session_id` to the run dir before the session
-starts, and its exit, which notifies you, ends the run.
+starts, and its exit, which notifies you, ends the run. Under a spending limit, also pass
+the run, after `--`, `--max-budget-usd` with what the limit leaves it, so that the CLI
+ends the run itself at that amount.
 """
 
 

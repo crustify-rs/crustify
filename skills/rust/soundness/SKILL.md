@@ -55,7 +55,7 @@ whenever one is added.
 ## 2. Findings
 
 A finding of the `ub` or `contracts` objective names its pattern, or `new`, as
-[`reviewing`](../../verification/reviewing/SKILL.md)'s Reports section describes. A
+[`reviewing-reports`](../../verification/reviewing/reports/SKILL.md)'s Reports section describes. A
 sanitizer's false positive is no finding and names none.
 
 A finding of a known pattern means that its statement did not let the analysis recognise

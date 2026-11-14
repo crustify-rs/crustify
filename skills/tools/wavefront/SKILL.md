@@ -232,7 +232,7 @@ is a finding.
 The plan cuts the cycles between modules and types. A raw pointer that stands in for a
 dependency a later scheduled batch wraps is such a cut, not an `unsafety` finding.
 
-### Reviewing › Reports
+### Reviewing-reports › Reports
 
 A finding on wavefront's findings is filed in its own `<slug>` directory, with its report
 and the evidence that proves the submitted finding wrong or incomplete, under:

@@ -153,7 +153,7 @@ hand-written representations against the contract ffibox would have enforced. Un
 the hazards `docs/goals.md`'s G9 lists are the checklist: each is excluded by the
 primitive or the producer's contract it names, or is a finding.
 
-### Reviewing › Reports
+### Reviewing-reports › Reports
 
 A soundness or ergonomics gap in ffibox itself, in its safe primitives or its unsafe FFI
 seams, is a defect in a tool: a proposal, as any tool defect is.

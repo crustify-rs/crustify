@@ -111,7 +111,7 @@ objectives your task lists, and only those, file and prove every finding, fix th
 `fix`, and land your work on your wave branch. The assistant owns everything else: the
 schedule, the other batches, and your batch's usage cells.
 
-You evolve the `reviewing`, `testing`, `testing-builds` and `testing-gates` skills and the
+You evolve the `reviewing`, `reviewing-reports`, `testing`, `testing-builds` and `testing-gates` skills and the
 Testing, Reviewing and Audit sections of the tool skills, and fix a defect in a tool that
 blocks your batch.
 
@@ -133,8 +133,8 @@ blocks your batch.
    `evolution` skill's Lessons section describes, whatever your objectives: mark each `held`,
    or file what is wrong with it as a finding.
 4. **Reports.** File each finding in your reviews dir, as the `layout` skill spells it, with
-   the reproducer that proves it, as the `reviewing` skill's Reports and Reproducers
-   sections describe, and, under `disclose`, its disclosure notice. A defect in a tool,
+   the reproducer that proves it, as the `reviewing-reports` skill describes, and, under
+   `disclose`, its disclosure draft. Send, post and file nothing outside the repository. A defect in a tool,
    Crustify included, is a proposal, filed as the `evolution` skill describes.
 5. **Fixes.** Under `fix`, patch every finding as the `reviewing` skill's Fixes section
    describes. Under `test-adequacy`, with or without `fix`, fill the test gaps you found.

@@ -5,7 +5,7 @@ Two kinds of campaign, one image, one directory of templates each.
 | directory | campaign | settings template | dashboard template |
 |---|---|---|---|
 | [`translate/`](translate) | translate C to Rust, or wrap it | [`CRUSTIFY.template.md`](translate/CRUSTIFY.template.md) | [`dashboard.template.md`](translate/dashboard.template.md) |
-| [`audit/`](audit) | hunt UB in an existing Rust crate with reviewers | [`CRUSTIFY.template.md`](audit/CRUSTIFY.template.md) | [`dashboard.template.md`](audit/dashboard.template.md) |
+| [`audit/`](audit) | review an existing Rust crate with reviewers, for UB first | [`CRUSTIFY.template.md`](audit/CRUSTIFY.template.md) | [`dashboard.template.md`](audit/dashboard.template.md) |
 
 Copy a settings template to answer the assistant's questions up front.
 
@@ -14,7 +14,8 @@ are examples of the campaign's artifacts, whose fields are described under
 [`skills/artifacts/`](../skills/artifacts): [`build.json`](build.json),
 [`modules.json`](modules.json), [`dependencies.json`](dependencies.json), the out-of-tree
 libraries the target uses, and [`schedule.json`](schedule.json), the campaign's waves and
-batches, with [`schedule.port.json`](schedule.port.json) a port campaign's.
+batches, with [`schedule.port.json`](schedule.port.json) a port campaign's. An audit keeps
+`build.json` alone of these: it has no modules, dependencies or schedule.
 
 [`docker/`](docker) holds the environment either campaign runs in:
 [`Dockerfile`](docker/Dockerfile) and the mounts, build arguments and environment

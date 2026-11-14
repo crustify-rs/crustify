@@ -19,5 +19,5 @@ file mounted, and run the backend CLI in it without the plugin, the file as its 
     docker exec -it -w /target bare-git2 \
         claude -p "$(cat /campaign/CRUSTIFY-bare.md)" --dangerously-skip-permissions
 
-Nothing spawns reviewers in bare mode, so there is no maximum spend: the run
-takes whatever the single agent takes. Cap it from outside if you need one.
+Nothing spawns reviewers in bare mode, so no settings cap its spend: to compare it with
+an audit under a `max-spend`, give the CLI the same cap, such as `--max-budget-usd 50`.

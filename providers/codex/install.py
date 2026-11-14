@@ -76,7 +76,8 @@ STAGES = {
     "reviewer": "Crustify's reviewer: runs one review batch from its task.json in its "
                 "worktree: reviews landed commits or a crate's paths for its objectives, "
                 "files and reproduces findings, fixes them under `fix`, and lands on its "
-                "wave branch. Use for every review batch.",
+                "wave branch; or reviews one change to Crustify or a tool on its evolution "
+                "branch, landing nothing. Use for every review batch and evolution review.",
 }
 
 #: What the roles' and profiles' instructions add to the generic prompt on Codex.
