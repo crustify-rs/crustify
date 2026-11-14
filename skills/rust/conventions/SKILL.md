@@ -206,7 +206,10 @@ theirs.
 
 The alias is the bare `<path>`, without the backticks, so that a consumer who searches the
 documentation for the source's name finds every item that stands in for it. The kind is
-the anchor's alone: a label in the alias would no longer match that search.
+the anchor's alone: a label in the alias would no longer match that search. An item whose
+own name is that path, a name of the source the Rust keeps, carries no alias: rustdoc
+rejects an alias equal to its item's name, and the name already answers the search. Its
+anchor is unchanged.
 
 ### 3.1 What is annotated
 
