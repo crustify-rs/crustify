@@ -190,26 +190,24 @@ workflow for each codebase.
 
 ```mermaid
 flowchart LR
-    you(["You"]) <-->|"goals, approvals"| assistant["assistant"]
-    assistant --> planner["planner"]
-    planner -->|"waves of batches"| binder["binder: wrap"]
-    planner -->|"waves of batches"| translator["translator: port"]
-    binder --> gates{{"tests and gates"}}
-    translator --> gates
-    gates --> reviewer["reviewer"]
-    reviewer -->|"findings, fixes"| gates
-    reviewer --> landed[("landed Rust")]
-    wavefront["wavefront"] -.-> planner
-    ffibox["ffibox"] -.-> binder
-    ffibox -.-> translator
-    ffimap["ffimap"] -.-> gates
+    U([You]) -->|goals and approvals| A[assistant]
+    A --> P[planner]
+    P -->|waves of batches| B[binder wraps]
+    P -->|waves of batches| T[translator ports]
+    B --> G{tests and gates}
+    T --> G
+    G --> R[reviewer]
+    R -->|findings and fixes| G
+    R --> L[(landed Rust)]
+    W[wavefront] -.-> P
+    X[ffibox] -.-> B
+    X -.-> T
+    M[ffimap] -.-> G
 
-    classDef agent fill:#E2573B,stroke:#A8371F,color:#ffffff;
-    classDef plain fill:#1F2430,stroke:#5FD4F4,color:#ffffff;
-    class assistant,planner,binder,translator,reviewer agent;
-    class you,gates,landed plain;
-    classDef tool fill:none,stroke:#A8371F,stroke-dasharray:4 3;
-    class wavefront,ffibox,ffimap tool;
+    classDef agent fill:#E2573B,stroke:#A8371F,color:#ffffff
+    classDef plain fill:#1F2430,stroke:#5FD4F4,color:#ffffff
+    class A,P,B,T,R agent
+    class U,G,L plain
 ```
 
 Crustify's assistant talks to you and launches four kinds of agent:
