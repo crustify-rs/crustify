@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 240 200" role="img" aria-labelledby="t">
+  <title id="t">Crustify: a crab that is also a robot</title>
+  <defs>
+    <g id="side">
+      <!-- legs -->
+      <g fill="none" stroke="#A8371F" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="64,124 40,134 32,152"/>
+        <polyline points="68,140 46,154 42,172"/>
+        <polyline points="80,150 64,168 64,184"/>
+      </g>
+      <!-- arm -->
+      <polyline points="66,100 46,98 40,84" fill="none" stroke="#A8371F" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="46" cy="98" r="6.5" fill="#F4F1EC" stroke="#A8371F" stroke-width="3"/>
+      <!-- claw: a pincer, open upward -->
+      <path d="M38,62 L54.3,47.3 A22,22 0 1 1 34.9,40.2 Z" fill="#E2573B" stroke="#A8371F" stroke-width="3" stroke-linejoin="round"/>
+      <!-- bolt -->
+      <circle cx="72" cy="88" r="3" fill="#A8371F"/>
+      <circle cx="72" cy="134" r="3" fill="#A8371F"/>
+    </g>
+  </defs>
+
+  <use xlink:href="#side" href="#side"/>
+  <use xlink:href="#side" href="#side" transform="translate(240,0) scale(-1,1)"/>
+
+  <!-- antenna -->
+  <line x1="120" y1="72" x2="120" y2="48" stroke="#A8371F" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="120" cy="42" r="8" fill="#5FD4F4" stroke="#1F2430" stroke-width="3"/>
+
+  <!-- shell -->
+  <rect x="56" y="70" width="128" height="82" rx="36" fill="#E2573B" stroke="#A8371F" stroke-width="3"/>
+  <path d="M74,84 Q120,70 166,84" fill="none" stroke="#F08A6E" stroke-width="5" stroke-linecap="round"/>
+
+  <!-- visor and eyes -->
+  <rect x="76" y="92" width="88" height="36" rx="18" fill="#1F2430"/>
+  <circle cx="101" cy="110" r="9" fill="#5FD4F4"/>
+  <circle cx="139" cy="110" r="9" fill="#5FD4F4"/>
+  <circle cx="104" cy="107" r="3" fill="#FFFFFF"/>
+  <circle cx="142" cy="107" r="3" fill="#FFFFFF"/>
+
+  <!-- speaker grille -->
+  <g stroke="#A8371F" stroke-width="3.5" stroke-linecap="round">
+    <line x1="108" y1="138" x2="108" y2="144"/>
+    <line x1="116" y1="138" x2="116" y2="144"/>
+    <line x1="124" y1="138" x2="124" y2="144"/>
+    <line x1="132" y1="138" x2="132" y2="144"/>
+  </g>
+</svg>
