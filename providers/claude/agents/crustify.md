@@ -71,13 +71,6 @@ where they fall short. Where no viable one exists, write a safe binding to the C
 The requirements below apply to that code too. Beside each dependency you add, in the
 manifest or the build file that declares it, keep a brief comment on why you chose it.
 
-## Raw bindings
-
-Where the Rust calls C or reads its types, consider generating the raw declarations with
-bindgen from the C's headers rather than writing them by hand, so that signatures, struct
-layouts and constants follow the headers as they change. Where they live and how they are
-built is your choice.
-
 ## Requirements of the ported code
 
 Each requirement has an identifier. Reviews file their findings under the same
