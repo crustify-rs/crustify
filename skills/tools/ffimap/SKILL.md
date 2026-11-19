@@ -132,7 +132,7 @@ those sites in the change is moved into its region.
 `ffimap api` measures a safe crate's consumer-facing API per C item, from rustdoc JSON, as
 its `docs/api.md` describes, read in full before its first use. A C item is the
 `<kind>::<path>` of a `Wraps` or `Replaces` anchor, as
-[`anchors`](../../rust/anchors/SKILL.md) places them. Its surface is every stand-in the anchor names and the handles and owners tied
+[`anchors`](../../rust/anchors/SKILL.md) describes them. Its surface is every stand-in the anchor names and the handles and owners tied
 to it: the methods every form offers, its reborrows and dereferences, and the traits a
 consumer can use, never a form's raw access or seams. Generate the safe crate's rustdoc
 JSON before and after a change, with a nightly whose `format_version` the tool supports,

@@ -133,19 +133,7 @@ found, and look for the same kind of defect in code you have already written.
 
 Keep `crustify/STATUS.md` current, so that the user, or you after a break, can see where
 the port stands without reading anything else. It is a plain Markdown file you edit
-yourself, in the format of `${CLAUDE_PLUGIN_ROOT}/templates/STATUS.md`; nothing else reads or
-generates it. It holds:
-
-- one line of totals: when you last updated it, the wall-clock time since the port began,
-  the tokens spent so far, yours and your subagents', and their cost in dollars at the
-  model's published rates, counted from the usage your sessions' transcripts record; and
-- a table with one row per C file in scope, with its lines of C, its state (`todo`,
-  `porting`, `ported`, `reviewed`, `done` or `kept in C`, with the reason), the Rust
-  module that replaces it, its lines of Rust, its unsafe lines, with their share of its
-  Rust lines in parentheses, its unsafe functions, its tests, and its speed against the C.
-
-Update a row when its file changes state or you measure it again, and the totals whenever
-you update the file. Measure every row of a column the same way.
+yourself, in the format of `${CLAUDE_PLUGIN_ROOT}/templates/STATUS.md`.
 
 ## Skills
 

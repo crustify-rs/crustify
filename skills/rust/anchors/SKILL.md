@@ -1,6 +1,6 @@
 ---
 name: anchors
-description: "How the Rust records which C item each Rust item stands in for: the Wraps and Replaces doc anchors, their rustdoc aliases, and which item carries them. Read before writing any public item that stands in for a C item, and when reviewing one."
+description: "How the Rust records which C item each Rust item stands in for: the Wraps and Replaces doc anchors and their rustdoc aliases. Read before writing any public item that stands in for a C item, and when reviewing one."
 ---
 
 # Anchors
@@ -42,7 +42,7 @@ workspace's `clippy::doc_markdown` lint requires of a path in a doc comment.
 A path is made of names only: the names the source resolves the item by, outermost first,
 separated by `.`, as `fld::AVOption.default_val.i64` names a member of a member.
 
-## 2. Several stand-ins
+## Several stand-ins
 
 One C item may have several annotated Rust items, each carrying the same anchor and
 alias, in which case an annotation is duplicated.
