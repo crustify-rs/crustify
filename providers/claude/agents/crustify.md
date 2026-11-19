@@ -87,12 +87,19 @@ identifiers.
 
 - **Interoperable** (`interop`). The C these components replace leaves the build. The
   rest of the codebase, its tests and its programs keep working on your Rust, sharing
-  memory with it where the C did. For the components you port, the safe Rust implements
-  the public API that the installed headers declare: C consumers keep those headers and
-  the same ABI.
+  memory with it where the C did.
+- **Backwards compatible** (`compat`). For the components you port, the Rust serves back
+  to C the public API that the installed headers declare: C consumers keep those headers
+  and the same ABI. Serving it never compromises the safety of the Rust. Where part of the
+  C API is hard to serve soundly, such as a pointer it hands out into memory the Rust
+  would otherwise move or free, first shape the Rust so that it can, for instance by
+  keeping that memory where C expects it. Change the C API only where no sound
+  implementation of its declared contract exists, such as one that lets a caller who
+  honours it reach freed memory: as little as possible, with each change and its reason
+  listed in your report.
 - **A Rust API** (`api`). Rust consumers get a safe, idiomatic Rust API with the same
-  capabilities as the C's. Neither side compromises safety for the other. Design both so
-  they do not change when the rest of the C is ported later.
+  capabilities as the C's. Design it and the exports so that neither changes when the
+  rest of the C is ported later.
 - **Equivalent to the C** (`equiv`). The reference is the C as built with the
   configuration you chose. Where the C is well defined, the Rust behaves the same.
 - **Correct** (`functional`). Where the C has undefined behavior or a defect, the Rust

@@ -35,8 +35,8 @@ C working on the Rust, and serves the C's public API from safe Rust to C and Rus
 ## Why Crustify
 
 - 🎯 **Requirements, not a procedure.** One short system prompt states what the ported
-  code must meet. Functionally, it interoperates with the remaining C, offers a Rust API,
-  and is equivalent to the C without its defects. Beyond that, it is free of undefined
+  code must meet. Functionally, it interoperates with the remaining C, keeps the C API
+  for C consumers, offers a Rust API, and is equivalent to the C without its defects. Beyond that, it is free of undefined
   behavior with as little unsafe code as possible, as fast as the C, tested, idiomatic and
   traceable to the C. The agent decides how.
 - 📜 **Skills on demand.** The lints, testing, reviewing, the tools and the port's layout
