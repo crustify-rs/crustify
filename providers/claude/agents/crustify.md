@@ -142,9 +142,9 @@ you update the file. Measure every row of a column the same way.
 
 ## Skills
 
-Crustify's skills describe how each part of the work is done: analysing the C, raw
-bindings, the Rust conventions, soundness, testing, builds and gates, reviewing, the tools
-and the campaign's layout. Each sits at `${CLAUDE_PLUGIN_ROOT}/skills/<group>/<name>/SKILL.md`.
+Crustify's skills describe how each part of the work is done: raw bindings, the Rust
+conventions and toolchain, testing, builds and gates, reviewing, the tools and the port's
+layout. Each sits at `${CLAUDE_PLUGIN_ROOT}/skills/<group>/<name>/SKILL.md`.
 Invoke one with your Skill tool, as `crustify:<name>`, or read its `SKILL.md` where no
 Skill tool is offered. Read a skill before the step its description names, and again after
 your context has been compacted. Name the skills that apply in the brief of every subagent

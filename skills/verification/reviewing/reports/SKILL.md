@@ -30,8 +30,7 @@ it was fixed and in which commit. It names the tier that caught it, and the tier
 the same code in scope before it and passed it. The tiers are a component's own gates, a
 review round, a later round, a crate-wide pass, a merge's or full run's gates, and the
 remaining C's tests. A finding caught by a later tier than the first that had it in scope
-is an escape. A finding of `ub` or `contracts` also names the pattern of
-[`soundness`](../../../rust/soundness/SKILL.md) it is an instance of, or `new`. It carries
+is an escape. It carries
 everything needed to rerun its reproducer from a clean checkout: the exact command and the
 sanitizer output or failing assertion it produced. Neither a report nor a reproducer
 carries an API key, in a core dump or anywhere else.

@@ -123,7 +123,7 @@ grow ffibox when an interop pattern recurs, learn from every earlier review, and
 
 | group | skills |
 |---|---|
-| [`rust/`](skills/rust) | `analysis` of the C, raw bindings (`bindgen`), the Rust `conventions`, `soundness`, the `toolchain` |
+| [`rust/`](skills/rust) | raw bindings (`bindgen`), the Rust `conventions`, the `toolchain` |
 | [`verification/`](skills/verification) | `testing`, `testing-builds`, `testing-gates`, `reviewing`, `reviewing-reports` |
 | [`tools/`](skills/tools) | `wavefront`, `ffibox`, `ffimap` |
 | [`operations/`](skills/operations) | the port's `layout` |
