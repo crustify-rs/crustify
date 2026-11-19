@@ -1,12 +1,12 @@
 ---
 name: analysis
-description: "How a scheduled C item is analysed before it is bound or ported: what is inspected, what the analysis establishes and how its findings shape the Rust. Read before binding or porting any item, and when reviewing either."
+description: "How a C item is analysed before it is ported: what is inspected, what the analysis establishes and how its findings shape the Rust. Read before porting any item, before writing a safe wrapper over C the port still calls, and when reviewing either."
 ---
 
 # Item analysis
 
-How a scheduled C item is analysed before it is bound or ported. The analysis is the same
-for both: what it establishes shapes the binding or port that follows.
+How a C item is analysed before it is ported, or before the port wraps it where it stays in
+C. The analysis is the same for both: what it establishes shapes the Rust that follows.
 
 ## 1. Scope
 

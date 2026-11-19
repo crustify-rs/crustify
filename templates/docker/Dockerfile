@@ -1,29 +1,23 @@
-# The environment a crustify campaign runs in, for either kind of campaign.
-# Nothing here is target-specific, and nothing here starts a campaign: the image
-# is a machine, and Crustify's assistant is opened inside it.
-#
-# One image serves both kinds because they want the same machine. The translator
-# needs the sanitizers to check what it emitted; an audit needs a C
-# toolchain to build what it audits. Two images meant the translate side had
-# no miri, no BorrowSanitizer and no MemorySanitizer -- the instruments its
-# own prompt asks for -- while the audit side had no CodeQL and no bindgen.
+# The environment a Crustify port runs in. Nothing here is target-specific, and
+# nothing here starts a port: the image is a machine, and Crustify is opened
+# inside it. It carries the instruments the system prompt asks for -- the
+# sanitizers, Miri, BorrowSanitizer and MemorySanitizer -- and bindgen.
 #
 #   docker build -t crustify -f templates/docker/Dockerfile .
 #
-# Start the container idle, then open the assistant in it:
+# Start the container idle, then open Crustify in it:
 #
 #   docker run -d --init --name crustify-libgit2 \
 #       --security-opt seccomp=unconfined \
 #       -e OPENROUTER_API_KEY \
-#       -v /absolute/path/to/your/campaign-dir:/target \
+#       -v /absolute/path/to/the/c-checkout:/target \
 #       -v "$(dirname "$PWD"):/crustify-rs" \
 #       -v crustify-libgit2-work:/work \
 #       crustify
 #   docker exec -it -w /target crustify-libgit2 \
-#       claude --plugin-dir /opt/crustify --agent crustify:assistant-translate
+#       claude --plugin-dir /opt/crustify --agent crustify:crustify
 #
-# `crustify:assistant-audit` opens an audit's assistant instead. It waits for
-# instructions; `-p` with a first prompt runs the campaign headless.
+# The first message names the task; `-p` with it runs the port headless.
 #
 # `--security-opt seccomp=unconfined` lets the TSan and BSan runtimes call
 # personality(ADDR_NO_RANDOMIZE) at startup; Docker's default profile rejects it
@@ -32,23 +26,12 @@
 #
 # Mounts:
 #
-#   /target            Required read-write bind mount: the directory the
-#                      campaign works in. It holds the campaign repository --
-#                      the Rust at its root, the C under `c/`, the campaign's
-#                      own state under `crustify/` -- and the wrapper
-#                      repositories of out-of-tree libraries beside it, which
-#                      is why it is a directory and not the repository itself.
-#                      It may be EMPTY: Crustify creates the repository in it
-#                      and takes the C from the `source` its settings name, so
-#                      the C does not have to exist on the host. When it
-#                      already holds a campaign, that campaign is resumed in
-#                      place: its revision, branches, artifacts, CodeQL data
-#                      and logs are used where they are and stay on the host,
-#                      and nothing there is reset or replaced. An audit creates
-#                      no repository, so /target is the reviewed crate's own
-#                      checkout.
+#   /target            Required read-write bind mount: the checkout of the C
+#                      codebase the port works in. The Rust tree and the
+#                      port's own files under `crustify/` land in it. When it
+#                      already holds a port, that port is resumed in place.
 #   /crustify-rs       Optional read-write bind mount of the whole crustify-rs
-#                      workspace: the toolchains the campaign uses -- wavefront,
+#                      workspace: the toolchains the port uses -- wavefront,
 #                      ffibox, ffimap -- beside the target forks and the
 #                      reference crates, as they sit on the host. This is where
 #                      the tool checkouts LIVE in the image, so one mount
@@ -58,28 +41,22 @@
 #                      optional; a workspace mounted here must carry a
 #                      directory per tool AND a crustify checkout, since each
 #                      is reached through a path inside it that otherwise
-#                      dangles -- Crustify included. An audit uses only
-#                      ffimap.
+#                      dangles -- Crustify included.
 #   /opt/crustify      A symlink to /crustify-rs/crustify, the plugin directory
-#                      the assistant is opened with. Not a mount point:
+#                      Crustify is opened with. Not a mount point:
 #                      mounting over it replaces only the symlink.
 #   /work              Named volume, and `HOME`: the agents' session
 #                      transcripts, the C libraries they build, the cargo
 #                      registry. It outlives `docker rm`, so a container
 #                      re-created to change its mounts keeps them. Not the
-#                      artifacts -- those land in the campaign repository.
+#                      artifacts -- those land in /target.
 #
-# The dashboard template rides Crustify's tree: the assistant reads
-# templates/translate/dashboard.template.md from the checkout and writes the filled
-# dashboard where the campaign settings say. Nothing is seeded into /target.
-#
-# One container name per campaign: `docker exec -it <name> bash` opens a shell
-# beside the assistant, and `docker start <name>` brings a stopped container
+# One container name per port: `docker exec -it <name> bash` opens a shell
+# beside Crustify, and `docker start <name>` brings a stopped container
 # back with post-boot installs intact in its writable layer. Removing the
 # container removes that state; bake generally useful packages into the image.
 #
-# `-it` on `docker exec` because the assistant is built around approval gates.
-# Run tmux inside to detach from a long campaign.
+# Run tmux inside to detach from a long port.
 
 
 # The four tool checkouts, one stage each, named after the tool. One rule

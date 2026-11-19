@@ -1,7 +1,7 @@
 # Docker
 
-[`Dockerfile`](Dockerfile) builds the environment either campaign runs in. It starts
-nothing: the container idles, and Crustify's assistant is opened inside it.
+[`Dockerfile`](Dockerfile) builds the environment a port runs in. It starts
+nothing: the container idles, and Crustify is opened inside it.
 
 ## Running one
 
@@ -27,7 +27,7 @@ defaults differ:
 
 | tool | default source |
 |---|---|
-| `wavefront`, `ffibox`, `ffimap` | a shallow clone of the `devel` branch, from the `crustify-rs` organization, from which each campaign forks its working branch |
+| `wavefront`, `ffibox`, `ffimap` | a shallow clone of the `devel` branch, from the `crustify-rs` organization |
 | `crustify` | the build context, the checkout this Dockerfile ships in |
 
 crustify defaults to the context because the build is run from a crustify checkout, so
@@ -40,52 +40,29 @@ locally, switch to it, and pass the tree.
 A `RUN git clone` is cached by its instruction text, which never changes, so bump
 `DEPS_REFRESH` to re-clone the tools' branches.
 
-Start a container per campaign, idle:
+Start a container per port, idle:
 
 ```sh
 docker run -d --init --name crustify-libgit2 \
     --security-opt seccomp=unconfined \
     -e ANTHROPIC_API_KEY \
-    -v /absolute/path/to/your/campaign-dir:/target \
+    -v /absolute/path/to/the/c-checkout:/target \
     -v "$(dirname "$PWD"):/crustify-rs" \
     -v crustify-libgit2-work:/work \
     crustify
 ```
 
-Open Crustify's assistant in it, in the directory the campaign works in:
+Open Crustify in it, in the checkout of the C codebase:
 
 ```sh
 docker exec -it -w /target crustify-libgit2 \
-    claude --plugin-dir /opt/crustify --agent crustify:assistant-translate
+    claude --plugin-dir /opt/crustify --agent crustify:crustify
 ```
 
-`crustify:assistant-audit` opens an audit's, in a container started the same way, with its
-own `/work` volume and the crate's checkout as `/target`. To run one headless from filled
-settings, copy [`audit/CRUSTIFY.template.md`](../audit/CRUSTIFY.template.md) to the
-checkout's `crustify/CRUSTIFY.md`, answer it, its `max-spend` included, and start it:
-
-```sh
-docker exec -w /target crustify-<crate> \
-    claude -p "Start the audit." --plugin-dir /opt/crustify \
-    --agent crustify:assistant-audit --dangerously-skip-permissions
-```
-
-The assistant waits for your instructions; ask it to start the campaign,
-or pass that as the first prompt with `-p` to run it headless, which a session without a
-terminal (`docker exec` without `-it`) needs.
-
-The settings live in the campaign's repository as `crustify/CRUSTIFY.md`, tracked on the
-working branch, `crustify/devel`. The assistant asks for them live, or reads a filled
-settings template you give it, and writes them there. Edit that file to change a
-campaign's settings while it runs, such as its models or batch sizes: Crustify rereads it
-before each module, or each review wave of an audit, and commits it whenever it applies a
-change, so the branch's history records the settings each one ran under. `main` is the
-shipping branch, which Crustify advances to `crustify/devel` only with your approval. A
-later session opened in the repository resumes the campaign, and `claude --resume`
-continues an earlier session.
-
-The ablation control, one bare agent given only the task, is
-[`audit/BARE.md`](../audit/BARE.md)'s.
+Its first message names the task: the components to port, the build configuration and
+anything else the port must respect. Pass it with `-p` to run the port headless, which a
+session without a terminal (`docker exec` without `-it`) needs. `claude --resume`
+continues an earlier session; `crustify/STATUS.md` says where the port stands.
 
 `--init` runs a small init process as the container's first process, so the
 processes the agents leave behind are reaped instead of piling up as zombies
@@ -97,22 +74,10 @@ default seccomp profile rejects, so every instrumented binary would die before
 `main`. The alternative is lowering the host's `vm.mmap_rnd_bits` to 28, which
 needs root on the host.
 
-`/target` is the directory the campaign works in, mounted read-write. The
-campaign repository goes in it — the Rust at its root, the C under `c/`, the
-campaign's own state under `crustify/`, as the [`layout`](../../skills/operations/layout/SKILL.md) skill
-lays it out — and the wrapper repositories of out-of-tree libraries are cloned
-beside it there. That is why the mount is a directory rather than the
-repository itself.
-
-It may be empty. Crustify creates the repository in it and takes the C from the
-`source` its settings name, so the C target does not have to be on the host at
-all; a checkout already there can be named as the source instead. When
-`/target` already holds a campaign, that campaign is resumed in place: its
-revision, branches, artifacts, CodeQL data and logs are used where they are and
-stay on the host, and nothing there is reset or replaced.
-
-An audit creates no repository: it reviews a crate in the crate's own, so
-`/target` is that checkout.
+`/target` is the checkout of the C codebase, mounted read-write. The Rust tree and the
+port's own files under `crustify/`, as the [`layout`](../../skills/operations/layout/SKILL.md)
+skill lays them out, land in it. When it already holds a port, that port is resumed in
+place.
 
 `/crustify-rs` is optional, and is the whole workspace rather than one tool:
 wavefront, ffibox and ffimap as siblings of the crustify checkout, beside the
@@ -123,7 +88,6 @@ paths unrelated to each other or to anything on your machine. The image carries
 a build-time clone of each, so leaving the mount off is fine; a workspace
 mounted here must carry a directory per tool and a crustify checkout, since each is
 reached through a path inside it that otherwise dangles — Crustify included.
-An audit needs none of the tools: ffimap, when it is present, only gives it hints.
 
 `/target` stays its own mount even when the target fork lives in the workspace:
 Crustify works in `/target`, and a target that is also under `/crustify-rs` is
@@ -133,22 +97,15 @@ for its builds and CodeQL data, say — while the toolchains stay in the
 workspace.
 
 `wavefront` and `ffimap` are installed editable from their workspace paths, so the
-commands on `PATH` run the mounted code. A campaign's manifest names ffibox by its canonical
+commands on `PATH` run the mounted code. A port's manifest names ffibox by its canonical
 checkout, `/crustify-rs/ffibox`, never through a symlink, whose path compile-fail snapshots
 would not normalize; `/opt/venv/share/<tool>` stays a symlink into the workspace. An editable install is a path
 entry, not a copy, so a mount redirects it with no re-install. Re-run
 `uv pip install -e /crustify-rs/<tool>` only when the mounted tree adds a console script,
 adds a dependency, or moves its package out of `src/`.
 
-A campaign that evolves Crustify or a tool commits to a working branch of its own in
-each, `<campaign-id>/devel`, and runs from those checkouts. Give such a campaign a
-workspace of its own, a clone of each of the four repositories, rather than the checkouts
-you work in: two campaigns cannot share a checkout, and a clone, unlike a Git worktree,
-carries its repository with it into the container. Fetch its working branches back from
-the clones when you take them into `devel`.
-
 Crustify itself is in the workspace with the other three, at `/crustify-rs/crustify`, and
-`/opt/crustify`, the plugin directory the assistant is opened with, is a symlink to it. So
+`/opt/crustify`, the plugin directory Crustify is opened with, is a symlink to it. So
 a mounted workspace supplies all four, and the plugin is the same tree you edit.
 Bind-mounting over `/opt/crustify` replaces only the symlink; override Crustify with the
 workspace mount, or at build time with `--build-context crustify=<path>`.
@@ -162,7 +119,7 @@ container loses those, so generally useful packages belong in the Dockerfile.
 
 Set with `-e` on `docker run`: only the credentials the chosen backends and billing
 need (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY` or `OPENROUTER_API_KEY`). Every other choice
-is a settings answer.
+is the task message's.
 
 ## Build environment
 
@@ -179,17 +136,11 @@ Set with `--build-arg` on `docker build`.
 
 ## Mounts
 
-| path | mode | used by | lifetime |
-|---|---|---|---|
-| `/target` | read-write, required | both | the directory the campaign works in, or, for an audit, the reviewed crate's own checkout: the campaign repository, with the C under `c/`, and the wrapper repositories beside it. May be empty — Crustify creates the repository and fetches the C. An existing campaign is resumed in place, and its branches, artifacts, CodeQL data and logs stay on the host |
-| `/crustify-rs` | read-write, optional | both | the whole workspace: the crustify checkout, the plugin itself, with wavefront, ffibox and ffimap beside it, the target forks and the reference crates. Replaces the build-time copy of all four, so one mount serves every tool |
-| `/work` | named volume, optional | both | `HOME`: the agents' session transcripts, the C libraries they build, the cargo registry. Outlives `docker rm`, so a re-created container keeps them. Not the artifacts — those land in the campaign repository |
-
-## Dashboards
-
-Campaign dashboards are written into the campaign repository, at
-`crustify/artifacts/dashboard.md` (`audit-dashboard.md` for an audit) unless the
-settings name another path, filled from [`dashboard.template.md`](../translate/dashboard.template.md).
+| path | mode | lifetime |
+|---|---|---|
+| `/target` | read-write, required | the checkout of the C codebase the port works in; the Rust tree and `crustify/` land in it. An existing port is resumed in place |
+| `/crustify-rs` | read-write, optional | the whole workspace: the crustify checkout, the plugin itself, with wavefront, ffibox and ffimap beside it, the target forks and the reference crates. Replaces the build-time copy of all four, so one mount serves every tool |
+| `/work` | named volume, optional | `HOME`: the agents' session transcripts, the C libraries they build, the cargo registry. Outlives `docker rm`, so a re-created container keeps them. Not the port's files — those land in `/target` |
 
 The Dockerfile header documents the rest: what each mount buys and why the base
 image is pinned by digest.

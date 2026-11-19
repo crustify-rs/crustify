@@ -1,22 +1,21 @@
 ---
 name: soundness
-description: "The patterns by which safe Rust over C has reached undefined behaviour in Crustify's campaigns, each with what prevents it and which check catches it, and how the catalogue grows from proven findings. Read before analysing, binding or porting any item, before writing its UB tests, and when reviewing for UB or contracts."
+description: "The patterns by which safe Rust over C has reached undefined behaviour in Crustify's ports, each with what prevents it and which check catches it, and how the catalogue grows from proven findings. Read before analysing or porting any item, before writing its UB tests, and when reviewing for UB or contracts."
 ---
 
 # Soundness patterns
 
-The ways a binding or a port of C has let safe Rust reach undefined behaviour, or met a
-memory-safety defect of the C that it had to keep out of its safe API. Every pattern here
-has a proven finding of a campaign behind it: the catalogue records what went wrong, not
-what could. An item's analysis asks of each pattern whether the item can meet it, and a
-review for UB or contracts reads the item against the same list, so that a defect one
-module met is not met again in the next.
+The ways a port of C, or a safe wrapper over C it still calls, has let safe Rust reach
+undefined behaviour, or met a memory-safety defect of the C that it had to keep out of its
+safe API. Every pattern here has a proven finding behind it: the catalogue records what
+went wrong, not what could. An item's analysis asks of each pattern whether the item can
+meet it, and a review for UB or contracts reads the item against the same list, so that a
+defect one component met is not met again in the next.
 
 ## 1. Patterns
 
 Each pattern has an id, which a finding's report names. What prevents a pattern is stated
-as what the Rust does; [`binding`](../binding/SKILL.md) and [`porting`](../porting/SKILL.md)
-give the routes that do it.
+as what the Rust does.
 
 ### 1.1 Values the C trusts
 
@@ -34,7 +33,7 @@ give the routes that do it.
 | `size-known-to-c` | Only the C knows an object's true size or layout: an opaque type, a pointer a tag types, a base struct its callbacks read past, an array sized by a count. Rust builds it too small or types it wrongly. | Such an object is allocated through the C alone, a tagged pointer is typed only where its tag is vouched for, and an object whose callbacks read more than Rust built is refused. | ASan, review |
 | `hidden-dependency` | A handle, a lent pointer or a callback outlives something it depends on without showing it: a parent it points back to, a global the program may close, lent memory the C copied into a second slot. | The handle's lifetime is tied to that owner, or it keeps the owner alive; a pointer the C stores is bounded by its longest-lived reader. | ASan, Miri, review |
 | `failure-leaves-state` | A failure path of the C, most often a failed allocation, leaves an object uninitialised, freed, wrongly sized or half written and still returns, sometimes reporting success. | The Rust trusts nothing the C leaves after a failure: it validates outputs again, does not reuse the object, and composes the operation itself where the C's error path is unsafe. | ASan, UBSan, review |
-| `allocator-rule` | The binding vouches for a rule of alignment or allocation that some build or allocator of the C does not keep: the maximum alignment, a zero-size resize, who may free whose storage. | It vouches only for what every configured allocator guarantees, and checks alignment at each constructor that copies. | Miri, UBSan, review |
+| `allocator-rule` | The Rust vouches for a rule of alignment or allocation that some build or allocator of the C does not keep: the maximum alignment, a zero-size resize, who may free whose storage. | It vouches only for what every configured allocator guarantees, and checks alignment at each constructor that copies. | Miri, UBSan, review |
 | `adoption-condition` | An adoption takes ownership without stating when the C owns the storage: a sentinel pointer at zero capacity, one element listed twice, a buffer a pool still tracks. | The contract states the exact condition, and the Rust checks it before the owner can free or resize. | ASan, review |
 | `count-wrap` | A reference count the C does not check wraps once safe Rust can leak clones, and the object is freed early. | A count that can wrap within a process's lifetime is checked before each increment, and the clone fails or aborts before it wraps. | Miri, review |
 | `uninitialised-as-data` | Memory the C leaves unwritten is exposed as initialised Rust data, or the argument that the C writes it is false on some path. | The Rust views it as uninitialised until every path of the C is shown to write it; an export takes raw pointers and builds no reference over memory its caller may have left unwritten. | Miri, review |
@@ -62,22 +61,20 @@ A finding of a known pattern means that its statement did not let the analysis r
 the case, or that what prevents it was not enough. A finding that is `new` is a pattern the
 catalogue lacks.
 
-## 3. Evolution
+## 3. Growth
 
-The catalogue changes only from findings a reproducer proves, as
-[`evolution`](../../crustify/evolution/SKILL.md) describes:
+The catalogue changes only from findings a reproducer proves:
 
-- a `new` finding is proposed as a pattern once it is stated without the target's names,
-  with the finding as its evidence; one that can only be stated in the target's names is
-  that campaign's lesson;
+- a `new` finding becomes a pattern once it can be stated without the target's names, with
+  the finding as its evidence; one that can only be stated in the target's names stays a
+  finding of that port;
 - a pattern whose findings recur has its statement or its prevention sharpened, from the
   findings that escaped it; and
-- a pattern no campaign has met since it was written stays: its absence is what the
-  catalogue is for.
+- a pattern no port has met since it was written stays: its absence is what the catalogue
+  is for.
 
-What tells whether the catalogue works is the count of findings of known patterns, over
-the modules integrated since a pattern was written, taken together: it falls against the
-modules before, or the catalogue is not what prevents them. One module alone tells nothing,
-since modules differ. The unsafe sites the reviews read, which the count would be taken
-against, are not recorded yet. The count of `new` findings tells how much of what goes wrong
-the catalogue does not hold yet.
+What tells whether the catalogue works is the count of findings of known patterns over the
+components reviewed since a pattern was written, taken together: it falls against the
+components before, or the catalogue is not what prevents them. One component alone tells
+nothing, since components differ. The count of `new` findings tells how much of what goes
+wrong the catalogue does not hold yet.

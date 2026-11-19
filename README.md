@@ -19,58 +19,124 @@
 
 <p align="center">
   <a href="#why-crustify">Why</a> ·
-  <a href="#results">Results</a> ·
   <a href="#installation">Install</a> ·
   <a href="#usage">Usage</a> ·
   <a href="#how-it-works">How it works</a> ·
-  <a href="docs/translate.md">Translation guide</a> ·
-  <a href="docs/audit.md">Audit guide</a> ·
+  <a href="#results">Results</a> ·
   <a href="https://arxiv.org/abs/2611.10394">Paper</a>
 </p>
 
 ---
 
-Crustify is a plugin for Claude Code and Codex that turns LLMs into specialized
-translators that plan, run and review whole-repository campaigns. It can:
-
-| 🛡️ Wrap | 🦀 Port | 🔍 Audit |
-|:---:|:---:|:---:|
-| **Generate safe Rust bindings over C** | **Migrate C to safe Rust** | **Audit Rust for UB and memory-safety bugs** |
-| [Translation guide](docs/translate.md) | [Translation guide](docs/translate.md) | [Audit guide](docs/audit.md) |
-
-You set the goals and a few settings; Crustify does the rest, on its own or with you in
-the loop.
+Crustify is a plugin for Claude Code and Codex that ports C code to safe Rust. You name
+the components to port; Crustify ports them and what they depend on, keeps the rest of the
+C working on the Rust, and serves the C's public API from safe Rust to C and Rust alike.
 
 ## Why Crustify
 
-- 📜 **Follows a specification, not only a prompt.** A generic, human-reviewed specification
-  describes how the work is done.
-- 📦 **Takes a whole repository.** It breaks the repository into small workloads and
-  processes them in parallel.
-- ⚙️ **Is grounded in deterministic tools:**
-  [wavefront](https://github.com/crustify-rs/wavefront),
-  [ffibox](https://github.com/crustify-rs/ffibox) and
-  [ffimap](https://github.com/crustify-rs/ffimap).
-- ✅ **Validates everything before it lands,** with coverage-guided tests and adversarial
-  review.
-- 🎚️ **Lets you choose its autonomy.** It runs on its own, or it waits for your approval at
-  the points you name.
-- 🔌 **Runs on any agent harness, under any billing.**
-- 💰 **Tracks cost** for each batch, module and campaign.
-- 🔁 **Improves itself as it works.** Each change to its specification or its tools is
-  validated and reviewed before it lands.
+- 🎯 **Objectives, not a procedure.** One short system prompt states what a port must
+  achieve: interoperable, free of undefined behavior with as little unsafe code as
+  possible, equivalent to the C without its defects, as fast, tested, reviewed, parallel
+  and clean. The agent decides how.
+- 📜 **Skills on demand.** How to analyse the C, write the Rust, prove it sound, test it
+  and review it are skills the agent reads before the step they cover.
+- ⚙️ **Grounded in deterministic tools:**
+  [wavefront](https://github.com/crustify-rs/wavefront) queries the C,
+  [ffibox](https://github.com/crustify-rs/ffibox) holds the interop primitives the port
+  grows and uses, and [ffimap](https://github.com/crustify-rs/ffimap) measures the unsafe
+  surface.
+- ✅ **Verified.** Equivalence tests against the C, Miri, ASan, UBSan and TSan, and
+  independent reviewers whose findings later components learn from.
+- 📊 **Legible.** `crustify/STATUS.md` shows each C file's state and counters and the time,
+  tokens and cost spent; `crustify/DEPS.md` lists every library used and why.
 
-Each kind of campaign has a short guide to why to run it with Crustify, and how:
+## Installation
 
-| campaign | guide | offers |
-|---|---|---|
-| generate bindings (`wrap`) or migrate C (`port`) | [Translating C to Rust](docs/translate.md) | planning, parallel batches, tests and regression gates with every batch, adversarial review, shipping with your approval |
-| audit an existing crate | [Auditing a Rust crate](docs/audit.md) | objectives for each bug class, proof under Miri and the sanitizers, optional fixing, regression checks, disclosure drafts, a spending cap |
+Crustify runs on 64-bit Linux. It needs Claude Code or Codex, and Python 3.13. Clone the
+components side by side and install the tools, each on its `devel` branch; `ffibox` is a
+crate the port depends on, so it is only cloned.
+
+```bash
+git clone https://github.com/crustify-rs/crustify.git
+git clone --branch devel https://github.com/crustify-rs/wavefront.git
+git clone --branch devel https://github.com/crustify-rs/ffibox.git
+git clone --branch devel https://github.com/crustify-rs/ffimap.git
+
+python -m pip install -e wavefront -e ffimap
+```
+
+> [!TIP]
+> To skip the setup, [`templates/docker/`](templates/docker/README.md) builds an image with
+> everything a port needs: both agent CLIs, CodeQL, bindgen, Miri and the sanitizer
+> toolchains.
+
+## Usage
+
+Open Crustify in the checkout of the C codebase, and name the task in your first message:
+the components to port, the build configuration, and anything else the port must respect.
+
+<details open>
+<summary><b>Claude Code</b></summary>
+
+```bash
+claude --plugin-dir /path/to/crustify --agent crustify:crustify
+```
+
+</details>
+
+<details>
+<summary><b>Codex</b></summary>
+
+Install the profile once, then open it:
+
+```bash
+python3 /path/to/crustify/providers/codex/install.py    # add --model-proxy openrouter --model <model> for OpenRouter
+codex --profile crustify
+```
+
+Rerun the installer after the checkout changes. It warns when Codex's sandbox cannot start
+on the host; `--sandbox full` is for a container.
+
+</details>
+
+<details>
+<summary><b>Other agent harnesses</b></summary>
+
+[`providers/generic/compose.py`](providers/generic/compose.py) prints the whole prompt,
+with an index of the skills, for any harness that can run shell commands, edit files and
+spawn sub-agents:
+
+```bash
+python3 /path/to/crustify/providers/generic/compose.py
+```
+
+</details>
+
+## How it works
+
+One agent runs the port. It builds the C, decides the scope and the order, spawns
+subagents to port independent components in parallel and others to review them, and
+merges their work. The system prompt,
+[`agents/crustify.md`](agents/crustify.md), gives the objectives and three practices:
+grow ffibox when an interop pattern recurs, learn from every earlier review, and keep
+`STATUS.md` and `DEPS.md` current. Everything else is a skill:
+
+| group | skills |
+|---|---|
+| [`rust/`](skills/rust) | `analysis` of the C, raw bindings (`bindgen`), the Rust `conventions`, `soundness`, the `toolchain` |
+| [`verification/`](skills/verification) | `testing`, `testing-builds`, `testing-gates`, `reviewing`, `reviewing-reports` |
+| [`tools/`](skills/tools) | `wavefront`, `ffibox`, `ffimap` |
+| [`operations/`](skills/operations) | the port's `layout` |
+| [`crustify/`](skills/crustify) | `authoring`: the language every text is written in |
+
+The port ends with `crustify/REPORT.md`: the configuration, the boundary between Rust and
+C, the defects found in the C, the performance numbers and what was verified how.
 
 ## Results
 
-Crustify generated safe bindings for two libraries, with little guidance from one developer
-overseeing it, as our [paper](https://arxiv.org/abs/2611.10394) details. Binder and reviewer
+Crustify's earlier, multi-agent version generated safe bindings for two libraries, with
+little guidance from one developer overseeing it, as our
+[paper](https://arxiv.org/abs/2611.10394) details. Binder and reviewer
 agents mainly ran Claude Opus 5.5; GPT-6.1 Sol and GPT-6 Astra wrapped a few modules, and
 Claude Fable 5.1 ran the early reviews.
 
@@ -98,176 +164,15 @@ Claude Fable 5.1 ran the early reviews.
 Each repository holds the code, the campaign's plan, its review reports and its
 dashboard.
 
-## Installation
-
-Crustify runs on 64-bit Linux and translates targets built there, against glibc. It needs
-Claude Code or Codex, and Python 3.13. Clone the components side by side and install the
-tools, each on its `devel` branch, from which each campaign forks its working branch;
-`ffibox` is a crate the
-generated Rust depends on, so it is only cloned.
-
-```bash
-git clone https://github.com/crustify-rs/crustify.git
-git clone --branch devel https://github.com/crustify-rs/wavefront.git
-git clone --branch devel https://github.com/crustify-rs/ffibox.git
-git clone --branch devel https://github.com/crustify-rs/ffimap.git
-
-python -m pip install -e wavefront -e ffimap
-```
-
-> [!TIP]
-> To skip the setup, [`templates/docker/`](templates/docker/README.md) builds an image with
-> everything a campaign needs: both agent CLIs, CodeQL, bindgen, Miri and the sanitizer
-> toolchains.
-
-## Usage
-
-Open Crustify's assistant in the directory a campaign is to work in. Pick your harness:
-
-<details open>
-<summary><b>Claude Code</b></summary>
-
-```bash
-claude --plugin-dir /path/to/crustify --agent crustify:assistant-translate   # wrap or port
-claude --plugin-dir /path/to/crustify --agent crustify:assistant-audit       # audit
-```
-
-</details>
-
-<details>
-<summary><b>Codex</b></summary>
-
-Install the agent roles and the assistant's profiles once, then open a profile:
-
-```bash
-python3 /path/to/crustify/providers/codex/install.py    # add --model-proxy openrouter --model <model> for OpenRouter
-codex --profile crustify-translate                      # or crustify-audit
-```
-
-Trust the plugin's hook once with `/hooks`, and rerun the installer after the checkout
-changes. The installer warns when Codex's sandbox cannot start on the host; `--sandbox
-full` is for a container.
-
-</details>
-
-<details>
-<summary><b>Other agent harnesses</b></summary>
-
-[`providers/generic/compose.py`](providers/generic/compose.py) prints each agent's whole
-prompt, with an index of the skills, for any harness that can run shell commands, edit
-files and spawn sub-agents:
-
-```bash
-python3 /path/to/crustify/providers/generic/compose.py assistant translate   # or: assistant audit
-python3 /path/to/crustify/providers/generic/compose.py binder                # planner, binder, translator, reviewer
-```
-
-Run the assistant's prompt as the main agent's, and register each stage's prompt as a
-sub-agent it can spawn. Agents read the skills from the checkout, by the paths the
-prompts name.
-
-</details>
-
-### Running a campaign
-
-Tell the assistant what you want in plain language: wrap the public API, port the
-parser, audit the crate. It asks what it needs, such as the revision, the models and how
-much autonomy it has, and presents a campaign brief for your approval before it changes
-anything. To answer up front, fill in a settings template,
-[`templates/translate/`](templates/translate/CRUSTIFY.template.md) or
-[`templates/audit/`](templates/audit/CRUSTIFY.template.md). The settings live in the
-campaign's repository as `crustify/CRUSTIFY.md`, which you can edit while it runs.
-
-The guides give the steps of each kind of campaign and where its results land:
-[Translating C to Rust](docs/translate.md) and [Auditing a Rust crate](docs/audit.md).
-
-## How it works
-
-Every agent follows the same written specification, as skills: how the codebase is
-decomposed, how each kind of C item becomes Rust, and how work is tested, reviewed and
-landed. Runs are consistent across models and reproducible, and you don't reinvent the
-workflow for each codebase.
-
-```mermaid
-flowchart LR
-    U([You]) -->|goals and approvals| A[assistant]
-    A --> P[planner]
-    P -->|waves of batches| B[binder wraps]
-    P -->|waves of batches| T[translator ports]
-    B --> G{tests and gates}
-    T --> G
-    G --> R[reviewer]
-    R -->|findings and fixes| G
-    R --> L[(landed Rust)]
-    W[wavefront] -.-> P
-    X[ffibox] -.-> B
-    X -.-> T
-    M[ffimap] -.-> G
-
-    classDef agent fill:#E2573B,stroke:#A8371F,color:#ffffff
-    classDef plain fill:#1F2430,stroke:#5FD4F4,color:#ffffff
-    class A,P,B,T,R agent
-    class U,G,L plain
-```
-
-Crustify's assistant talks to you and launches four kinds of agent:
-
-| Agent | Role |
-|---|---|
-| 🤖 **assistant** | Configures the campaign, prepares builds and test baselines, launches the other agents, lands and promotes their work, and keeps the dashboard. |
-| 🗺️ planner | Decomposes the codebase into modules, one per translation unit, and schedules them into waves by their dependencies. |
-| 🛡️ binder | Wraps a batch: keeps its C and puts a safe Rust API in front of it. |
-| 🦀 translator | Ports a batch to safe Rust. |
-| 🔍 reviewer | Reviews what a wave landed, or an audited crate, for undefined behavior, unsafe contracts, equivalence with the C and the other review objectives, files a report and reproducer per finding, and fixes it when asked. |
-
-Agents run in parallel. Each works in its own Git worktree and sees only its own batch.
-Every batch gets coverage-guided tests for equivalence with the C, and for undefined
-behavior under ASan, UBSan, TSan, MSan, Miri and BorrowSanitizer. Where a batch changes C,
-it also passes the target's own test suite before it lands. Independent, adversarial
-reviewers then check each wave before its dependents start. The assistant reconciles the
-results and repairs what fails.
-
-An audit runs the reviewers alone over an existing crate, for every review objective that
-its settings select and within a spending cap. It drafts disclosures and never sends one.
-
-Deterministic tools ground the agents' judgement:
-
-- [wavefront](https://github.com/crustify-rs/wavefront) sorts the C codebase into
-  dependency-ordered waves from CodeQL facts;
-- [ffibox](https://github.com/crustify-rs/ffibox) provides the owners and handles the
-  generated Rust holds C memory through; and
-- [ffimap](https://github.com/crustify-rs/ffimap) measures the unsafe and FFI surface per
-  batch, wave, module and campaign.
-
-You choose how much control to keep. Run a campaign end to end, or approve its brief,
-plan one module and stop, and decide as questions come up. To change course, edit its
-settings mid-campaign. Each stage runs on Claude Code, Codex or any other agent harness,
-with its own model, under a subscription or an API key, directly or through OpenRouter. A
-dashboard tracks tokens, cost and time for each batch, module and campaign, next to
-coverage and the unsafe surface.
-
-Crustify also evolves from what its campaigns expose. An agent that meets a defect or a
-missing rule in the specification or a tool files a proposal. You set how far a campaign
-may act on its proposals: not at all, by proposing only, by repairing defects, or by
-making improvements too. Each change is validated and reviewed by another agent before it
-lands, and reaches `devel` only with your approval.
-
 ## Repository
 
-- [`skills/`](skills/): the specification, one skill per part of a campaign, from its
-  workflow and planning, through the generated Rust and its verification, to its
-  operations, artifacts and tools
-- [`agents/`](agents/): each agent's role, workflow and inputs
-- [`providers/`](providers/): each host's composition of the agents:
+- [`agents/crustify.md`](agents/crustify.md): the system prompt
+- [`skills/`](skills/): the skills
+- [`providers/`](providers/): the prompt composed for each host:
   [`claude/`](providers/claude/), [`codex/`](providers/codex/), and
-  [`generic/`](providers/generic/compose.py), which prints an agent's whole prompt for any
-  other host
-- [`templates/`](templates/README.md): the settings and dashboard templates, an example
-  of each artifact, and the Dockerfile
-- [`docs/`](docs/): a guide to each kind of campaign, [translation](docs/translate.md)
-  and [audit](docs/audit.md)
-- [`GOALS.md`](GOALS.md) and [`EVOLUTION.md`](EVOLUTION.md): what Crustify is for, and the
-  record of how it has changed
+  [`generic/`](providers/generic/compose.py) for any other
+- [`templates/`](templates/README.md): the formats of `STATUS.md` and `DEPS.md`, and the
+  Dockerfile
 
 ## Maintainers
 

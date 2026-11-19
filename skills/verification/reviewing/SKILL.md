@@ -1,105 +1,84 @@
 ---
 name: reviewing
-description: "How landed work is reviewed: tiered review batches and module passes, depth by how long code lasts, worklists, objectives, fixes, gates and plan corrections; reviewing-reports gives the reports, reproducers and disclosures. Read before reviewing a batch or correcting an earlier plan."
+description: "How a port's components are reviewed: independent review rounds until one finds nothing new, learning from earlier reports, worksets, depth, objectives, fixes and gates; reviewing-reports gives the reports and reproducers. Read before reviewing a component, briefing a reviewer, or fixing what a review found."
 ---
 
 # Reviewing
 
-Review inspects work that has already landed, for a set of objectives, and files a report
-for every defect it finds, as [`reviewing-reports`](reports/SKILL.md) describes. In a translation campaign, it inspects what each
-translation batch landed before the waves that build on it start; in an audit, the modules of a crate
-that Crustify did not generate (see [`audit-workflow`](../../workflows/audit-workflow/SKILL.md)); and planner runs review the
-plan that earlier runs committed (see [Plan corrections](#7-plan-corrections)).
+Review inspects a component that has been ported, for a set of objectives, and files a
+report of every defect it finds, as [`reviewing-reports`](reports/SKILL.md) describes. The
+reviewer is a subagent that wrote none of the code it reviews.
 
-## 1. Review batches
+## 1. Rounds
 
-When review is enabled, every translation batch's landing is reviewed before its wave is
-promoted, so that no wave builds on unreviewed work. A review batch is a batch of the wave
-it reviews, in `schedule.json`, that `reviews` some of its landed translation batches, and
-lands on the same integration branch, as [`versioning`](../../operations/versioning/SKILL.md)
-names it. The wave is promoted
-once its translation batches and their reviews have landed. An audit's review waves, and
-the crate pass that stands in for its module pass, are
-[`audit-workflow`](../../workflows/audit-workflow/SKILL.md)'s.
+Every component is reviewed before the components that build on it start, so that no
+work builds on unreviewed code. A round reviews the component's code as merged, or as its
+author proposes to merge it, and files one report, `crustify/reviews/<component>-r<round>.md`,
+as [`layout`](../../operations/layout/SKILL.md)'s Reviews section places it.
 
-Review is tiered. Each landing is reviewed within its wave, to the depth
-[Depth](#11-depth) gives it. Before a module's switch in a port, and at its end in a
-wrap, a module pass reviews the module whole, across its batches: its unsafe regions, its
-exports and its tests. It is the last review batch of the last wave of the module's `wrap`
-and `port` items, not of a port's later stages, marked
-`module_pass`, launched once every other batch of that wave has landed; its worklist is
-the module's paths, and it runs the wave's gates and the module's end gates, as
-[Gates](#5-gates) describes. A module whose run landed a single translation batch is
-reviewed by its module pass alone, whose workset is that batch's whole: a review of the
-batch before it would read the same code twice.
+Review runs in rounds until one finds nothing new:
 
-A review batch also reads the campaign's lessons that are `provisional`, as
-[`evolution`](../../crustify/evolution/SKILL.md)'s Lessons section describes: those its
-worklist's commits add or change, and those no worklist holds.
+1. The reviewer reviews the component for every objective that applies.
+2. The author fixes every finding, as [Fixes](#4-fixes) describes, and runs the gates.
+3. The next round's reviewer reruns every earlier finding's reproducer, as
+   [Revisit](#311-revisit) describes, and reviews what the fixes changed and what the
+   earlier rounds left out.
 
-Review batches are packed eagerly, as the batches they review land: one launches as soon as
-the landed batches not yet reviewed fill it, and the last once every translation batch of
-the wave has landed, so that review runs beside the wave's remaining batches rather than
-after them. When a session runs only part of a wave, or part of the scope, its review
-covers what it landed, before what consumes that starts.
+The rounds end when a round finds no new defect against the objectives and every earlier
+finding is fixed or recorded as deliberately left, with its reason. A finding left open
+is named in the report. Each round updates the open findings of the component's row in
+`crustify/STATUS.md`.
 
-A review batch takes the commits of translation batches of one route, `type` or `symbol`,
-counted over their items: types and symbols are reviewed apart. It is larger than a
-translation batch, since its reviewer reads landed code rather than writing it, and is
-sized as [`scheduling`](../../planning/scheduling/SKILL.md)'s Batches section sizes one,
-from what landed rather than what is planned: its lines, its unsafe sites and raw-pointer
-positions, the regions it touches and the objectives it carries, without overwhelming its
-reviewer, and within the settings' review caps (`id: review-workload`) when they set them.
-A campaign may also review every translation batch on its own, with that batch's commits.
+Review is tiered. Beside each component's rounds, the whole port gets crate-wide passes
+before the report: its unsafe regions, its exports, its public Rust API and its tests,
+across components, since a defect may sit between two components each reviewed alone.
 
-A review batch's `task.json` holds its worklist, its objectives, its wave branch and its
-run fields, as [`task-schema`](../../artifacts/task-schema/SKILL.md)'s Review batches section
-describes. Without `objectives`, a batch runs every objective that applies: those this skill's
-Objectives section and the tool skills describe.
+### 1.1 Learning from earlier reports
 
-### 1.1 Depth
+Before a component is written, its author reads the reports on the components before it.
+Before a round, its reviewer reads them too, and checks the component for every class of
+defect they found: a class found once is looked for everywhere after. A defect a reviewer
+finds in one component is then looked for in the components already merged, by its
+author or by a review of its own, and every new site joins the finding's report. A
+report is never rewritten to hide a defect; a later round's verdict is a file of its own.
 
-How deeply a landing is reviewed follows how long its code lasts, as
-[`testing`](../testing/SKILL.md)'s thoroughness does. A wrapper a port will replace, its
-item's port planned in `schedule.json`, keeps its safe API through that port: it is
-reviewed on its public API, for every objective that applies there, `ergonomics` included,
-and not on its internals. An export is reviewed lightly while the C that calls it is
-scheduled for porting, and thoroughly once it serves C that stays, for good or when a ship
-point releases its module. Everything else is reviewed for every objective that applies.
+### 1.2 Depth
 
-## 2. Worklists
+How deeply a component is reviewed follows how long its code lasts. An export is
+reviewed lightly while the C that calls it is still to be ported, and thoroughly once it
+serves C that stays. Everything else is reviewed for every objective that applies.
 
-A review batch has one route:
+## 2. Worksets
 
-| route | worklist | workset |
-|---|---|---|
-| `commits` | commits that translation batches landed, or, in an audit, commits of the crate's own history | the code they add or change, and what it reaches |
-| `paths` | source files and directories of a crate, or named types, trait impls and functions in one | everything they define, or the named parts |
-| `reports` | none: the batch only revisits reports | the code the reports name |
+A round's brief names its workset:
 
-A review batch's entry in `schedule.json` names the batches of its wave it
-`reviews`, and each of those lists the `commits` it landed and the `items` it bound or
-ported, whose `kind` gives their routes, `type` or `symbol`, as
-[`task-schema`](../../artifacts/task-schema/SKILL.md)'s Routes section describes.
+| workset | what it covers |
+|---|---|
+| a component | the code its commits add or change, and what it reaches |
+| paths | source files and directories, or named types, trait impls and functions |
+| reports | the code earlier reports name, for a round that only revisits them |
 
-A module named with `types`, `trait_impls` or `functions` limits the workset to those: a
-type with its fields and its inherent impls, wherever they are; a trait impl, named
-`<trait> for <type>` as its header spells it, with its methods and associated items; a
-free function with nothing else. What they call and what implements their traits is read,
-but only the workset is reported on.
+A workset named by types, trait impls or functions is limited to those: a type with its
+fields and its inherent impls, wherever they are; a trait impl, named `<trait> for <type>`
+as its header spells it, with its methods and associated items; a free function with
+nothing else. What they call and what implements their traits is read, but only the
+workset is reported on.
 
-A workset is reviewed from its source, to the depth [Depth](#11-depth) gives it. What a
+A workset is reviewed from its source, to the depth [Depth](#12-depth) gives it. What a
 tool lists of it shows where the reading may start and cross-checks what the reading
 found; it never bounds the review, and code no tool flagged is reviewed all the same.
 
 ## 3. Objectives
 
-Each objective names a kind of defect. A tool may contribute objectives of its own.
+Each objective names a kind of defect. A round's brief may narrow them; without that, a
+round runs every objective that applies. A tool may contribute objectives of its own.
 
 ### 3.1 Unsafety (`unsafety`)
 
 Unsafe annotations and raw pointers on the workset's public API that safe, idiomatic
-variants could replace, so that API consumers write less unsafe code.
+variants could replace, so that API consumers write less unsafe code; and unsafe code
+inside the workset that a safe construct, or an [`ffibox`](../../tools/ffibox/SKILL.md)
+primitive, could replace.
 
 ### 3.2 Contracts (`contracts`)
 
@@ -124,9 +103,9 @@ A contract is tested by trying to break it: an input, a call sequence or an inte
 that honours the obligation, or reaches the block through safe code, and still violates
 what the `unsafe` relies on. Contracts are judged by the side of the boundary they serve:
 the gateways through which C reaches the crate, its `ffi_export` regions, and every other
-unsafe code, which in a Crustify-generated crate sits in its `ffi_import` regions, whose
-items are sound for every input their module can give them, as
-[`binding`](../../rust/binding/SKILL.md)'s Safe boundary section requires.
+unsafe code, which sits in its `ffi_import` regions as the
+[conventions](../../rust/conventions/SKILL.md) lay them out, whose items are sound for
+every input their module can give them.
 
 ### 3.3 UB (`ub`)
 
@@ -138,9 +117,10 @@ workset adds; a workset that made no API item unsafe has none.
 ### 3.4 Equivalence (`equiv`)
 
 Functional equivalence defects in the workset's API that its equivalence tests missed,
-while the C it translates exists: in a port, until the module's switch. A divergence is a defect only when it is unintended: a doc comment, a `CHANGELOG`
-entry, a named test asserting the new behaviour or a commit message explaining it marks it
-deliberate, and one that corrects a C defect on purpose is no finding.
+while the C it translates exists. A divergence is a defect only when it is unintended: a
+doc comment, a `CHANGELOG` entry, a named test asserting the new behaviour or a commit
+message explaining it marks it deliberate, and one that corrects a C defect on purpose is
+no finding.
 
 ### 3.5 Logic (`logic`)
 
@@ -156,8 +136,8 @@ departs from nearly every specification.
 
 Public API that is harder to use than it needs to be: its names, its conversions, its
 iterators, builders or defaults where the C takes long argument lists, and the standard
-traits its types lack. An item's safe API is fixed by the first batch that gives it one, a
-wrap included, so its ergonomics are reviewed there.
+traits its types lack. An item's safe API is fixed by its first merge, so its ergonomics
+are reviewed there.
 
 ### 3.7 Idiom (`idiom`)
 
@@ -167,12 +147,13 @@ carried by hand where ownership carries them.
 
 ### 3.8 Conventions (`conventions`)
 
-Deviations from the [conventions](../../rust/conventions/SKILL.md), in a Crustify-generated
-batch only, unsafe code outside its regions included.
+Deviations from the [conventions](../../rust/conventions/SKILL.md), unsafe code outside its
+regions included.
 
-### 3.9 Misc (`misc`)
+### 3.9 Performance (`perf`)
 
-Any other defect in the workset.
+A component slower than the C it replaces on a representative workload, measured as the
+port measures performance, with the cause where the reviewer can find it.
 
 ### 3.10 Test adequacy (`test-adequacy`)
 
@@ -181,82 +162,49 @@ transitions, that the codebase's external and inline test suites leave unreached
 reading those suites against the code and measured as
 [`testing-builds`](../testing/builds/SKILL.md)'s Coverage section describes; assertions too
 weak to fail when the code is wrong; tests outside the suite of their kind; and the C test
-cases none carries over. A gap is filled with tests, not filed: the coverage measurement
-shows the delta.
+cases none carries over.
 
 ### 3.11 Revisit (`revisit`)
 
-The reports an earlier review filed, each rerun through its reproducer on the current
-tree. One that still reproduces stays a finding of its objective; one that no longer does
-has its report updated with the commit that changed the verdict; one that was never a
-defect is removed, with the reason in the commit message. Each report's class, and its
-disclosure's status, are checked again with it.
+The findings earlier rounds filed, each rerun through its reproducer on the current tree.
+One that still reproduces stays a finding of its objective; one that no longer does is
+marked fixed in the new round's report, with the commit that changed the verdict; one
+that was never a defect is marked so, with the reason. Each finding's class is checked
+again with it.
 
-### 3.12 Disclosure (`disclose`)
+### 3.12 Misc (`misc`)
 
-A `disclosure.md` beside each report that is worth sending to the affected project's
-maintainers, as [`reviewing-reports`](reports/SKILL.md)'s Disclosure section describes.
-
-### 3.13 Fix (`fix`)
-
-Whether a review patches what it finds. Without it, a review changes nothing outside
-its reviews dir but the tests that fill the gaps `test-adequacy` finds.
+Any other defect in the workset.
 
 ## 4. Fixes
 
-Under `fix`, every finding of the batch's objectives is patched:
+The component's author fixes every finding; a reviewer changes nothing outside the
+reviews dir. Each objective's fix:
 
-- `unsafety`: the entry point is made safe;
+- `unsafety`: the entry point is made safe, or the unsafe code replaced;
 - `contracts`: the `# Safety` obligation or `// SAFETY:` justification is corrected, or,
   when the contract can be broken, the code it guards, and the reproducer becomes a UB
   regression test;
 - `ub`, `equiv` and `logic`: the defect is patched, and the reproducer becomes a
   regression test of the same kind, a UB test, an equivalence test or a unit test, on the
-  side of the module it reaches. A UB
-  regression test either runs without triggering a sanitizer, or fails to compile because
-  the patch removed the safe path that reached the defect;
+  side of the component it reaches. A UB regression test either runs without triggering a
+  sanitizer, or fails to compile because the patch removed the safe path that reached the
+  defect;
 - `ergonomics`: the API is improved, and its consumers in the crate follow;
-- `idiom`, `conventions` and `misc`: the transliteration, deviation or defect is fixed;
-- `revisit`: every report that still reproduces is patched, as for its objective.
+- `idiom`, `conventions`, `perf` and `misc`: the transliteration, deviation, slowdown or
+  defect is fixed;
+- `test-adequacy`: the gaps are filled with tests, and the coverage measurement shows the
+  delta; and
+- `revisit`: every finding that still reproduces is patched, as for its objective.
 
-In a Crustify-generated batch, fixes follow the [conventions](../../rust/conventions/SKILL.md);
-outside one, the repository's contributor instructions. Every test a review adds is classified as [`testing`](../testing/SKILL.md)
-describes and placed where the conventions place tests of its kind, or, outside a
-Crustify-generated batch, in the reviewed crate's own suite for that kind.
+Fixes follow the [conventions](../../rust/conventions/SKILL.md). Every test a fix adds is
+classified as [`testing`](../testing/SKILL.md) describes and placed where the conventions
+place tests of its kind.
 
 ## 5. Gates
 
-The gates [`testing-gates`](../testing/gates/SKILL.md)'s Regressions section gives a wave's
-end run in its last review batch, which launches once every translation batch of the wave
-has landed, and whose task's `wave_gates` says so. A module's end's
-run in its module pass, when the wave is the module's last: no other translation wave in
-`schedule.json` belongs to its module and runs after it. Each runs on the wave's tip
-before any change, and again on the landed tree under `fix`. Each true positive a gate
-finds in the reviewed codebase is a finding of the batch, filed as a UB report and, under
-`fix`, patched, whether or not the workset holds the code it reaches: the gate is the
-batch's, and a report it leaves to no one is lost. A BSan report on an earlier wave's items belongs to the last wave's
-review.
-
-## 6. Landing
-
-A review batch lands two commits, as [`versioning`](../../operations/versioning/SKILL.md)'s Landing section describes: first its
-`crustify/reviews/` changes, so the reproducers run on the affected commit, then its
-changes to the Rust tree, if any.
-
-## 7. Plan corrections
-
-A planner run that corrects what an earlier run decided files each correction as a finding
-under `crustify/reviews/planner/`: `modules/` for `modules.json` and
-`schedule.json`, and one sub-directory per tool artifact. Adding what the plan lacks,
-updating it to the current schema, re-deriving entries under a rule that has changed and
-re-planning the waves a change moves are no findings.
-
-Each finding is its own `<slug>` directory, named for the finding
-(`split-libavutil-hash`), never for the run, and never reused. Its `report.md` states:
-
-- what the earlier plan decided, quoting the entries changed;
-- the evidence against it: linker outputs, sources and tool queries, with the exact
-  commands and paths to rerun them;
-- the edit and what it moves downstream: modules, waves or batches, and the waves
-  re-emitted; and
-- any question only the user can answer.
+A round's reviewer runs the component's gates, as
+[`testing-gates`](../testing/gates/SKILL.md)'s Regressions section gives a merge's, on the
+reviewed tree before any fix. Each true positive a gate finds is a finding of the round,
+whether or not the workset holds the code it reaches: a report it leaves to no one is
+lost. The author runs them again on the fixed tree before the merge.

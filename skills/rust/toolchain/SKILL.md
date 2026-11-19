@@ -1,11 +1,11 @@
 ---
 name: toolchain
-description: "Toolchains, edition, manifests, lints, formatting and unsafe-code rules of the generated workspace. Read before scaffolding the workspace or when a lint, format or toolchain question comes up."
+description: "Toolchains, edition, manifests, lints, formatting and unsafe-code rules of the port's Rust workspace. Read before scaffolding the workspace or when a lint, format or toolchain question comes up."
 ---
 
 # Rust
 
-How the Rust a campaign generates is built, linted and formatted: its toolchains, its
+How the Rust of a port is built, linted and formatted: its toolchains, its
 edition, the lints every crate inherits and how it is formatted. What the code is named and
 where it sits is [`conventions`](../conventions/SKILL.md)'s; these are the rules the toolchain
 enforces on it.
@@ -13,13 +13,13 @@ enforces on it.
 ## 1. Toolchains
 
 The workspace builds and tests on stable Rust, pinned in `rust-toolchain.toml` to the
-stable release current when the repository is created, with the `clippy` and `rustfmt`
+stable release current when the workspace is created, with the `clippy` and `rustfmt`
 components. Miri, the sanitizer and coverage instrumentation of the Rust,
 BorrowSanitizer's `bsan` toolchain aside, and the formatter's unstable options need
 nightly: a nightly pinned by date, recorded in the workspace manifest as
 `[workspace.metadata.crustify] nightly = "nightly-<date>"`, and named explicitly wherever it
-runs. A toolchain is moved forward only between waves, in a
-commit of its own.
+runs. A toolchain is moved forward only while no component's
+port is in flight, in a commit of its own.
 
 ## 2. Edition and manifests
 
@@ -31,7 +31,7 @@ inherits the workspace's lints with `[lints] workspace = true`.
 ## 3. Lints
 
 The workspace declares its lints in `[workspace.lints.rust]` and `[workspace.lints.clippy]`.
-Every gate runs with warnings denied, so a lint at `warn` fails a landing as surely as one
+Every gate runs with warnings denied, so a lint at `warn` fails a merge as surely as one
 at `deny`; `deny` marks the lints no item may opt out of.
 
 ### 3.1 rustc
@@ -55,7 +55,7 @@ at `deny`; `deny` marks the lints no item may opt out of.
 | `mem_forget`, `allow_attributes`, `allow_attributes_without_reason` | `deny` | no leak by `mem::forget`, and every exception an `#[expect]` with a reason |
 | `module_inception` | `allow` | a C directory often holds a TU of its own name, so the mirrored tree nests a module in one of its name |
 | `module_name_repetitions` | `allow` | items keep their C-derived names where their module, mirrored from the C path, repeats them |
-| `multiple_crate_versions` | `allow` | the dependency graph is not the campaign's to dedupe |
+| `multiple_crate_versions` | `allow` | the dependency graph is not the port's to dedupe |
 
 An item that needs an exception takes it locally, as
 `#[expect(<lint>, reason = "<why>")]`, never as a crate-wide `allow`: the expectation fails
@@ -88,7 +88,7 @@ Every crate is formatted by `rustfmt`, configured once in the workspace's `rustf
 | `reorder_impl_items` | `true` |
 
 The options from `imports_granularity` down are unstable, so the formatter runs on the
-pinned nightly. A landing's tree is formatted, and the gate checks that it is.
+pinned nightly. A merged tree is formatted, and the gate checks that it is.
 
 ## 5. Unsafe code
 

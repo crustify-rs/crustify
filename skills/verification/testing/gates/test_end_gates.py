@@ -63,7 +63,7 @@ fn quick() {
 }
 """
 
-# A runner that takes the variant first, as a campaign's does, and runs plain cargo.
+# A runner that takes the variant first, as a port's does, and runs plain cargo.
 RUNNER = """#!/bin/sh
 echo "variant $1" >&2
 shift

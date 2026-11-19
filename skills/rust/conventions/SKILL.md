@@ -1,12 +1,12 @@
 ---
 name: conventions
-description: "Naming, tree layout, anchors and test placement of the Rust a campaign generates. Read before writing, homing or reviewing generated Rust or tests."
+description: "Naming, tree layout, unsafe regions, exports, anchors and test placement of a port's Rust. Read before writing, placing or reviewing the port's Rust or tests."
 ---
 
 # Crustify coding conventions
 
-These are the shared, mechanical contracts of the code a campaign generates: how it is
-named, where it sits, how it records what it translated and where its tests go. The
+These are the shared, mechanical contracts of a port's Rust: how it is named, where it
+sits, how it records what it translated and where its tests go. The
 toolchain, edition, lints and formatting it is held to are [`toolchain`](../toolchain/SKILL.md)'s.
 
 ## 1. Naming
@@ -24,18 +24,17 @@ below.
 
 ### 1.1 Functions
 
-A C function's raw binding is `sys::<name>`. Its safe wrapper is a free function homed in
-the owning module, named by the rules above. When one C function has several valid
+A C function's raw binding is `sys::<name>`. A safe wrapper over a C function the port
+still calls is a free function in the owning module, named by the rules above. When one C function has several valid
 ownership contracts, each safe variant has a distinct, descriptive name.
 
 ### 1.2 Types
 
-A wrapped C type is the layout-compatible newtype `Foo`, named by the rules above; its
-shared and exclusive borrowed handles are `FooRef<'a>` and `FooMut<'a>`, and its sole and
-counted owners `FooBox` and `FooArc`. A port keeps these names while what they name
-changes, as [`porting-types`](../porting/types/SKILL.md)'s Structs section describes. A typedef that
-names a type under another name, which its item lists among its `typedefs`, is a
-`pub type` alias of the type's Rust form.
+A C type the port keeps C's layout for is the layout-compatible newtype `Foo`, named by the
+rules above; its shared and exclusive borrowed handles are `FooRef<'a>` and `FooMut<'a>`,
+and its sole and counted owners `FooBox` and `FooArc`. The names stay when the type later
+takes a native layout, so that its consumers do not change. A typedef that names a type
+under another name is a `pub type` alias of the type's Rust form.
 
 A function pointer a typedef declares is named after its typedef. One written inline is
 named after the site that declares it, its holder's name followed by its own and `Fn`: a
@@ -49,35 +48,33 @@ A callable macro shim is `crustify_<NAME>`.
 ### 1.4 Exports
 
 Each ported module has one raw ABI gateway, its `ffi_export` region, as
-[Unsafe regions](#21-unsafe-regions) describes, whose exports use `#[unsafe(no_mangle)] extern "C"` under the bare C names: the
-module's functions and globals that C outside the module references, another module's TU
-or a C test or executable that stays, the `static inline` functions its headers define
-included. The exports serve that C, which reaches the module through them once it has
-switched. A function or global only the module's own C references is not exported: that
-C leaves the build with the module at its switch, and its callers are Rust from then
-on; nor are static functions and static globals, which nothing outside their TU reaches.
-The target's public C API, for C outside the target, is deferred: exports serve the
-target's own remaining C alone, and that API is a layer of its own over the native Rust API,
-added once the modules it covers are ported.
-<!-- TODO: that layer, a C-compatible ABI over the ported public API, is not specified
-yet. Until it is, a C consumer outside the target does not survive a port. -->
-An export is removed, with the raw binding that reaches it, by its symbol's `port/unexport`,
-after the switch that removes the last C that calls it, takes its address or
-accesses it. A C test tied to the module that stays, using only its public API, does not
-hold an export back: it checks the export while other C needs it, and leaves with it.
+[Unsafe regions](#21-unsafe-regions) describes, whose exports use `#[unsafe(no_mangle)] extern "C"` under the bare C names. A module exports:
+
+- what its installed headers declare, so that C consumers outside the target keep the
+  same headers and ABI; and
+- the functions and globals that C staying in the build references: another component's
+  TU, a C test or an executable, the `static inline` functions its headers define
+  included.
+
+A function or global only the module's own C references is not exported: that C leaves the
+build with the module, and its callers are Rust from then on; nor are static functions and
+static globals, which nothing outside their TU reaches. An export of an internal symbol is
+removed, with the raw binding that reaches it, once the last C that calls it, takes its
+address or accesses it has left the build. A C test that uses only the public API does not
+hold an internal export back.
 
 ### 1.5 Export features
 
-Each module's `ffi_export` is compiled only under the safe crate's Cargo feature
-`ffi-export-<tu>`, with `<tu>` its translation unit's path below the C root, every character
-that is not an ASCII letter or digit replaced by `-`. The feature is off until the module
-switches, so that its exports never collide with the C they replace, and the switch
-deletes it, its gateway compiling unconditionally from then on.
+While a component's C is still in the build, its module's `ffi_export` is compiled only
+under the Cargo feature `ffi-export-<tu>`, with `<tu>` its translation unit's path below the
+C root, every character that is not an ASCII letter or digit replaced by `-`. The feature
+is off until the component switches, its C leaving the build, so that its exports never
+collide with the C they replace; the switch deletes the feature, and the gateway compiles
+unconditionally from then on.
 
 ## 2. Crates, modules, and TUs
 
-The Rust tree is the repository's own, as [`layout`](../../operations/layout/SKILL.md)'s Tree section lays it
-out, all relative to the repository's root:
+The safe crate's tree sits where [`layout`](../../operations/layout/SKILL.md)'s Tree section places it, and all paths below are relative to the crate's root:
 
 - `Cargo.toml` - the safe crate's manifest, which also declares the workspace.
 - `src/lib.rs` - the safe crate's root, with one `cfg`-gated module per link unit.
@@ -85,20 +82,16 @@ out, all relative to the repository's root:
 - `src/sys.rs` and `sys/<link-unit>/` - the raw bindings, one public module per link unit,
   laid out as [`bindgen`](../bindgen/SKILL.md) describes.
 
-The safe crate is named after its repository, `<repo>-crustify`, as
-[`versioning`](../../operations/versioning/SKILL.md)'s Repositories section names it:
-a name crates.io leaves free, which tells it apart from the source's own Rust bindings,
-such as `git2` for libgit2.
+The safe crate's name tells it apart from the source's existing Rust bindings, such as
+`git2` for libgit2, and is one crates.io leaves free.
 
-Within a link unit's sub-dir, the tree follows the module decomposition in `modules.json`
-exactly, and preserves the C layout as far as the idiomatic organization of a Rust tree
-allows:
+Within a link unit's sub-dir, the tree preserves the C layout as far as the idiomatic
+organization of a Rust tree allows:
 
-- each module is one `.rs` file, at its translation unit's path below the C root with the
-  `.rs` extension: its TU and the headers bundled with it have no files of their own,
-  since Rust has no headers;
-- a header module is one `<stem>_h.rs` file, at its header's path;
-- the two modules of a split foundational TU share the TU's file;
+- each C translation unit is one module, one `.rs` file, at the TU's path below the C root
+  with the `.rs` extension: its TU and the headers bundled with it have no files of their
+  own, since Rust has no headers;
+- a header that has no TU of its own is one `<stem>_h.rs` file, at its header's path;
 - C directories become Rust modules: a directory's `.rs` file sits beside the directory,
   as `<dir>.rs` and `<dir>/`, and declares the modules within it, or is the module of a TU
   with the directory's name where there is one; `mod.rs` files are not used; and
@@ -106,9 +99,8 @@ allows:
   underscores, and a Rust keyword takes a trailing underscore.
 
 Where a C layout has no idiomatic Rust counterpart, the tree adapts it in the conventional
-Rust way and keeps the C path recognizable. A batch names the `.rs` file each of its items
-belongs in, as `src/<link-unit>/…/<file>.rs`. Entities sharing a
-definition site co-home. A home may be shared across waves.
+Rust way and keeps the C path recognizable. Entities sharing a definition site share a
+`.rs` file.
 
 ### 2.1 Unsafe regions
 
@@ -121,7 +113,7 @@ unsafe regions, so that the rest of the file, its native code, holds none:
   back; and
 - `mod ffi_export { use super::*; … }`: the gateway through which C reaches the module by
   symbol, as [Exports](#14-exports) describes, compiled only under its
-  [export feature](#15-export-features).
+  [export feature](#15-export-features) while the component's C is in the build.
 
 Unsafe code is every `unsafe` block, `unsafe fn`, `unsafe impl`, `unsafe extern` block and
 `#[unsafe(…)]` attribute, and every invocation of another crate's macro that expands to
@@ -129,21 +121,22 @@ one, such as one that mints a type over a C layout, which the compiler's `unsafe
 see. Outside the regions, only the raw bindings hold any. The regions take the lint back as
 [`toolchain`](../toolchain/SKILL.md)'s Unsafe code section describes.
 
-A region exposes to its module only what [`binding`](../binding/SKILL.md)'s Safe boundary
-section lets it expose, and the module re-exports the public items a region defines, as
+A region exposes to its module only safe items whose soundness the region itself proves: no
+raw pointer, `unsafe fn` or C layout reaches the native code unless its contract is stated
+where the region defines it. The module re-exports the public items a region defines, as
 `pub use ffi_import::{Foo, FooBox, FooMut, FooRef};`, so that their paths do not depend on
 which side defines them. A type's inherent `impl` blocks may be split between the native
 code and a region: each method is visible as its own visibility says, counted from the
 module that holds its block, so that a region's private helpers stay hidden from the
 native code.
 
-A region exists only while it holds something. A wrap's items are in `ffi_import`. A port
-writes its item in the native code, and keeps in the regions only the C form the item
-keeps, as [`porting`](../porting/SKILL.md) describes; a wrapped item it ports leaves
-`ffi_import` with its re-export. The later stages empty the regions part by part: an
-item's C layout and C owners leave `ffi_import` with its `port/layout` and `port/memory`,
-its export leaves `ffi_export` with its `port/unexport`. A module without either region is
-native, and its file carries `#![forbid(unsafe_code)]`.
+A region exists only while it holds something. A port writes its item in the native code,
+and keeps in the regions only the C form the item still needs: the C it calls, the C
+layout C code still reads, the C allocator C code still frees through, the exports C still
+calls. The regions shrink as those needs go: a C layout and its C owners leave `ffi_import`
+once no C reads or frees the type, and an internal export leaves `ffi_export` once no C
+calls it. A module without either region is native, and its file carries
+`#![forbid(unsafe_code)]`.
 
 ## 3. Anchors
 
@@ -154,7 +147,7 @@ An annotation is two attributes on the same Rust item, a doc-comment anchor and 
 alias:
 
 ```rust
-/// Wraps `fn::git_repository_open`
+/// Replaces `fn::git_repository_open`
 #[doc(alias = "git_repository_open")]
 pub fn open(path: &Path) -> Result<RepositoryBox, Error> { … }
 ```
@@ -167,7 +160,7 @@ pub fn open(path: &Path) -> Result<RepositoryBox, Error> { … }
 The anchor's path is a code span, in backticks, as rustdoc renders it and as the
 workspace's `clippy::doc_markdown` lint requires of a path in a doc comment.
 
-`<path>` names the item as its batch schedules it, and `<kind>` says what it is:
+`<path>` names the C item, as below, and `<kind>` says what it is:
 
 | kind | item |
 |---|---|
@@ -176,7 +169,7 @@ workspace's `clippy::doc_markdown` lint requires of a path in a doc comment.
 | `un` | a union |
 | `enm` | an enum, or one of its constants |
 | `fnp` | a function pointer |
-| `tdf` | a typedef: one of its own, or one an item lists among its `typedefs` |
+| `tdf` | a typedef |
 | `fld` | a member of a struct or union |
 | `glb` | a global |
 | `mac` | a macro |
@@ -219,10 +212,10 @@ not necessarily the item that makes the FFI call:
 - a function: the function or method the public API exports, which a consumer imports
   instead of the FFI function. The private helper that makes the call, an `ffi_export`
   gateway and a test are not annotated.
-- a lifecycle routine, raw, typed or string: the method of the public lifecycle trait the
-  strategy implements, such as `CDrop::c_drop`, where it is handwritten, or the macro
-  invocation that mints it, which passes the annotation to the method. Again, the method
-  annotated need not be the one making the unsafe call.
+- a lifecycle routine, such as a C type's free function: the method of the public lifecycle
+  trait that stands in for it, such as `CDrop::c_drop`, where it is handwritten, or the
+  macro invocation that mints it, which passes the annotation to the method. Again, the
+  method annotated need not be the one making the unsafe call.
 - a type: the layout newtype that defines the FFI type, handwritten or minted by
   `define_ctype!`.
 - a union: the tagged enum that stands in for it at every use.
@@ -239,12 +232,10 @@ not necessarily the item that makes the FFI call:
 
 One C item may have several annotated Rust items, each carrying the same anchor and
 alias: the ownership variants one C function is split into when one signature cannot
-express every valid contract, as [`binding-symbols`](../binding/symbols/SKILL.md)'s
-Functions section describes, and the accessors of one field. That is the only case in which an
-annotation is duplicated. Existing annotations are completed work unless the current
-objective deliberately promotes their item: a port of an item a binding wraps, or the
-`port/layout` that gives a wrapped struct or union its native layout, replaces its `Wraps`
-anchor with a `Replaces` one, and keeps its alias.
+express every valid contract, and the accessors of one field. That is the only case in
+which an annotation is duplicated. When an item the port first wrapped is ported, or a
+wrapped struct or union takes a native layout, its `Wraps` anchor becomes a `Replaces` one,
+and its alias stays.
 
 ## 4. Testing
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""end-gates: run a wave's or a module's end gates over a snapshot of a tree.
+"""end-gates: run a merge's or a full run's gates over a snapshot of a tree.
 
     end-gates <tree> --logs <dir> [--stages lint,plain,asan-ubsan,tsan,miri,bsan]
               [--rev <rev> | --working-tree] [--package <name>] [--runner <cmd>]
@@ -23,7 +23,7 @@ The gates of testing-gates' Regressions section, run exactly so:
    - `lint`: the workspace's format check, `cargo +<nightly> fmt --all --check`, then its
      lints with warnings denied, `<runner> plain clippy --workspace --all-targets
      [--features <features>] -- -D warnings`, once with no feature and once for each
-     `--lint-features`, such as the export features of the modules not yet switched;
+     `--lint-features`, such as the export features of the components whose C is still built;
    - a variant (`plain` and each sanitizer but `bsan`): the workspace's tests,
      `<runner> <variant> test --workspace --no-fail-fast`, with that stage's skips;
    - `miri`: the package's test binaries built once on the pinned nightly, then one
@@ -39,7 +39,7 @@ The skip file holds one skip per line, `<stage> <binary> <exact test name>`, the
 being `lib` or an integration test's name; `#` starts a comment.
 
 The job count is the environment's: `CARGO_BUILD_JOBS` for builds, `RUST_TEST_THREADS` for
-each binary's tests, as concurrency describes. The exit status is 0 when every run
+each binary's tests. The exit status is 0 when every run
 passed, 1 when any failed, and 2 when the run could not start.
 
 Standard library only.
