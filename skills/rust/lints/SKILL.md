@@ -5,7 +5,7 @@ description: "The lints the port's workspace enables. Read before scaffolding th
 
 # Lints
 
-The workspace enables these lints, and every gate runs with warnings denied:
+The workspace enables these lints, with warnings denied:
 
 - rustc:
   - `nonstandard_style`

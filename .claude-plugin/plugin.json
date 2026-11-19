@@ -11,8 +11,6 @@
     "./skills/rust",
     "./skills/verification",
     "./skills/verification/reviewing/reports",
-    "./skills/verification/testing/builds",
-    "./skills/verification/testing/gates",
     "./skills/operations",
     "./skills/tools",
     "./skills/crustify"

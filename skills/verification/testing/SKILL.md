@@ -1,6 +1,6 @@
 ---
 name: testing
-description: "What a port's tests show, and the sanitizers and Miri they run under; testing-builds and testing-gates give the builds, coverage and gates. Read before writing tests."
+description: "What a port's tests show, and the sanitizers and Miri they run under. Read before writing tests."
 ---
 
 # Testing
@@ -20,8 +20,7 @@ The port's tests show that:
   those tests leave with the C; and
 - the C suites the remaining C keeps still pass against the Rust.
 
-They run under these instruments, each in the build
-[`testing-builds`](builds/SKILL.md) gives it:
+They run under these instruments:
 
 - ASan with UBSan: bounds errors, use-after-free, invalid and double free, and pointer,
   alignment and integer undefined behaviour;
@@ -30,5 +29,3 @@ They run under these instruments, each in the build
 - MSan, where it is built: uninitialized memory, including what crosses the C boundary;
 - BSan, where it is built: aliasing violations across the C boundary; and
 - Miri: the Rust side's undefined behaviour, on the tests that do not call C.
-
-The gates every merge passes are [`testing-gates`](gates/SKILL.md)'s.

@@ -23,11 +23,10 @@ the component: it is filed as a finding of the kind `tools`, with its reproducer
 agent to fix in the tool.
 
 A finding states what is wrong, where, the evidence that proves it, and, once fixed, how
-it was fixed and in which commit. It names the tier that caught it, and the tiers that had
-the same code in scope before it and passed it. The tiers are a component's own gates, a
-review round, a later round, a crate-wide pass, a merge's or full run's gates, and the
-remaining C's tests. A finding caught by a later tier than the first that had it in scope
-is an escape. It carries
+it was fixed and in which commit. It names the check that caught it, such as the author's
+tests, a review round, a later round, a crate-wide pass or the remaining C's tests, and
+the checks that had the same code in scope before it and missed it: a finding an earlier
+check missed is an escape. It carries
 everything needed to rerun its reproducer from a clean checkout: the exact command and the
 sanitizer output or failing assertion it produced. Neither a finding nor a reproducer
 carries an API key, in a core dump or anywhere else.

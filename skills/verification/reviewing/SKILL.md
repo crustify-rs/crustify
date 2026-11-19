@@ -1,6 +1,6 @@
 ---
 name: reviewing
-description: "How a port's components are reviewed: independent review rounds until one finds nothing new, learning from earlier findings, worksets, depth, objectives, fixes and gates; reviewing-reports gives how findings and reproducers are filed. Read before reviewing a component, briefing a reviewer, or fixing what a review found."
+description: "How a port's components are reviewed: independent review rounds until one finds nothing new, learning from earlier findings, worksets, depth, objectives and fixes; reviewing-reports gives how findings and reproducers are filed. Read before reviewing a component, briefing a reviewer, or fixing what a review found."
 ---
 
 # Reviewing
@@ -19,7 +19,7 @@ author proposes to merge it, and files each finding under its kind, in
 Review runs in rounds until one finds nothing new:
 
 1. The reviewer reviews the component for every objective that applies.
-2. The author fixes every finding, as [Fixes](#4-fixes) describes, and runs the gates.
+2. The author fixes every finding, as [Fixes](#4-fixes) describes.
 3. The next round's reviewer reruns every earlier finding's reproducer, as
    [Revisit](#311-revisit) describes, and reviews what the fixes changed and what the
    earlier rounds left out.
@@ -157,8 +157,7 @@ port measures performance, with the cause where the reviewer can find it.
 
 Gaps in the workset's tests: the C and Rust execution paths, and the states and
 transitions, that the codebase's external and inline test suites leave unreached, found by
-reading those suites against the code and measured as
-[`testing-builds`](../testing/builds/SKILL.md)'s Coverage section describes; assertions too
+reading those suites against the code and measured by coverage; assertions too
 weak to fail when the code is wrong; tests outside the suite of their kind; and the C test
 cases none carries over.
 
@@ -196,11 +195,3 @@ reviews dir. Each objective's fix:
 - `revisit`: every finding that still reproduces is patched, as for its objective.
 
 Every test a fix adds is classified as [`testing`](../testing/SKILL.md) describes.
-
-## 5. Gates
-
-A round's reviewer runs the component's gates, as
-[`testing-gates`](../testing/gates/SKILL.md)'s Regressions section gives a merge's, on the
-reviewed tree before any fix. Each true positive a gate finds is a finding of the round,
-whether or not the workset holds the code it reaches: a defect it leaves to no one is
-lost. The author runs them again on the fixed tree before the merge.
