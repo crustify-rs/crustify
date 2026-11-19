@@ -28,9 +28,10 @@
 
 ---
 
-Crustify is a plugin for Claude Code and Codex that ports C code to safe Rust. You name
-the components to port; Crustify ports them and what they depend on, keeps the rest of the
-C working on the Rust, and serves the C's public API from safe Rust to C and Rust alike.
+Crustify is a plugin for Claude Code and Codex that brings C code to safe Rust. It ports
+C components to Rust, keeping the rest of the C working on the Rust and serving the C's
+public API from safe Rust to C and Rust alike; it wraps C behind a safe Rust API; or it
+audits a Rust crate that meets C.
 
 ## Why Crustify
 

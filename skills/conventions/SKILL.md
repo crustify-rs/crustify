@@ -1,6 +1,6 @@
 ---
 name: conventions
-description: "The port's conventions: where its own files go under .crustify/, the anchors that tie each Rust item to the C item it stands in for, the lints the workspace enables, and the language its texts are written in. Read before placing the port's files, scaffolding the workspace, writing a public item that stands in for a C item, or writing documentation, safety comments, findings, briefs or the report."
+description: "Crustify's conventions: where its own files go under .crustify/, the anchors that tie each Rust item to the C item it stands in for, the lints the workspace enables, the language its texts are written in, and the git identity its commits carry. Read before placing the port's files, scaffolding the workspace, writing a public item that stands in for a C item, writing documentation, safety comments, findings, briefs or the report, or making the first commit."
 ---
 
 # Conventions
@@ -108,3 +108,13 @@ Programmers and agents read a port's texts, so they are written plainly, as the
 describes: one term per thing, short sentences, a condition before its consequence, lists
 for parallel items. A rule keeps its reason, since agents generalize from reasons. A
 rewrite keeps every fact of the old text, which its review checks.
+
+## 5. Identity
+
+Every commit is authored and committed as Crustify, `crustify <crustify@berkeley.edu>`,
+whose GitHub account is `crustify-ai`, whatever the repository's git configuration says,
+unless the user names another author. The message carries a `Co-Authored-By:` trailer only
+for a co-author the user names, and no other, none the host suggests included. Pass the
+identity on the command line, `git -c user.name=crustify -c user.email=crustify@berkeley.edu
+…`, to every command that writes a commit, a merge, a rebase or a cherry-pick as much as a
+commit, since the host may have no git identity of its own.

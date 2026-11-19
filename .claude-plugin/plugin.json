@@ -1,7 +1,7 @@
 {
   "name": "crustify",
   "displayName": "Crustify",
-  "description": "C-to-Rust ports: one agent that ports C to safe Rust, serving C and Rust alike, and the skills it follows.",
+  "description": "Crustify: one agent that brings C to safe Rust, porting it, wrapping it or auditing a crate that meets it, and the skills it follows.",
   "author": {
     "name": "Crustify",
     "email": "crustify@berkeley.edu"
