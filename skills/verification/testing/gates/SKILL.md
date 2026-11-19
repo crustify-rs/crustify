@@ -6,9 +6,8 @@ description: "The regression gates a port passes, by event: a component's own ga
 # Testing gates
 
 The gates the port passes, over the tests [`testing`](../SKILL.md) classifies and the
-builds [`testing-builds`](../builds/SKILL.md) describes. The gate results a run records
-in `crustify/STATUS.md` are the latest of each component's: its test counts and the
-instruments it passed under. A gate that fails leaves its component's row saying so.
+builds [`testing-builds`](../builds/SKILL.md) describes. The test counts a run records
+in `crustify/STATUS.md` are the latest of each component's.
 
 ## 1. Regressions
 

@@ -131,17 +131,14 @@ generates it. It holds:
 
 - one line of totals: when you last updated it, the wall-clock time since the port began,
   the tokens spent so far, yours and your subagents', and their cost in dollars at the
-  model's published rates. Count the tokens from the usage your sessions' transcripts
-  record, and say in a note under the table how you counted them; and
+  model's published rates, counted from the usage your sessions' transcripts record; and
 - a table with one row per C file in scope, with its lines of C, its state (`todo`,
   `porting`, `ported`, `reviewed`, `done` or `kept in C`, with the reason), the Rust
-  module that replaces it, its lines of Rust, its unsafe blocks and unsafe functions, its
-  tests and whether they pass under Miri and each sanitizer, its open review findings, and
-  its speed against the C.
+  module that replaces it, its lines of Rust, its unsafe lines, with their share of its
+  Rust lines in parentheses, its unsafe functions, its tests, and its speed against the C.
 
 Update a row when its file changes state or you measure it again, and the totals whenever
-you update the file. Measure every row of a column the same way, and say how under the
-table.
+you update the file. Measure every row of a column the same way.
 
 ## Skills
 

@@ -26,8 +26,7 @@ Review runs in rounds until one finds nothing new:
 
 The rounds end when a round finds no new defect against the objectives and every earlier
 finding is fixed or recorded as deliberately left, with its reason. A finding left open
-is named in the report. Each round updates the open findings of the component's row in
-`crustify/STATUS.md`.
+is named in the report.
 
 Review is tiered. Beside each component's rounds, the whole port gets crate-wide passes
 before the report: its unsafe regions, its exports, its public Rust API and its tests,

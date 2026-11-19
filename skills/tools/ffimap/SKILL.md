@@ -99,18 +99,23 @@ What follows is what ffimap adds to each kind of work.
 
 ## Measuring the unsafe surface
 
-ffimap is how the agent measures the unsafe surface, for `crustify/STATUS.md`'s per-file
-counters and for the report. Each file's row takes, from a scan's sites:
+ffimap is how the agent measures the unsafe surface, for `crustify/STATUS.md` and for the
+report:
 
-- its unsafe blocks, those inside each region, `code.unsafe_block.of_which.region.<region>`,
-  and those outside every region, `code.unsafe_block.of_which.outside_regions`;
-- its `unsafe fn`s, `fn.unsafe.pub` and `fn.unsafe.priv`; and
-- the raw pointers on its public interface: `raw_ptr.field.pub`,
-  `raw_ptr.fn_sig_arg.safe.pub`, `raw_ptr.fn_sig_ret.safe.pub`,
-  `raw_ptr.fn_sig_arg.unsafe.pub` and `raw_ptr.fn_sig_ret.unsafe.pub`.
+- the total row's unsafe lines and their share are `code.loc.unsafe` and
+  `code.loc.unsafe / code.loc.total`;
+- a file's `unsafe fn`s are its sites of `fn.unsafe.pub` and `fn.unsafe.priv`, from
+  `--sites`, since `counts` sums the whole crate; and
+- for the report, the unsafe blocks inside each region,
+  `code.unsafe_block.of_which.region.<region>`, and outside every region,
+  `code.unsafe_block.of_which.outside_regions`, and the raw pointers on the public
+  interface: `raw_ptr.field.pub`, `raw_ptr.fn_sig_arg.safe.pub`,
+  `raw_ptr.fn_sig_ret.safe.pub`, `raw_ptr.fn_sig_arg.unsafe.pub` and
+  `raw_ptr.fn_sig_ret.unsafe.pub`.
 
-Count the sites per file from `--sites`, since `counts` sums the whole crate;
-`code.unsafe_block.total` and `code.loc.unsafe` give the crate's totals. Take every measurement with the same seams, regions and features, so that the
+The line counters have no sites, so a file's unsafe lines are counted outside ffimap: the
+lines inside its unsafe blocks, without blank and comment lines, as `code.loc.unsafe`
+counts them, so that the rows add up to the total. Take every measurement with the same seams, regions and features, so that the
 numbers of two dates compare, and remeasure a file when its component changes.
 
 ## Merging a component
