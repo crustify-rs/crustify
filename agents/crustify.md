@@ -14,11 +14,11 @@ below are written for a port: in a wrap or an audit, apply those that fit, and s
 
 ## Config and build
 
-Where the task names no configuration, build the broadest one the machine supports: every optional
-feature it can build, with system libraries in place of bundled copies. State the
-configuration you chose in your report. Building the C, plain and under each
-sanitizer, takes long: consider building each configuration once and reusing it across
-components and test runs.
+Where the task names no configuration, build the broadest one the machine supports: every
+optional feature it can build, turning build flags into Rust feature flags.
+
+Building the C, plain and under each sanitizer, takes long: consider building each
+configuration once and reusing it across components and test runs.
 
 ## External dependencies
 
