@@ -92,19 +92,19 @@
 # `--build-arg DEPS_REFRESH=$(date +%s)`. Every clone stage uses the base image
 # pinned below, which has git.
 ARG DEPS_REFRESH=0
-FROM ghcr.io/borrowsanitizer/bsan@sha256:56bbbfd19dec23ba518e9dc2221045b2869cc1f6aabdd8ea40174a41d860a5b2 AS wavefront-clone
+FROM ghcr.io/borrowsanitizer/bsan@sha256:b5efb8bbb970206bb76bcc1cc45150bd95fdf94555e50c1667cdae5f9915e525 AS wavefront-clone
 ARG DEPS_REFRESH
 RUN echo "DEPS_REFRESH=${DEPS_REFRESH}" \
     && git clone --depth 1 --branch devel https://github.com/crustify-rs/wavefront.git /src
 FROM scratch AS wavefront
 COPY --from=wavefront-clone /src /
-FROM ghcr.io/borrowsanitizer/bsan@sha256:56bbbfd19dec23ba518e9dc2221045b2869cc1f6aabdd8ea40174a41d860a5b2 AS ffibox-clone
+FROM ghcr.io/borrowsanitizer/bsan@sha256:b5efb8bbb970206bb76bcc1cc45150bd95fdf94555e50c1667cdae5f9915e525 AS ffibox-clone
 ARG DEPS_REFRESH
 RUN echo "DEPS_REFRESH=${DEPS_REFRESH}" \
     && git clone --depth 1 --branch devel https://github.com/crustify-rs/ffibox.git /src
 FROM scratch AS ffibox
 COPY --from=ffibox-clone /src /
-FROM ghcr.io/borrowsanitizer/bsan@sha256:56bbbfd19dec23ba518e9dc2221045b2869cc1f6aabdd8ea40174a41d860a5b2 AS ffimap-clone
+FROM ghcr.io/borrowsanitizer/bsan@sha256:b5efb8bbb970206bb76bcc1cc45150bd95fdf94555e50c1667cdae5f9915e525 AS ffimap-clone
 ARG DEPS_REFRESH
 RUN echo "DEPS_REFRESH=${DEPS_REFRESH}" \
     && git clone --depth 1 --branch devel https://github.com/crustify-rs/ffimap.git /src
@@ -124,7 +124,7 @@ COPY . /
 # everything the four trees weighed. A clone has no `target/`, so the strip is
 # a no-op there and costs one cheap layer. `.git` is kept: it is small, and it
 # is how one tells which revision a campaign actually ran.
-FROM ghcr.io/borrowsanitizer/bsan@sha256:56bbbfd19dec23ba518e9dc2221045b2869cc1f6aabdd8ea40174a41d860a5b2 AS tools
+FROM ghcr.io/borrowsanitizer/bsan@sha256:b5efb8bbb970206bb76bcc1cc45150bd95fdf94555e50c1667cdae5f9915e525 AS tools
 COPY --from=crustify / /tools/crustify
 COPY --from=wavefront / /tools/wavefront
 COPY --from=ffibox / /tools/ffibox
@@ -137,11 +137,12 @@ RUN find /tools -type d -name target -prune -exec rm -rf {} + \
 # bsan's LLVM out from under the matched clang compiler-rt below and there is
 # no error, only instruments that quietly stop finding things. `:latest` moved
 # once already mid-campaign. Bump this deliberately.
-# The previous pin (sha256:69440e3b...) was garbage-collected from ghcr.io; this is
-# `sha-de6ede0`, verified as Ubuntu noble, clang 18, and nightly/bsan on LLVM 23.1.3.
+# The two previous pins (sha256:69440e3b..., then sha256:56bbbfd1...) were each
+# garbage-collected from ghcr.io; this is `latest` as of 2026-11-13, verified as
+# Ubuntu noble, clang 18.1.3, and nightly/bsan on LLVM 23.1.5.
 # Named `image`, not `crustify`: `crustify` is the tool stage above, and a
 # `--build-context crustify=...` would otherwise shadow this one.
-FROM ghcr.io/borrowsanitizer/bsan@sha256:56bbbfd19dec23ba518e9dc2221045b2869cc1f6aabdd8ea40174a41d860a5b2 AS image
+FROM ghcr.io/borrowsanitizer/bsan@sha256:b5efb8bbb970206bb76bcc1cc45150bd95fdf94555e50c1667cdae5f9915e525 AS image
 
 ARG CODEQL_VERSION=v2.26.3
 ARG PYTHON_VERSION=3.13
