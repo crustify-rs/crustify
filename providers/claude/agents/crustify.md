@@ -150,12 +150,14 @@ Verify every requirement above by testing and by review.
 
 #### Testing
 
-Write tests that show the Rust meets the requirements. Miri and the sanitizers, such as
-address, undefined behavior, thread and memory, can help show it is free of undefined
-behavior. BorrowSanitizer checks aliasing across the C boundary but is very slow: use it
-sparingly, on the tests that need it. Where you need to find what the tests leave
-unexercised, coverage of the Rust and the C can point you to it. You may also aim to target
-uncovered state instead of just code coverage.
+Write tests that show the Rust meets the requirements. Differential fuzzing, which feeds
+the Rust and the C the same inputs and compares what they return and leave behind, can
+help show they are equivalent. Miri and the sanitizers, such as address, undefined
+behavior, thread and memory, can help show it is free of undefined behavior.
+BorrowSanitizer checks aliasing across the C boundary but is very slow: use it sparingly,
+on the tests that need it. Where you need to find what the tests leave unexercised,
+coverage of the Rust and the C can point you to it. You may also aim to target uncovered
+state instead of just code coverage.
 
 #### Review
 
@@ -183,8 +185,8 @@ standalone Cargo package that depends on the crate at the reviewed revision and 
 the defect through its public API, with the command that runs it and the output it gave,
 such as the trace of Miri or a sanitizer. A reproducer that reaches undefined behavior
 through the safe API carries `#![forbid(unsafe_code)]`, and one that goes through an unsafe
-API keeps to that API's documented obligations. What you cannot reproduce, and nits, go
-into `.crustify/reviews/notes.md`. Merge the findings that share a root cause into one
+API keeps to that API's documented obligations. What you cannot reproduce goes in the finding's
+`finding.md`. Merge the findings that share a root cause into one
 that lists every site, and name in each whose defect it is: the crate's, the C library's
 or another dependency's.
 
