@@ -149,7 +149,7 @@ you update the file. Measure every row of a column the same way.
 
 ## Skills
 
-Crustify's skills describe how each part of the work is done: the Rust conventions and
+Crustify's skills describe how each part of the work is done: the Rust anchors and
 toolchain, testing, builds and gates, reviewing, the tools and the port's
 layout. Each sits at `${CLAUDE_PLUGIN_ROOT}/skills/<group>/<name>/SKILL.md`.
 Invoke one with your Skill tool, as `crustify:<name>`, or read its `SKILL.md` where no

@@ -60,7 +60,7 @@ A finding opens with its header, one `key: value` line each:
 | `soundness` | undefined behaviour reached from the safe public API, from the unsafe public API within its `# Safety` obligations, or by C through an export within the C declaration's contract |
 | `c-bug` | a defect of the C library itself, which its own API reaches without the port's doing |
 | `behaviour` | no undefined behaviour: a panic, a wrong value, a swallowed error, a leak, a slowdown, or a divergence from the C or the specification |
-| `nit` | nothing a consumer can observe: a missing or imprecise `// SAFETY:` justification, an under-documented `# Safety` obligation that no reproducer breaks, or an API-shape finding of `unsafety`, `ergonomics`, `idiom` or `conventions` |
+| `nit` | nothing a consumer can observe: a missing or imprecise `// SAFETY:` justification, an under-documented `# Safety` obligation that no reproducer breaks, or an API-shape finding of `unsafety`, `ergonomics`, `idiom` or `anchors` |
 
 What only misuse can reach is not reportable: a private item no public API reaches with
 the inputs in question, or an `unsafe` API called against its stated obligations.

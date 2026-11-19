@@ -5,8 +5,7 @@ description: "How a port is tested: test kinds, test objects, UB tests under the
 
 # Testing
 
-Tests are classified by what decides them and by the side of a component they test, and
-each is placed where the conventions' Testing section places tests of its kind:
+Tests are classified by what decides them and by the side of a component they test:
 
 - UB tests on the safe public interface show that it does not reach UB, mainly by not
   triggering sanitizer or Miri crashes, or by failing to compile for a given illegal path;

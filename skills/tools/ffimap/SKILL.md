@@ -29,7 +29,7 @@ A crate built on ffibox is scanned with `--ffibox`, and its `-sys` crates are na
 `--sys-crates`:
 
 ```bash
-ffimap <workdir> --ffibox --sys-crates <the -sys crates> --regions ffi_import,ffi_export \
+ffimap <workdir> --ffibox --sys-crates <the -sys crates> --regions <the modules that confine unsafe code> \
     --seams as_ptr,as_mut_ptr,as_void_ptr,from_ptr,from_void_ptr,from_raw_parts,into_raw_parts,into_raw,from_c,into_c,as_c_ptr,from_raw,as_object \
     > <file>.json
 ```
@@ -42,10 +42,9 @@ crates' alone, and the generated code counts as the crate's own, all with no err
 that holds hand-written code beside its declarations is left unnamed, since naming it would
 take that code out of the scan.
 
-A scan names with `--features` every export feature the build enables, as the
-[conventions](../../rust/conventions/SKILL.md)' Export features section names them, so that
-the `ffi_export` gateways compiled under them are counted, and names the crate's unsafe
-regions with `--regions`, as the conventions' Unsafe regions section names them.
+A scan names with `--features` every feature the build enables that compiles exports, so
+that the exports are counted, and names with `--regions` the modules the crate confines its
+unsafe code to, where it has any.
 
 Scan the library alone, never with `cargo check --all-targets` over a crate whose
 dev-dependencies enable test-only features of the crate itself, such as a
@@ -132,8 +131,8 @@ those sites in the change is moved into its region.
 
 `ffimap api` measures a safe crate's consumer-facing API per C item, from rustdoc JSON, as
 its `docs/api.md` describes, read in full before its first use. A C item is the
-`<kind>::<path>` of a `Wraps` or `Replaces` anchor, as the conventions' Anchors section
-places them. Its surface is every stand-in the anchor names and the handles and owners tied
+`<kind>::<path>` of a `Wraps` or `Replaces` anchor, as
+[`anchors`](../../rust/anchors/SKILL.md) places them. Its surface is every stand-in the anchor names and the handles and owners tied
 to it: the methods every form offers, its reborrows and dereferences, and the traits a
 consumer can use, never a form's raw access or seams. Generate the safe crate's rustdoc
 JSON before and after a change, with a nightly whose `format_version` the tool supports,

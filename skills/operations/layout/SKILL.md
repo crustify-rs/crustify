@@ -13,7 +13,7 @@ it is so that what remains of it builds as before.
 ```text
 <repository>/
 ├── …                   the C, as the codebase lays it out
-├── <crate dir>/        the Rust crate, laid out as conventions describes
+├── <crate dir>/        the Rust crate, laid out as the agent chooses
 └── crustify/
     ├── STATUS.md       progress per C file in scope, and the totals of time, tokens and cost
     ├── REPORT.md       the final report

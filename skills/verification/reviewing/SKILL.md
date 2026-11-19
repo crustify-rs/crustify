@@ -29,7 +29,7 @@ finding is fixed or recorded as deliberately left, with its reason. A finding le
 is named in the report.
 
 Review is tiered. Beside each component's rounds, the whole port gets crate-wide passes
-before the report: its unsafe regions, its exports, its public Rust API and its tests,
+before the report: its unsafe code, its exports, its public Rust API and its tests,
 across components, since a defect may sit between two components each reviewed alone.
 
 ### 1.1 Learning from earlier reports
@@ -101,10 +101,8 @@ Safety contracts that are incorrect, incomplete or ambiguous:
 A contract is tested by trying to break it: an input, a call sequence or an interleaving
 that honours the obligation, or reaches the block through safe code, and still violates
 what the `unsafe` relies on. Contracts are judged by the side of the boundary they serve:
-the gateways through which C reaches the crate, its `ffi_export` regions, and every other
-unsafe code, which sits in its `ffi_import` regions as the
-[conventions](../../rust/conventions/SKILL.md) lay them out, whose items are sound for
-every input their module can give them.
+the exports through which C reaches the crate, and every other unsafe code, whose items
+are sound for every input their module can give them.
 
 ### 3.3 UB (`ub`)
 
@@ -144,10 +142,10 @@ Ported implementation that transliterates its C rather than using Rust's own mea
 loops where iterators fit, status codes where `Result` and `?` fit, lengths and releases
 carried by hand where ownership carries them.
 
-### 3.8 Conventions (`conventions`)
+### 3.8 Anchors (`anchors`)
 
-Deviations from the [conventions](../../rust/conventions/SKILL.md), unsafe code outside its
-regions included.
+A public item that stands in for a C item without its anchor and alias, or with one that
+names the wrong item, as [`anchors`](../../rust/anchors/SKILL.md) describes.
 
 ### 3.9 Performance (`perf`)
 
@@ -190,15 +188,13 @@ reviews dir. Each objective's fix:
   sanitizer, or fails to compile because the patch removed the safe path that reached the
   defect;
 - `ergonomics`: the API is improved, and its consumers in the crate follow;
-- `idiom`, `conventions`, `perf` and `misc`: the transliteration, deviation, slowdown or
+- `idiom`, `anchors`, `perf` and `misc`: the transliteration, deviation, slowdown or
   defect is fixed;
 - `test-adequacy`: the gaps are filled with tests, and the coverage measurement shows the
   delta; and
 - `revisit`: every finding that still reproduces is patched, as for its objective.
 
-Fixes follow the [conventions](../../rust/conventions/SKILL.md). Every test a fix adds is
-classified as [`testing`](../testing/SKILL.md) describes and placed where the conventions
-place tests of its kind.
+Every test a fix adds is classified as [`testing`](../testing/SKILL.md) describes.
 
 ## 5. Gates
 
