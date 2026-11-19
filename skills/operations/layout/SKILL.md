@@ -20,10 +20,10 @@ The port's own files, everything that is neither the C nor the Rust, sit under
 
 ## 1. Reviews
 
-Findings are grouped by their kind, the requirement they fall short of, as
-[`reviewing`](../../verification/reviewing/SKILL.md) lists them, so that the author of the
-next component reads every defect of a kind found so far in one place. What a finding's
-directory holds is [`reviewing-reports`](../../verification/reviewing/reports/SKILL.md)'s.
+Findings are grouped by their kind, the identifier of the system prompt's requirement they
+fall short of, so that the author of the next component reads every defect of a kind found
+so far in one place. What a finding's directory holds is
+[`reviewing`](../../verification/reviewing/SKILL.md)'s.
 
 ## 2. Scratch
 

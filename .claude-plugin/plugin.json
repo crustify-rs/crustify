@@ -10,7 +10,6 @@
   "skills": [
     "./skills/rust",
     "./skills/verification",
-    "./skills/verification/reviewing/reports",
     "./skills/operations",
     "./skills/tools",
     "./skills/crustify"

@@ -126,7 +126,7 @@ pattern recurs, and keep `STATUS.md` current. Everything else is a skill:
 | group | skills |
 |---|---|
 | [`rust/`](skills/rust) | `anchors` naming the C item each Rust item stands in for, the `lints` |
-| [`verification/`](skills/verification) | `testing`, `reviewing`, `reviewing-reports` |
+| [`verification/`](skills/verification) | `testing`, `reviewing` |
 | [`tools/`](skills/tools) | `wavefront`, `ffibox`, `ffimap` |
 | [`operations/`](skills/operations) | the port's `layout` |
 | [`crustify/`](skills/crustify) | `authoring`: the language every text is written in |
