@@ -149,7 +149,7 @@ change Rust consumers see, which the report names.
 
 ## Reviewing
 
-A review locates the sites of its objectives with a scan, `--sites` with their counters,
+A review locates the sites of the kinds it asks with a scan, `--sites` with their counters,
 and keeps those in the code it reviews. The sites are where the reading starts, as
 [`reviewing`](../../verification/reviewing/SKILL.md) describes, and a module the scan
 reports nothing in is still read.

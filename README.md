@@ -34,12 +34,13 @@ C working on the Rust, and serves the C's public API from safe Rust to C and Rus
 
 ## Why Crustify
 
-- 🎯 **Objectives, not a procedure.** One short system prompt states what a port must
-  achieve: interoperable, free of undefined behavior with as little unsafe code as
-  possible, equivalent to the C without its defects, as fast, tested, reviewed, parallel
-  and clean. The agent decides how.
-- 📜 **Skills on demand.** How to analyse the C, write the Rust, prove it sound, test it
-  and review it are skills the agent reads before the step they cover.
+- 🎯 **Requirements, not a procedure.** One short system prompt states what the ported
+  code must meet. Functionally, it interoperates with the remaining C, offers a Rust API,
+  and is equivalent to the C without its defects. Beyond that, it is free of undefined
+  behavior with as little unsafe code as possible, as fast as the C, tested, idiomatic and
+  traceable to the C. The agent decides how.
+- 📜 **Skills on demand.** The lints, testing, reviewing, the tools and the port's layout
+  are skills the agent reads before the step they cover.
 - ⚙️ **Grounded in deterministic tools:**
   [wavefront](https://github.com/crustify-rs/wavefront) queries the C,
   [ffibox](https://github.com/crustify-rs/ffibox) holds the interop primitives the port
@@ -117,9 +118,10 @@ python3 /path/to/crustify/providers/generic/compose.py
 One agent runs the port. It builds the C, decides the scope and the order, spawns
 subagents to port independent components in parallel and others to review them, and
 merges their work. The system prompt,
-[`agents/crustify.md`](agents/crustify.md), gives the objectives and three practices:
-grow ffibox when an interop pattern recurs, learn from every earlier review, and keep
-`STATUS.md` current. Everything else is a skill:
+[`agents/crustify.md`](agents/crustify.md), gives the requirements of the ported code,
+functional and non-functional, and the process: work in parallel, review every component
+against every requirement, learn from earlier findings, grow ffibox when an interop
+pattern recurs, and keep `STATUS.md` current. Everything else is a skill:
 
 | group | skills |
 |---|---|

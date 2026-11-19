@@ -10,7 +10,7 @@ file per finding, one finding per root cause, and the reproducer that proves eac
 
 ## 1. Findings
 
-A finding is a directory under its kind, the objective that names it,
+A finding is a directory under its kind, the requirement it falls short of,
 `.crustify/reviews/<kind>/<slug>/`, as [`layout`](../../../operations/layout/SKILL.md)
 places it. The slug names the defect in a few words, such as `index-entry-alias`. The
 directory holds `finding.md`, the finding itself, and its reproducer, when it has one. Its
@@ -57,7 +57,7 @@ A finding opens with its title, then its header, one `key: value` line each:
 | `soundness` | undefined behaviour reached from the safe public API, from the unsafe public API within its `# Safety` obligations, or by C through an export within the C declaration's contract |
 | `c-bug` | a defect of the C library itself, which its own API reaches without the port's doing |
 | `behaviour` | no undefined behaviour: a panic, a wrong value, a swallowed error, a leak, a slowdown, or a divergence from the C or the specification |
-| `nit` | nothing a consumer can observe: a missing or imprecise `// SAFETY:` justification, an under-documented `# Safety` obligation that no reproducer breaks, or an API-shape finding of `unsafety`, `interop`, `ergonomics`, `idiom` or `anchors` |
+| `nit` | nothing a consumer can observe: a missing or imprecise `// SAFETY:` justification, an under-documented `# Safety` obligation that no reproducer breaks, or an API-shape finding of `unsafety`, `interop`, `api`, `idiom` or `anchors` |
 
 What only misuse can reach is not reportable: a private item no public API reaches with
 the inputs in question, or an `unsafe` API called against its stated obligations.
@@ -65,11 +65,11 @@ the inputs in question, or an `unsafe` API called against its stated obligations
 ### 1.3 Root causes
 
 A finding is one root cause. Sites that share a defect are one finding that lists them,
-whatever objective or instrument met each. Before a finding is filed, the findings already
+whatever kind or instrument met each. Before a finding is filed, the findings already
 in `.crustify/reviews/` are searched for its cause, by site and mechanism, not by name: one
 the same review filed takes the new site; one an earlier review filed is named in
 `same-cause`, so that a class of defect that recurs across components shows as one. A
-finding that several objectives meet is filed once, under the kind that names its harm.
+finding that falls short of several requirements is filed once, under the kind that names its harm.
 
 ### 1.4 Notes
 

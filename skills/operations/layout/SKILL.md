@@ -13,14 +13,14 @@ The port's own files, everything that is neither the C nor the Rust, sit under
 ├── STATUS.md                       progress per C file in scope, and the totals of time, tokens and cost
 ├── REPORT.md                       the final report
 ├── reviews/
-│   └── <kind>/                     one dir per kind of finding: ub, contracts, equiv, functional, perf, …
+│   └── <kind>/                     one dir per requirement: interop, api, equiv, functional, ub, perf, …
 │       └── <slug>/                 one finding
 └── tmp/                            scratch, gitignored
 ```
 
 ## 1. Reviews
 
-Findings are grouped by their kind, the review objective that names them, as
+Findings are grouped by their kind, the requirement they fall short of, as
 [`reviewing`](../../verification/reviewing/SKILL.md) lists them, so that the author of the
 next component reads every defect of a kind found so far in one place. What a finding's
 directory holds is [`reviewing-reports`](../../verification/reviewing/reports/SKILL.md)'s.
