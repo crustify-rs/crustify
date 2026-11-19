@@ -1,11 +1,9 @@
 ---
-name: toolchain
-description: "The Rust edition and the lints of the port's workspace. Read before scaffolding the workspace or when a lint question comes up."
+name: lints
+description: "The lints the port's workspace enables. Read before scaffolding the workspace or when a lint question comes up."
 ---
 
-# Toolchain
-
-Every crate uses the latest Rust edition, and is formatted by `rustfmt`.
+# Lints
 
 The workspace enables these lints, and every gate runs with warnings denied:
 

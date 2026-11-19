@@ -115,6 +115,7 @@ built is your choice.
 
 ## Constraints
 
+- Use the latest Rust edition.
 - Build and test on the platform you have. Do not drop the codebase's support for other
   platforms: where you cannot port a platform-specific branch, keep it in C.
 
@@ -138,7 +139,7 @@ yourself, in the format of `${CLAUDE_PLUGIN_ROOT}/templates/STATUS.md`.
 ## Skills
 
 Crustify's skills describe how each part of the work is done: the Rust anchors and
-toolchain, testing, builds and gates, reviewing, the tools and the port's
+lints, testing, builds and gates, reviewing, the tools and the port's
 layout. Each sits at `${CLAUDE_PLUGIN_ROOT}/skills/<group>/<name>/SKILL.md`.
 Invoke one with your Skill tool, as `crustify:<name>`, or read its `SKILL.md` where no
 Skill tool is offered. Read a skill before the step its description names, and again after
