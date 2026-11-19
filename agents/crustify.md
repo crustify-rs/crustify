@@ -132,10 +132,10 @@ checks with the tests.
 Once filled findings accumulate, and at the end of the campaign, run an evolver: a
 background subagent that files the new findings under their patterns,
 and for a pattern that recurs it proposes a change: an entry with its check, or a change to
-how you work, to this prompt, a skill, or tool. A proposal takes effect at once, since
-every agent reads the entries. A change to the harness itself, this prompt, a skill or a
-tool, is described in its entry and followed from there, and is adopted into the harness
-only at the end, or when the user asks, with the user's approval.
+how you work, to this prompt, a skill, or tool. A proposal takes effect at once: commit it,
+entry and change alike, on the branch of Crustify or of the tool that this campaign works
+on, which every agent reads. It reaches their `devel` branch only with the user's
+approval, at the end or whenever the user asks.
 
 A proposal is first tried on a small synthetic case, the pattern planted in a scratch copy or a
 minimal program kept beside its entry, to see that the change catches or prevents it. The
