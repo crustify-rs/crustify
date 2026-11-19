@@ -35,10 +35,12 @@ The Rust item that stands in for each C item is annotated, and those annotations
 only record that an item was translated.
 
 An annotation is two attributes on the same Rust item, a doc-comment anchor and a rustdoc
-alias:
+alias. The anchor's line is followed by one naming the C source file that defines the
+item, relative to the repository's root:
 
 ```rust
 /// Replaces `fn::git_repository_open`
+/// in `src/libgit2/repository.c`
 #[doc(alias = "git_repository_open")]
 pub fn open(path: &Path) -> Result<RepositoryBox, Error> { … }
 ```
@@ -48,8 +50,10 @@ pub fn open(path: &Path) -> Result<RepositoryBox, Error> { … }
 | ``/// Wraps `<kind>::<path>` `` | safe view over the FFI seam |
 | ``/// Replaces `<kind>::<path>` `` | native Rust translation |
 
-The anchor's path is a code span, in backticks, as rustdoc renders it and as the
-workspace's `clippy::doc_markdown` lint requires of a path in a doc comment.
+The anchor's path and the source file are code spans, in backticks, as rustdoc renders
+them and as the workspace's `clippy::doc_markdown` lint requires of a path in a doc
+comment. The anchor stays alone on its line, so that ffimap reads it; rustdoc joins the
+two lines into one sentence.
 
 `<path>` names the C item, as below, and `<kind>` says what it is:
 
