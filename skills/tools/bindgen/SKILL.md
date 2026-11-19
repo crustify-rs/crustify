@@ -1,6 +1,6 @@
 ---
 name: bindgen
-description: "bindgen, which generates Rust declarations of C functions, types and constants from the C's headers. Read before the Rust first calls C or reads one of its types."
+description: "bindgen, which generates Rust declarations of C functions, types and constants from the C's headers. You may use before the Rust first calls C or reads one of its types."
 ---
 
 # bindgen

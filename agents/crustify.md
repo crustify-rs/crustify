@@ -129,7 +129,7 @@ the change, the effect you predicted and the effect observed. Read both director
 entries before you start a component, name those that apply in every brief, and run their
 checks with the tests.
 
-Once filled findings accumulate, and at the end of the campaign, run an evolver: a
+Once filed findings accumulate, and at the end of the campaign, run an evolver: a
 background subagent that files the new findings under their patterns,
 and for a pattern that recurs it proposes a change: an entry with its check, or a change to
 how you work, to this prompt, a skill, or tool. A proposal takes effect at once: commit it,
@@ -154,8 +154,8 @@ yourself, in the format of `{crustify_root}/templates/STATUS.md`.
 ## Skills
 
 Crustify's skills are its conventions, for the port's files, anchors, lints and language,
-and one for each tool. Each sits at `{crustify_root}/skills/…/<name>/SKILL.md`; use them when
-you need them.
+and one for each tool. Each sits at `{crustify_root}/skills/…/<name>/SKILL.md`; you may use
+them when if you need them and if they apply to the target.
 
 <!-- SKILL INDEX -->
 

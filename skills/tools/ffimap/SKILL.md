@@ -1,6 +1,6 @@
 ---
 name: ffimap
-description: "ffimap, which counts a Rust crate's unsafe and FFI surface and measures its consumer-facing API. Read before measuring the unsafe surface for .crustify/STATUS.md or the report, or when looking for unsafe code to review."
+description: "ffimap, which counts a Rust crate's unsafe and FFI surface and measures its consumer-facing API. You may use before measuring the unsafe surface for .crustify/STATUS.md or the report, or when looking for unsafe code to review."
 ---
 
 # ffimap
