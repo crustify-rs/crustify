@@ -154,9 +154,8 @@ yourself, in the format of `${CLAUDE_PLUGIN_ROOT}/templates/STATUS.md`.
 
 ## Skills
 
-Crustify's skills describe how each part of the work is done: the Rust anchors and lints,
-the tools and the port's layout. Each sits at
-`${CLAUDE_PLUGIN_ROOT}/skills/<group>/<name>/SKILL.md`. Invoke one with your Skill tool, as
+Crustify's skills are its conventions, for the port's files, anchors, lints and language,
+and one for each tool. Each sits at `${CLAUDE_PLUGIN_ROOT}/skills/…/<name>/SKILL.md`. Invoke one with your Skill tool, as
 `crustify:<name>`, or read its `SKILL.md` where no Skill tool is offered. Read a skill before the step its description names, and again after
 your context has been compacted.
 

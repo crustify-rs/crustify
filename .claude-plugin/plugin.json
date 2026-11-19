@@ -8,10 +8,8 @@
   },
   "repository": "https://github.com/crustify-rs/crustify",
   "skills": [
-    "./skills/rust",
-    "./skills/operations",
-    "./skills/tools",
-    "./skills/crustify"
+    "./skills",
+    "./skills/tools"
   ],
   "agents": [
     "./providers/claude/agents/crustify.md"

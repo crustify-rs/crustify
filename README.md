@@ -40,8 +40,8 @@ C working on the Rust, and serves the C's public API from safe Rust to C and Rus
   that, it is free of undefined behavior with as little unsafe code as possible, as fast as
   the C, idiomatic and traceable to the C. Testing and review verify every requirement.
   The agent decides how.
-- 📜 **Skills on demand.** The lints, the tools and the port's layout
-  are skills the agent reads before the step they cover.
+- 📜 **Skills on demand.** The port's conventions and its tools are skills the agent reads
+  before the step they cover.
 - ⚙️ **Grounded in deterministic tools:**
   [ffibox](https://github.com/crustify-rs/ffibox) holds the interop primitives the port
   uses, and [ffimap](https://github.com/crustify-rs/ffimap) measures the unsafe
@@ -123,10 +123,8 @@ against every requirement, learn from earlier findings, and keep `STATUS.md` cur
 
 | group | skills |
 |---|---|
-| [`rust/`](skills/rust) | `anchors` naming the C item each Rust item stands in for, the `lints` |
+| [`conventions/`](skills/conventions/SKILL.md) | the port's files under `.crustify/`, the anchors that name the C item each Rust item stands in for, the lints, and the language of its texts |
 | [`tools/`](skills/tools) | `bindgen`, `ffibox`, `ffimap` |
-| [`operations/`](skills/operations) | the port's `layout` |
-| [`crustify/`](skills/crustify) | `authoring`: the language every text is written in |
 
 The port ends with `.crustify/REPORT.md`: the configuration, the boundary between Rust and
 C, the defects found in the C, the performance numbers and what was verified how.
