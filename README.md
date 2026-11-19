@@ -43,7 +43,7 @@ C working on the Rust, and serves the C's public API from safe Rust to C and Rus
   are skills the agent reads before the step they cover.
 - ⚙️ **Grounded in deterministic tools:**
   [ffibox](https://github.com/crustify-rs/ffibox) holds the interop primitives the port
-  grows and uses, and [ffimap](https://github.com/crustify-rs/ffimap) measures the unsafe
+  uses, and [ffimap](https://github.com/crustify-rs/ffimap) measures the unsafe
   surface.
 - ✅ **Verified.** Equivalence tests against the C, Miri, ASan, UBSan and TSan, and
   independent reviewers whose findings later components learn from.
@@ -118,8 +118,7 @@ subagents to port independent components in parallel and others to review them, 
 merges their work. The system prompt,
 [`agents/crustify.md`](agents/crustify.md), gives the requirements of the ported code,
 functional and non-functional, and the process: work in parallel, review every component
-against every requirement, learn from earlier findings, grow ffibox when an interop
-pattern recurs, and keep `STATUS.md` current. Everything else is a skill:
+against every requirement, learn from earlier findings, and keep `STATUS.md` current. Everything else is a skill:
 
 | group | skills |
 |---|---|

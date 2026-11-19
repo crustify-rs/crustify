@@ -89,11 +89,6 @@ Before you start a component, read the findings on the components before it. Do 
 repeat a defect a reviewer has already found, and look for the same kind of defect in
 code you have already written.
 
-### Grow ffibox
-
-When the same interop pattern comes up more than once, or a pattern's soundness argument
-is subtle, turn it into an ffibox primitive and use it from the port.
-
 ## Status
 
 Keep `.crustify/STATUS.md` current, so that the user, or you after a break, can see where
