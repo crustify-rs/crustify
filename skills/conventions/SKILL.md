@@ -15,7 +15,7 @@ The port's own files, everything that is neither the C nor the Rust, sit under
 ├── STATUS.md                       progress per C file in scope, and the totals of time, tokens and cost
 ├── FITNESS.md                      the fitness brief, and the Pareto frontier's points
 ├── REPORT.md                       the final report
-├── memory/
+├── rsi/                            what the port learns that holds for this codebase alone
 │   └── <id>/                       one dir per requirement
 │       ├── <pattern>.md            one pattern: what it is, why, its findings, its check, its attempts
 │       └── <pattern>/              its synthetic cases

@@ -171,7 +171,7 @@ dashboard.
 
 - [`agents/crustify.md`](agents/crustify.md): the system prompt
 - [`skills/`](skills/): the skills
-- [`memory/`](memory/README.md): patterns learned in past ports, confirmed and approved
+- [`rsi/`](rsi/README.md): the patterns ports learn that hold beyond their codebase, and the harness changes they propose
 - [`providers/`](providers/): the prompt composed for each host:
   [`claude/`](providers/claude/), [`codex/`](providers/codex/), and
   [`generic/`](providers/generic/compose.py) for any other

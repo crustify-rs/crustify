@@ -75,8 +75,7 @@ identifiers.
 
 Before you start, brief the user on the fitness you will optimize: for each requirement
 above, the metric that tells how well the code meets it and how you will measure it, and
-the same for the work's cost: tokens, dollars and wall-clock time. Then go on without
-waiting.
+the same for the work's cost: tokens, dollars and wall-clock time.
 
 Weigh the alternatives you consider, such as two designs, two implementations of a
 component or two ways of working, by those metrics. Keep the ones no other beats on every
@@ -101,7 +100,8 @@ Write tests that show the Rust meets the requirements. Miri and the sanitizers, 
 address, undefined behavior, thread and memory, can help show it is free of undefined
 behavior. BorrowSanitizer checks aliasing across the C boundary but is very slow: use it
 sparingly, on the tests that need it. Where you need to find what the tests leave
-unexercised, coverage of the Rust and the C can point you to it.
+unexercised, coverage of the Rust and the C can point you to it. You may also aim to target
+uncovered state instead of just code coverage.
 
 #### Review
 
@@ -118,31 +118,32 @@ do better.
 
 ## Self-improvement
 
-Learn from the findings as the work goes on, and keep what you learn in
-`.crustify/memory/<id>/<pattern>.md`: one entry per pattern of findings, under the
-identifier of the requirement it falls short of. An entry says what the pattern is and why
-it arises, cites the findings it comes from, and names the check that detects it where one
-is possible: a lint, a test, a query or a reproducer that verification runs every time. It
-also records each attempt to prevent the pattern: the change, the effect you predicted and
-the effect observed. Read the entries before you start a component, name those that apply
-in every brief, and run their checks with the tests.
+Learn from the findings as the work goes on, and keep what you learn as entries, one per
+pattern of findings, under the identifier of the requirement it falls short of: in
+`{crustify_root}/rsi/<id>/<pattern>.md` when the pattern holds beyond this codebase and can
+be stated without its names, and in `.crustify/rsi/<id>/<pattern>.md` otherwise. An entry
+says what the pattern is and why it arises, cites the findings it comes from, and names
+the check that detects it where one is possible: a lint, a test, a query or a reproducer
+that verification runs every time. It also records each attempt to prevent the pattern:
+the change, the effect you predicted and the effect observed. Read both directories'
+entries before you start a component, name those that apply in every brief, and run their
+checks with the tests.
 
-Whenever about ten new findings have been filed, and at the end, run an evolver: a
-background subagent that ports nothing. It files the new findings under their patterns,
+Once filled findings accumulate, and at the end of the campaign, run an evolver: a
+background subagent that files the new findings under their patterns,
 and for a pattern that recurs it proposes a change: an entry with its check, or a change to
-how you work, to this prompt, a skill, ffibox or ffimap. A proposal takes effect at once.
-It is first tried on a small synthetic case, the pattern planted in a scratch copy or a
+how you work, to this prompt, a skill, or tool. A proposal takes effect at once, since
+every agent reads the entries. A change to the harness itself, this prompt, a skill or a
+tool, is described in its entry and followed from there, and is adopted into the harness
+only at the end, or when the user asks, with the user's approval.
+
+A proposal is first tried on a small synthetic case, the pattern planted in a scratch copy or a
 minimal program kept beside its entry, to see that the change catches or prevents it. The
 evolver then monitors it: it counts the pattern's recurrences against the new code that
 could have shown it, and adds the frontier's points to `FITNESS.md`. A proposal is
 confirmed once enough such code has been reviewed without the pattern recurring and the
 frontier has not regressed. It is rejected when the pattern recurs or another requirement
 regresses, and its record is kept.
-
-Crustify's generic memory sits in `{crustify_root}/memory/`, in the same format: read the
-entries under the identifiers in scope before you start. At the end, or when the user asks,
-propose for Crustify itself the confirmed entries and changes that hold beyond this
-codebase, stated without its names. They land only with the user's approval.
 
 ## Status
 
