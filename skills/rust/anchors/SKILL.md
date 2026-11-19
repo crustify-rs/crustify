@@ -40,27 +40,7 @@ workspace's `clippy::doc_markdown` lint requires of a path in a doc comment.
 | `mac` | a macro |
 
 A path is made of names only: the names the source resolves the item by, outermost first,
-separated by `.`, as the source language scopes them. A function, a type, an enum's
-constant, a global, a typedef or a function pointer a typedef declares is its own name,
-since C scopes a constant as it does its enum. A member is its struct's or union's path
-followed by the member's name, and a member of a member continues the path, as
-`fld::AVOption.default_val.i64`. A function pointer written inline is its declaring site's
-path: a member's, `<function>.<param>` for a parameter, `<function>.return` for a return,
-or a global's name. An element without a name adds no step to the paths of what it holds:
-
-- an anonymous struct or union held by a named member is reached through that member, so
-  its members are `fld::<path>.<member>.<inner>`;
-- the members of an unnamed struct or union member, such as C11's anonymous members, are
-  named as members of the type that holds it, as the source reaches them; and
-- an array's elements are reached without an index, so the members of an array member's
-  element type are `fld::<path>.<member>.<inner>`.
-
-An element without a name has no annotation of its own. The Rust item that stands in for
-it is annotated with the named member that holds it, or, when it is held by no name, with
-each member it stands in for. A type declared inside another is named as its language
-scopes it: a C struct tag has file scope, so a struct declared inside another is still
-`st::<tag>`. An enum without a name has no annotation of its own, and its constants keep
-theirs.
+separated by `.`, as `fld::AVOption.default_val.i64` names a member of a member.
 
 The alias is the bare `<path>`, without the backticks, so that a consumer who searches the
 documentation for the source's name finds every item that stands in for it. The kind is
