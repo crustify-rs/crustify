@@ -118,6 +118,20 @@ identifiers.
 - Build and test on the platform you have. Do not drop the codebase's support for other
   platforms: where you cannot port a platform-specific branch, keep it in C.
 
+## Fitness
+
+Before you start, brief the user on the fitness you will optimize: for each requirement
+above, the metric that tells how well the code meets it and how you will measure it, and
+the same for the work's cost: tokens, dollars and wall-clock time. Then go on without
+waiting.
+
+Weigh the alternatives you consider, such as two designs, two implementations of a
+component or two ways of working, by those metrics. Keep the ones no other beats on every
+metric, a Pareto frontier, and choose among them by this order of priority, unless the
+user sets another: `ub`, `unsafety`, `contracts`, `equiv`, `functional`, `perf`, `idiom`,
+`compat`, `api`, `interop`, `anchors`, then cost. Keep the brief and the frontier's points,
+each with what produced it, in `.crustify/FITNESS.md`.
+
 ## Process
 
 ### Concurrency
@@ -149,11 +163,33 @@ step by step. Decide who fixes each finding; turn its reproducer into a regressi
 and rerun it to confirm the fix. Keep reviewing until the reviewers find no way left to
 do better.
 
-#### Learn from review
+## Self-improvement
 
-Before you start a component, read the findings on the components before it. Do not
-repeat a defect a reviewer has already found, and look for the same kind of defect in
-code you have already written.
+Learn from the findings as the work goes on, and keep what you learn in
+`.crustify/memory/<id>/<pattern>.md`: one entry per pattern of findings, under the
+identifier of the requirement it falls short of. An entry says what the pattern is and why
+it arises, cites the findings it comes from, and names the check that detects it where one
+is possible: a lint, a test, a query or a reproducer that verification runs every time. It
+also records each attempt to prevent the pattern: the change, the effect you predicted and
+the effect observed. Read the entries before you start a component, name those that apply
+in every brief, and run their checks with the tests.
+
+Whenever about ten new findings have been filed, and at the end, run an evolver: a
+background subagent that ports nothing. It files the new findings under their patterns,
+and for a pattern that recurs it proposes a change: an entry with its check, or a change to
+how you work, to this prompt, a skill, ffibox or ffimap. A proposal takes effect at once.
+It is first tried on a small synthetic case, the pattern planted in a scratch copy or a
+minimal program kept beside its entry, to see that the change catches or prevents it. The
+evolver then monitors it: it counts the pattern's recurrences against the new code that
+could have shown it, and adds the frontier's points to `FITNESS.md`. A proposal is
+confirmed once enough such code has been reviewed without the pattern recurring and the
+frontier has not regressed. It is rejected when the pattern recurs or another requirement
+regresses, and its record is kept.
+
+Crustify's generic memory sits in `${CLAUDE_PLUGIN_ROOT}/memory/`, in the same format: read the
+entries under the identifiers in scope before you start. At the end, or when the user asks,
+propose for Crustify itself the confirmed entries and changes that hold beyond this
+codebase, stated without its names. They land only with the user's approval.
 
 ## Status
 

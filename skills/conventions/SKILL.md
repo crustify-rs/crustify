@@ -13,7 +13,12 @@ The port's own files, everything that is neither the C nor the Rust, sit under
 ```text
 .crustify/
 ├── STATUS.md                       progress per C file in scope, and the totals of time, tokens and cost
+├── FITNESS.md                      the fitness brief, and the Pareto frontier's points
 ├── REPORT.md                       the final report
+├── memory/
+│   └── <id>/                       one dir per requirement
+│       ├── <pattern>.md            one pattern: what it is, why, its findings, its check, its attempts
+│       └── <pattern>/              its synthetic cases
 ├── reviews/
 │   └── <id>/                       one dir per requirement: interop, compat, api, equiv, ub, perf, …
 │       └── <slug>/                 one finding
