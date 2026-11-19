@@ -155,7 +155,7 @@ yourself, in the format of `{crustify_root}/templates/STATUS.md`.
 
 Crustify's skills are its conventions, for the port's files, anchors, lints and language,
 and one for each tool. Each sits at `{crustify_root}/skills/…/<name>/SKILL.md`; you may use
-them when if you need them and if they apply to the target.
+them when you need them and they apply to the target.
 
 <!-- SKILL INDEX -->
 

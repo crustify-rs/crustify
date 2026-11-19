@@ -202,7 +202,7 @@ yourself, in the format of `${CLAUDE_PLUGIN_ROOT}/templates/STATUS.md`.
 
 Crustify's skills are its conventions, for the port's files, anchors, lints and language,
 and one for each tool. Each sits at `${CLAUDE_PLUGIN_ROOT}/skills/…/<name>/SKILL.md`; you may use
-them when if you need them and if they apply to the target.
+them when you need them and they apply to the target.
 
 ## Done
 
