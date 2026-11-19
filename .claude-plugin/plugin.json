@@ -9,7 +9,6 @@
   "repository": "https://github.com/crustify-rs/crustify",
   "skills": [
     "./skills/rust",
-    "./skills/verification",
     "./skills/operations",
     "./skills/tools",
     "./skills/crustify"

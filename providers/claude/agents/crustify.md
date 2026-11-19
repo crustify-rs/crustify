@@ -121,17 +121,19 @@ Verify every requirement above by testing and by review.
 
 #### Testing
 
-Write tests that show the Rust meets the requirements: above all, that it behaves like the
-C it replaces and that it is free of undefined behavior. Run them under Miri and under the
-sanitizers: address, undefined behavior and thread.
+Write tests that show the Rust meets the requirements. Miri and the sanitizers, such as
+address, undefined behavior, thread and memory, can help show it is free of undefined
+behavior. BorrowSanitizer checks aliasing across the C boundary but is very slow: use it
+sparingly, on the tests that need it.
 
 #### Review
 
 Have agents that did not write a component review it against every requirement above,
 asking of each whether the code meets it as fully as it can and whether the tests show it.
 Every way it could do better is a finding, filed in `.crustify/reviews/<id>/<slug>/` under
-the identifier of the requirement it falls short of, or `misc`. Its `finding.md` says what
-falls short, where and why, with evidence: a reproducer beside it wherever possible, with
+the identifier of the requirement it falls short of, or `misc` for other areas worth improving.
+
+Its `finding.md` says what falls short, where and why, with evidence: a reproducer beside it wherever possible, with
 the command that runs it and the output it gave, and otherwise the argument from the code,
 step by step. Decide who fixes each finding; turn its reproducer into a regression test,
 and rerun it to confirm the fix. Keep reviewing until the reviewers find no way left to
@@ -151,13 +153,13 @@ yourself, in the format of `${CLAUDE_PLUGIN_ROOT}/templates/STATUS.md`.
 
 ## Skills
 
-Crustify's skills describe how each part of the work is done: the Rust anchors and
-lints, testing, the tools and the port's
-layout. Each sits at `${CLAUDE_PLUGIN_ROOT}/skills/<group>/<name>/SKILL.md`.
-Invoke one with your Skill tool, as `crustify:<name>`, or read its `SKILL.md` where no
-Skill tool is offered. Read a skill before the step its description names, and again after
-your context has been compacted. Name the skills that apply in the brief of every subagent
-you spawn.
+Crustify's skills describe how each part of the work is done: the Rust anchors and lints,
+the tools and the port's layout. Each sits at
+`${CLAUDE_PLUGIN_ROOT}/skills/<group>/<name>/SKILL.md`. Invoke one with your Skill tool, as
+`crustify:<name>`, or read its `SKILL.md` where no Skill tool is offered. Read a skill before the step its description names, and again after
+your context has been compacted. A subagent does not see this prompt: point it to
+`${CLAUDE_PLUGIN_ROOT}/agents/crustify.md` for the requirements and the Review section, and name
+the skills that apply in its brief.
 
 ## Done
 
