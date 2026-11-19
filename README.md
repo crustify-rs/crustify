@@ -42,7 +42,6 @@ C working on the Rust, and serves the C's public API from safe Rust to C and Rus
 - 📜 **Skills on demand.** The lints, testing, reviewing, the tools and the port's layout
   are skills the agent reads before the step they cover.
 - ⚙️ **Grounded in deterministic tools:**
-  [wavefront](https://github.com/crustify-rs/wavefront) queries the C,
   [ffibox](https://github.com/crustify-rs/ffibox) holds the interop primitives the port
   grows and uses, and [ffimap](https://github.com/crustify-rs/ffimap) measures the unsafe
   surface.
@@ -59,11 +58,10 @@ crate the port depends on, so it is only cloned.
 
 ```bash
 git clone https://github.com/crustify-rs/crustify.git
-git clone --branch devel https://github.com/crustify-rs/wavefront.git
 git clone --branch devel https://github.com/crustify-rs/ffibox.git
 git clone --branch devel https://github.com/crustify-rs/ffimap.git
 
-python -m pip install -e wavefront -e ffimap
+python -m pip install -e ffimap
 ```
 
 > [!TIP]
@@ -127,7 +125,7 @@ pattern recurs, and keep `STATUS.md` current. Everything else is a skill:
 |---|---|
 | [`rust/`](skills/rust) | `anchors` naming the C item each Rust item stands in for, the `lints` |
 | [`verification/`](skills/verification) | `testing`, `reviewing` |
-| [`tools/`](skills/tools) | `wavefront`, `ffibox`, `ffimap` |
+| [`tools/`](skills/tools) | `ffibox`, `ffimap` |
 | [`operations/`](skills/operations) | the port's `layout` |
 | [`crustify/`](skills/crustify) | `authoring`: the language every text is written in |
 
