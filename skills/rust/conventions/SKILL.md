@@ -7,12 +7,12 @@ description: "Naming, tree layout, unsafe regions, exports, anchors and test pla
 
 These are the shared, mechanical contracts of a port's Rust: how it is named, where it
 sits, how it records what it translated and where its tests go. The
-toolchain, edition, lints and formatting it is held to are [`toolchain`](../toolchain/SKILL.md)'s.
+edition and lints it is held to are [`toolchain`](../toolchain/SKILL.md)'s.
 
 ## 1. Naming
 
-The workspace's lints enforce the standard Rust casing below, as [`toolchain`](../toolchain/SKILL.md)'s
-Lints section describes.
+The workspace's lints enforce the standard Rust casing below, as
+[`toolchain`](../toolchain/SKILL.md) lists them.
 
 The safe surface uses ordinary Rust naming: `snake_case` for functions, methods and
 modules, `UpperCamelCase` for types and traits, `SCREAMING_SNAKE_CASE` for constants and
@@ -117,8 +117,9 @@ unsafe regions, so that the rest of the file, its native code, holds none:
 Unsafe code is every `unsafe` block, `unsafe fn`, `unsafe impl`, `unsafe extern` block and
 `#[unsafe(…)]` attribute, and every invocation of another crate's macro that expands to
 one, such as one that mints a type over a C layout, which the compiler's `unsafe_code` lint does not
-see. Outside the regions, only the raw bindings hold any. The regions take the lint back as
-[`toolchain`](../toolchain/SKILL.md)'s Unsafe code section describes.
+see. Outside the regions, only the raw bindings hold any. A region that holds unsafe code takes the lint back,
+as `#[expect(unsafe_code, reason = "<what it reaches>")]`, and a module with no region
+carries `#![forbid(unsafe_code)]`.
 
 A region exposes to its module only safe items whose soundness the region itself proves: no
 raw pointer, `unsafe fn` or C layout reaches the native code unless its contract is stated

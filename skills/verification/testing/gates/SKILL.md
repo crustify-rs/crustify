@@ -12,7 +12,7 @@ in `crustify/STATUS.md` are the latest of each component's.
 ## 1. Regressions
 
 Every component's work checks, formats and lints the workspace on the tree it merges,
-with warnings denied, as [`toolchain`](../../../rust/toolchain/SKILL.md) describes, and
+with warnings denied, under the lints [`toolchain`](../../../rust/toolchain/SKILL.md) lists, and
 tests what its change can affect: the component and the components that depend on it,
 each by its tests' module paths.
 

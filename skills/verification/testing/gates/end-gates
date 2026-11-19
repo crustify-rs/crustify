@@ -26,7 +26,7 @@ The gates of testing-gates' Regressions section, run exactly so:
      `--lint-features`, such as the export features of the components whose C is still built;
    - a variant (`plain` and each sanitizer but `bsan`): the workspace's tests,
      `<runner> <variant> test --workspace --no-fail-fast`, with that stage's skips;
-   - `miri`: the package's test binaries built once on the pinned nightly, then one
+   - `miri`: the package's test binaries built once on the nightly, then one
      `cargo miri test` per test binary, side by side, each skipping `compile_fail`;
    - `bsan`: the test binaries built once, then one invocation per test binary, side by
      side, each under `--timeout`, with that stage's skips.

@@ -19,7 +19,7 @@ command changes. They are:
 - `coverage`, the coverage-instrumented build, instrumented as [Coverage](#2-coverage)
   describes; and
 - one build per sanitizer, whose tests build the Rust with the same LLVM sanitizer as the
-  C, the C's clang of the pinned nightly's LLVM major version as for coverage, so that one
+  C, the C's clang of the nightly's LLVM major version as for coverage, so that one
   runtime serves both and a report from the Rust's own unsafe code is caught too, and
   whose C consumers that link the Rust static library link one built with the same
   instrumentation:
@@ -43,7 +43,7 @@ alike, and count the code under test only:
 
 - **Instrumentation.** The `coverage` build compiles the C with clang's source-based
   coverage, `-fprofile-instr-generate -fcoverage-mapping` in its compile and link flags,
-  from a clang of the pinned nightly's LLVM major version, and the Rust is compiled on that
+  from a clang of the nightly's LLVM major version, and the Rust is compiled on that
   nightly with `-C instrument-coverage`. One profiling runtime counts both, into a profile
   per process and module (`LLVM_PROFILE_FILE=<dir>/%p-%m.profraw`), and the nightly's
   `llvm-profdata` and `llvm-cov` read both. gcc's coverage instrumentation and gcov are
