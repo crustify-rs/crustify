@@ -1,197 +1,113 @@
 ---
 name: reviewing
-description: "How a port's components are reviewed: independent review rounds until one finds nothing new, learning from earlier findings, worksets, depth, objectives and fixes; reviewing-reports gives how findings and reproducers are filed. Read before reviewing a component, briefing a reviewer, or fixing what a review found."
+description: "How a port is reviewed: for each objective, whether the code meets it as fully as it can, and every way it could do better as a finding; the kinds of finding and how each is fixed. reviewing-reports gives how findings and reproducers are filed. Read before reviewing, briefing a reviewer, or fixing what a review found."
 ---
 
 # Reviewing
 
-Review inspects a component that has been ported, for a set of objectives, and files a
-finding for every defect it finds, as [`reviewing-reports`](reports/SKILL.md) describes. The
-reviewer is a subagent that wrote none of the code it reviews.
+A reviewer is a subagent that wrote none of the code it reviews. It takes each of the
+port's objectives in turn and asks of the code: is this objective met as fully as it can
+be? Every way the code could meet it better is a finding, filed under its kind as
+[`reviewing-reports`](reports/SKILL.md) describes. The author fixes the findings, and
+review goes on until a reviewer finds no way left to do better on any objective. A
+finding marked fixed is checked by rerunning its reproducer.
 
-## 1. Rounds
+A reviewer reads the code itself. What a tool reports shows where to start and
+cross-checks what the reading found; it never bounds the review.
 
-Every component is reviewed before the components that build on it start, so that no
-work builds on unreviewed code. A round reviews the component's code as merged, or as its
-author proposes to merge it, and files each finding under its kind, in
-`.crustify/reviews/<kind>/`, as [`reviewing-reports`](reports/SKILL.md) describes.
+## 1. Kinds
 
-Review runs in rounds until one finds nothing new:
+Each kind asks one question of the code. A brief may narrow the kinds; without that, a
+review asks every one that applies. A tool may add kinds of its own.
 
-1. The reviewer reviews the component for every objective that applies.
-2. The author fixes every finding, as [Fixes](#4-fixes) describes.
-3. The next round's reviewer reruns every earlier finding's reproducer, as
-   [Revisit](#311-revisit) describes, and reviews what the fixes changed and what the
-   earlier rounds left out.
+### 1.1 Interoperability (`interop`)
 
-The rounds end when a round finds no new defect against the objectives and every earlier
-finding is fixed or recorded as deliberately left, with its reason. A finding left open
-is named in `.crustify/REPORT.md`.
+Do the rest of the codebase, its tests and its programs work on the Rust as they did on
+the C, through the same headers and ABI, sharing memory where the C did? Could the
+exports or the Rust API change less when the rest of the C is ported later?
 
-Review is tiered. Beside each component's rounds, the whole port gets crate-wide passes
-before the report: its unsafe code, its exports, its public Rust API and its tests,
-across components, since a defect may sit between two components each reviewed alone.
+### 1.2 Unsafety (`unsafety`)
 
-### 1.1 Learning from earlier findings
+Is the unsafe code as small as it can be? Unsafe annotations and raw pointers on the
+public API that safe, idiomatic variants could replace, and unsafe code inside that a safe
+construct, or an [`ffibox`](../../tools/ffibox/SKILL.md) primitive, could replace.
 
-Before a component is written, its author reads the findings on the components before
-it, kind by kind. Before a round, its reviewer reads them too, and checks the component for every class of
-defect they found: a class found once is looked for everywhere after. A defect a reviewer
-finds in one component is then looked for in the components already merged, by its
-author or by a review of its own, and every new site joins the finding. A finding is
-never rewritten to hide a defect: a later round records its verdict in the finding,
-beside what was there.
+### 1.3 Contracts (`contracts`)
 
-### 1.2 Depth
+Is every safety contract correct and complete?
 
-How deeply a component is reviewed follows how long its code lasts. An export is
-reviewed lightly while the C that calls it is still to be ported, and thoroughly once it
-serves C that stays. Everything else is reviewed for every objective that applies.
-
-## 2. Worksets
-
-A round's brief names its workset:
-
-| workset | what it covers |
-|---|---|
-| a component | the code its commits add or change, and what it reaches |
-| paths | source files and directories, or named types, trait impls and functions |
-| findings | the code earlier findings name, for a round that only revisits them |
-
-A workset named by types, trait impls or functions is limited to those: a type with its
-fields and its inherent impls, wherever they are; a trait impl, named `<trait> for <type>`
-as its header spells it, with its methods and associated items; a free function with
-nothing else. What they call and what implements their traits is read, but only the
-workset is reported on.
-
-A workset is reviewed from its source, to the depth [Depth](#12-depth) gives it. What a
-tool lists of it shows where the reading may start and cross-checks what the reading
-found; it never bounds the review, and code no tool flagged is reviewed all the same.
-
-## 3. Objectives
-
-Each objective names a kind of defect. A round's brief may narrow them; without that, a
-round runs every objective that applies. A tool may contribute objectives of its own.
-
-### 3.1 Unsafety (`unsafety`)
-
-Unsafe annotations and raw pointers on the workset's public API that safe, idiomatic
-variants could replace, so that API consumers write less unsafe code; and unsafe code
-inside the workset that a safe construct, or an [`ffibox`](../../tools/ffibox/SKILL.md)
-primitive, could replace.
-
-### 3.2 Contracts (`contracts`)
-
-Safety contracts that are incorrect, incomplete or ambiguous:
-
-- the `# Safety` obligation of a public entry point that must legitimately stay unsafe: a
-  caller who honours it can still reach undefined behaviour, or it asks for something the
-  implementation does not need;
+- the `# Safety` obligation of a public entry point that must stay unsafe: a caller who
+  honours it can still reach undefined behaviour, or it asks for more than the
+  implementation needs;
 - the `// SAFETY:` justification of an `unsafe` block: the invariant it claims does not
-  hold on every path that reaches the block, or no comment justifies the block at all;
-- an obligation stated on code that C calls once a value is handed to it, such as the
-  members of a callback table a safe constructor builds for C to install: C, not the Rust
-  caller, then chooses the arguments, often from data it reads, so no caller can honour it.
-  What the obligation excludes is refused in Rust, in front of the C, instead, where Rust
-  can test it, such as a value, a range, a null or a length. One Rust cannot test, such as
-  a pointer's liveness or family, or a string's terminator, is kept by whoever hands the
-  value to C: the C declaration's own contract, which the code it calls trusts as an
-  export does, or an `unsafe` installer whose Rust caller vouches for it. Only an
-  obligation neither covers, and Rust can test, is a finding.
+  hold on every path that reaches the block, or no comment justifies the block; and
+- an obligation stated on code C calls, such as a callback, which no Rust caller can
+  honour because C chooses the arguments: what Rust can test is refused in Rust, in front
+  of the C, instead.
 
 A contract is tested by trying to break it: an input, a call sequence or an interleaving
 that honours the obligation, or reaches the block through safe code, and still violates
-what the `unsafe` relies on. Contracts are judged by the side of the boundary they serve:
-the exports through which C reaches the crate, and every other unsafe code, whose items
-are sound for every input their module can give them.
+what the `unsafe` relies on.
 
-### 3.3 UB (`ub`)
+### 1.4 Undefined behaviour (`ub`)
 
-UB in the workset's API that its UB tests missed, by where it is reached from: the safe
-public API, the unsafe public API within its `# Safety` obligations, or C through an
-export within the C declaration's contract. The unsafe surface includes only the API the
-workset adds; a workset that made no API item unsafe has none.
+Is the code free of undefined behaviour, reached from the safe public API, from the unsafe
+public API within its `# Safety` obligations, or from C through an export within the C
+declaration's contract?
 
-### 3.4 Equivalence (`equiv`)
+### 1.5 Equivalence (`equiv`)
 
-Functional equivalence defects in the workset's API that its equivalence tests missed,
-while the C it translates exists. A divergence is a defect only when it is unintended: a
-doc comment, a `CHANGELOG` entry, a named test asserting the new behaviour or a commit
-message explaining it marks it deliberate, and one that corrects a C defect on purpose is
-no finding.
+Where the C is well defined, does the Rust behave the same? A divergence is a defect only
+when it is unintended: one that corrects a C defect on purpose, and says so, is no
+finding.
 
-### 3.5 Logic (`logic`)
+### 1.6 Functional correctness (`functional`)
 
-Behaviour that departs from the library's intended specification, in the workset's public
-API or its private implementation, that its tests missed. The specification is, from the
-most authoritative: the formats and standards the library implements, its documentation,
-what its own test suites assert, and its maintainers' stated intent. A finding cites what
-the behaviour departs from. Where the C departs from it too, the defect is not copied into
-the Rust, and the finding records the C's. A leak, a deadlock or a panic on valid input
-departs from nearly every specification.
+Does the code do what the library is meant to do, in its public API and its internals?
+The specification is, from the most authoritative: the formats and standards the library
+implements, its documentation, what its test suites assert, and its maintainers' stated
+intent. A finding cites what the behaviour departs from. Where the C departs from it too,
+the defect is not copied into the Rust, and the finding records the C's. A leak, a
+deadlock or a panic on valid input departs from nearly every specification.
 
-### 3.6 Ergonomics (`ergonomics`)
+### 1.7 Performance (`perf`)
 
-Public API that is harder to use than it needs to be: its names, its conversions, its
+Is the code as fast as it can be, and at least as fast as the C, on representative
+workloads? A finding names the workload, the measurement and the cause where the reviewer
+can find it.
+
+### 1.8 Ergonomics (`ergonomics`)
+
+Is the public Rust API as easy to use as it can be: its names, its conversions, its
 iterators, builders or defaults where the C takes long argument lists, and the standard
-traits its types lack. An item's safe API is fixed by its first merge, so its ergonomics
-are reviewed there.
+traits its types implement?
 
-### 3.7 Idiom (`idiom`)
+### 1.9 Idiom (`idiom`)
 
-Ported implementation that transliterates its C rather than using Rust's own means: index
-loops where iterators fit, status codes where `Result` and `?` fit, lengths and releases
-carried by hand where ownership carries them.
+Does the implementation use Rust's own means rather than transliterate its C: iterators
+where index loops stand, `Result` and `?` where status codes stand, ownership where
+lengths and releases are carried by hand?
 
-### 3.8 Anchors (`anchors`)
+### 1.10 Tests (`tests`)
 
-A public item that stands in for a C item without its anchor and alias, or with one that
-names the wrong item, as [`anchors`](../../rust/anchors/SKILL.md) describes.
+Do the tests show what [`testing`](../testing/SKILL.md) lists, as thoroughly as they can?
+Paths, states and transitions they leave unreached, measured by coverage; assertions too
+weak to fail when the code is wrong; and C test cases none carries over.
 
-### 3.9 Performance (`perf`)
+### 1.11 Anchors (`anchors`)
 
-A component slower than the C it replaces on a representative workload, measured as the
-port measures performance, with the cause where the reviewer can find it.
+Does every public item that stands in for a C item carry its anchor and alias, naming the
+right item, as [`anchors`](../../rust/anchors/SKILL.md) describes?
 
-### 3.10 Test adequacy (`test-adequacy`)
+### 1.12 Misc (`misc`)
 
-Gaps in the workset's tests: the C and Rust execution paths, and the states and
-transitions, that the codebase's external and inline test suites leave unreached, found by
-reading those suites against the code and measured by coverage; assertions too
-weak to fail when the code is wrong; tests outside the suite of their kind; and the C test
-cases none carries over.
+Anything else the port could do better.
 
-### 3.11 Revisit (`revisit`)
+## 2. Fixes
 
-The findings earlier rounds filed, each rerun through its reproducer on the current tree.
-One that still reproduces stays a finding of its objective; one that no longer does is
-marked fixed in its `finding.md`, with the commit that changed the verdict; one
-that was never a defect is marked so, with the reason. Each finding's class is checked
-again with it.
-
-### 3.12 Misc (`misc`)
-
-Any other defect in the workset.
-
-## 4. Fixes
-
-The component's author fixes every finding; a reviewer changes nothing outside the
-reviews dir. Each objective's fix:
-
-- `unsafety`: the entry point is made safe, or the unsafe code replaced;
-- `contracts`: the `# Safety` obligation or `// SAFETY:` justification is corrected, or,
-  when the contract can be broken, the code it guards, and the reproducer becomes a UB
-  regression test;
-- `ub`, `equiv` and `logic`: the defect is patched, and the reproducer becomes a
-  regression test of the same kind, a UB test, an equivalence test or a unit test, on the
-  side of the component it reaches. A UB regression test either runs without triggering a
-  sanitizer, or fails to compile because the patch removed the safe path that reached the
-  defect;
-- `ergonomics`: the API is improved, and its consumers in the crate follow;
-- `idiom`, `anchors`, `perf` and `misc`: the transliteration, deviation, slowdown or
-  defect is fixed;
-- `test-adequacy`: the gaps are filled with tests, and the coverage measurement shows the
-  delta; and
-- `revisit`: every finding that still reproduces is patched, as for its objective.
-
-Every test a fix adds is classified as [`testing`](../testing/SKILL.md) describes.
+The author fixes every finding; a reviewer changes nothing outside `.crustify/reviews/`.
+A finding with a reproducer is fixed with a regression test made from it: a UB test that
+runs clean under the instrument that caught it, or fails to compile because the fix
+removed the safe path to the defect; an equivalence test; or a unit test. A `contracts`
+finding is fixed in the contract, or, where the contract can be broken, in the code it
+guards. A `tests` finding is fixed by the tests it asks for, with the coverage they add.

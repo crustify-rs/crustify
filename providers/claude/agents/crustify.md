@@ -106,9 +106,9 @@ built is your choice.
    free of undefined behavior. Run them under Miri and under the sanitizers: address,
    undefined behavior and thread.
 
-7. Reviewed independently. Have agents that did not write a component review it for
-   undefined behavior, divergence from the C, weak safety documentation and avoidable
-   unsafe code.
+7. Reviewed independently. Have agents that did not write a component review it against
+   every objective here, asking of each whether the code meets it as fully as it can,
+   and fix what they find until they find no way left to do better.
 
 8. Parallel where possible. Work on independent components at the same time.
 
@@ -129,10 +129,10 @@ is subtle, turn it into an ffibox primitive and use it from the port.
 ## Learn from review
 
 Keep every reviewer's finding in `.crustify/reviews/`, one directory per finding, grouped
-by kind: `ub`, `contracts`, `equiv`, `logic`, `perf` and the other review objectives. Before
-you start a component, read the findings on the components before it. Do not repeat a
-defect a reviewer has already found, and look for the same kind of defect in code you
-have already written.
+by kind: `ub`, `contracts`, `equiv`, `functional`, `perf` and the other kinds the
+reviewing skill names. Before you start a component, read the findings on the components
+before it. Do not repeat a defect a reviewer has already found, and look for the same kind
+of defect in code you have already written.
 
 ## Status
 

@@ -13,7 +13,7 @@ The port's own files, everything that is neither the C nor the Rust, sit under
 ├── STATUS.md                       progress per C file in scope, and the totals of time, tokens and cost
 ├── REPORT.md                       the final report
 ├── reviews/
-│   └── <kind>/                     one dir per review objective: ub, contracts, equiv, logic, perf, …
+│   └── <kind>/                     one dir per kind of finding: ub, contracts, equiv, functional, perf, …
 │       └── <slug>/                 one finding
 └── tmp/                            scratch, gitignored
 ```

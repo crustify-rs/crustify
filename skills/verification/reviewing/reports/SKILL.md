@@ -5,7 +5,7 @@ description: "How review findings are filed: one directory per finding under its
 
 # Reviewing: reports
 
-What a review round files for the defects [`reviewing`](../SKILL.md)'s objectives name: a
+What a review files for what [`reviewing`](../SKILL.md)'s kinds of finding name: a
 file per finding, one finding per root cause, and the reproducer that proves each.
 
 ## 1. Findings
@@ -14,8 +14,8 @@ A finding is a directory under its kind, the objective that names it,
 `.crustify/reviews/<kind>/<slug>/`, as [`layout`](../../../operations/layout/SKILL.md)
 places it. The slug names the defect in a few words, such as `index-entry-alias`. The
 directory holds `finding.md`, the finding itself, and its reproducer, when it has one. Its
-id, `<kind>/<slug>`, such as `ub/index-entry-alias`, stays its name in every later round
-and commit that refers to it. A finding is never deleted once filed: a later round updates
+id, `<kind>/<slug>`, such as `ub/index-entry-alias`, stays its name in every later review
+and commit that refers to it. A finding is never deleted once filed: a later review updates
 `finding.md` in place, its status and the verdict of each rerun.
 
 A defect in a tool rather than in the port, ffibox or ffimap included, is no finding of
@@ -24,7 +24,7 @@ agent to fix in the tool.
 
 A finding states what is wrong, where, the evidence that proves it, and, once fixed, how
 it was fixed and in which commit. It names the check that caught it, such as the author's
-tests, a review round, a later round, a crate-wide pass or the remaining C's tests, and
+tests, a review, a later review or the remaining C's tests, and
 the checks that had the same code in scope before it and missed it: a finding an earlier
 check missed is an escape. It carries
 everything needed to rerun its reproducer from a clean checkout: the exact command and the
@@ -36,7 +36,7 @@ carries an API key, in a core dump or anywhere else.
 A finding opens with its title, then its header, one `key: value` line each:
 
 - `component`: the component it was found in, and every other it reaches;
-- `round`: the round that filed it, and the commit it reviewed;
+- `reviewed`: the commit the review that filed it reviewed;
 - `class`, as [Classes](#12-classes) gives it;
 - `evidence`: what decided it, a sanitizer, Miri or a failing assertion, by name. A
   result that only an aliasing model reports, Stacked Borrows, Tree Borrows or BSan, adds
@@ -57,7 +57,7 @@ A finding opens with its title, then its header, one `key: value` line each:
 | `soundness` | undefined behaviour reached from the safe public API, from the unsafe public API within its `# Safety` obligations, or by C through an export within the C declaration's contract |
 | `c-bug` | a defect of the C library itself, which its own API reaches without the port's doing |
 | `behaviour` | no undefined behaviour: a panic, a wrong value, a swallowed error, a leak, a slowdown, or a divergence from the C or the specification |
-| `nit` | nothing a consumer can observe: a missing or imprecise `// SAFETY:` justification, an under-documented `# Safety` obligation that no reproducer breaks, or an API-shape finding of `unsafety`, `ergonomics`, `idiom` or `anchors` |
+| `nit` | nothing a consumer can observe: a missing or imprecise `// SAFETY:` justification, an under-documented `# Safety` obligation that no reproducer breaks, or an API-shape finding of `unsafety`, `interop`, `ergonomics`, `idiom` or `anchors` |
 
 What only misuse can reach is not reportable: a private item no public API reaches with
 the inputs in question, or an `unsafe` API called against its stated obligations.
@@ -67,7 +67,7 @@ the inputs in question, or an `unsafe` API called against its stated obligations
 A finding is one root cause. Sites that share a defect are one finding that lists them,
 whatever objective or instrument met each. Before a finding is filed, the findings already
 in `.crustify/reviews/` are searched for its cause, by site and mechanism, not by name: one
-the same round filed takes the new site; one an earlier round filed is named in
+the same review filed takes the new site; one an earlier review filed is named in
 `same-cause`, so that a class of defect that recurs across components shows as one. A
 finding that several objectives meet is filed once, under the kind that names its harm.
 
@@ -80,7 +80,7 @@ component.
 
 ## 2. Reproducers
 
-A `ub`, `equiv` or `logic` candidate becomes a finding only once a reproducer proves it,
+A `ub`, `equiv` or `functional` candidate becomes a finding only once a reproducer proves it,
 and so does a `contracts` candidate that claims a contract can be broken, and a `perf`
 candidate, whose reproducer is the measurement. A contract that merely asks for more than
 the implementation needs, or a missing justification, is a finding without one.
@@ -93,8 +93,8 @@ the implementation needs, or a missing justification, is a finding without one.
   binding, or from a C program, within the C declaration's contract.
 - An equivalence reproducer fails a comparison of the C and the Rust, as
   [`testing`](../../testing/SKILL.md) lists them, while running the raw C and the public Rust API, and its finding carries the
-  failing assertion. Once the C is gone, a behaviour finding is a `logic` one.
-- A logic reproducer fails a Rust assertion of what the specification it cites requires,
+  failing assertion. Once the C is gone, a behaviour finding is a `functional` one.
+- A functional reproducer fails a Rust assertion of what the specification it cites requires,
   and its finding carries the failing assertion.
 
 Each reproducer is a standalone Cargo package: its `Cargo.toml` declares an empty
