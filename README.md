@@ -47,7 +47,7 @@ C working on the Rust, and serves the C's public API from safe Rust to C and Rus
   surface.
 - ✅ **Verified.** Equivalence tests against the C, Miri, ASan, UBSan and TSan, and
   independent reviewers whose findings later components learn from.
-- 📊 **Legible.** `crustify/STATUS.md` shows each C file's state and counters and the time,
+- 📊 **Legible.** `.crustify/STATUS.md` shows each C file's state and counters and the time,
   tokens and cost spent, and every dependency carries a comment on why it was chosen.
 
 ## Installation
@@ -129,7 +129,7 @@ grow ffibox when an interop pattern recurs, learn from every earlier review, and
 | [`operations/`](skills/operations) | the port's `layout` |
 | [`crustify/`](skills/crustify) | `authoring`: the language every text is written in |
 
-The port ends with `crustify/REPORT.md`: the configuration, the boundary between Rust and
+The port ends with `.crustify/REPORT.md`: the configuration, the boundary between Rust and
 C, the defects found in the C, the performance numbers and what was verified how.
 
 ## Results

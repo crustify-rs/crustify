@@ -1,43 +1,34 @@
 ---
 name: layout
-description: "Where a port's own files sit: the crustify/ dir with STATUS.md, REPORT.md, the reviews dir and scratch. Read before placing any file that is not part of the Rust tree or the C."
+description: "What the .crustify/ dir at the repository's root holds: STATUS.md, REPORT.md, the reviews by kind, and scratch. Read before placing any of the port's own files."
 ---
 
 # Layout
 
-A port works in the repository of the C codebase it ports, beside the C, which stays where
-it is so that what remains of it builds as before.
-
-## 1. Tree
+The port's own files, everything that is neither the C nor the Rust, sit under
+`.crustify/` at the root of the C codebase's repository:
 
 ```text
-<repository>/
-├── …                   the C, as the codebase lays it out
-├── <crate dir>/        the Rust crate, laid out as the agent chooses
-└── crustify/
-    ├── STATUS.md       progress per C file in scope, and the totals of time, tokens and cost
-    ├── REPORT.md       the final report
-    ├── reviews/        every reviewer's report, with its reproducers
-    ├── slow-tests      the tests the gates skip until a full run, as testing-gates describes
-    └── tmp/            scratch, gitignored
+.crustify/
+├── STATUS.md                       progress per C file in scope, and the totals of time, tokens and cost
+├── REPORT.md                       the final report
+├── reviews/
+│   └── <kind>/                     one dir per review objective: ub, contracts, equiv, logic, perf, …
+│       ├── <component>-<n>.md      one finding
+│       └── <component>-<n>/        its reproducer
+└── tmp/                            scratch, gitignored
 ```
 
-The crate's directory is the agent's choice, such as `rust/`, one the C does not use; the
-report names it. The C's build reaches the crate through its own build system, as
-[`testing-builds`](../../verification/testing/builds/SKILL.md) describes. Paths into the C are relative to the repository's root, as the C lays itself
-out. Nothing records a path to a scratch file.
+## 1. Reviews
 
-## 2. Reviews
+Findings are grouped by their kind, the review objective that names them, as
+[`reviewing`](../../verification/reviewing/SKILL.md) lists them, so that the author of the
+next component reads every defect of a kind found so far in one place. A finding is never
+deleted once filed: a later round updates its status in place.
 
-Each review's report sits at `crustify/reviews/<component>-r<round>.md`, its reproducers
-in `crustify/reviews/<component>-r<round>/`, as
-[`reviewing-reports`](../../verification/reviewing/reports/SKILL.md) lays them out. A
-report is never deleted or rewritten once filed: a later round is a new file, so that the
-next component's author can read every defect found so far.
+## 2. Scratch
 
-## 3. Scratch
-
-`crustify/tmp/` is gitignored and holds anything residual: downloads, scratch builds and
+`.crustify/tmp/` is gitignored and holds anything residual: downloads, scratch builds and
 experiments, intermediate outputs. Residual files go nowhere else in the repository. A
-subagent's scratch is its own subdirectory, `crustify/tmp/<agent>/`, never a directory the
+subagent's scratch is its own subdirectory, `.crustify/tmp/<agent>/`, never a directory the
 host hands every agent of a session, where another agent can overwrite it.

@@ -132,7 +132,7 @@ the checklist: each is excluded by the primitive or the producer's contract it n
 is a finding.
 
 A soundness or ergonomics gap in ffibox itself, in its safe primitives or its unsafe FFI
-seams, is a defect in ffibox: file it in `crustify/reviews/` with its reproducer, and fix it
+seams, is a defect in ffibox: file it in `.crustify/reviews/` with its reproducer, and fix it
 as [Growing ffibox](#growing-ffibox) describes.
 
 ## Growing ffibox

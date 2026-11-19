@@ -62,7 +62,7 @@ docker exec -it -w /target crustify-libgit2 \
 Its first message names the task: the components to port, the build configuration and
 anything else the port must respect. Pass it with `-p` to run the port headless, which a
 session without a terminal (`docker exec` without `-it`) needs. `claude --resume`
-continues an earlier session; `crustify/STATUS.md` says where the port stands.
+continues an earlier session; `.crustify/STATUS.md` says where the port stands.
 
 `--init` runs a small init process as the container's first process, so the
 processes the agents leave behind are reaped instead of piling up as zombies
@@ -75,7 +75,7 @@ default seccomp profile rejects, so every instrumented binary would die before
 needs root on the host.
 
 `/target` is the checkout of the C codebase, mounted read-write. The Rust tree and the
-port's own files under `crustify/`, as the [`layout`](../../skills/operations/layout/SKILL.md)
+port's own files under `.crustify/`, as the [`layout`](../../skills/operations/layout/SKILL.md)
 skill lays them out, land in it. When it already holds a port, that port is resumed in
 place.
 
@@ -138,7 +138,7 @@ Set with `--build-arg` on `docker build`.
 
 | path | mode | lifetime |
 |---|---|---|
-| `/target` | read-write, required | the checkout of the C codebase the port works in; the Rust tree and `crustify/` land in it. An existing port is resumed in place |
+| `/target` | read-write, required | the checkout of the C codebase the port works in; the Rust tree and `.crustify/` land in it. An existing port is resumed in place |
 | `/crustify-rs` | read-write, optional | the whole workspace: the crustify checkout, the plugin itself, with wavefront, ffibox and ffimap beside it, the target forks and the reference crates. Replaces the build-time copy of all four, so one mount serves every tool |
 | `/work` | named volume, optional | `HOME`: the agents' session transcripts, the C libraries they build, the cargo registry. Outlives `docker rm`, so a re-created container keeps them. Not the port's files — those land in `/target` |
 

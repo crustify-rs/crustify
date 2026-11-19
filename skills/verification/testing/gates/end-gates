@@ -330,10 +330,10 @@ def main(argv: list[str] | None = None) -> int:
     src.add_argument("--rev", default="HEAD", help="the commit to snapshot (default: HEAD)")
     src.add_argument("--working-tree", action="store_true",
                      help="snapshot the working tree, tracked and untracked files git keeps")
-    p.add_argument("--label", help="the snapshot's name under crustify/tmp (default: the rev)")
+    p.add_argument("--label", help="the snapshot's name under .crustify/tmp (default: the rev)")
     p.add_argument("--package", help="the package whose test binaries run per binary "
                                      "(default: the workspace's root package)")
-    p.add_argument("--runner", default="crustify/scripts/cargo-variant.sh",
+    p.add_argument("--runner", default=".crustify/scripts/cargo-variant.sh",
                    help="the command that runs cargo against a variant, given the variant "
                         "first (default: %(default)s, from the snapshot)")
     p.add_argument("--link", action="append", default=[],

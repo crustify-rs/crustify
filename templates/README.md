@@ -1,6 +1,6 @@
 # Templates
 
-- [`STATUS.md`](STATUS.md): the format of a port's `crustify/STATUS.md`, which Crustify's
+- [`STATUS.md`](STATUS.md): the format of a port's `.crustify/STATUS.md`, which Crustify's
   system prompt describes.
 - [`docker/`](docker): the environment a port runs in, [`Dockerfile`](docker/Dockerfile),
   with the mounts, build arguments and environment variables that go with it in

@@ -1,20 +1,20 @@
 ---
 name: reviewing
-description: "How a port's components are reviewed: independent review rounds until one finds nothing new, learning from earlier reports, worksets, depth, objectives, fixes and gates; reviewing-reports gives the reports and reproducers. Read before reviewing a component, briefing a reviewer, or fixing what a review found."
+description: "How a port's components are reviewed: independent review rounds until one finds nothing new, learning from earlier findings, worksets, depth, objectives, fixes and gates; reviewing-reports gives how findings and reproducers are filed. Read before reviewing a component, briefing a reviewer, or fixing what a review found."
 ---
 
 # Reviewing
 
 Review inspects a component that has been ported, for a set of objectives, and files a
-report of every defect it finds, as [`reviewing-reports`](reports/SKILL.md) describes. The
+finding for every defect it finds, as [`reviewing-reports`](reports/SKILL.md) describes. The
 reviewer is a subagent that wrote none of the code it reviews.
 
 ## 1. Rounds
 
 Every component is reviewed before the components that build on it start, so that no
 work builds on unreviewed code. A round reviews the component's code as merged, or as its
-author proposes to merge it, and files one report, `crustify/reviews/<component>-r<round>.md`,
-as [`layout`](../../operations/layout/SKILL.md)'s Reviews section places it.
+author proposes to merge it, and files each finding under its kind, in
+`.crustify/reviews/<kind>/`, as [`reviewing-reports`](reports/SKILL.md) describes.
 
 Review runs in rounds until one finds nothing new:
 
@@ -26,20 +26,21 @@ Review runs in rounds until one finds nothing new:
 
 The rounds end when a round finds no new defect against the objectives and every earlier
 finding is fixed or recorded as deliberately left, with its reason. A finding left open
-is named in the report.
+is named in `.crustify/REPORT.md`.
 
 Review is tiered. Beside each component's rounds, the whole port gets crate-wide passes
 before the report: its unsafe code, its exports, its public Rust API and its tests,
 across components, since a defect may sit between two components each reviewed alone.
 
-### 1.1 Learning from earlier reports
+### 1.1 Learning from earlier findings
 
-Before a component is written, its author reads the reports on the components before it.
-Before a round, its reviewer reads them too, and checks the component for every class of
+Before a component is written, its author reads the findings on the components before
+it, kind by kind. Before a round, its reviewer reads them too, and checks the component for every class of
 defect they found: a class found once is looked for everywhere after. A defect a reviewer
 finds in one component is then looked for in the components already merged, by its
-author or by a review of its own, and every new site joins the finding's report. A
-report is never rewritten to hide a defect; a later round's verdict is a file of its own.
+author or by a review of its own, and every new site joins the finding. A finding is
+never rewritten to hide a defect: a later round records its verdict in the finding,
+beside what was there.
 
 ### 1.2 Depth
 
@@ -55,7 +56,7 @@ A round's brief names its workset:
 |---|---|
 | a component | the code its commits add or change, and what it reaches |
 | paths | source files and directories, or named types, trait impls and functions |
-| reports | the code earlier reports name, for a round that only revisits them |
+| findings | the code earlier findings name, for a round that only revisits them |
 
 A workset named by types, trait impls or functions is limited to those: a type with its
 fields and its inherent impls, wherever they are; a trait impl, named `<trait> for <type>`
@@ -165,7 +166,7 @@ cases none carries over.
 
 The findings earlier rounds filed, each rerun through its reproducer on the current tree.
 One that still reproduces stays a finding of its objective; one that no longer does is
-marked fixed in the new round's report, with the commit that changed the verdict; one
+marked fixed in its file, with the commit that changed the verdict; one
 that was never a defect is marked so, with the reason. Each finding's class is checked
 again with it.
 
@@ -201,5 +202,5 @@ Every test a fix adds is classified as [`testing`](../testing/SKILL.md) describe
 A round's reviewer runs the component's gates, as
 [`testing-gates`](../testing/gates/SKILL.md)'s Regressions section gives a merge's, on the
 reviewed tree before any fix. Each true positive a gate finds is a finding of the round,
-whether or not the workset holds the code it reaches: a report it leaves to no one is
+whether or not the workset holds the code it reaches: a defect it leaves to no one is
 lost. The author runs them again on the fixed tree before the merge.

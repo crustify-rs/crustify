@@ -126,13 +126,15 @@ is subtle, turn it into an ffibox primitive and use it from the port.
 
 ## Learn from review
 
-Keep every reviewer's report in `crustify/reviews/`. Before you start a component, read
-the reports on the components before it. Do not repeat a defect a reviewer has already
-found, and look for the same kind of defect in code you have already written.
+Keep every reviewer's finding in `.crustify/reviews/`, one file per finding, grouped by
+kind: `ub`, `contracts`, `equiv`, `logic`, `perf` and the other review objectives. Before
+you start a component, read the findings on the components before it. Do not repeat a
+defect a reviewer has already found, and look for the same kind of defect in code you
+have already written.
 
 ## Status
 
-Keep `crustify/STATUS.md` current, so that the user, or you after a break, can see where
+Keep `.crustify/STATUS.md` current, so that the user, or you after a break, can see where
 the port stands without reading anything else. It is a plain Markdown file you edit
 yourself, in the format of `${CLAUDE_PLUGIN_ROOT}/templates/STATUS.md`.
 
@@ -149,4 +151,4 @@ you spawn.
 ## Done
 
 Your results will be checked independently. Work autonomously until you are done, then
-write `crustify/REPORT.md`.
+write `.crustify/REPORT.md`.

@@ -1,13 +1,13 @@
 ---
 name: testing-gates
-description: "The regression gates a port passes, by event: a component's own gates, a merge into the working branch, a periodic full run, a component's C leaving the build, and the final run; the slow list, sanitizers, BSan and Miri, merges onto newer work, and the export checks. Read before running gates, merging a component or removing a component's C from the build."
+description: "The regression gates a port passes, by event: a component's own gates, a merge into the working branch, a periodic full run, a component's C leaving the build, and the final run; sanitizers, BSan and Miri, merges onto newer work, and the export checks. Read before running gates, merging a component or removing a component's C from the build."
 ---
 
 # Testing gates
 
 The gates the port passes, over the tests [`testing`](../SKILL.md) classifies and the
 builds [`testing-builds`](../builds/SKILL.md) describes. The test counts a run records
-in `crustify/STATUS.md` are the latest of each component's.
+in `.crustify/STATUS.md` are the latest of each component's.
 
 ## 1. Regressions
 
@@ -29,47 +29,35 @@ them to its own depth:
   unwritten;
 - a merge into the working branch, and a component's C leaving the build: the
   workspace's tests, plain, under every available sanitizer, under Miri and under BSan
-  as below, less each instrument's slow list;
-- a full run: every test of the workspace under every instrument, the slow lists not
-  applied. It runs in the background, beside the port's work, at least after every few
-  merged components, and its failures are handed to the authors of the components they
+  as below;
+- a full run: every test of the workspace under every instrument. It runs in the
+  background, beside the port's work, at least after every few merged components, and its failures are handed to the authors of the components they
   reach; and
 - the final run, before the report: a full run, with the coverage measurement, on the
   tree the report describes.
-
-The slow list is the port's skip file, `crustify/slow-tests`, which holds, per
-instrument, the tests that take over a minute under it, each by its exact name with the
-time measured. A test on it is skipped at a merge and runs in every full run, so that
-merges stay short enough to gate every time and no test goes unrun for long. A test joins
-the list when a merge's run measures it over the minute, and leaves when a full run
-measures it under. A skip weakens a gate: the list and its changes are named in the
-report.
 
 BSan, when available, is run for a component's own work and at each merge:
 
 - For a component's own work, it runs only on the individual tests or reproducers the
   work expects to trigger it, each by exact name and alone; never on a whole test binary,
   a suite or the workspace.
-- At a merge, it runs as a gate over the whole workspace, less its slow list, one
-  invocation per test binary, several side by side, each under a `timeout`.
+- At a merge, it runs as a gate over the whole workspace, one invocation per test binary,
+  several side by side, each under a `timeout`.
 
-The slow list keeps a slow test out of the merges, not out of a full run, which a test
-BSan cannot finish within that `timeout` fails every time. Such a test is sized for BSan:
-in the configuration BSan's build sets, it runs fewer inputs, chosen to keep reaching
-every path it checks, while every other build runs it whole.
+A test BSan cannot finish within that `timeout` is sized for BSan: in the configuration
+BSan's build sets, it runs fewer inputs, chosen to keep reaching every path it checks,
+while every other build runs it whole.
 
 A component's author runs the tests it wrote under Miri. Miri is also run at every merge,
-as a gate over the whole workspace, less its slow list: one Miri run on the pinned nightly
-per test binary, the library's and each integration suite's, several side by side, each
-skipping the compile-fail tests. The gate passes only with no Miri error: a test that
+as a gate over the whole workspace: one Miri run per test binary, the library's and each
+integration suite's, several side by side, each skipping the compile-fail tests. The gate passes only with no Miri error: a test that
 stops at the foreign boundary without the attribute gets it, and any other Miri error is
 a UB candidate of the item it touches.
 
 `end-gates`, beside this skill and documented by its `--help`, runs a merge's and a full
 run's gates so, over a snapshot of the tree, so that work goes on in the tree while they
 run: the format check and the lints with warnings denied, the workspace under each build,
-Miri and BSan per test binary, and the slow list's tests skipped by name, each skip
-checked against its binary's test list before anything runs. A component's own format and
+and Miri and BSan per test binary. A component's own format and
 lint gates run the same way, over the commit it merges, so that the result it records is
 that tree's.
 

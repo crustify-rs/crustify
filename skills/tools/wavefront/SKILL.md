@@ -23,7 +23,7 @@ query returns are those documents', and are not restated here.
 ## State
 
 Wavefront's repo root is the C root, the directory that holds the C codebase, so that every
-path it reads and reports is relative to it. Its state sits under `crustify/wavefront/`,
+path it reads and reports is relative to it. Its state sits under `.crustify/wavefront/`,
 which the configuration names as its `state_dir`:
 
 - `codeql/`, the CodeQL database and its T1/T2 tables, and `.cache`, both gitignored;
@@ -40,12 +40,12 @@ and a unit two components claim, so that every entity belongs to exactly one com
 ## Setup
 
 Install CodeQL and wavefront's query pack dependencies, as its README describes, and list
-`wavefront/codeql` and `wavefront/.cache` in `crustify/.gitignore`. Once the C builds,
+`wavefront/codeql` and `wavefront/.cache` in `.crustify/.gitignore`. Once the C builds,
 create the CodeQL database from a traced build of the C, in a fresh dir under
-`crustify/tmp/`, with the C root as its source root, and extract its T1/T2 tables.
+`.crustify/tmp/`, with the C root as its source root, and extract its T1/T2 tables.
 
 A worktree another agent works in needs the database and tables too: symlink
-`crustify/wavefront/codeql/` and `.cache` into it rather than building them again.
+`.crustify/wavefront/codeql/` and `.cache` into it rather than building them again.
 
 ## Ordering components
 
@@ -54,7 +54,7 @@ Read `docs/scoping.md` and `docs/graph.md`.
 A schedule of the scope, its `schedule_seeds` the files to port, gives the dependency order
 of the components and which of them are independent, so that the agent can port
 independent components at the same time and each component after what it depends on. Write
-its output to `crustify/tmp/`.
+its output to `.crustify/tmp/`.
 
 Before the order is used, write the T3 tables, so that cast edges resolve type-erased
 values, and check them:
@@ -107,14 +107,14 @@ identifies. An incomplete lifecycle is a finding too.
 A finding on wavefront's findings is filed in its own `<slug>` directory, with its report
 and the evidence that proves the submitted finding wrong or incomplete, under:
 
-- `crustify/reviews/wavefront/ownership/`, for a wrong pointer-related inference; or
-- `crustify/reviews/wavefront/lifecycle/`, for an incomplete lifecycle.
+- `.crustify/reviews/wavefront/ownership/`, for a wrong pointer-related inference; or
+- `.crustify/reviews/wavefront/lifecycle/`, for an incomplete lifecycle.
 
 Its fix submits the corrected or completed findings again, and gives a completed lifecycle
 the representations the Rust is missing. A report on a T3 table also states the change the
 edit makes to the dependency graph.
 
-A defect in wavefront itself is no finding on its findings: file it in `crustify/reviews/`
+A defect in wavefront itself is no finding on its findings: file it in `.crustify/reviews/`
 with its reproducer.
 
 ## Changing wavefront

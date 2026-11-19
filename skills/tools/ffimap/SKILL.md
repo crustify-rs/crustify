@@ -1,6 +1,6 @@
 ---
 name: ffimap
-description: "Deterministic counts and sites of a Rust crate's unsafe and FFI surface, per crate and per region, and of its consumer-facing API. Read before measuring the unsafe surface for crustify/STATUS.md or the report, before a component's work is merged, and when reviewing for unsafety, contracts or UB."
+description: "Deterministic counts and sites of a Rust crate's unsafe and FFI surface, per crate and per region, and of its consumer-facing API. Read before measuring the unsafe surface for .crustify/STATUS.md or the report, before a component's work is merged, and when reviewing for unsafety, contracts or UB."
 ---
 
 # ffimap
@@ -97,7 +97,7 @@ What follows is what ffimap adds to each kind of work.
 
 ## Measuring the unsafe surface
 
-ffimap is how the agent measures the unsafe surface, for `crustify/STATUS.md` and for the
+ffimap is how the agent measures the unsafe surface, for `.crustify/STATUS.md` and for the
 report:
 
 - the total row's unsafe lines and their share are `code.loc.unsafe` and
@@ -184,5 +184,5 @@ A site of `ty.storing_raw_ptr.of_which.impl_drop`, `.impl_clone`,
 `Drop for <type>`, `Clone for <type>`, `Send for <type>` or `Sync for <type>`.
 
 A scan that fails, that covers part of the crate, or that the source contradicts is a
-defect in ffimap: file it in `crustify/reviews/` with its reproducer, and review from the
+defect in ffimap: file it in `.crustify/reviews/` with its reproducer, and review from the
 source.

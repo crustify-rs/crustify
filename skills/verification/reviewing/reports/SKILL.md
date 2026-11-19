@@ -1,29 +1,25 @@
 ---
 name: reviewing-reports
-description: "How a review round's findings are filed: the round's report, each finding's class, evidence, conditions and root cause, notes, and reproducers. Read before filing or revisiting a finding."
+description: "How review findings are filed: one file per finding under its kind, its class, evidence, conditions and root cause, notes, and reproducers. Read before filing or revisiting a finding."
 ---
 
 # Reviewing: reports
 
-What a review round files for the defects [`reviewing`](../SKILL.md)'s objectives name: one
-report per round, a finding per root cause in it, and the reproducer that proves each.
+What a review round files for the defects [`reviewing`](../SKILL.md)'s objectives name: a
+file per finding, one finding per root cause, and the reproducer that proves each.
 
-## 1. Reports
+## 1. Findings
 
-A round files one report, `crustify/reviews/<component>-r<round>.md`, as
-[`layout`](../../../operations/layout/SKILL.md)'s Reviews section places it. It opens with
-the round's workset, its objectives, the commit it reviewed, and the earlier reports its
-reviewer read. Then come its findings, then its [notes](#14-notes), then the
-[revisit](../SKILL.md#311-revisit) verdict of every earlier finding.
-
-Each finding is a section headed by its id, `<objective>-<n>` numbered within the round,
-such as `ub-2`, and a short title. Its reproducer, when it has one, sits in
-`crustify/reviews/<component>-r<round>/<id>/`. The id stays the finding's name in every
-later round and commit that refers to it.
+A finding is filed under its kind, the objective that names it, at
+`.crustify/reviews/<kind>/<component>-<n>.md`, numbered within its kind and component,
+as [`layout`](../../../operations/layout/SKILL.md) places it; its reproducer, when it has
+one, sits in `.crustify/reviews/<kind>/<component>-<n>/`. Its id, `<kind>/<component>-<n>`,
+such as `ub/index-2`, stays its name in every later round and commit that refers to it.
+A later round updates the file in place: its status, and the verdict of each rerun.
 
 A defect in a tool rather than in the port, ffibox or ffimap included, is no finding of
-the component: it is noted in the report for the agent to fix in the tool, with its
-reproducer.
+the component: it is filed under `.crustify/reviews/tools/`, with its reproducer, for the
+agent to fix in the tool.
 
 A finding states what is wrong, where, the evidence that proves it, and, once fixed, how
 it was fixed and in which commit. It names the tier that caught it, and the tiers that had
@@ -32,26 +28,26 @@ review round, a later round, a crate-wide pass, a merge's or full run's gates, a
 remaining C's tests. A finding caught by a later tier than the first that had it in scope
 is an escape. It carries
 everything needed to rerun its reproducer from a clean checkout: the exact command and the
-sanitizer output or failing assertion it produced. Neither a report nor a reproducer
+sanitizer output or failing assertion it produced. Neither a finding nor a reproducer
 carries an API key, in a core dump or anywhere else.
 
 ### 1.1 Header
 
-A finding opens with its header, one `key: value` line each:
+A finding opens with its title, then its header, one `key: value` line each:
 
+- `round`: the round that filed it, and the commit it reviewed;
 - `class`, as [Classes](#12-classes) gives it;
 - `evidence`: what decided it, a sanitizer, Miri or a failing assertion, by name. A
   result that only an aliasing model reports, Stacked Borrows, Tree Borrows or BSan, adds
   `aliasing-model only`; one that rests on a claim the Rust Reference does not settle,
   such as a reference to an uninhabited opaque type or to a partly initialised struct,
-  adds `unsettled`. Either says so wherever the report states the defect, and neither is
+  adds `unsettled`. Either says so wherever the finding states the defect, and neither is
   called undefined behaviour without that qualifier;
 - `conditions`: the Cargo features, target and `cfg`s it needs, whether it needs a system
   C library rather than the bundled one, or a version of it, and the revisions it
   reproduces on;
 - `status`: `open`, `fixed <commit>`, or `left: <reason>`; and
-- `same-cause`, where another finding has the same root cause: that finding's report and
-  id.
+- `same-cause`, where another finding has the same root cause: that finding's id.
 
 ### 1.2 Classes
 
@@ -68,16 +64,17 @@ the inputs in question, or an `unsafe` API called against its stated obligations
 ### 1.3 Root causes
 
 A finding is one root cause. Sites that share a defect are one finding that lists them,
-whatever objective or instrument met each. Before a finding is filed, the reports already
-in `crustify/reviews/` are searched for its cause, by site and mechanism, not by name: one
-the same round filed takes the new site; one an earlier report filed is named in
-`same-cause`, so that a class of defect that recurs across components shows as one.
+whatever objective or instrument met each. Before a finding is filed, the findings already
+in `.crustify/reviews/` are searched for its cause, by site and mechanism, not by name: one
+the same round filed takes the new site; one an earlier round filed is named in
+`same-cause`, so that a class of defect that recurs across components shows as one. A
+finding that several objectives meet is filed once, under the kind that names its harm.
 
 ### 1.4 Notes
 
 A candidate that reading supports and no true reproducer can show is a note, marked
-`unproven`, with why none is possible. A `nit` may be a note too: one line with its site,
-grouped by kind, such as unjustified `unsafe` blocks.
+`unproven`, with why none is possible. A `nit` may be a note too: one line with its site.
+A kind's notes on a component sit in one file, `.crustify/reviews/<kind>/<component>-notes.md`.
 
 ## 2. Reproducers
 

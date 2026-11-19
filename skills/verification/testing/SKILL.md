@@ -36,7 +36,7 @@ when the form goes.
 
 The builds the tests run against and how coverage is measured are
 [`testing-builds`](builds/SKILL.md)'s, and the gates every merge passes
-[`testing-gates`](gates/SKILL.md)'s. A component's rows of `crustify/STATUS.md` record
+[`testing-gates`](gates/SKILL.md)'s. A component's rows of `.crustify/STATUS.md` record
 its test counts.
 
 ## 1. UB tests

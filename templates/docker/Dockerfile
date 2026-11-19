@@ -28,7 +28,7 @@
 #
 #   /target            Required read-write bind mount: the checkout of the C
 #                      codebase the port works in. The Rust tree and the
-#                      port's own files under `crustify/` land in it. When it
+#                      port's own files under `.crustify/` land in it. When it
 #                      already holds a port, that port is resumed in place.
 #   /crustify-rs       Optional read-write bind mount of the whole crustify-rs
 #                      workspace: the toolchains the port uses -- wavefront,

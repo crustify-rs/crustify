@@ -11,7 +11,7 @@ over them.
 ## 1. Builds
 
 Tests run against builds of the target that the agent makes once and records in its
-report and in `crustify/STATUS.md`: each an out-of-tree directory, with the `configure`
+report and in `.crustify/STATUS.md`: each an out-of-tree directory, with the `configure`
 and `build` commands run from it. A build is rebuilt, and its record updated, whenever a
 command changes. They are:
 
@@ -55,7 +55,7 @@ alike, and count the code under test only:
   lines it never runs. Every test item of the measured crate, under `#[test]`,
   `#[cfg(test)]` or a `cfg` that requires `test`, carries `#[coverage(off)]`, which covers
   everything nested in it, and the crate root enables `#![feature(coverage_attribute)]`.
-  The attributes are added in a scratch copy of the measured tree under `crustify/tmp/`,
+  The attributes are added in a scratch copy of the measured tree under `.crustify/tmp/`,
   which is measured in its place, so that the measured crates are not changed. Integration
   test crates, examples, benches, the crate root's build script and the generated raw
   bindings under `sys/` are left out of the report by path. Test code that is not an
