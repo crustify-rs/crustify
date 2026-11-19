@@ -1,14 +1,15 @@
 ---
 name: conventions
-description: "Crustify's conventions: where its own files go under .crustify/, the anchors that tie each Rust item to the C item it stands in for, the lints the workspace enables, the language its texts are written in, and the git identity its commits carry. Read before placing the port's files, scaffolding the workspace, writing a public item that stands in for a C item, writing documentation, safety comments, findings, briefs or the report, or making the first commit."
+description: "Crustify's conventions: where its own files go under .crustify/, the anchors that tie each Rust item to the C item it stands in for, the lints the workspace enables, the language its texts are written in, the git identity its commits carry, and the format of an audit's disclosure drafts. Read before placing the port's files, scaffolding the workspace, writing a public item that stands in for a C item, writing documentation, safety comments, findings, briefs or the report, making the first commit, or writing a disclosure draft."
 ---
 
 # Conventions
 
 ## 1. Layout
 
-The port's own files, everything that is neither the C nor the Rust, sit under
-`.crustify/` at the root of the C codebase's repository:
+Crustify's own files, everything that is neither the C nor the Rust, sit under
+`.crustify/` at the root of the repository it works on: the C codebase's, or in an audit
+the crate's:
 
 ```text
 .crustify/
@@ -20,8 +21,9 @@ The port's own files, everything that is neither the C nor the Rust, sit under
 │       ├── <pattern>.md            one pattern: what it is, why, its findings, its check, its attempts
 │       └── <pattern>/              its synthetic cases
 ├── reviews/
+│   ├── notes.md                    in an audit: nits, and what could not be reproduced
 │   └── <id>/                       one dir per requirement: interop, compat, api, equiv, ub, perf, …
-│       └── <slug>/                 one finding
+│       └── <slug>/                 one finding, with its reproducer and, under `disclose`, its draft
 └── tmp/                            scratch, gitignored
 ```
 
@@ -127,3 +129,22 @@ for a co-author the user names, and no other, none the host suggests included. P
 identity on the command line, `git -c user.name=crustify -c user.email=crustify@berkeley.edu
 …`, to every command that writes a commit, a merge, a rebase or a cherry-pick as much as a
 commit, since the host may have no git identity of its own.
+
+## 6. Disclosures
+
+Under an audit's `disclose` mode, `disclosure.md` opens with a header, then a `---` line,
+then the body that the user sends:
+
+- `status`: `to file`; `do not file: <reason>`; `reported: <url>`, the upstream issue; or
+  `fixed: <url>`, the change that fixed it. It is the one record of the disclosure's fate:
+  keep it current as the user tells you what they sent.
+- `channel`: where the project asks for such reports, from its `SECURITY.md`, its issue
+  templates and its contributing guide: a private advisory or an email, with the
+  maintainers named, or a public issue. Flag a project that refuses machine-written text:
+  its draft is then notes for the user to rewrite, not text to paste.
+- `upstream`: the revisions the reproducer was rerun on, the latest release and the tip of
+  the default branch, and whether each shows the defect.
+
+A defect already reported or fixed upstream gets the header alone, with the issue or the
+fix as its status. The body is written for the project's maintainers: what goes wrong and
+where, the reproducer and its output, the versions affected, and a fix where one is clear.

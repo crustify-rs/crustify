@@ -57,15 +57,16 @@ task, which is one of:
 
 It may also name the codebase or crate, what is in scope, the configuration to build it with
 and anything else the work must respect. Clarify any ambiguous aspect with the user. The requirements
-below are written for a port: in a wrap or an audit, apply those that fit, and say in your report which. 
+below are written for a port: in a wrap, apply those that fit, and say in your report which. An
+audit is as its own section says.
 
 ## Config and build
 
-Where the task names no configuration, build the broadest one the machine supports: every optional
-feature it can build, with system libraries in place of bundled copies. State the
-configuration you chose in your report. Building the C, plain and under each
-sanitizer, takes long: consider building each configuration once and reusing it across
-components and test runs.
+Where the task names no configuration, build the broadest one the machine supports: every
+optional feature it can build, turning build flags into Rust feature flags.
+
+Building the C, plain and under each sanitizer, takes long: consider building each
+configuration once and reusing it across components and test runs.
 
 ## External dependencies
 
@@ -74,7 +75,7 @@ rewrites, and extend them where they fall short. Where no viable one exists, wri
 to the C library. The requirements below apply to that code too. Beside each dependency you add, in the
 manifest or the build file that declares it, keep a brief comment on why you chose it.
 
-## Requirements of the ported code
+## Requirements of the code
 
 Each requirement has an identifier. Reviews file their findings under the same
 identifiers.
@@ -163,6 +164,46 @@ step by step. Decide who fixes each finding; turn its reproducer into a regressi
 and rerun it to confirm the fix. Keep reviewing until the reviewers find no way left to
 do better.
 
+## Audits
+
+In an audit, the code under review is the crate the user names, at the revision they name,
+and the C is the library it binds or the code it replaces. Review it against the
+requirements above, except `anchors`: `compat` applies only to a crate that exports a C
+API, and `interop` only to one that replaces part of a C build. A requirement that the
+crate's own tests do not show is a finding under that requirement.
+
+An audit's findings go to people outside this work, so each needs a reproducer: a
+standalone Cargo package that depends on the crate at the reviewed revision and triggers
+the defect through its public API, with the command that runs it and the output it gave,
+such as the trace of Miri or a sanitizer. A reproducer that reaches undefined behavior
+through the safe API carries `#![forbid(unsafe_code)]`, and one that goes through an unsafe
+API keeps to that API's documented obligations. What you cannot reproduce, and nits, go
+into `.crustify/reviews/notes.md`. Merge the findings that share a root cause into one
+that lists every site, and name in each whose defect it is: the crate's, the C library's
+or another dependency's.
+
+An audit's fitness is its confirmed findings per requirement and their severity, the
+findings that turned out not to be real, the share of the crate reviewed, and its cost.
+`STATUS.md` lists the crate's source files in place of C files, with each file's
+findings. `REPORT.md` opens with one row per finding: its identifier, owner, severity and
+status, and the command that reruns its reproducer; then it says what you reviewed and what
+you did not reach.
+
+The user may add either of two modes:
+
+- **fix**: patch each confirmed finding in the crate with the smallest change that removes
+  it, in the crate's own style, and turn its reproducer into a regression test in the
+  crate's suite. List in your report each change to the public API. Without `fix`, change
+  nothing in the crate.
+- **disclose**: beside each finding, write `disclosure.md`, a draft for the user to send to
+  the project that owns the defect, in the format of the conventions. Before you write it,
+  search that project's tracker for the same defect, and rerun the reproducer on its latest
+  release and on the tip of its default branch. A query to an outside service carries only
+  generic technical terms, such as an API's name or an error's text, never the finding,
+  the reproducer or anything about the user.
+
+Send, post and file nothing: an audit opens no issue, pull request or advisory.
+
 ## Self-improvement
 
 Learn from the findings as the work goes on, and keep what you learn as entries, one per
@@ -200,9 +241,10 @@ yourself, in the format of `${CLAUDE_PLUGIN_ROOT}/templates/STATUS.md`.
 
 ## Skills
 
-Crustify's skills are its conventions, for the port's files, anchors, lints and language,
-and one for each tool. Each sits at `${CLAUDE_PLUGIN_ROOT}/skills/…/<name>/SKILL.md`; you may use
-them when you need them and they apply to the target.
+Crustify's skills are its conventions, for its files, anchors, lints, language and
+disclosure drafts, and one for each tool. Each sits at
+`${CLAUDE_PLUGIN_ROOT}/skills/…/<name>/SKILL.md`; you may use them when you need them and they
+apply to the target.
 
 ## Done
 
