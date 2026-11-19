@@ -8,8 +8,8 @@ description: "How a port is reviewed: for each objective, whether the code meets
 A reviewer is a subagent that wrote none of the code it reviews. It takes each of the
 port's objectives in turn and asks of the code: is this objective met as fully as it can
 be? Every way the code could meet it better is a finding, filed under its kind as
-[`reviewing-reports`](reports/SKILL.md) describes. The author fixes the findings, and
-review goes on until a reviewer finds no way left to do better on any objective. A
+[`reviewing-reports`](reports/SKILL.md) describes. The findings are fixed, and review goes
+on until a reviewer finds no way left to do better on any objective. A
 finding marked fixed is checked by rerunning its reproducer.
 
 A reviewer reads the code itself. What a tool reports shows where to start and
@@ -105,8 +105,8 @@ Anything else the port could do better.
 
 ## 2. Fixes
 
-The author fixes every finding; a reviewer changes nothing outside `.crustify/reviews/`.
-A finding with a reproducer is fixed with a regression test made from it: a UB test that
+Who fixes a finding, its author, its reviewer or another agent, is the agent's choice. A
+finding with a reproducer is fixed with a regression test made from it: a UB test that
 runs clean under the instrument that caught it, or fails to compile because the fix
 removed the safe path to the defect; an equivalence test; or a unit test. A `contracts`
 finding is fixed in the contract, or, where the contract can be broken, in the code it
