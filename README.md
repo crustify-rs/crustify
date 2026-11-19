@@ -40,7 +40,7 @@ C working on the Rust, and serves the C's public API from safe Rust to C and Rus
   that, it is free of undefined behavior with as little unsafe code as possible, as fast as
   the C, idiomatic and traceable to the C. Testing and review verify every requirement.
   The agent decides how.
-- 📜 **Skills on demand.** The lints, testing, reviewing, the tools and the port's layout
+- 📜 **Skills on demand.** The lints, testing, the tools and the port's layout
   are skills the agent reads before the step they cover.
 - ⚙️ **Grounded in deterministic tools:**
   [ffibox](https://github.com/crustify-rs/ffibox) holds the interop primitives the port
@@ -124,7 +124,7 @@ against every requirement, learn from earlier findings, and keep `STATUS.md` cur
 | group | skills |
 |---|---|
 | [`rust/`](skills/rust) | `anchors` naming the C item each Rust item stands in for, the `lints` |
-| [`verification/`](skills/verification) | `testing`, `reviewing` |
+| [`verification/`](skills/verification) | `testing` |
 | [`tools/`](skills/tools) | `bindgen`, `ffibox`, `ffimap` |
 | [`operations/`](skills/operations) | the port's `layout` |
 | [`crustify/`](skills/crustify) | `authoring`: the language every text is written in |

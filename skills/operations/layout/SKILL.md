@@ -1,6 +1,6 @@
 ---
 name: layout
-description: "What the .crustify/ dir at the repository's root holds: STATUS.md, REPORT.md, the reviews by kind, and scratch. Read before placing any of the port's own files."
+description: "What the .crustify/ dir at the repository's root holds: STATUS.md, REPORT.md, the review findings by requirement, and scratch. Read before placing any of the port's own files."
 ---
 
 # Layout
@@ -13,17 +13,16 @@ The port's own files, everything that is neither the C nor the Rust, sit under
 ├── STATUS.md                       progress per C file in scope, and the totals of time, tokens and cost
 ├── REPORT.md                       the final report
 ├── reviews/
-│   └── <kind>/                     one dir per requirement: interop, compat, api, equiv, ub, perf, …
+│   └── <id>/                       one dir per requirement: interop, compat, api, equiv, ub, perf, …
 │       └── <slug>/                 one finding
 └── tmp/                            scratch, gitignored
 ```
 
 ## 1. Reviews
 
-Findings are grouped by their kind, the identifier of the system prompt's requirement they
-fall short of, so that the author of the next component reads every defect of a kind found
-so far in one place. What a finding's directory holds is
-[`reviewing`](../../verification/reviewing/SKILL.md)'s.
+Findings are grouped by the identifier of the requirement they fall short of, so that the
+author of the next component reads every defect of a kind found so far in one place. What
+a finding's directory holds is the system prompt's Review section's.
 
 ## 2. Scratch
 

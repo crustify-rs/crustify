@@ -128,10 +128,14 @@ sanitizers: address, undefined behavior and thread.
 #### Review
 
 Have agents that did not write a component review it against every requirement above,
-asking of each whether the code meets it as fully as it can and whether the tests show
-it, and fix what they find until they find no way left to do better. Keep every finding
-in `.crustify/reviews/`, one directory per finding, grouped by the identifier of the
-requirement it falls short of.
+asking of each whether the code meets it as fully as it can and whether the tests show it.
+Every way it could do better is a finding, filed in `.crustify/reviews/<id>/<slug>/` under
+the identifier of the requirement it falls short of, or `misc`. Its `finding.md` says what
+falls short, where and why, with evidence: a reproducer beside it wherever possible, with
+the command that runs it and the output it gave, and otherwise the argument from the code,
+step by step. Decide who fixes each finding; turn its reproducer into a regression test,
+and rerun it to confirm the fix. Keep reviewing until the reviewers find no way left to
+do better.
 
 #### Learn from review
 
@@ -148,7 +152,7 @@ yourself, in the format of `${CLAUDE_PLUGIN_ROOT}/templates/STATUS.md`.
 ## Skills
 
 Crustify's skills describe how each part of the work is done: the Rust anchors and
-lints, testing, reviewing, the tools and the port's
+lints, testing, the tools and the port's
 layout. Each sits at `${CLAUDE_PLUGIN_ROOT}/skills/<group>/<name>/SKILL.md`.
 Invoke one with your Skill tool, as `crustify:<name>`, or read its `SKILL.md` where no
 Skill tool is offered. Read a skill before the step its description names, and again after

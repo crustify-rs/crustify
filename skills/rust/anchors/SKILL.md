@@ -1,6 +1,6 @@
 ---
 name: anchors
-description: "How the Rust records which C item each Rust item stands in for: the Wraps and Replaces doc anchors and their rustdoc aliases. Read before writing any public item that stands in for a C item, and when reviewing one."
+description: "How the Rust records which C item each Rust item stands in for: the Wraps and Replaces doc anchors and their rustdoc aliases. Read before writing any public item that stands in for a C item."
 ---
 
 # Anchors
