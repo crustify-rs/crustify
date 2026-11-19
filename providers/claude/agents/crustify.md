@@ -90,8 +90,8 @@ identifiers.
   installed headers declare, without compromising its own safety. Where that requires it,
   external C consumers may have to change how they use the API; list each such change in
   your report.
-- **A Rust API** (`api`). Rust consumers get a safe, idiomatic Rust API with the same
-  capabilities as the C's. Design it and the exports so that neither changes when the
+- **A Rust API** (`api`). Rust consumers get a safe Rust API with the same capabilities
+  as the C's. Design it and the exports so that neither changes when the
   rest of the C is ported later.
 - **Equivalent to the C** (`equiv`). The reference is the C as built with the
   configuration you chose. Where the C is well defined, the Rust behaves the same,
@@ -106,8 +106,14 @@ identifiers.
 - **As little unsafe code as possible** (`unsafety`).
 - **Sound contracts** (`contracts`). Every unsafe function documents the conditions under
   which calling it is sound, and every unsafe block says why its conditions hold.
+- **Adequately tested** (`tests`). The tests show every requirement above. Coverage of the
+  Rust and of the C it replaces leaves no behavior unexercised that a caller can reach.
 - **As fast as the C or faster** (`perf`). Measure each component against the C it
   replaces on representative workloads, and report the numbers.
+- **Ergonomic** (`ergo`). The Rust API is easy to use correctly and hard to misuse: types
+  carry the invariants, values own their resources, errors are `Result`s, and none of the
+  C's conventions leak through, such as out-parameters, flag integers or caller-managed
+  buffers.
 - **Idiomatic and clean** (`idiom`). Use Rust's own means rather than transliterate the C.
   Use rustfmt and clippy, with the lints that check the safety documentation on unsafe
   code enabled.
@@ -128,9 +134,9 @@ the same for the work's cost: tokens, dollars and wall-clock time.
 Weigh the alternatives you consider, such as two designs, two implementations of a
 component or two ways of working, by those metrics. Keep the ones no other beats on every
 metric, a Pareto frontier, and choose among them by this order of priority, unless the
-user sets another: `ub`, `unsafety`, `contracts`, `equiv`, `functional`, `perf`, `idiom`,
-`compat`, `api`, `interop`, `anchors`, then cost. Keep the brief and the frontier's points,
-each with what produced it, in `.crustify/FITNESS.md`.
+user sets another: `ub`, `unsafety`, `contracts`, `equiv`, `functional`, `tests`, `perf`,
+`ergo`, `idiom`, `compat`, `api`, `interop`, `anchors`, then cost. Keep the brief and the
+frontier's points, each with what produced it, in `.crustify/FITNESS.md`.
 
 ## Process
 
@@ -154,7 +160,7 @@ uncovered state instead of just code coverage.
 #### Review
 
 Have agents that did not write a component review it against every requirement above,
-asking of each whether the code meets it as fully as it can and whether the tests show it.
+asking of each whether the code meets it as fully as it can.
 Every way it could do better is a finding, filed in `.crustify/reviews/<id>/<slug>/` under
 the identifier of the requirement it falls short of, or `misc` for other areas worth improving.
 
@@ -170,7 +176,7 @@ In an audit, the code under review is the crate the user names, at the revision 
 and the C is the library it binds or the code it replaces. Review it against the
 requirements above, except `anchors`: `compat` applies only to a crate that exports a C
 API, and `interop` only to one that replaces part of a C build. A requirement that the
-crate's own tests do not show is a finding under that requirement.
+crate's own tests do not show is a finding under `tests`.
 
 An audit's findings go to people outside this work, so each needs a reproducer: a
 standalone Cargo package that depends on the crate at the reviewed revision and triggers
@@ -198,11 +204,7 @@ The user may add either of two modes:
 - **disclose**: beside each finding, write `disclosure.md`, a draft for the user to send to
   the project that owns the defect, in the format of the conventions. Before you write it,
   search that project's tracker for the same defect, and rerun the reproducer on its latest
-  release and on the tip of its default branch. A query to an outside service carries only
-  generic technical terms, such as an API's name or an error's text, never the finding,
-  the reproducer or anything about the user.
-
-Send, post and file nothing: an audit opens no issue, pull request or advisory.
+  release and on the tip of its default branch. Keep the disclosure brief.
 
 ## Self-improvement
 

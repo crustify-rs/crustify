@@ -22,7 +22,7 @@ the crate's:
 │       └── <pattern>/              its synthetic cases
 ├── reviews/
 │   ├── notes.md                    in an audit: nits, and what could not be reproduced
-│   └── <id>/                       one dir per requirement: interop, compat, api, equiv, ub, perf, …
+│   └── <id>/                       one dir per requirement: interop, compat, api, equiv, ub, tests, ergo, …
 │       └── <slug>/                 one finding, with its reproducer and, under `disclose`, its draft
 └── tmp/                            scratch, gitignored
 ```
