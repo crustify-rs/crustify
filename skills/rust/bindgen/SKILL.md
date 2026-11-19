@@ -69,8 +69,8 @@ from the plain build's configuration, so that the committed bindings serve every
 
 A type that another link unit's bindings own is blocklisted, as `external.txt` lists it,
 and re-exported from that link unit's module under its C name, so that each C type has one
-Rust type across the crate. A type a dependency's crate already defines, as `crustify/DEPS.md`
-records the dependency, is re-exported from that crate rather than generated again.
+Rust type across the crate. A type a dependency's crate already defines is re-exported from
+that crate rather than generated again.
 
 The bindings are generated for the host's target, the only one the port builds and tests
 on: `src/sys.rs` fails to compile on any other, naming it, until the C of that platform is

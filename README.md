@@ -48,7 +48,7 @@ C working on the Rust, and serves the C's public API from safe Rust to C and Rus
 - ✅ **Verified.** Equivalence tests against the C, Miri, ASan, UBSan and TSan, and
   independent reviewers whose findings later components learn from.
 - 📊 **Legible.** `crustify/STATUS.md` shows each C file's state and counters and the time,
-  tokens and cost spent; `crustify/DEPS.md` lists every library used and why.
+  tokens and cost spent, and every dependency carries a comment on why it was chosen.
 
 ## Installation
 
@@ -119,7 +119,7 @@ subagents to port independent components in parallel and others to review them, 
 merges their work. The system prompt,
 [`agents/crustify.md`](agents/crustify.md), gives the objectives and three practices:
 grow ffibox when an interop pattern recurs, learn from every earlier review, and keep
-`STATUS.md` and `DEPS.md` current. Everything else is a skill:
+`STATUS.md` current. Everything else is a skill:
 
 | group | skills |
 |---|---|
@@ -171,7 +171,7 @@ dashboard.
 - [`providers/`](providers/): the prompt composed for each host:
   [`claude/`](providers/claude/), [`codex/`](providers/codex/), and
   [`generic/`](providers/generic/compose.py) for any other
-- [`templates/`](templates/README.md): the formats of `STATUS.md` and `DEPS.md`, and the
+- [`templates/`](templates/README.md): the format of `STATUS.md`, and the
   Dockerfile
 
 ## Maintainers

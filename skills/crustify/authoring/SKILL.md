@@ -1,6 +1,6 @@
 ---
 name: authoring
-description: "The language every text of a port is written in: documentation, safety comments, reviews, briefs, STATUS.md, DEPS.md and the report. Read before writing any of them, and before briefing a subagent."
+description: "The language every text of a port is written in: documentation, safety comments, reviews, briefs, STATUS.md and the report. Read before writing any of them, and before briefing a subagent."
 ---
 
 # Authoring

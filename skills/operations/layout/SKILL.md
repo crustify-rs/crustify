@@ -1,6 +1,6 @@
 ---
 name: layout
-description: "Where a port's own files sit: the crustify/ dir with STATUS.md, DEPS.md, REPORT.md, the reviews dir and scratch. Read before placing any file that is not part of the Rust tree or the C."
+description: "Where a port's own files sit: the crustify/ dir with STATUS.md, REPORT.md, the reviews dir and scratch. Read before placing any file that is not part of the Rust tree or the C."
 ---
 
 # Layout
@@ -16,7 +16,6 @@ it is so that what remains of it builds as before.
 ├── <crate dir>/        the Rust crate, laid out as conventions describes
 └── crustify/
     ├── STATUS.md       progress per C file in scope, and the totals of time, tokens and cost
-    ├── DEPS.md         the libraries the port uses from outside, and why each
     ├── REPORT.md       the final report
     ├── reviews/        every reviewer's report, with its reproducers
     ├── slow-tests      the tests the gates skip until a full run, as testing-gates describes

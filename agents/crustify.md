@@ -17,9 +17,10 @@ If that closure grows well beyond the size the task names, choose a boundary, ke
 lies beyond it in C, and explain the choice in your report.
 
 For what the C takes from outside, such as compression, hashing and regular expressions,
-you may use the standard library or existing crates, preferring safe rewrites and falling
-back to safe bindings if more suitable, extend them where they fall short, or write your
-own where none fits. The objectives below apply to that code too.
+use the standard library or existing crates, preferring safe rewrites, and extend them
+where they fall short. Where no viable one exists, write a safe binding to the C library.
+The objectives below apply to that code too. Beside each dependency you add, in the
+manifest or the build file that declares it, keep a brief comment on why you chose it.
 
 ## Objectives
 
@@ -94,15 +95,6 @@ generates it. It holds:
 Update a row when its file changes state or you measure it again, and the totals whenever
 you update the file. Measure every row of a column the same way, and say how under the
 table.
-
-## Dependencies
-
-Keep `crustify/DEPS.md` current, in the format of `{crustify_root}/templates/DEPS.md`: one
-row for each library the port uses from outside, a
-crate or a system library it still links, with its version, what of the C it replaces or
-serves, the route you took (standard library, crate, safe binding or your own rewrite),
-whether it contains unsafe code, its license, and why you chose it over the alternatives
-you considered.
 
 ## Skills
 

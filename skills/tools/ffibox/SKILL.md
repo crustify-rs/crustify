@@ -23,8 +23,8 @@ What follows is what ffibox adds to each kind of work.
 
 A candidate crate's soundness is read against the hazards that the Soundness section of
 `docs/goals.md` lists. ffibox excludes each of them from the port's own code, so a crate
-qualifies where its safe API excludes them too, by whatever means it uses. Record the
-judgement in the crate's entry of `crustify/DEPS.md`.
+qualifies where its safe API excludes them too, by whatever means it uses. The comment
+beside the crate in the manifest gives the judgement in brief.
 
 ## Rust tree
 
