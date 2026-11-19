@@ -14,8 +14,7 @@ The port's own files, everything that is neither the C nor the Rust, sit under
 ├── REPORT.md                       the final report
 ├── reviews/
 │   └── <kind>/                     one dir per review objective: ub, contracts, equiv, logic, perf, …
-│       ├── <component>-<n>.md      one finding
-│       └── <component>-<n>/        its reproducer
+│       └── <slug>/                 one finding
 └── tmp/                            scratch, gitignored
 ```
 
@@ -23,8 +22,8 @@ The port's own files, everything that is neither the C nor the Rust, sit under
 
 Findings are grouped by their kind, the review objective that names them, as
 [`reviewing`](../../verification/reviewing/SKILL.md) lists them, so that the author of the
-next component reads every defect of a kind found so far in one place. A finding is never
-deleted once filed: a later round updates its status in place.
+next component reads every defect of a kind found so far in one place. What a finding's
+directory holds is [`reviewing-reports`](../../verification/reviewing/reports/SKILL.md)'s.
 
 ## 2. Scratch
 

@@ -166,7 +166,7 @@ cases none carries over.
 
 The findings earlier rounds filed, each rerun through its reproducer on the current tree.
 One that still reproduces stays a finding of its objective; one that no longer does is
-marked fixed in its file, with the commit that changed the verdict; one
+marked fixed in its `finding.md`, with the commit that changed the verdict; one
 that was never a defect is marked so, with the reason. Each finding's class is checked
 again with it.
 

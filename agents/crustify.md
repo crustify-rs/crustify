@@ -79,8 +79,8 @@ is subtle, turn it into an ffibox primitive and use it from the port.
 
 ## Learn from review
 
-Keep every reviewer's finding in `.crustify/reviews/`, one file per finding, grouped by
-kind: `ub`, `contracts`, `equiv`, `logic`, `perf` and the other review objectives. Before
+Keep every reviewer's finding in `.crustify/reviews/`, one directory per finding, grouped
+by kind: `ub`, `contracts`, `equiv`, `logic`, `perf` and the other review objectives. Before
 you start a component, read the findings on the components before it. Do not repeat a
 defect a reviewer has already found, and look for the same kind of defect in code you
 have already written.

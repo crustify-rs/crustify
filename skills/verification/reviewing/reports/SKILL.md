@@ -10,15 +10,16 @@ file per finding, one finding per root cause, and the reproducer that proves eac
 
 ## 1. Findings
 
-A finding is filed under its kind, the objective that names it, at
-`.crustify/reviews/<kind>/<component>-<n>.md`, numbered within its kind and component,
-as [`layout`](../../../operations/layout/SKILL.md) places it; its reproducer, when it has
-one, sits in `.crustify/reviews/<kind>/<component>-<n>/`. Its id, `<kind>/<component>-<n>`,
-such as `ub/index-2`, stays its name in every later round and commit that refers to it.
-A later round updates the file in place: its status, and the verdict of each rerun.
+A finding is a directory under its kind, the objective that names it,
+`.crustify/reviews/<kind>/<slug>/`, as [`layout`](../../../operations/layout/SKILL.md)
+places it. The slug names the defect in a few words, such as `index-entry-alias`. The
+directory holds `finding.md`, the finding itself, and its reproducer, when it has one. Its
+id, `<kind>/<slug>`, such as `ub/index-entry-alias`, stays its name in every later round
+and commit that refers to it. A finding is never deleted once filed: a later round updates
+`finding.md` in place, its status and the verdict of each rerun.
 
 A defect in a tool rather than in the port, ffibox or ffimap included, is no finding of
-the component: it is filed under `.crustify/reviews/tools/`, with its reproducer, for the
+the component: it is filed as a finding of the kind `tools`, with its reproducer, for the
 agent to fix in the tool.
 
 A finding states what is wrong, where, the evidence that proves it, and, once fixed, how
@@ -35,6 +36,7 @@ carries an API key, in a core dump or anywhere else.
 
 A finding opens with its title, then its header, one `key: value` line each:
 
+- `component`: the component it was found in, and every other it reaches;
 - `round`: the round that filed it, and the commit it reviewed;
 - `class`, as [Classes](#12-classes) gives it;
 - `evidence`: what decided it, a sanitizer, Miri or a failing assertion, by name. A
@@ -74,7 +76,8 @@ finding that several objectives meet is filed once, under the kind that names it
 
 A candidate that reading supports and no true reproducer can show is a note, marked
 `unproven`, with why none is possible. A `nit` may be a note too: one line with its site.
-A kind's notes on a component sit in one file, `.crustify/reviews/<kind>/<component>-notes.md`.
+A kind's notes sit in one file, `.crustify/reviews/<kind>/notes.md`, each naming its
+component.
 
 ## 2. Reproducers
 
