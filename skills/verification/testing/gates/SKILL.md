@@ -50,9 +50,11 @@ while every other build runs it whole.
 
 A component's author runs the tests it wrote under Miri. Miri is also run at every merge,
 as a gate over the whole workspace: one Miri run per test binary, the library's and each
-integration suite's, several side by side, each skipping the compile-fail tests. The gate passes only with no Miri error: a test that
-stops at the foreign boundary without the attribute gets it, and any other Miri error is
-a UB candidate of the item it touches.
+integration suite's, several side by side, each skipping the compile-fail tests. The gate
+passes only with no Miri error. A test that stops at the foreign boundary gets
+`#[cfg_attr(miri, ignore = "<reason>")]`, naming what stops it, and only after it was run
+alone and seen to stop there; any other Miri error is a UB candidate of the item it
+touches.
 
 `end-gates`, beside this skill and documented by its `--help`, runs a merge's and a full
 run's gates so, over a snapshot of the tree, so that work goes on in the tree while they
@@ -90,5 +92,4 @@ When a component's C leaves the build, its gates are a merge's, over builds of t
 remains, and the target's remaining C tests, which link the remaining C and the Rust
 static library, so that the C reaches the ported component through its exports: the
 component's tied C tests that use only its public API among them. Before a tied C test
-leaves, the cases none of the component's `unit_pub` tests carries over are listed, as
-[`testing`](../SKILL.md)'s C tests carried over section describes.
+leaves, its cases are carried over to Rust, as [`testing`](../SKILL.md) lists.

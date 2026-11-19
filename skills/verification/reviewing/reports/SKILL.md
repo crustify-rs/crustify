@@ -1,6 +1,6 @@
 ---
 name: reviewing-reports
-description: "How review findings are filed: one file per finding under its kind, its class, evidence, conditions and root cause, notes, and reproducers. Read before filing or revisiting a finding."
+description: "How review findings are filed: one directory per finding under its kind, its class, evidence, conditions and root cause, notes, and reproducers. Read before filing or revisiting a finding."
 ---
 
 # Reviewing: reports
@@ -92,8 +92,8 @@ the implementation needs, or a missing justification, is a finding without one.
   the `# Safety` obligation, and its finding says, for each `unsafe` it writes, why the
   defect is still the port's. One reaching an export calls it as C would, through its raw
   binding, or from a C program, within the C declaration's contract.
-- An equivalence reproducer fails one of [`testing`](../../testing/SKILL.md)'s equivalence
-  comparisons while running the raw C and the public Rust API, and its finding carries the
+- An equivalence reproducer fails a comparison of the C and the Rust, as
+  [`testing`](../../testing/SKILL.md) lists them, while running the raw C and the public Rust API, and its finding carries the
   failing assertion. Once the C is gone, a behaviour finding is a `logic` one.
 - A logic reproducer fails a Rust assertion of what the specification it cites requires,
   and its finding carries the failing assertion.
