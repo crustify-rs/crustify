@@ -16,9 +16,8 @@ with warnings denied, as [`toolchain`](../../../rust/toolchain/SKILL.md) describ
 tests what its change can affect: the component and the components that depend on it,
 each by its tests' module paths.
 
-Every build of those gates links the C as the agent's recorded builds give it, as
-[`bindgen`](../../../rust/bindgen/SKILL.md)'s Building section describes, so that each
-fails when the committed bindings do not match their input. A change to the raw bindings,
+Every build of those gates links the C as the agent's recorded builds give it, so that
+the Rust is tested against the C it was built for. A change to the raw bindings,
 or to the C, also builds the crate alone, as a dependent would, from the C it packages.
 
 The tests run against the matching build, or a private replacement, and each event runs

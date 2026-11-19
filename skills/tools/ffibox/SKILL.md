@@ -34,8 +34,7 @@ another source of ffibox names the same path: compile-fail snapshots normalize a
 dependency only where the compiler's paths match the dependency's canonical directory.
 Name the checkout's revision in the report.
 <!-- TODO: a released ffibox, as a versioned dependency, once `devel` reaches `main`.
-Until then the path leaves the crate, against `bindgen`'s Layout section, and pins no
-revision. -->
+Until then the path leaves the crate and pins no revision. -->
 
 ## Types and functions C shares
 

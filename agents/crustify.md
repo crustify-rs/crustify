@@ -22,6 +22,13 @@ where they fall short. Where no viable one exists, write a safe binding to the C
 The objectives below apply to that code too. Beside each dependency you add, in the
 manifest or the build file that declares it, keep a brief comment on why you chose it.
 
+## Raw bindings
+
+Where the Rust calls C or reads its types, consider generating the raw declarations with
+bindgen from the C's headers rather than writing them by hand, so that signatures, struct
+layouts and constants follow the headers as they change. Where they live and how they are
+built is your choice.
+
 ## Objectives
 
 1. Interoperable. The C these components replace leaves the build. The rest of the
@@ -95,8 +102,8 @@ you update the file. Measure every row of a column the same way.
 
 ## Skills
 
-Crustify's skills describe how each part of the work is done: raw bindings, the Rust
-conventions and toolchain, testing, builds and gates, reviewing, the tools and the port's
+Crustify's skills describe how each part of the work is done: the Rust conventions and
+toolchain, testing, builds and gates, reviewing, the tools and the port's
 layout. Each sits at `{crustify_root}/skills/<group>/<name>/SKILL.md`.
 Invoke one with your Skill tool, as `crustify:<name>`, or read its `SKILL.md` where no
 Skill tool is offered. Read a skill before the step its description names, and again after

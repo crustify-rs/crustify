@@ -79,8 +79,7 @@ The safe crate's tree sits where [`layout`](../../operations/layout/SKILL.md)'s 
 - `Cargo.toml` - the safe crate's manifest, which also declares the workspace.
 - `src/lib.rs` - the safe crate's root, with one `cfg`-gated module per link unit.
 - `src/<link-unit>/` - one sub-dir per link unit.
-- `src/sys.rs` and `sys/<link-unit>/` - the raw bindings, one public module per link unit,
-  laid out as [`bindgen`](../bindgen/SKILL.md) describes.
+- the raw bindings, where the agent chooses to put them.
 
 The safe crate's name tells it apart from the source's existing Rust bindings, such as
 `git2` for libgit2, and is one crates.io leaves free.

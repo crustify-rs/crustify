@@ -24,8 +24,7 @@ it is so that what remains of it builds as before.
 
 The crate's directory is the agent's choice, such as `rust/`, one the C does not use; the
 report names it. The C's build reaches the crate through its own build system, as
-[`bindgen`](../../rust/bindgen/SKILL.md) and [`testing-builds`](../../verification/testing/builds/SKILL.md)
-describe. Paths into the C are relative to the repository's root, as the C lays itself
+[`testing-builds`](../../verification/testing/builds/SKILL.md) describes. Paths into the C are relative to the repository's root, as the C lays itself
 out. Nothing records a path to a scratch file.
 
 ## 2. Reviews

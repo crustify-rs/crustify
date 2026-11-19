@@ -34,8 +34,7 @@ ffimap <workdir> --ffibox --sys-crates <the -sys crates> --regions ffi_import,ff
     > <file>.json
 ```
 
-Raw bindings that are a module of the crate, not a crate of their own, laid out and
-generated as [`bindgen`](../../rust/bindgen/SKILL.md) describes, are named to `--sys-crates`
+Raw bindings that are a module of the crate, not a crate of their own, are named to `--sys-crates`
 by their path, `crate::<path>`, beside the `-sys` crates that remain. A named module joins
 the inventory and leaves every other counter, as a `-sys` crate does. Left unnamed, its C
 types and functions are in no inventory, the counts that read it are taken over the other
