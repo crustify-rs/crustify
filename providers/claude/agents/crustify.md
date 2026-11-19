@@ -93,7 +93,8 @@ identifiers.
   capabilities as the C's. Design it and the exports so that neither changes when the
   rest of the C is ported later.
 - **Equivalent to the C** (`equiv`). The reference is the C as built with the
-  configuration you chose. Where the C is well defined, the Rust behaves the same.
+  configuration you chose. Where the C is well defined, the Rust behaves the same,
+  without copying its defects.
 - **Correct** (`functional`). Where the C has undefined behavior or a defect, the Rust
   gives a defined result as close to the C's as possible, and you list the defect in your
   report.
