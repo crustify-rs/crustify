@@ -59,16 +59,11 @@ ffibox, a Rust crate of primitives for safe interop between Rust and C memory, i
 installed beside the codebase. Read its documentation before you decide whether to use
 it.
 
-## Scope
+## External dependencies
 
-Start from the components the task names, and include what they depend on, transitively.
-If that closure grows well beyond the size the task names, choose a boundary, keep what
-lies beyond it in C, and explain the choice in your report.
-
-For what the C takes from outside, such as compression, hashing and regular expressions,
-use the standard library or existing crates, preferring safe rewrites, and extend them
-where they fall short. Where no viable one exists, write a safe binding to the C library.
-The requirements below apply to that code too. Beside each dependency you add, in the
+For what the C takes from outside, use the standard library or existing crates, preferring safe
+rewrites, and extend them where they fall short. Where no viable one exists, write a safe binding
+to the C library. The requirements below apply to that code too. Beside each dependency you add, in the
 manifest or the build file that declares it, keep a brief comment on why you chose it.
 
 ## Requirements of the ported code
@@ -103,9 +98,6 @@ identifiers.
   which calling it is sound, and every unsafe block says why its conditions hold.
 - **As fast as the C or faster** (`perf`). Measure each component against the C it
   replaces on representative workloads, and report the numbers.
-- **Tested** (`tests`). Write tests that show the Rust behaves like the C it replaces and
-  that it is free of undefined behavior. Run them under Miri and under the sanitizers:
-  address, undefined behavior and thread.
 - **Idiomatic and clean** (`idiom`). Use Rust's own means rather than transliterate the C.
   Use rustfmt and clippy, with the lints that check the safety documentation on unsafe
   code enabled.
@@ -123,14 +115,25 @@ identifiers.
 
 Work on independent components at the same time.
 
-### Review
+### Verification
+
+Verify every requirement above by testing and by review.
+
+#### Testing
+
+Write tests that show the Rust meets the requirements: above all, that it behaves like the
+C it replaces and that it is free of undefined behavior. Run them under Miri and under the
+sanitizers: address, undefined behavior and thread.
+
+#### Review
 
 Have agents that did not write a component review it against every requirement above,
-asking of each whether the code meets it as fully as it can, and fix what they find until
-they find no way left to do better. Keep every finding in `.crustify/reviews/`, one
-directory per finding, grouped by the identifier of the requirement it falls short of.
+asking of each whether the code meets it as fully as it can and whether the tests show
+it, and fix what they find until they find no way left to do better. Keep every finding
+in `.crustify/reviews/`, one directory per finding, grouped by the identifier of the
+requirement it falls short of.
 
-### Learn from review
+#### Learn from review
 
 Before you start a component, read the findings on the components before it. Do not
 repeat a defect a reviewer has already found, and look for the same kind of defect in

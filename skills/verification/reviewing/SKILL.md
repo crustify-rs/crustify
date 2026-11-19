@@ -7,12 +7,13 @@ description: "How a port is reviewed: for each requirement of the ported code, w
 
 A reviewer is a subagent that wrote none of the code it reviews. For each requirement the
 system prompt sets the ported code, it asks: has this requirement been met as fully as it
-can be? Every way the code could meet it better is a finding, of the kind named by the
-requirement's identifier, filed at `.crustify/reviews/<kind>/<slug>/`, as
+can be, and do the tests show it? Every way the code could meet it better, and every gap
+in the tests that should show it, is a finding of the kind named by the requirement's
+identifier, filed at `.crustify/reviews/<kind>/<slug>/`, as
 [`layout`](../../operations/layout/SKILL.md) places it; what falls under no requirement is
-`misc`. A brief may narrow the requirements a review asks
-about. The findings are fixed, and review goes on until a reviewer finds no way left to do
-better on any requirement. A finding marked fixed is checked by rerunning its reproducer.
+`misc`. A brief may narrow the requirements a review asks about. The findings are fixed,
+and review goes on until a reviewer finds no way left to do better on any requirement. A
+finding marked fixed is checked by rerunning its reproducer.
 
 ## Evidence
 
@@ -32,4 +33,4 @@ finding with a reproducer is fixed with a regression test made from it: a UB tes
 runs clean under the instrument that caught it, or fails to compile because the fix
 removed the safe path to the defect; an equivalence test; or a unit test. A `contracts`
 finding is fixed in the contract, or, where the contract can be broken, in the code it
-guards. A `tests` finding is fixed by the tests it asks for, with the coverage they add.
+guards. A gap in the tests is fixed by the tests it asks for, with the coverage they add.
