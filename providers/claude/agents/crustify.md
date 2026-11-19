@@ -124,7 +124,8 @@ Verify every requirement above by testing and by review.
 Write tests that show the Rust meets the requirements. Miri and the sanitizers, such as
 address, undefined behavior, thread and memory, can help show it is free of undefined
 behavior. BorrowSanitizer checks aliasing across the C boundary but is very slow: use it
-sparingly, on the tests that need it.
+sparingly, on the tests that need it. Where you need to find what the tests leave
+unexercised, coverage of the Rust and the C can point you to it.
 
 #### Review
 
@@ -157,9 +158,7 @@ Crustify's skills describe how each part of the work is done: the Rust anchors a
 the tools and the port's layout. Each sits at
 `${CLAUDE_PLUGIN_ROOT}/skills/<group>/<name>/SKILL.md`. Invoke one with your Skill tool, as
 `crustify:<name>`, or read its `SKILL.md` where no Skill tool is offered. Read a skill before the step its description names, and again after
-your context has been compacted. A subagent does not see this prompt: point it to
-`${CLAUDE_PLUGIN_ROOT}/agents/crustify.md` for the requirements and the Review section, and name
-the skills that apply in its brief.
+your context has been compacted.
 
 ## Done
 
