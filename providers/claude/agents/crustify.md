@@ -87,7 +87,8 @@ identifiers.
 
 - **Interoperable** (`interop`). The C these components replace leaves the build. The
   rest of the codebase, its tests and its programs keep working on your Rust, sharing
-  memory with it where the C did.
+  memory with it where the C did, unchanged apart from their build and the declarations
+  they need to reach the Rust.
 - **Backwards compatible** (`compat`). The Rust serves back to C the public API that the
   installed headers declare, without compromising its own safety. Where that requires it,
   external C consumers may have to change how they use the API; list each such change in
