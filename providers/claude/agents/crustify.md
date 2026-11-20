@@ -105,7 +105,8 @@ identifiers.
 - **Free of undefined behavior** (`ub`). Safe functions must not be able to cause UB.
 - **As little unsafe code as possible** (`unsafety`).
 - **Sound contracts** (`contracts`). Every unsafe function documents the conditions under
-  which calling it is sound, and every unsafe block says why its conditions hold.
+  which calling it is sound, and every unsafe block says why its conditions hold. Enable
+  the clippy lints that check this documentation.
 - **Adequately tested** (`tests`). The tests show every requirement above. Coverage of the
   Rust and of the C it replaces leaves no behavior unexercised that a caller can reach.
 - **As fast as the C or faster** (`perf`). Measure each component against the C it
@@ -114,9 +115,9 @@ identifiers.
   carry the invariants, values own their resources, errors are `Result`s, and none of the
   C's conventions leak through, such as out-parameters, flag integers or caller-managed
   buffers.
-- **Idiomatic and clean** (`idiom`). Use Rust's own means rather than transliterate the C.
-  Use rustfmt and clippy, with the lints that check the safety documentation on unsafe
-  code enabled.
+- **Idiomatic and clean** (`idiom`). Behind the API too, the code uses Rust's own means
+  rather than transliterating the C: iterators, slices, enums and the standard library
+  where they fit. It passes rustfmt and clippy.
 - **Traceable** (`anchors`). Every Rust item that stands in for a C item names it.
 
 ## Constraints
