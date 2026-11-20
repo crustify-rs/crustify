@@ -133,8 +133,16 @@ identifiers.
 ## Constraints
 
 - Use the latest Rust edition.
-- Build and test on the platform you have. Do not drop the codebase's support for other
-  platforms: where you cannot port a platform-specific branch, keep it in C.
+- Unless the user says otherwise, ship the result as a Cargo package that builds the C
+  that remains from its own `build.rs`, from which C consumers build the C API, and that
+  can be published to crates.io. During development, its dependencies may also come from
+  local checkouts.
+- The C a port replaces leaves the codebase, not only the build. The reference for
+  `equiv` and `perf` is the C at its pinned revision, kept out of the published package,
+  for example as a git submodule, and built by the tests.
+- Build and test on the platforms you have. What you port supports those; its branches for
+  platforms you cannot test leave with the C, which the reference keeps, and your report
+  lists them.
 
 ## Fitness
 
