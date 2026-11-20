@@ -32,7 +32,7 @@ Crustify is a plugin for Claude Code and Codex that turns LLMs into specialized
 C-to-safe-Rust translators:
 
 - **Migrations.** Port whole codebases or a few components that keep working with the
-  remaining C, with an API suitable for both Rust and C consumers.
+  remaining C, and offer an API compatible with both Rust and C consumers.
 - **Wrappers.** A safe, ergonomic Rust API over C you keep.
 - **Audits.** Undefined behavior, unsound contracts, divergences from the C and other bug
   classes in Rust that meets C, each with a reproducer.
