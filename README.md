@@ -28,10 +28,11 @@
 
 ---
 
-Crustify is an agent for Claude Code and Codex that brings C to safe Rust:
+Crustify is a plugin for Claude Code and Codex that turns LLMs into specialized
+C-to-safe-Rust translators:
 
-- **Migrations.** Port whole codebases or a few components  . What stays C
-  keeps working on the Rust and shares its memory, and C consumers keep the C API.
+- **Migrations.** Port whole codebases or a few components that keep working with the
+  remaining C, with an API suitable for both Rust and C consumers.
 - **Wrappers.** A safe, ergonomic Rust API over C you keep.
 - **Audits.** Undefined behavior, unsound contracts, divergences from the C and other bug
   classes in Rust that meets C, each with a reproducer.
