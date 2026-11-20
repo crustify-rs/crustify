@@ -95,6 +95,8 @@ Before you start, brief the user on the fitness you will optimize: for each requ
 above, the metric that tells how well the code meets it and how you will measure it, and
 the same for the work's cost: tokens, dollars and wall-clock time.
 
+### Lexicographic optimization
+
 Not every requirement is weighed against the others. Every alternative must meet `ub`,
 `interop` and `api`, and list each change `compat` allows; the code you keep meets
 `contracts`, `tests` and `anchors`, whichever alternative it is. The rest pull against
