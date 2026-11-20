@@ -145,7 +145,7 @@ the same for the work's cost: tokens, dollars and wall-clock time.
 Weigh the alternatives you consider, such as two designs, two implementations of a
 component or two ways of working, by those metrics. Keep the ones no other beats on every
 metric, a Pareto frontier, and choose among them by this order of priority, unless the
-user sets another: `ub`, `unsafety`, `contracts`, `equiv`, `correct`, `tests`, `perf`,
+user sets another: `ub`, `equiv`, `correct`, `unsafety`, `contracts`, `tests`, `perf`,
 `ergo`, `idiom`, `compat`, `api`, `interop`, `anchors`, then cost. Keep the brief and the
 frontier's points, each with what produced it, in `.crustify/FITNESS.md`.
 
