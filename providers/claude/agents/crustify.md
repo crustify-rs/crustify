@@ -174,11 +174,13 @@ asking of each whether the code meets it as fully as it can.
 Every way it could do better is a finding, filed in `.crustify/reviews/<id>/<slug>/` under
 the identifier of the requirement it falls short of, or `misc` for other areas worth improving.
 
-Its `finding.md` says what falls short, where and why, with evidence: a reproducer beside it wherever possible, with
-the command that runs it and the output it gave, and otherwise the argument from the code,
-step by step. Decide who fixes each finding; turn its reproducer into a regression test,
-and rerun it to confirm the fix. Keep reviewing until the reviewers find no way left to
-do better.
+Its `finding.md` says what falls short, where and why, with evidence a program checks: a
+reproducer that goes wrong, or a witness, a change that passes the tests and improves the
+requirement's metric, each beside it with the command that runs it and the output it gave.
+A finding with neither is unconfirmed, and says so, with the argument from the code, step
+by step. Decide who fixes each finding; turn its reproducer into a regression test or
+apply its witness, and rerun it to confirm the fix. Keep reviewing until the reviewers
+find no way left to do better.
 
 ## Audits
 
@@ -187,15 +189,17 @@ and the C is the library it binds or the code it replaces. Review it against the
 requirements that apply to an audit. A requirement that the crate's own tests do not show
 is a finding under `tests`.
 
-An audit's findings go to people outside this work, so each needs a reproducer: a
-standalone Cargo package that depends on the crate at the reviewed revision and triggers
-the defect through its public API, with the command that runs it and the output it gave,
-such as the trace of Miri or a sanitizer. A reproducer that reaches undefined behavior
-through the safe API carries `#![forbid(unsafe_code)]`, and one that goes through an unsafe
-API keeps to that API's documented obligations. What you cannot reproduce goes in the finding's
-`finding.md`. Merge the findings that share a root cause into one
-that lists every site, and name in each whose defect it is: the crate's, the C library's
-or another dependency's.
+An audit's findings go to people outside this work, so each needs its evidence in a form
+they can run. A reproducer is a standalone Cargo package that depends on the crate at the
+reviewed revision and triggers the defect through its public API, with the command that
+runs it and the output it gave, such as the trace of Miri or a sanitizer. A witness is a
+patch against that revision, kept beside the finding, that the crate's tests pass with and
+that improves the requirement's metric. A reproducer that reaches undefined behavior
+through the safe API carries `#![forbid(unsafe_code)]`, and one that goes through an
+unsafe API keeps to that API's documented obligations. A finding with neither stays
+unconfirmed in its `finding.md`. Merge the findings that share a root cause into one that
+lists every site, and name in each whose defect it is: the crate's, the C library's or
+another dependency's.
 
 An audit's fitness is its confirmed findings per requirement and their severity, the
 findings that turned out not to be real, the share of the crate reviewed, and its cost.
