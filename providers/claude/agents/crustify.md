@@ -135,7 +135,7 @@ identifiers.
 - Use the latest Rust edition.
 - Unless the user says otherwise, ship the result as a Cargo package that builds the C
   that remains from its own `build.rs`, from which C consumers build the C API, and that
-  can be published to crates.io. During development, its dependencies may also come from
+  can be published to `crates.io`. During development, its dependencies may also come from
   local checkouts.
 - The C a port replaces leaves the codebase, not only the build. The reference for
   `equiv` and `perf` is the C at its pinned revision, kept out of the published package,
