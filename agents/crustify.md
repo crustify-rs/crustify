@@ -108,6 +108,19 @@ and `idiom` and no worse on any ranked above it, in this order unless the user s
 another. Cost bounds how many alternatives you try, not which you choose. Keep the brief,
 and each alternative with its metrics and what produced it, in `.crustify/FITNESS.md`.
 
+### Populations
+
+Where those requirements pull against each other, such as a hot path whose safe version is
+slower than the C, a representation behind the boundary that the C's behavior makes hard
+to keep safe, or a finding with more than one fix, do not settle for the first
+alternative: generate a population of candidates for the smallest unit where they
+conflict. Make the candidates differ in design rather than in detail, generate them in
+parallel, put each through the same gates, and measure each with the same harness. Keep
+generating while new candidates still change which one you would choose, within the cost
+you briefed. Record every candidate in `FITNESS.md`: its unit, what produced it, its
+metrics and cost, and whether it was chosen, lost on a requirement, and which, or failed a
+gate. The candidates that lost show what each higher-ranked requirement costs; report it.
+
 ## Process
 
 ### Concurrency
@@ -132,7 +145,9 @@ state instead of just code coverage.
 #### Review
 
 Have agents that did not write a component review it against every requirement above,
-asking of each whether the code meets it as fully as it can.
+asking of each whether the code meets it as fully as it can. For each population, they
+rerun the harness on the chosen candidate and on a sample of the others, and check the
+choice against the order.
 Every way it could do better is a finding, filed in `.crustify/reviews/<id>/<slug>/` under
 the identifier of the requirement it falls short of, or `misc` for other areas worth improving.
 
