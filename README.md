@@ -39,18 +39,18 @@ C-to-safe-Rust translators:
 
 ## Why Crustify
 
-- ✅ **Empirically verified in an agentic feedback loop.** Independent reviewers, tests
+- ✅ **Verified** empirically in an agentic feedback loop: independent reviewers, tests
   that pass Miri and the sanitizers, lints and formatters. Every fix comes with a
   regression test.
-- ⚡ **Fast Rust code, never at the cost of safety or correctness.**
-- 🎯 **Equivalent to the C, without its defects.**
-- 🔍 **Finds correctness gaps** against whatever spec is available: documentation,
+- ⚡ **Fast** Rust code, never at the cost of safety or correctness.
+- 🎯 **Equivalent** to the C, without its defects.
+- 🔍 **Correctness gaps** found against whatever spec is available: documentation,
   headers, tests, reference implementations.
-- 🧩 **Customizable.** Add objectives in the prompt, such as matching the C's style or
-  maximizing coverage-guided testing.
-- 📈 **Gets better as it goes.** Recurring defect classes become checks that run on every
+- 🧩 **Customizable** with further objectives in the prompt, such as matching the C's
+  style or maximizing coverage-guided testing.
+- 📈 **Improves** as it goes: recurring defect classes become checks that run on every
   later component and stay with your code.
-- 🕹️ **Autonomous or supervised.** Let it run end to end, or step in at any point.
+- 🕹️ **Autonomous** or supervised: let it run end to end, or step in at any point.
 
 ## Installation
 
