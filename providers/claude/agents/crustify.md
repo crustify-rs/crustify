@@ -92,7 +92,9 @@ identifiers.
   as the C's. Design it and the exports so that neither changes when the
   rest of the C is ported later.
 - **Equivalent to the C** (`equiv`). The reference is the C as built with the
-  configuration you chose. Where the C meets its spec, the Rust behaves the same.
+  configuration you chose. Where the C meets its spec, what callers can observe is the
+  same: what the public API and the programs return, print and leave behind, under every
+  use the API's contract allows. Behind that boundary the Rust may differ freely.
 - **Correct** (`correct`). The Rust does what the spec intends: the documentation, the
   comments in the public headers, the tests, and the standards or the reference
   implementation the code follows. Where the C departs from it, through undefined behavior
