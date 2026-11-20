@@ -92,11 +92,12 @@ identifiers.
   as the C's. Design it and the exports so that neither changes when the
   rest of the C is ported later.
 - **Equivalent to the C** (`equiv`). The reference is the C as built with the
-  configuration you chose. Where the C is well defined, the Rust behaves the same,
-  without copying its defects.
-- **Correct** (`functional`). Where the C has undefined behavior or a defect, the Rust
-  gives a defined result as close to the C's as possible, and you list the defect in your
-  report.
+  configuration you chose. Where the C meets its spec, the Rust behaves the same.
+- **Correct** (`correct`). The Rust does what the spec intends: the documentation, the
+  comments in the public headers, the tests, and the standards or the reference
+  implementation the code follows. Where the C departs from it, through undefined behavior
+  or a defect, the Rust follows the spec and you list the departure in your report; where
+  the spec is silent, it gives a defined result as close to the C's as possible.
 
 ### Non-functional
 
@@ -142,7 +143,7 @@ the same for the work's cost: tokens, dollars and wall-clock time.
 Weigh the alternatives you consider, such as two designs, two implementations of a
 component or two ways of working, by those metrics. Keep the ones no other beats on every
 metric, a Pareto frontier, and choose among them by this order of priority, unless the
-user sets another: `ub`, `unsafety`, `contracts`, `equiv`, `functional`, `tests`, `perf`,
+user sets another: `ub`, `unsafety`, `contracts`, `equiv`, `correct`, `tests`, `perf`,
 `ergo`, `idiom`, `compat`, `api`, `interop`, `anchors`, then cost. Keep the brief and the
 frontier's points, each with what produced it, in `.crustify/FITNESS.md`.
 
