@@ -111,10 +111,9 @@ identifiers.
   Rust and of the C it replaces leaves no behavior unexercised that a caller can reach.
 - **As fast as the C or faster** (`perf`). Measure each component against the C it
   replaces on representative workloads, and report the numbers.
-- **Ergonomic** (`ergo`). The Rust API is easy to use correctly and hard to misuse: types
-  carry the invariants, values own their resources, errors are `Result`s, and none of the
-  C's conventions leak through, such as out-parameters, flag integers or caller-managed
-  buffers.
+- **Ergonomic** (`ergo`). The Rust API is hard to misuse: none of the C's conventions leak
+  through, even safely, such as out-parameters, flag integers, caller-managed buffers,
+  manual frees, runtime-checked ownership or erased types.
 - **Idiomatic and clean** (`idiom`). Behind the API too, the code uses Rust's own means
   rather than transliterating the C: iterators, slices, enums and the standard library
   where they fit. It passes rustfmt and clippy.
