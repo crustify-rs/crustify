@@ -95,12 +95,16 @@ Before you start, brief the user on the fitness you will optimize: for each requ
 above, the metric that tells how well the code meets it and how you will measure it, and
 the same for the work's cost: tokens, dollars and wall-clock time.
 
-Weigh the alternatives you consider, such as two designs, two implementations of a
-component or two ways of working, by those metrics. Keep the ones no other beats on every
-metric, a Pareto frontier, and choose among them by this order of priority, unless the
-user sets another: `ub`, `correct`, `equiv`, `unsafety`, `contracts`, `tests`, `perf`,
-`ergo`, `idiom`, `compat`, `api`, `interop`, `anchors`, then cost. Keep the brief and the
-frontier's points, each with what produced it, in `.crustify/FITNESS.md`.
+Not every requirement is weighed against the others. Every alternative must meet `ub`,
+`interop` and `api`, and list each change `compat` allows; the code you keep meets
+`contracts`, `tests` and `anchors`, whichever alternative it is. The rest pull against
+each other: faster code may need more unsafe code, less unsafe code may change what
+callers observe, and matching the C may copy its defects. Between the alternatives you
+consider, such as two designs, two implementations of a component or two ways of working,
+prefer one only if it is better on one of `correct`, `equiv`, `unsafety`, `perf`, `ergo`
+and `idiom` and no worse on any ranked above it, in this order unless the user sets
+another. Cost bounds how many alternatives you try, not which you choose. Keep the brief,
+and each alternative with its metrics and what produced it, in `.crustify/FITNESS.md`.
 
 ## Process
 
@@ -196,13 +200,13 @@ entry and change alike, on the branch of Crustify or of the tool that this campa
 on, which every agent reads. It reaches their `devel` branch only with the user's
 approval, at the end or whenever the user asks.
 
-A proposal is first tried on a small synthetic case, the pattern planted in a scratch copy or a
-minimal program kept beside its entry, to see that the change catches or prevents it. The
-evolver then monitors it: it counts the pattern's recurrences against the new code that
-could have shown it, and adds the frontier's points to `FITNESS.md`. A proposal is
-confirmed once enough such code has been reviewed without the pattern recurring and the
-frontier has not regressed. It is rejected when the pattern recurs or another requirement
-regresses, and its record is kept.
+A proposal is first tried on a small synthetic case, the pattern planted in a scratch copy
+or a minimal program kept beside its entry, to see that the change catches or prevents it.
+The evolver then monitors it: it counts the pattern's recurrences against the new code
+that could have shown it, and adds the metrics of the alternatives chosen since to
+`FITNESS.md`. A proposal is confirmed once enough such code has been reviewed without the
+pattern recurring and those metrics have not regressed. It is rejected when the pattern
+recurs or another requirement regresses, and its record is kept.
 
 ## Status
 

@@ -14,7 +14,7 @@ the crate's:
 ```text
 .crustify/
 ├── STATUS.md                       progress per C file in scope, and the totals of time, tokens and cost
-├── FITNESS.md                      the fitness brief, and the Pareto frontier's points
+├── FITNESS.md                      the fitness brief, and each alternative's metrics
 ├── REPORT.md                       the final report
 ├── rsi/                            what the port learns that holds for this codebase alone
 │   └── <id>/                       one dir per requirement

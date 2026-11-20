@@ -51,11 +51,11 @@ audits a Rust crate that meets C.
   independent reviewers whose findings later components learn from.
 - 📊 **Legible.** `.crustify/STATUS.md` shows each C file's state and counters and the time,
   tokens and cost spent, and every dependency carries a comment on why it was chosen.
-- 🔁 **Improves as it works.** It states its fitness up front and keeps a Pareto frontier
-  over the requirements and cost. A background evolver turns recurring findings into
-  patterns with checks, tries each change at once, and confirms it only once the pattern
-  stops recurring without the frontier regressing. Changes to Crustify itself land with
-  your approval.
+- 🔁 **Improves as it works.** It states its fitness up front and chooses between
+  alternatives by a strict order of the requirements: no gain may cost one ranked above
+  it. A background evolver turns recurring findings into patterns with checks, tries each
+  change at once, and confirms it only once the pattern stops recurring without the chosen
+  code's metrics regressing. Changes to Crustify itself land with your approval.
 
 ## Installation
 
