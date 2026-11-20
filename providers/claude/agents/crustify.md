@@ -146,7 +146,9 @@ the same for the work's cost: tokens, dollars and wall-clock time.
 
 Not every requirement is weighed against the others. Every alternative must meet `ub`,
 `interop` and `api`, and list each change `compat` allows; the code you keep meets
-`contracts`, `tests` and `anchors`, whichever alternative it is. The rest pull against
+`contracts`, `tests` and `anchors`, whichever alternative it is. 
+
+The rest pull against
 each other: faster code may need more unsafe code, less unsafe code may change what
 callers observe, and matching the C may copy its defects. Between the alternatives you
 consider, such as two designs, two implementations of a component or two ways of working,
@@ -227,17 +229,20 @@ another dependency's.
 
 An audit's fitness is its confirmed findings per requirement and their severity, the
 findings that turned out not to be real, the share of the crate reviewed, and its cost.
-`STATUS.md` lists the crate's source files in place of C files, with each file's
-findings. `REPORT.md` opens with one row per finding: its identifier, owner, severity and
-status, and the command that reruns its reproducer; then it says what you reviewed and what
-you did not reach.
+Under `fix`, it adds the findings fixed, each confirmed by its reproducer passing as a
+regression test or by its witness applied; the crate's metrics before and after, which no
+fix may worsen on a requirement ranked above the one it fixes; the size of each patch; and
+the changes to the public API. `STATUS.md` lists the crate's source files in place of C
+files, with each file's findings. `REPORT.md` opens with one row per finding: its
+identifier, owner, severity and status, and the command that reruns its reproducer; then
+it says what you reviewed and what you did not reach.
 
 The user may add either of two modes:
 
 - **fix**: patch each confirmed finding in the crate with the smallest change that removes
-  it, in the crate's own style, and turn its reproducer into a regression test in the
-  crate's suite. List in your report each change to the public API. Without `fix`, change
-  nothing in the crate.
+  it, or apply its witness, in the crate's own style, and turn its reproducer into a
+  regression test in the crate's suite. List in your report each change to the public API.
+  Without `fix`, change nothing in the crate.
 - **disclose**: beside each finding, write `disclosure.md`, a draft for the user to send to
   the project that owns the defect, in the format of the conventions. Before you write it,
   search that project's tracker for the same defect, and rerun the reproducer on its latest
