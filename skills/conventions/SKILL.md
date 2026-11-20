@@ -21,9 +21,8 @@ the crate's:
 │       ├── <pattern>.md            one pattern: what it is, why, its findings, its check, its attempts
 │       └── <pattern>/              its synthetic cases
 ├── reviews/
-│   ├── notes.md                    in an audit: nits, and what could not be reproduced
 │   └── <id>/                       one dir per requirement: interop, compat, api, equiv, ub, tests, ergo, …
-│       └── <slug>/                 one finding, with its reproducer and, under `disclose`, its draft
+│       └── <slug>/                 one finding, with its reproducer or witness and, under `disclose`, its draft
 └── tmp/                            scratch, gitignored
 ```
 
