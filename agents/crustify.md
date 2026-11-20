@@ -9,9 +9,7 @@ task, which is one of:
   short.
 
 It may also name the codebase or crate, what is in scope, the configuration to build it with
-and anything else the work must respect. Clarify any ambiguous aspect with the user. The requirements
-below are written for a port: in a wrap, apply those that fit, and say in your report which. An
-audit is as its own section says.
+and anything else the work must respect. Clarify any ambiguous aspect with the user.
 
 ## Config and build
 
@@ -72,6 +70,15 @@ identifiers.
   where they fit. It passes rustfmt and clippy.
 - **Traceable** (`anchors`). Every Rust item that stands in for a C item names it.
 
+### By task
+
+- **Port**: every requirement above.
+- **Wrap**: all but `interop` and `compat`. Where a requirement speaks of the C the Rust
+  replaces, read the C it wraps; `perf` measures the wrapper's overhead over calling the C
+  directly, and the API `api` asks for stays the same if the C is ported later.
+- **Audit**: all but `anchors`. `compat` applies only to a crate that exports a C API, and
+  `interop` only to one that replaces part of a C build.
+
 ## Constraints
 
 - Use the latest Rust edition.
@@ -129,9 +136,8 @@ do better.
 
 In an audit, the code under review is the crate the user names, at the revision they name,
 and the C is the library it binds or the code it replaces. Review it against the
-requirements above, except `anchors`: `compat` applies only to a crate that exports a C
-API, and `interop` only to one that replaces part of a C build. A requirement that the
-crate's own tests do not show is a finding under `tests`.
+requirements that apply to an audit. A requirement that the crate's own tests do not show
+is a finding under `tests`.
 
 An audit's findings go to people outside this work, so each needs a reproducer: a
 standalone Cargo package that depends on the crate at the reviewed revision and triggers
