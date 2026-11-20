@@ -28,34 +28,28 @@
 
 ---
 
-Crustify is a plugin for Claude Code and Codex that brings C code to safe Rust. It ports
-C components to Rust, keeping the rest of the C working on the Rust and serving the C's
-public API from safe Rust to C and Rust alike; it wraps C behind a safe Rust API; or it
-audits a Rust crate that meets C.
+Crustify is an agent for Claude Code and Codex that brings C to safe Rust:
+
+- **Migrations.** Port whole codebases or a few components  . What stays C
+  keeps working on the Rust and shares its memory, and C consumers keep the C API.
+- **Wrappers.** A safe, ergonomic Rust API over C you keep.
+- **Audits.** Undefined behavior, unsound contracts, divergences from the C and other bug
+  classes in Rust that meets C, each with a reproducer.
 
 ## Why Crustify
 
-- 🎯 **Requirements, not a procedure.** One short system prompt states what the ported
-  code must meet. Functionally, it interoperates with the remaining C, keeps the C API for
-  C consumers, offers a Rust API, and is equivalent to the C without its defects. Beyond
-  that, it is free of undefined behavior with as little unsafe code as possible, as fast as
-  the C, idiomatic and traceable to the C. Testing and review verify every requirement.
-  The agent decides how.
-- 📜 **Skills on demand.** The port's conventions and its tools are skills the agent reads
-  before the step they cover.
-- ⚙️ **Grounded in deterministic tools:**
-  [ffibox](https://github.com/crustify-rs/ffibox) holds the interop primitives the port
-  uses, and [ffimap](https://github.com/crustify-rs/ffimap) measures the unsafe
-  surface.
-- ✅ **Verified.** Equivalence tests against the C, Miri, ASan, UBSan and TSan, and
-  independent reviewers whose findings later components learn from.
-- 📊 **Legible.** `.crustify/STATUS.md` shows each C file's state and counters and the time,
-  tokens and cost spent, and every dependency carries a comment on why it was chosen.
-- 🔁 **Improves as it works.** It states its fitness up front and chooses between
-  alternatives by a strict order of the requirements: no gain may cost one ranked above
-  it. A background evolver turns recurring findings into patterns with checks, tries each
-  change at once, and confirms it only once the pattern stops recurring without the chosen
-  code's metrics regressing. Changes to Crustify itself land with your approval.
+- ✅ **Empirically verified in an agentic feedback loop.** Independent reviewers, tests
+  that pass Miri and the sanitizers, lints and formatters. Every fix comes with a
+  regression test.
+- ⚡ **Fast Rust code, never at the cost of safety or correctness.**
+- 🎯 **Equivalent to the C, without its defects.**
+- 🔍 **Finds correctness gaps** against whatever spec is available: documentation,
+  headers, tests, reference implementations.
+- 🧩 **Customizable.** Add objectives in the prompt, such as matching the C's style or
+  maximizing coverage-guided testing.
+- 📈 **Gets better as it goes.** Recurring defect classes become checks that run on every
+  later component and stay with your code.
+- 🕹️ **Autonomous or supervised.** Let it run end to end, or step in at any point.
 
 ## Installation
 
