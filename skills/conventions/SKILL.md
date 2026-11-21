@@ -28,7 +28,7 @@ the crate's:
 
 Findings are grouped by the identifier of the requirement they fall short of, so that the
 author of the next component reads every defect of a kind found so far in one place. What
-a finding's directory holds is the system prompt's Review section's.
+a finding's directory holds is the system prompt's Evidence section's.
 
 `.crustify/tmp/` is gitignored and holds anything residual: downloads, scratch builds and
 experiments, intermediate outputs. Residual files go nowhere else in the repository. A
