@@ -32,8 +32,8 @@ a finding's directory holds is the system prompt's Review section's.
 
 `.crustify/tmp/` is gitignored and holds anything residual: downloads, scratch builds and
 experiments, intermediate outputs. Residual files go nowhere else in the repository. A
-subagent's scratch is its own subdirectory, `.crustify/tmp/<agent>/`, never a directory the
-host hands every agent of a session, where another agent can overwrite it.
+subagent's scratch is its own subdirectory, `.crustify/tmp/<agent>/`, never a directory
+the host hands every agent of a session, where another agent can overwrite it.
 
 ## 2. Anchors
 
@@ -125,9 +125,10 @@ Every commit is authored and committed as Crustify, `crustify <crustify@berkeley
 whose GitHub account is `crustify-ai`, whatever the repository's git configuration says,
 unless the user names another author. The message carries a `Co-Authored-By:` trailer only
 for a co-author the user names, and no other, none the host suggests included. Pass the
-identity on the command line, `git -c user.name=crustify -c user.email=crustify@berkeley.edu
-…`, to every command that writes a commit, a merge, a rebase or a cherry-pick as much as a
-commit, since the host may have no git identity of its own.
+identity on the command line, `git -c user.name=crustify -c
+user.email=crustify@berkeley.edu …`, to every command that writes a commit, a merge, a
+rebase or a cherry-pick as much as a commit, since the host may have no git identity of
+its own.
 
 ## 6. Disclosures
 
@@ -137,13 +138,26 @@ then the body that the user sends:
 - `status`: `to file`; `do not file: <reason>`; `reported: <url>`, the upstream issue; or
   `fixed: <url>`, the change that fixed it. It is the one record of the disclosure's fate:
   keep it current as the user tells you what they sent.
+- `severity`: `high`, `medium` or `low`, then one clause that says why: what goes wrong,
+  and what use of the API reaches it. It is the severity `REPORT.md` lists for the
+  finding, and claims no more than the evidence shows:
+  - `high`: memory corruption, a data race or an out-of-bounds access that ordinary use of
+    the safe API reaches, or that input from outside the program reaches.
+  - `medium`: undefined behavior that only unusual use reaches, or that goes through an
+    unsafe API whose documented obligations the caller met.
+  - `low`: undefined behavior that only an aliasing model reports, with no effect observed
+    on current compilers, and every finding that is not undefined behavior.
 - `channel`: where the project asks for such reports, from its `SECURITY.md`, its issue
-  templates and its contributing guide: a private advisory or an email, with the
-  maintainers named, or a public issue. Flag a project that refuses machine-written text:
-  its draft is then notes for the user to rewrite, not text to paste.
+  templates and its contributing guide.
 - `upstream`: the revisions the reproducer was rerun on, the latest release and the tip of
   the default branch, and whether each shows the defect.
 
 A defect already reported or fixed upstream gets the header alone, with the issue or the
-fix as its status. The body is written for the project's maintainers: what goes wrong and
-where, the reproducer and its output, the versions affected, and a fix where one is clear.
+fix as its status. The body is written for the project's maintainers. Keep the disclosure
+body brief, under 300 words, unless justified.
+
+End the disclosure with the following note:
+
+Found by [Crustify](https://github.com/crustify-rs/crustify), an experimental UB/soundness
+auditing agent developed at UC Berkeley and running on `<llm>`, then manually reviewed and
+independently reproduced.
