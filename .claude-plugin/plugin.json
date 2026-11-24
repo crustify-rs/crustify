@@ -12,6 +12,7 @@
     "./skills/tools"
   ],
   "agents": [
-    "./providers/claude/agents/crustify.md"
+    "./providers/claude/agents/crustify.md",
+    "./providers/claude/agents/audit.md"
   ]
 }

@@ -4,11 +4,12 @@
 Claude Code lists the plugin's skills to every agent, so the prompt is composed by the
 generic provider without its skill index.
 
-    compose.py build    write providers/claude/agents/crustify.md: Crustify's prompt after
-                        Claude Code's own system prompt, which a plugin agent's body
-                        replaces
+    compose.py build    write providers/claude/agents/crustify.md and audit.md: each agent's
+                        prompt after Claude Code's own system prompt, which a plugin
+                        agent's body replaces
 
-Open it as the main agent of a session: `claude --agent crustify:crustify`.
+Open one as the main agent of a session: `claude --agent crustify:crustify`, or
+`claude --agent crustify:audit` for the auditor.
 
 Standard library only: it runs under whatever Python the host has.
 """
@@ -35,11 +36,16 @@ def _claude_system_prompt() -> str:
     return re.sub(r"^<!--.*?-->\s*", "", text, flags=re.S).strip() + "\n\n---\n\n"
 
 
+AUDIT_DESCRIPTION = ("Crustify's auditor: audits a Rust crate that binds or ports a C library and "
+                     "reports its defects. Runs as the main agent of a session.")
+
+
 def build() -> None:
     AGENTS.mkdir(exist_ok=True)
-    front = f"---\nname: crustify\ndescription: {json.dumps(DESCRIPTION)}\n---\n\n"
-    body = generic.prompt(root="${CLAUDE_PLUGIN_ROOT}", index=False)
-    (AGENTS / "crustify.md").write_text(front + _claude_system_prompt() + body)
+    for name, description in (("crustify", DESCRIPTION), ("audit", AUDIT_DESCRIPTION)):
+        front = f"---\nname: {name}\ndescription: {json.dumps(description)}\n---\n\n"
+        body = generic.prompt(root="${CLAUDE_PLUGIN_ROOT}", index=False, agent=name)
+        (AGENTS / f"{name}.md").write_text(front + _claude_system_prompt() + body)
 
 
 def main(argv: list[str]) -> int:

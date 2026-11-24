@@ -58,7 +58,7 @@ the task, which is one of:
 The tasks share the requirements below and differ in their goal: a port or a wrap makes
 code that meets them, and an audit finds evidence that code does not. What holds for every
 task comes first; then a part for ports and wraps and a part for audits, each with its
-goal, its fitness and its verification. Skip the part that is not your task's.
+goal, its fitness and what else is particular to it. Skip the part that is not your task's.
 
 It may also name the codebase or crate, what is in scope, the configuration to build it
 with and anything else the work must respect. Clarify any ambiguous aspect with the user.
@@ -165,10 +165,10 @@ by step. Findings that share a root cause are one finding that lists every site.
 
 ## Review
 
-Every claim an agent makes about the code is reviewed by an agent that did not make it and
-that sets out to refute it. In a port or a wrap the claim is that a component meets the
-requirements; in an audit it is that a finding shows the crate falling short of one. Each
-task's part says what its reviewers check. For every task:
+Everything an agent produces is reviewed by an agent that did not produce it and that
+sets out to refute it. In a port or a wrap the claim under review is that a component
+meets the requirements; in an audit it is that a finding shows the crate falling short of
+one. For every task:
 
 - The reviewer accepts only evidence a program checks, and reruns it itself.
 - A claim ends as confirmed, when the reviewer could not refute it; as refuted, recorded
@@ -298,33 +298,28 @@ which ones you'd leave out.
 ### Goal
 
 Report where the crate falls short of those requirements, to people outside this work:
-they owe you no trust and act only on what they can run. An audit changes nothing in the
-crate; fixing what it finds is the Fix section's, and only when the user asks for it.
+they owe you no trust and act only on what they can run. An audit changes the crate 
+only when the user asks for it by enabling the **fix** mode, according to the Fix's section.
 
 ### Fitness
 
 An audit's fitness is how many of the crate's defects it finds and how many of its
 findings are real: its recall and its precision on each requirement, and its cost. Find as
-many defects as the cost you briefed allows, and file none that is not real.
+many defects as the cost you briefed allows, and file none that is not real. In your brief,
+say for each requirement what will show that a finding is real, and what counts as one
+finding.
 
-### Verification
+### Known defects
 
-A finding is confirmed when it has a reproducer or a witness, and a verifier agent that did not
-file it could not refute it.
-
-**Known defects.** A defect the project already knows about, where you can reach the
+A defect the project already knows about, where you can reach the
 network to tell, is recorded as known, with the report or the fix that has its root cause,
 and needs no reproducer. What that report does not cover is a finding of its own.
-
-The verifier checks each finding: its reproducer or witness, each claim the finding makes
-against that evidence, the requirement it says the crate falls short of, and anything else
-that may be wrong with it. Under `disclose`, it checks the draft the same way.
 
 ### Disclose
 
 The user may add the **disclose** mode: beside each finding, write `disclosure.md`, a
-draft for the user to send to the project that owns the defect, in the format required by
-the project.
+draft for the user to send to the project that owns the defect, from the template
+`${CLAUDE_PLUGIN_ROOT}/templates/disclosure.md`.
 
 `STATUS.md` lists the crate's source files in place of C files, with each file's findings.
 `REPORT.md` opens with one row per finding: its identifier, owner, severity and status,
@@ -370,8 +365,8 @@ yourself, in the format of `${CLAUDE_PLUGIN_ROOT}/templates/STATUS.md`.
 
 ## Skills
 
-Crustify's skills are its conventions, for its files, anchors, lints, language and
-disclosure drafts, and one for each tool. Each sits at
+Crustify's skills are its conventions, for its files, anchors, lints and language, and
+one for each tool. Each sits at
 `${CLAUDE_PLUGIN_ROOT}/skills/…/<name>/SKILL.md`; you may use them when you need them and they
 apply to the target.
 

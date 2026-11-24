@@ -1,48 +1,58 @@
 ---
 name: conventions
-description: "Crustify's conventions: where its own files go under .crustify/, the anchors that tie each Rust item to the C item it stands in for, the lints the workspace enables, the language its texts are written in, the git identity its commits carry, and the format of an audit's disclosure drafts. Read before placing the port's files, scaffolding the workspace, writing a public item that stands in for a C item, writing documentation, safety comments, findings, briefs or the report, making the first commit, or writing a disclosure draft."
+description: "Crustify's conventions: where its own files go under .crustify/, the anchors that tie each Rust item to the C item it stands in for, the lints the workspace enables, the language its texts are written in, and the git identity its commits carry. Read before placing the port's files, scaffolding the workspace, writing a public item that stands in for a C item, writing documentation, safety comments, findings, briefs or the report, or making the first commit."
 ---
 
 # Conventions
 
 ## 1. Layout
 
-Crustify's own files, everything that is neither the C nor the Rust, sit under
-`.crustify/` at the root of the repository it works on: the C codebase's, or in an audit
-the crate's:
+Crustify keeps its own files under `.crustify/`, at the root of the repository that it
+works on. Its own files are all the files that are neither the C code nor the Rust code.
+In a port or a wrap, the repository is the C codebase. In an audit, it is the crate.
 
 ```text
 .crustify/
-├── STATUS.md                       progress per C file in scope, and the totals of time, tokens and cost
-├── FITNESS.md                      the fitness brief, and each alternative's metrics
-├── REPORT.md                       the final report
+├── STATUS.md                       a port or a wrap: progress per C file in scope, and the totals of time, tokens and cost
+├── FITNESS.md                      a port or a wrap: the fitness brief, and each alternative's metrics
+├── REPORT.md                       a port or a wrap: the final report
 ├── rsi/                            what the port learns that holds for this codebase alone
 │   └── <id>/                       one dir per requirement
 │       ├── <pattern>.md            one pattern: what it is, why, its findings, its check, its attempts
 │       └── <pattern>/              its synthetic cases
 ├── reviews/
+│   ├── REPORT-<date>.md            an audit: its final report, one per audit
 │   └── <id>/                       one dir per requirement: interop, compat, api, equiv, ub, tests, ergo, …
 │       └── <slug>/                 one finding, with its reproducer or witness and, under `disclose`, its draft
 └── tmp/                            scratch, gitignored
 ```
 
-Findings are grouped by the identifier of the requirement they fall short of, so that the
-author of the next component reads every defect of a kind found so far in one place. What
-a finding's directory holds is the system prompt's Evidence section's.
+Findings are grouped by the identifier of the requirement that they do not meet. The
+reason is that the author of the next component can then read, in one place, every defect
+of one kind that was found so far. The system prompt describes what a finding's directory
+contains.
 
-`.crustify/tmp/` is gitignored and holds anything residual: downloads, scratch builds and
-experiments, intermediate outputs. Residual files go nowhere else in the repository. A
-subagent's scratch is its own subdirectory, `.crustify/tmp/<agent>/`, never a directory
-the host hands every agent of a session, where another agent can overwrite it.
+Rules for scratch files:
+
+- Put every residual file under `.crustify/tmp/`: downloads, scratch builds, experiments,
+  and intermediate outputs. Git ignores this directory.
+- Do not put residual files anywhere else in the repository.
+- A subagent uses its own subdirectory, `.crustify/tmp/<agent>/`.
+- A subagent does not use a scratch directory that the host gives to every agent of a
+  session, because another agent can overwrite the files there.
 
 ## 2. Anchors
 
-The Rust item that stands in for each C item is annotated, and those annotations are the
-only record that an item was translated.
+Annotate the Rust item that stands in for each C item. These annotations are the only
+record that an item was translated.
 
-An annotation is two attributes on the same Rust item, a doc-comment anchor and a rustdoc
-alias. The anchor's line is followed by one naming the C source file that defines the
-item, relative to the repository's root:
+An annotation is two attributes on the same Rust item:
+
+- a doc-comment anchor;
+- a rustdoc alias.
+
+After the anchor's line, add one line that names the C source file that defines the item.
+Write the file's path relative to the root of the repository.
 
 ```rust
 /// Replaces `fn::git_repository_open`
@@ -56,12 +66,15 @@ pub fn open(path: &Path) -> Result<RepositoryBox, Error> { … }
 | ``/// Wraps `<kind>::<path>` `` | safe view over the FFI seam |
 | ``/// Replaces `<kind>::<path>` `` | native Rust translation |
 
-The anchor's path and the source file are code spans, in backticks, as rustdoc renders
-them and as the workspace's `clippy::doc_markdown` lint requires of a path in a doc
-comment. The anchor stays alone on its line, so that ffimap reads it; rustdoc joins the
-two lines into one sentence.
+Format rules:
 
-`<path>` names the C item, as below, and `<kind>` says what it is:
+- Write the anchor's path and the source file as code spans, in backticks. Rustdoc renders
+  them this way, and the workspace's `clippy::doc_markdown` lint requires it for a path in
+  a doc comment.
+- Keep the anchor alone on its line, so that ffimap can read it. Rustdoc joins the two
+  lines into one sentence.
+
+In an anchor, `<path>` names the C item and `<kind>` says what the item is:
 
 | kind | item |
 |---|---|
@@ -75,15 +88,16 @@ two lines into one sentence.
 | `glb` | a global |
 | `mac` | a macro |
 
-A path is made of names only: the names the source resolves the item by, outermost first,
-separated by `.`, as `fld::AVOption.default_val.i64` names a member of a member.
+A path contains names only. Use the names that the source code uses to resolve the item,
+starting with the outermost name, and separate them with `.`. For example,
+`fld::AVOption.default_val.i64` names a member of a member.
 
-One C item may have several annotated Rust items, each carrying the same anchor and
-alias, in which case an annotation is duplicated.
+One C item can have several annotated Rust items. In that case, repeat the annotation:
+each Rust item carries the same anchor and the same alias.
 
 ## 3. Lints
 
-The workspace enables these lints, with warnings denied:
+The workspace enables the following lints, and denies warnings:
 
 - rustc:
   - `nonstandard_style`
@@ -113,51 +127,22 @@ The workspace enables these lints, with warnings denied:
 
 ## 4. Language
 
-Programmers and agents read a port's texts, so they are written plainly, as the
-[Google developer documentation style guide](https://developers.google.com/style)
-describes: one term per thing, short sentences, a condition before its consequence, lists
-for parallel items. A rule keeps its reason, since agents generalize from reasons. A
-rewrite keeps every fact of the old text, which its review checks.
+Programmers and agents read the texts that Crustify writes, so write them plainly. Follow
+the [Google developer documentation style guide](https://developers.google.com/style):
+
+- Use one term for each thing.
+- Write short sentences.
+- Put a condition before its consequence.
+- Use a list for parallel items.
+
+Two more rules:
+
+- Keep the reason for each rule, because agents generalize from reasons.
+- When you rewrite a text, keep every fact of the old text. The review of the rewrite
+  checks this.
 
 ## 5. Identity
 
-Every commit is authored and committed as Crustify, `crustify <crustify@berkeley.edu>`,
-whose GitHub account is `crustify-ai`, whatever the repository's git configuration says,
-unless the user names another author. The message carries a `Co-Authored-By:` trailer only
-for a co-author the user names, and no other, none the host suggests included. Pass the
-identity on the command line, `git -c user.name=crustify -c
-user.email=crustify@berkeley.edu …`, to every command that writes a commit, a merge, a
-rebase or a cherry-pick as much as a commit, since the host may have no git identity of
-its own.
-
-## 6. Disclosures
-
-Under an audit's `disclose` mode, `disclosure.md` opens with a header, then a `---` line,
-then the body that the user sends:
-
-- `status`: `to file`; `do not file: <reason>`; `reported: <url>`, the upstream issue; or
-  `fixed: <url>`, the change that fixed it. It is the one record of the disclosure's fate:
-  keep it current as the user tells you what they sent.
-- `severity`: `high`, `medium` or `low`, then one clause that says why: what goes wrong,
-  and what use of the API reaches it. It is the severity `REPORT.md` lists for the
-  finding, and claims no more than the evidence shows:
-  - `high`: memory corruption, a data race or an out-of-bounds access that ordinary use of
-    the safe API reaches, or that input from outside the program reaches.
-  - `medium`: undefined behavior that only unusual use reaches, or that goes through an
-    unsafe API whose documented obligations the caller met.
-  - `low`: undefined behavior that only an aliasing model reports, with no effect observed
-    on current compilers, and every finding that is not undefined behavior.
-- `channel`: where the project asks for such reports, from its `SECURITY.md`, its issue
-  templates and its contributing guide.
-- `upstream`: the revisions the reproducer was rerun on, the latest release and the tip of
-  the default branch, and whether each shows the defect.
-
-A defect already reported or fixed upstream gets the header alone, with the issue or the
-fix as its status. The body is written for the project's maintainers. Keep the disclosure
-body brief, under 300 words, unless justified.
-
-End the disclosure with the following note:
-
-Found by [Crustify](https://github.com/crustify-rs/crustify), an experimental UB/soundness
-auditing agent developed at UC Berkeley and running on `<llm>`, then manually reviewed and
-independently reproduced.
+Unless the user says otherwise, author and commit every commit as Crustify:
+`crustify <crustify@berkeley.edu>`. The GitHub account of this identity is `crustify-ai`.
+Add a `Co-Authored-By:` trailer only for a co-author that the user names.
