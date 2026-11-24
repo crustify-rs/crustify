@@ -83,6 +83,13 @@ the components to port, the build configuration, and anything else the port must
 claude --plugin-dir /path/to/crustify --agent crustify:crustify
 ```
 
+To audit a crate, open the auditor in the crate's checkout instead, and see
+[`docs/audit.md`](docs/audit.md) for what to put in the request:
+
+```bash
+claude --plugin-dir /path/to/crustify --agent crustify:audit
+```
+
 </details>
 
 <details>
@@ -130,7 +137,16 @@ against every requirement, learn from earlier findings, and keep `STATUS.md` cur
 The port ends with `.crustify/REPORT.md`: the configuration, the boundary between Rust and
 C, the defects found in the C, the performance numbers and what was verified how.
 
+The auditor, [`agents/audit.md`](agents/audit.md), checks a crate against the same
+objectives. It files each defect that the project does not know about yet as a finding,
+with a reproducer, a witness or a review, and keeps going until it has 25 findings of
+unknown defects or the budget is spent. It posts nothing; with `disclose` on, it drafts
+the report that you send. [`docs/audit.md`](docs/audit.md) describes how to run it on
+your own crate.
+
 ## Results
+
+### Bindings
 
 Crustify's earlier, multi-agent version generated safe bindings for two libraries, with
 little guidance from one developer overseeing it, as our
@@ -162,9 +178,31 @@ Claude Fable 5.1 ran the early reviews.
 Each repository holds the code, the campaign's plan, its review reports and its
 dashboard.
 
+### Audits
+
+Crustify's auditor audited 16 widely used crates that wrap C and C++ libraries or system
+calls, at a median cost of $44 per audit.
+
+<table align="center">
+  <tr>
+    <td align="center"><h3>225</h3>undefined-behavior bugs</td>
+    <td align="center"><h3>36</h3>incomplete <code>unsafe</code> contracts</td>
+    <td align="center"><h3>23</h3>divergences from the C</td>
+    <td align="center"><h3>26 of 83</h3>reported findings fixed</td>
+  </tr>
+</table>
+
+The crates and what they wrap: `aws-lc-rs` (AWS-LC), `curl` (libcurl), `ffmpeg-next`
+(FFmpeg), `flate2` (zlib backends), `git2` (libgit2), `mio` (system calls), `mlua` (Lua),
+`nix` (system calls), `openssl` (OpenSSL), `rocksdb` (RocksDB), `rusqlite` (SQLite),
+`socket2` (system calls), `ssh2` (libssh2), `tree-sitter` (the tree-sitter runtime), `v8`
+(V8) and `zstd` (Zstandard).
+
 ## Repository
 
 - [`agents/crustify.md`](agents/crustify.md): the system prompt
+- [`agents/audit.md`](agents/audit.md): the auditor's system prompt, and
+  [`docs/audit.md`](docs/audit.md), how to audit a crate with it
 - [`skills/`](skills/): the skills
 - [`rsi/`](rsi/README.md): the patterns ports learn that hold beyond their codebase, and the harness changes they propose
 - [`providers/`](providers/): the prompt composed for each host:
