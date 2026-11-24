@@ -163,7 +163,7 @@ Claude Fable 5.1 ran the early reviews.
   </tr>
 </table>
 
-| | [libgit2](https://github.com/crustify-rs/libgit2-crustify) | [FFmpeg](https://github.com/crustify-rs/ffmpeg-crustify) |
+| | [libgit2](https://github.com/crustify-rs/libgit2-bindings-crustify) | [FFmpeg](https://github.com/crustify-rs/ffmpeg-crustify) |
 |---|---:|---:|
 | Public API wrapped | 480 of 1,146 items (41.9%) | 573 of 1,338 items (42.8%) |
 | Wall-clock time | 51.9 h | 58.9 h |
