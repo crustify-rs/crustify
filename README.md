@@ -54,16 +54,12 @@ C-to-safe-Rust translators. It automates:
 
 ## Installation
 
-Crustify runs on 64-bit Linux. It needs Claude Code or Codex, and Python 3.13. Clone the
-components side by side and install the tools, each on its `devel` branch; `ffibox` is a
-crate the port depends on, so it is only cloned.
+Crustify runs on 64-bit Linux. It needs Claude Code or Codex, and Python 3.13. Clone
+Crustify and, on its `devel` branch, `ffibox`, a crate that ports depend on, side by side.
 
 ```bash
 git clone https://github.com/crustify-rs/crustify.git
 git clone --branch devel https://github.com/crustify-rs/ffibox.git
-git clone --branch devel https://github.com/crustify-rs/ffimap.git
-
-python -m pip install -e ffimap
 ```
 
 > [!TIP]
@@ -132,7 +128,7 @@ against every requirement, learn from earlier findings, and keep `STATUS.md` cur
 | group | skills |
 |---|---|
 | [`conventions/`](skills/conventions/SKILL.md) | the port's files under `.crustify/`, the anchors that name the C item each Rust item stands in for, the lints, and the language of its texts |
-| [`tools/`](skills/tools) | `bindgen`, `ffibox`, `ffimap` |
+| [`tools/`](skills/tools) | `bindgen`, `ffibox` |
 
 The port ends with `.crustify/REPORT.md`: the configuration, the boundary between Rust and
 C, the defects found in the C, the performance numbers and what was verified how.

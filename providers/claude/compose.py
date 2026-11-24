@@ -26,8 +26,8 @@ generic = importlib.util.module_from_spec(_spec)  # the neutral composer
 _spec.loader.exec_module(generic)
 AGENTS = Path(__file__).resolve().parent / "agents"
 SYSTEM_PROMPT = Path(__file__).resolve().parent / "system-prompt.md"
-DESCRIPTION = ("Crustify: brings C code to safe Rust, porting it, wrapping it or auditing a "
-               "crate that meets it. Runs as the main agent of a session.")
+DESCRIPTION = ("Crustify: brings C code to safe Rust, porting it or wrapping it. "
+               "Runs as the main agent of a session.")
 
 
 def _claude_system_prompt() -> str:

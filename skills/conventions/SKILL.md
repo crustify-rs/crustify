@@ -14,7 +14,9 @@ In a port or a wrap, the repository is the C codebase. In an audit, it is the cr
 ```text
 .crustify/
 ├── STATUS.md                       a port or a wrap: progress per C file in scope, and the totals of time, tokens and cost
-├── FITNESS.md                      a port or a wrap: the fitness brief, and each alternative's metrics
+├── FITNESS.md                      a port or a wrap: the fitness brief and the metrics
+├── fitness/                        a port or a wrap: the decisions between alternatives
+│   └── <decision>.md               one decision: the alternatives, what produced each, their metrics, the choice and why
 ├── REPORT.md                       a port or a wrap: the final report
 ├── rsi/                            what the port learns that holds for this codebase alone
 │   └── <id>/                       one dir per requirement
@@ -71,7 +73,7 @@ Format rules:
 - Write the anchor's path and the source file as code spans, in backticks. Rustdoc renders
   them this way, and the workspace's `clippy::doc_markdown` lint requires it for a path in
   a doc comment.
-- Keep the anchor alone on its line, so that ffimap can read it. Rustdoc joins the two
+- Keep the anchor alone on its line, so that tools can read it. Rustdoc joins the two
   lines into one sentence.
 
 In an anchor, `<path>` names the C item and `<kind>` says what the item is:
